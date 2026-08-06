@@ -1,0 +1,40 @@
+/* Journeys design tokens — ported directly from the validated prototype.
+   Contrast verified: ink/bg 14.4:1, ink/card 15.58:1, ink2/card 7.43:1,
+   ink3/card 4.98:1. Do not change these without re-checking contrast. */
+:root {
+  color-scheme: light only;
+
+  --bg: #F4F6FA;
+  --card: #FFFFFF;
+  --card2: #EBEEF5;
+  --line: #E4E8F0;
+  --ink: #132247;
+  --ink2: #48547A;
+  --ink3: #647089;
+  --brand: #132247;
+  --brand2: #26355F;
+  --green: #0C7A42;
+  --red: #D23C3C;
+  --amber: #9C5F08;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s7: 32px;
+  --r-lg: 20px; --r-md: 16px; --r-sm: 12px; --r-xs: 8px;
+}
+
+html {
+  background-color: #F4F6FA !important;
+  color-scheme: light only;
+}
+html, body, #root {
+  background-color: #F4F6FA !important;
+  min-height: 100%;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+    'Plus Jakarta Sans', system-ui, sans-serif;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
