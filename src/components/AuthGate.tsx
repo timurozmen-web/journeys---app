@@ -5,7 +5,9 @@ import { supabase } from '../lib/supabase';
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null | 'loading'>('loading');
   const [email, setEmail] = useState('');
-  const [sent, setSent] = useState(false);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -19,34 +21,43 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (!session) {
     return (
-      <div className="head" style={{ paddingTop: '30vh' }}>
+      <div className="head" style={{ paddingTop: '18vh' }}>
         <div className="h1">Sign in</div>
         <div className="h-sub" style={{ marginBottom: 20 }}>
-          A magic link keeps this to just you — that's what makes the anon key safe to ship.
+          Password sign-in — no email delivery involved.
         </div>
-        {sent ? (
-          <div className="card">Check your email for the sign-in link.</div>
-        ) : (
-          <div className="stack" style={{ padding: 0 }}>
-            <input
-              className="deckface"
-              style={{ background: 'var(--card)', color: 'var(--ink)', border: '1px solid var(--line)', padding: 12, borderRadius: 12 }}
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <button
-              className="fab"
-              style={{ width: '100%', borderRadius: 12, height: 44 }}
-              onClick={async () => {
-                await supabase.auth.signInWithOtp({ email });
-                setSent(true);
-              }}
-            >
-              Send link
-            </button>
-          </div>
-        )}
+        <div style={{ display: 'grid', gap: 10 }}>
+          <input
+            style={{ background: 'var(--card)', color: 'var(--ink)', border: '1px solid var(--line)', padding: 12, borderRadius: 12, fontSize: 16 }}
+            placeholder="you@example.com"
+            autoCapitalize="none"
+            autoCorrect="off"
+            inputMode="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <input
+            style={{ background: 'var(--card)', color: 'var(--ink)', border: '1px solid var(--line)', padding: 12, borderRadius: 12, fontSize: 16 }}
+            placeholder="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          {error && <div style={{ color: 'var(--red)', fontSize: 13 }}>{error}</div>}
+          <button
+            style={{ background: 'var(--brand)', color: '#fff', border: 0, padding: 13, borderRadius: 12, fontWeight: 700, fontSize: 15 }}
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              setError('');
+              const { error } = await supabase.auth.signInWithPassword({ email, password });
+              if (error) setError(error.message);
+              setBusy(false);
+            }}
+          >
+            {busy ? 'Signing in…' : 'Sign in'}
+          </button>
+        </div>
       </div>
     );
   }
