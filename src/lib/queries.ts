@@ -64,3 +64,29 @@ export async function fetchReviews(): Promise<Review[]> {
     hotelId: r.hotel_id, hotelName: r.hotel_name, country: r.country, date: r.date, score: r.score,
   }));
 }
+
+/* Uploads a photo to the `trip-photos` bucket under the signed-in user's own
+   folder (required by the storage RLS policy), then saves the public URL
+   against the trip. Returns the URL so the UI can show it immediately
+   without waiting for a refetch. */
+export async function uploadTripPhoto(tripId: string, file: File): Promise<string> {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) throw new Error('Not signed in');
+
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `${userData.user.id}/${tripId}-${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage.from('trip-photos').upload(path, file, {
+    cacheControl: '3600',
+    upsert: false,
+  });
+  if (uploadError) throw uploadError;
+
+  const { data: urlData } = supabase.storage.from('trip-photos').getPublicUrl(path);
+  const url = urlData.publicUrl;
+
+  const { error: updateError } = await supabase.from('trips').update({ hero_image_url: url }).eq('id', tripId);
+  if (updateError) throw updateError;
+
+  return url;
+}

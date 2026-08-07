@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTrips } from '../lib/useLiveData';
+import { uploadTripPhoto } from '../lib/queries';
 import { BackIcon } from '../components/Icons';
 
 type Seg = 'overview' | 'itinerary' | 'expenses' | 'notes';
@@ -17,19 +18,62 @@ export function TripDetail() {
   const [seg, setSeg] = useState<Seg>('overview');
   const { data: trips } = useTrips();
   const trip = trips.find((t) => t.id === id);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileInput = useRef<HTMLInputElement>(null);
 
   if (!trip) return <div className="head">Trip not found</div>;
+
+  const heroImage = photoUrl ?? trip.heroImageUrl;
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !trip) return;
+    setUploading(true);
+    setUploadError('');
+    try {
+      const url = await uploadTripPhoto(trip.id, file);
+      setPhotoUrl(url);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }
 
   const spend = trip.hotels.reduce((s, h) => s + (h.total ?? 0), 0) + trip.flights.reduce((s, f) => s + (f.cost ?? 0), 0);
   const nights = trip.hotels.reduce((s, h) => s + h.nights, 0);
 
   return (
     <div>
-      <div className="tdhero" style={{ background: 'linear-gradient(135deg,#132247,#3A4C82)' }}>
+      <div
+        className="tdhero"
+        style={
+          heroImage
+            ? { backgroundImage: `url(${heroImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+            : { background: 'linear-gradient(135deg,#132247,#3A4C82)' }
+        }
+      >
         <div className="grad" />
         <button className="tdback" onClick={() => navigate('/trips')}>
           <BackIcon size={18} color="#fff" />
         </button>
+        <button
+          className="tdback"
+          style={{ left: 'auto', right: 16 }}
+          onClick={() => fileInput.current?.click()}
+          disabled={uploading}
+        >
+          {uploading ? '…' : '📷'}
+        </button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFile}
+        />
         <div className="tdtitle">
           <h1>{trip.title}</h1>
           <div className="s">
@@ -37,6 +81,10 @@ export function TripDetail() {
           </div>
         </div>
       </div>
+
+      {uploadError && (
+        <div style={{ padding: '8px 20px', color: 'var(--red)', fontSize: 12.5 }}>{uploadError}</div>
+      )}
 
       <div className="tdstats">
         <div className="tdstat">
