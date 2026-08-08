@@ -9,7 +9,7 @@ const CABINS = ['Economy', 'Premium Economy', 'Business', 'First'] as const;
 const STATUSES = ['Completed', 'Booked'] as const;
 const inputStyle: React.CSSProperties = {
   background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 10,
-  color: 'var(--ink)', fontSize: 15, padding: '11px 12px', width: '100%', outline: 'none',
+  color: 'var(--ink)', fontSize: 15, padding: '11px 12px', width: '100%', outline: 'none', minWidth: 0, boxSizing: 'border-box',
 };
 const labelStyle: React.CSSProperties = {
   fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase',
@@ -79,7 +79,7 @@ export function LogFlight() {
           <label style={labelStyle}>Date *</label>
           <input style={inputStyle} type="date" value={form.date} onChange={(e) => set('date', e.target.value)} />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
             <label style={labelStyle}>From *</label>
             <input style={inputStyle} value={form.from} onChange={(e) => set('from', e.target.value.toUpperCase())} placeholder="LHR" maxLength={3} />
@@ -89,7 +89,7 @@ export function LogFlight() {
             <input style={inputStyle} value={form.to} onChange={(e) => set('to', e.target.value.toUpperCase())} placeholder="JFK" maxLength={3} />
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
             <label style={labelStyle}>Airline *</label>
             <input style={inputStyle} value={form.airline} onChange={(e) => set('airline', e.target.value)} placeholder="British Airways" />
@@ -99,7 +99,7 @@ export function LogFlight() {
             <input style={inputStyle} value={form.flightNo} onChange={(e) => set('flightNo', e.target.value)} placeholder="Optional" />
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
             <label style={labelStyle}>Cabin</label>
             <select style={inputStyle} value={form.cabin} onChange={(e) => set('cabin', e.target.value as (typeof CABINS)[number])}>
@@ -113,7 +113,7 @@ export function LogFlight() {
             </select>
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
             <label style={labelStyle}>Cost (£)</label>
             <input style={inputStyle} type="number" step="0.01" value={form.cost} onChange={(e) => set('cost', e.target.value)} placeholder="Optional" />

@@ -126,17 +126,24 @@
 .deckcard{border-radius:16px;overflow:visible;box-shadow:0 6px 18px rgba(0,0,0,.35);
   position:relative;transition:margin-top .38s cubic-bezier(.22,1,.36,1)}
 .deckface{width:100%;text-align:left;border:0;cursor:pointer;padding:16px 16px 15px;
-  position:relative;border-radius:16px}
-.deckface .top{display:flex;align-items:flex-start;justify-content:space-between}
+  position:relative;border-radius:16px;box-sizing:border-box}
+.deckface .top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.deckface .top>div:first-child{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
 .deckmark{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.16);
   border:1px solid rgba(255,255,255,.3);display:grid;place-items:center;flex-shrink:0}
-.deckname{font-size:15.5px;font-weight:800;color:#fff;letter-spacing:-.2px}
-.decksub{font-size:10.5px;color:rgba(255,255,255,.92);margin-top:2px;font-weight:600}
-.deckchev{color:rgba(255,255,255,.7);font-size:14px;transition:transform .2s}
-.deckbot{display:flex;align-items:flex-end;justify-content:space-between;margin-top:14px}
-.deckbig{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.3px}
+.deckname{font-size:15.5px;font-weight:800;color:#fff;letter-spacing:-.2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.decksub{font-size:10.5px;color:rgba(255,255,255,.92);margin-top:2px;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.deckchev{color:rgba(255,255,255,.7);font-size:14px;transition:transform .2s;flex-shrink:0}
+.deckbot{display:flex;align-items:flex-end;justify-content:space-between;margin-top:14px;gap:10px}
+.deckbot>div{min-width:0}
+.deckbot>div:last-child{flex-shrink:0;text-align:right}
+.deckbig{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .decklab{font-size:10px;color:rgba(255,255,255,.85);margin-top:2px;font-weight:600}
-.deckval{font-size:17px;font-weight:800;text-align:right}
+.deckval{font-size:17px;font-weight:800;text-align:right;max-width:150px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .decksmall{font-size:9.5px;color:rgba(255,255,255,.8);text-align:right;margin-top:2px}
 .deckwrap{display:grid;transition:grid-template-rows .38s cubic-bezier(.22,1,.36,1)}
 .deckinner{overflow:hidden}

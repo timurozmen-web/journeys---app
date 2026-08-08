@@ -9,7 +9,7 @@ const CATEGORIES = ['Luxury', 'Premium', 'Midscale', 'Budget'] as const;
 const STATUSES = ['Completed', 'Booked', 'needs-confirm'] as const;
 const inputStyle: React.CSSProperties = {
   background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 10,
-  color: 'var(--ink)', fontSize: 15, padding: '11px 12px', width: '100%', outline: 'none',
+  color: 'var(--ink)', fontSize: 15, padding: '11px 12px', width: '100%', outline: 'none', minWidth: 0, boxSizing: 'border-box',
 };
 const labelStyle: React.CSSProperties = {
   fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase',
@@ -80,7 +80,7 @@ export function LogHotel() {
           <label style={labelStyle}>Hotel name *</label>
           <input style={inputStyle} value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Marriott Marble Arch" />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
             <label style={labelStyle}>Country *</label>
             <input style={inputStyle} value={form.country} onChange={(e) => set('country', e.target.value)} placeholder="United Kingdom" />
@@ -90,7 +90,7 @@ export function LogHotel() {
             <input style={inputStyle} value={form.brand} onChange={(e) => set('brand', e.target.value)} placeholder="Marriott Bonvoy" />
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
             <label style={labelStyle}>Check-in date *</label>
             <input style={inputStyle} type="date" value={form.date} onChange={(e) => set('date', e.target.value)} />
@@ -100,7 +100,7 @@ export function LogHotel() {
             <input style={inputStyle} type="number" min="1" value={form.nights} onChange={(e) => set('nights', e.target.value)} />
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
             <label style={labelStyle}>Status</label>
             <select style={inputStyle} value={form.status} onChange={(e) => set('status', e.target.value as (typeof STATUSES)[number])}>
@@ -114,7 +114,7 @@ export function LogHotel() {
             </select>
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
             <label style={labelStyle}>Total cost (£)</label>
             <input style={inputStyle} type="number" step="0.01" value={form.total} onChange={(e) => set('total', e.target.value)} placeholder="Optional" />
