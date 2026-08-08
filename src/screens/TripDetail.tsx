@@ -36,7 +36,14 @@ export function TripDetail() {
       const url = await uploadTripPhoto(trip.id, file);
       setPhotoUrl(url);
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Upload failed');
+      console.error('Photo upload failed:', err);
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'object' && err !== null && 'message' in err
+          ? String((err as { message: unknown }).message)
+          : 'Upload failed (unknown error — check browser console)';
+      setUploadError(message);
     } finally {
       setUploading(false);
     }
