@@ -38,6 +38,18 @@ function mapFlight(f: any): Flight {
   };
 }
 
+export async function fetchAllHotels(): Promise<Hotel[]> {
+  const { data, error } = await supabase.from('hotels').select('*');
+  if (error) throw error;
+  return (data ?? []).map(mapHotel);
+}
+
+export async function fetchAllFlights(): Promise<Flight[]> {
+  const { data, error } = await supabase.from('flights').select('*');
+  if (error) throw error;
+  return (data ?? []).map(mapFlight);
+}
+
 export async function fetchLoyaltyProgrammes(): Promise<LoyaltyProgramme[]> {
   const { data, error } = await supabase.from('loyalty_programmes').select('*');
   if (error) throw error;
