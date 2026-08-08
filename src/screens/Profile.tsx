@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { useReviews } from '../lib/useLiveData';
+import { useState, lazy, Suspense } from 'react';
+import { useReviews, useAllHotels, useAllFlights } from '../lib/useLiveData';
+const WorldMap = lazy(() => import('../components/WorldMap').then((m) => ({ default: m.WorldMap })));
 
 const REGIONS = [
   { n: 'Oceania & SE Asia', nights: 21, c: '#132247' },
@@ -18,9 +19,11 @@ const CATEGORIES = [
 ];
 
 export function Profile() {
-  const [routesOn, setRoutesOn] = useState(false);
   const [cat, setCat] = useState('overall');
   const { data: reviews } = useReviews();
+  const { data: hotels } = useAllHotels();
+  const { data: flights } = useAllFlights();
+  const visitedCountries = new Set(hotels.map((h) => h.country.trim()).filter(Boolean));
   const filtered = reviews.filter((r) => r.category === cat).sort((a, b) => b.score - a.score);
 
   return (
@@ -44,22 +47,13 @@ export function Profile() {
 
       <div className="stack">
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '16px 16px 12px', display: 'flex', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Countries visited</div>
-              <div style={{ fontSize: 26, fontWeight: 800 }}>32</div>
-            </div>
-            <button
-              onClick={() => setRoutesOn((v) => !v)}
-              style={{
-                padding: '6px 12px', borderRadius: 99, border: '1px solid var(--line)',
-                background: routesOn ? 'var(--brand)' : 'var(--card2)', color: routesOn ? '#fff' : 'var(--ink2)',
-                fontSize: 11.5, fontWeight: 700, cursor: 'pointer', height: 'fit-content',
-              }}
-            >
-              Routes
-            </button>
+          <div style={{ padding: '16px 16px 4px' }}>
+            <div style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Countries visited</div>
+            <div style={{ fontSize: 26, fontWeight: 800 }}>{visitedCountries.size}</div>
           </div>
+          <Suspense fallback={<div style={{ height: 200, background: '#DCE7F5' }} />}>
+            <WorldMap hotels={hotels} flights={flights} />
+          </Suspense>
         </div>
       </div>
 
