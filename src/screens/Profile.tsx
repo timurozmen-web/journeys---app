@@ -9,9 +9,19 @@ const REGIONS = [
 ];
 const maxR = Math.max(...REGIONS.map((r) => r.nights));
 
+const CATEGORIES = [
+  { key: 'overall', label: 'Overall' },
+  { key: 'service', label: 'Service' },
+  { key: 'value', label: 'Value' },
+  { key: 'facilities', label: 'Facilities' },
+  { key: 'food', label: 'Food' },
+];
+
 export function Profile() {
   const [routesOn, setRoutesOn] = useState(false);
+  const [cat, setCat] = useState('overall');
   const { data: reviews } = useReviews();
+  const filtered = reviews.filter((r) => r.category === cat).sort((a, b) => b.score - a.score);
 
   return (
     <div>
@@ -73,12 +83,21 @@ export function Profile() {
       </div>
 
       <div className="sect">
-        <h2>Ranked stays</h2>
-        <a href="/#/trips">See all</a>
+        <h2>Reviews</h2>
+      </div>
+      <div className="catchip">
+        {CATEGORIES.map((c) => (
+          <button key={c.key} className={cat === c.key ? 'won' : ''} onClick={() => setCat(c.key)}>
+            {c.label}
+          </button>
+        ))}
       </div>
       <div className="stack">
         <div className="rowlist">
-          {reviews.slice(0, 4).map((r) => (
+          {filtered.length === 0 && (
+            <div style={{ padding: '14px 16px', fontSize: 12.5, color: 'var(--ink3)' }}>No reviews yet in this category.</div>
+          )}
+          {filtered.map((r) => (
             <button className="row" key={r.hotelId}>
               <span style={{ flex: 1, minWidth: 0 }}>
                 <span className="t" style={{ display: 'block' }}>

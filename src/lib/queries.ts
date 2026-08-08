@@ -73,7 +73,7 @@ export async function fetchReviews(): Promise<Review[]> {
   const { data, error } = await supabase.from('reviews').select('*').order('score', { ascending: false });
   if (error) throw error;
   return (data ?? []).map((r) => ({
-    hotelId: r.hotel_id, hotelName: r.hotel_name, country: r.country, date: r.date, score: r.score,
+    hotelId: r.hotel_id, hotelName: r.hotel_name, country: r.country, date: r.date, category: r.category ?? 'overall', score: r.score,
   }));
 }
 

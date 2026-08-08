@@ -75,5 +75,6 @@ export interface Review {
   hotelName: string;
   country: string;
   date: string;
+  category: string;
   score: number; // 1–10, derived from the bucket-ranking algorithm
 }
