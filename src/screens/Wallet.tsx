@@ -132,7 +132,7 @@ export function Wallet() {
             <div
               key={it.key}
               className="deckcard"
-              style={{ marginTop: idx === 0 ? 0 : needsGap ? 10 : -56, zIndex: isOpen ? 50 : idx + 1 }}
+              style={{ marginTop: idx === 0 ? 0 : needsGap ? 10 : -14, zIndex: isOpen ? 50 : idx + 1 }}
             >
               <button
                 className="deckface"
