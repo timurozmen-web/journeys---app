@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { addHotel } from '../lib/queries';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { addHotel, updateHotel } from '../lib/queries';
+import type { Hotel } from '../types';
 import { useTrips } from '../lib/useLiveData';
 import { BackIcon } from '../components/Icons';
 
@@ -17,13 +18,19 @@ const labelStyle: React.CSSProperties = {
 
 export function LogHotel() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const editing = (location.state as { hotel?: Hotel; tripId?: string } | null)?.hotel;
+  const presetTripId = (location.state as { hotel?: Hotel; tripId?: string } | null)?.tripId;
   const { data: trips } = useTrips();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
-    name: '', country: '', brand: '', nights: '1', date: '',
-    status: 'Completed' as (typeof STATUSES)[number],
-    total: '', card: '', category: 'Premium' as (typeof CATEGORIES)[number], tripId: '',
+    name: editing?.name ?? '', country: editing?.country ?? '', brand: editing?.brand ?? '',
+    nights: String(editing?.nights ?? 1), date: editing?.date ?? '',
+    status: (editing?.status ?? 'Completed') as (typeof STATUSES)[number],
+    total: editing?.total != null ? String(editing.total) : '',
+    card: editing?.card ?? '', category: (editing?.category ?? 'Premium') as (typeof CATEGORIES)[number],
+    tripId: presetTripId ?? '',
   });
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -39,13 +46,18 @@ export function LogHotel() {
     setSaving(true);
     setError('');
     try {
-      await addHotel({
+      const payload = {
         name: form.name, country: form.country, brand: form.brand || 'Other',
         nights: parseInt(form.nights, 10) || 1, date: form.date, status: form.status,
         total: form.total ? parseFloat(form.total) : null,
         card: form.card || null, category: form.category,
         tripId: form.tripId || null,
-      });
+      };
+      if (editing) {
+        await updateHotel(editing.id, payload);
+      } else {
+        await addHotel(payload);
+      }
       navigate(form.tripId ? `/trips/${form.tripId}` : '/trips');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save.');
@@ -60,7 +72,7 @@ export function LogHotel() {
         <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0 }}>
           <BackIcon size={20} color="var(--ink)" />
         </button>
-        <div className="h1" style={{ fontSize: 21 }}>Log a stay</div>
+        <div className="h1" style={{ fontSize: 21 }}>{editing ? 'Edit stay' : 'Log a stay'}</div>
       </div>
 
       <form onSubmit={handleSubmit} style={{ padding: '0 20px', display: 'grid', gap: 14 }}>
@@ -127,7 +139,7 @@ export function LogHotel() {
           padding: '13px 0', fontSize: 15, fontWeight: 700, cursor: 'pointer', marginTop: 6,
           opacity: saving ? 0.6 : 1,
         }}>
-          {saving ? 'Saving…' : 'Save stay'}
+          {saving ? 'Saving…' : editing ? 'Save changes' : 'Save stay'}
         </button>
       </form>
       <div style={{ height: 30 }} />

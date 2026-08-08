@@ -106,6 +106,15 @@ export async function addHotel(input: NewHotelInput) {
   if (error) throw error;
 }
 
+export async function updateHotel(id: string, input: NewHotelInput) {
+  const { error } = await supabase.from('hotels').update({
+    name: input.name, country: input.country, brand: input.brand, tier: input.tier || null,
+    nights: input.nights, date: input.date, status: input.status, total: input.total,
+    card: input.card, category: input.category, trip_id: input.tripId,
+  }).eq('id', id);
+  if (error) throw error;
+}
+
 export interface NewFlightInput {
   date: string; from: string; to: string; airline: string; flightNo: string | null;
   cabin: 'Economy' | 'Premium Economy' | 'Business' | 'First';
@@ -118,5 +127,14 @@ export async function addFlight(input: NewFlightInput) {
     airline: input.airline, flight_no: input.flightNo, cabin: input.cabin,
     status: input.status, cost: input.cost, award: input.award, trip_id: input.tripId,
   });
+  if (error) throw error;
+}
+
+export async function updateFlight(id: string, input: NewFlightInput) {
+  const { error } = await supabase.from('flights').update({
+    date: input.date, from: input.from.toUpperCase(), to: input.to.toUpperCase(),
+    airline: input.airline, flight_no: input.flightNo, cabin: input.cabin,
+    status: input.status, cost: input.cost, award: input.award, trip_id: input.tripId,
+  }).eq('id', id);
   if (error) throw error;
 }

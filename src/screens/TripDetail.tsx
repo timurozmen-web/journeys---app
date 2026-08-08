@@ -126,18 +126,47 @@ export function TripDetail() {
             Real spend, nights and leg counts above — computed from the trip's own hotels and flights, not hardcoded.
           </p>
         )}
-        {seg === 'itinerary' &&
-          [...trip.hotels, ...trip.flights]
-            .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
-            .map((leg, i) => (
-              <div className="itin" key={i}>
-                <span className="dot" style={{ background: 'name' in leg ? '#0C7A42' : '#132247' }} />
-                <div className="line">
-                  <div className="t">{'name' in leg ? leg.name : `${leg.from} → ${leg.to}`}</div>
-                  <div className="s">{fmt(leg.date)}</div>
-                </div>
-              </div>
-            ))}
+        {seg === 'itinerary' && (
+          <>
+            {[...trip.hotels, ...trip.flights]
+              .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
+              .map((leg, i) => {
+                const isHotel = 'name' in leg;
+                return (
+                  <div
+                    className="itin"
+                    key={i}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() =>
+                      isHotel
+                        ? navigate('/log-hotel', { state: { hotel: leg, tripId: trip.id } })
+                        : navigate('/log-flight', { state: { flight: leg, tripId: trip.id } })
+                    }
+                  >
+                    <span className="dot" style={{ background: isHotel ? '#0C7A42' : '#132247' }} />
+                    <div className="line">
+                      <div className="t">{isHotel ? leg.name : `${leg.from} → ${leg.to}`}</div>
+                      <div className="s">{fmt(leg.date)}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            <div style={{ display: 'flex', gap: 10, marginTop: 14, paddingBottom: 10 }}>
+              <button
+                onClick={() => navigate('/log-hotel', { state: { tripId: trip.id } })}
+                style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--card2)', color: 'var(--ink)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+              >
+                + Add hotel
+              </button>
+              <button
+                onClick={() => navigate('/log-flight', { state: { tripId: trip.id } })}
+                style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--card2)', color: 'var(--ink)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+              >
+                + Add flight
+              </button>
+            </div>
+          </>
+        )}
         {seg === 'expenses' &&
           trip.hotels.map((h) =>
             h.total != null ? (

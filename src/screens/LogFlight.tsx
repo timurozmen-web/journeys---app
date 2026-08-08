@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { addFlight } from '../lib/queries';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { addFlight, updateFlight } from '../lib/queries';
+import type { Flight } from '../types';
 import { useTrips } from '../lib/useLiveData';
 import { BackIcon } from '../components/Icons';
 
@@ -17,14 +18,19 @@ const labelStyle: React.CSSProperties = {
 
 export function LogFlight() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const editing = (location.state as { flight?: Flight; tripId?: string } | null)?.flight;
+  const presetTripId = (location.state as { flight?: Flight; tripId?: string } | null)?.tripId;
   const { data: trips } = useTrips();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
-    date: '', from: '', to: '', airline: '', flightNo: '',
-    cabin: 'Economy' as (typeof CABINS)[number],
-    status: 'Completed' as (typeof STATUSES)[number],
-    cost: '', award: false, tripId: '',
+    date: editing?.date ?? '', from: editing?.from ?? '', to: editing?.to ?? '',
+    airline: editing?.airline ?? '', flightNo: editing?.flightNo ?? '',
+    cabin: (editing?.cabin ?? 'Economy') as (typeof CABINS)[number],
+    status: (editing?.status ?? 'Completed') as (typeof STATUSES)[number],
+    cost: editing?.cost != null ? String(editing.cost) : '',
+    award: editing?.award ?? false, tripId: presetTripId ?? '',
   });
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -40,12 +46,17 @@ export function LogFlight() {
     setSaving(true);
     setError('');
     try {
-      await addFlight({
+      const payload = {
         date: form.date, from: form.from, to: form.to, airline: form.airline,
         flightNo: form.flightNo || null, cabin: form.cabin, status: form.status,
         cost: form.cost ? parseFloat(form.cost) : null, award: form.award,
         tripId: form.tripId || null,
-      });
+      };
+      if (editing) {
+        await updateFlight(editing.id, payload);
+      } else {
+        await addFlight(payload);
+      }
       navigate(form.tripId ? `/trips/${form.tripId}` : '/trips');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save.');
@@ -60,7 +71,7 @@ export function LogFlight() {
         <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0 }}>
           <BackIcon size={20} color="var(--ink)" />
         </button>
-        <div className="h1" style={{ fontSize: 21 }}>Log a flight</div>
+        <div className="h1" style={{ fontSize: 21 }}>{editing ? 'Edit flight' : 'Log a flight'}</div>
       </div>
 
       <form onSubmit={handleSubmit} style={{ padding: '0 20px', display: 'grid', gap: 14 }}>
@@ -129,7 +140,7 @@ export function LogFlight() {
           padding: '13px 0', fontSize: 15, fontWeight: 700, cursor: 'pointer', marginTop: 6,
           opacity: saving ? 0.6 : 1,
         }}>
-          {saving ? 'Saving…' : 'Save flight'}
+          {saving ? 'Saving…' : editing ? 'Save changes' : 'Save flight'}
         </button>
       </form>
       <div style={{ height: 30 }} />
