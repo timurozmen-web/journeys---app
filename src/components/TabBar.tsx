@@ -33,7 +33,7 @@ export function TabBar() {
             }}
             onClick={() => {
               setOpen(false);
-              navigate(`/action/${r.key}`);
+              navigate(r.key === 'capture' ? '/capture' : `/action/${r.key}`);
             }}
           >
             <span className="rbtn" style={{ color: r.color }}>

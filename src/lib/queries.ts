@@ -90,3 +90,33 @@ export async function uploadTripPhoto(tripId: string, file: File): Promise<strin
 
   return url;
 }
+
+export interface NewHotelInput {
+  name: string; country: string; brand: string; tier?: string;
+  nights: number; date: string; status: 'Completed' | 'Booked' | 'needs-confirm';
+  total: number | null; card: string | null; category: 'Luxury' | 'Premium' | 'Midscale' | 'Budget';
+  tripId: string | null;
+}
+export async function addHotel(input: NewHotelInput) {
+  const { error } = await supabase.from('hotels').insert({
+    name: input.name, country: input.country, brand: input.brand, tier: input.tier || null,
+    nights: input.nights, date: input.date, status: input.status, total: input.total,
+    card: input.card, category: input.category, trip_id: input.tripId,
+  });
+  if (error) throw error;
+}
+
+export interface NewFlightInput {
+  date: string; from: string; to: string; airline: string; flightNo: string | null;
+  cabin: 'Economy' | 'Premium Economy' | 'Business' | 'First';
+  status: 'Completed' | 'Booked'; cost: number | null; award: boolean;
+  tripId: string | null;
+}
+export async function addFlight(input: NewFlightInput) {
+  const { error } = await supabase.from('flights').insert({
+    date: input.date, from: input.from.toUpperCase(), to: input.to.toUpperCase(),
+    airline: input.airline, flight_no: input.flightNo, cabin: input.cabin,
+    status: input.status, cost: input.cost, award: input.award, trip_id: input.tripId,
+  });
+  if (error) throw error;
+}

@@ -2,7 +2,7 @@
 // run yet (or a table is empty) — so the app keeps working today, and
 // switches over to real data the moment `supabase/schema.sql` is applied
 // and rows exist.
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import * as mock from '../data/mock';
 import { fetchTrips, fetchLoyaltyProgrammes, fetchPaymentCards, fetchReviews } from './queries';
 
@@ -10,7 +10,7 @@ function useLive<T>(fetcher: () => Promise<T[]>, fallback: T[]) {
   const [data, setData] = useState<T[]>(fallback);
   const [isLive, setIsLive] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     let cancelled = false;
     fetcher()
       .then((rows) => {
@@ -26,9 +26,11 @@ function useLive<T>(fetcher: () => Promise<T[]>, fallback: T[]) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [fetcher]);
 
-  return { data, isLive };
+  useEffect(() => load(), [load]);
+
+  return { data, isLive, refetch: load };
 }
 
 export const useTrips = () => useLive(fetchTrips, mock.trips);

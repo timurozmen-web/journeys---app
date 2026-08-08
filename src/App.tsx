@@ -7,6 +7,9 @@ import { Wallet } from './screens/Wallet';
 import { Profile } from './screens/Profile';
 import { TripDetail } from './screens/TripDetail';
 import { Action } from './screens/Action';
+import { Capture } from './screens/Capture';
+import { LogHotel } from './screens/LogHotel';
+import { LogFlight } from './screens/LogFlight';
 
 export default function App() {
   return (
@@ -19,6 +22,9 @@ export default function App() {
           <Route path="/trips/:id" element={<TripDetail />} />
           <Route path="/wallet" element={<Wallet />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/capture" element={<Capture />} />
+          <Route path="/log-hotel" element={<LogHotel />} />
+          <Route path="/log-flight" element={<LogFlight />} />
           <Route path="/action/:kind" element={<Action />} />
         </Routes>
       </div>
