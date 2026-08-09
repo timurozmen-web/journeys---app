@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTrips } from '../lib/useLiveData';
 import { uploadTripPhoto } from '../lib/queries';
 import { BackIcon } from '../components/Icons';
+import { DestinationPhoto } from '../components/DestinationPhoto';
 
 type Seg = 'overview' | 'itinerary' | 'expenses' | 'notes';
 
@@ -56,12 +57,13 @@ export function TripDetail() {
     <div>
       <div
         className="tdhero"
-        style={
-          heroImage
-            ? { backgroundImage: `url(${heroImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-            : { background: 'linear-gradient(135deg,#132247,#3A4C82)' }
-        }
+        style={heroImage ? { backgroundImage: `url(${heroImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
       >
+        {!heroImage && (
+          <div style={{ position: 'absolute', inset: 0 }}>
+            <DestinationPhoto query={trip.hotels[0]?.country || trip.title.split(/[·+]/)[0].trim()} seed={trip.id} height={220} />
+          </div>
+        )}
         <div className="grad" />
         <button className="tdback" onClick={() => navigate('/trips')}>
           <BackIcon size={18} color="#fff" />

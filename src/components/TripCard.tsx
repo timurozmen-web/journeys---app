@@ -1,11 +1,14 @@
 import { useNavigate } from 'react-router-dom';
-import { HeroScene } from './HeroScene';
+import { DestinationPhoto } from './DestinationPhoto';
 import { formatDateRange } from '../lib/format';
 import { BedIcon, HotelIcon, PlaneIcon } from './Icons';
 import type { Trip } from '../types';
 
 function nightsOf(t: Trip) {
   return t.hotels.reduce((s, h) => s + h.nights, 0);
+}
+function destinationQuery(t: Trip) {
+  return t.hotels[0]?.country || t.title.split(/[·+]/)[0].trim();
 }
 
 const SECTION_PILL: Record<Trip['section'], { label: string; cls: string }> = {
@@ -25,7 +28,7 @@ export function TripCard({ trip }: { trip: Trip }) {
         {trip.heroImageUrl ? (
           <img src={trip.heroImageUrl} alt={trip.title} style={{ width: '100%', height: 130, objectFit: 'cover', display: 'block' }} />
         ) : (
-          <HeroScene seed={trip.id} height={130} />
+          <DestinationPhoto query={destinationQuery(trip)} seed={trip.id} height={130} />
         )}
         <div
           style={{
