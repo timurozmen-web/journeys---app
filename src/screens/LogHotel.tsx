@@ -31,6 +31,8 @@ export function LogHotel() {
     total: editing?.total != null ? String(editing.total) : '',
     card: editing?.card ?? '', category: (editing?.category ?? 'Premium') as (typeof CATEGORIES)[number],
     tripId: presetTripId ?? '',
+    benefitValue: editing?.benefitValue != null ? String(editing.benefitValue) : '',
+    benefitNote: editing?.benefitNote ?? '',
   });
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -52,6 +54,8 @@ export function LogHotel() {
         total: form.total ? parseFloat(form.total) : null,
         card: form.card || null, category: form.category,
         tripId: form.tripId || null,
+        benefitValue: form.benefitValue ? parseFloat(form.benefitValue) : null,
+        benefitNote: form.benefitNote || null,
       };
       if (editing) {
         await updateHotel(editing.id, payload);
@@ -122,6 +126,16 @@ export function LogHotel() {
           <div>
             <label style={labelStyle}>Card used</label>
             <input style={inputStyle} value={form.card} onChange={(e) => set('card', e.target.value)} placeholder="Optional" />
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
+          <div>
+            <label style={labelStyle}>Benefit value (£)</label>
+            <input style={inputStyle} type="number" step="0.01" value={form.benefitValue} onChange={(e) => set('benefitValue', e.target.value)} placeholder="e.g. upgrade, breakfast" />
+          </div>
+          <div>
+            <label style={labelStyle}>What was it</label>
+            <input style={inputStyle} value={form.benefitNote} onChange={(e) => set('benefitNote', e.target.value)} placeholder="Suite upgrade, breakfast…" />
           </div>
         </div>
         <div>

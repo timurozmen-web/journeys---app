@@ -1,5 +1,6 @@
 import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes } from '../lib/useLiveData';
 import { BedIcon, HotelIcon, PlaneIcon } from '../components/Icons';
+import { TripCard } from '../components/TripCard';
 
 const TODAY = '2026-07-30';
 const THIS_YEAR = 2026;
@@ -10,10 +11,6 @@ function daysBetween(a: string, b: string) {
 }
 function yearOf(date: string | null) {
   return date ? Number(date.slice(0, 4)) : null;
-}
-function fmt(iso: string) {
-  const [y, m, d] = iso.split('-');
-  return `${d}/${m}/${y}`;
 }
 function delta(n: number) {
   return n === 0 ? '±0 vs last year' : n > 0 ? `+${n} vs last year` : `${n} vs last year`;
@@ -49,10 +46,12 @@ export function Home() {
   // rather than estimated.
   let hotelSavings = 0;
   let hotelSpend = 0;
+  let benefitsValue = 0;
   for (const h of completedHotels) {
     if (yearOf(h.date) !== THIS_YEAR) continue;
     if (h.total) hotelSpend += h.total;
     if (h.avgRate != null && h.nightlyRate != null) hotelSavings += (h.avgRate - h.nightlyRate) * h.nights;
+    if (h.benefitValue) benefitsValue += h.benefitValue;
   }
 
   const marriott = loyaltyProgrammes.find((p) => p.name === 'Marriott Bonvoy');
@@ -131,22 +130,30 @@ export function Home() {
         </div>
       )}
 
-      {hotelSavings > 0 && (
+      {(hotelSavings > 0 || benefitsValue > 0) && (
         <>
           <div className="sect">
             <h2>This year you've saved</h2>
           </div>
           <div className="stack">
             <div className="chartwrap">
-              <div className="big">£{Math.round(hotelSavings).toLocaleString()}</div>
-              <div className="lab">vs standard hotel rates</div>
+              <div className="big">£{Math.round(hotelSavings + benefitsValue).toLocaleString()}</div>
+              <div className="lab">vs standard rates, plus upgrades & benefits</div>
               <div style={{ marginTop: 12, display: 'grid', gap: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}>
+                  <span style={{ color: 'var(--ink2)' }}>Rate savings</span>
+                  <span style={{ fontWeight: 700 }}>£{Math.round(hotelSavings).toLocaleString()}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}>
+                  <span style={{ color: 'var(--ink2)' }}>Upgrades & benefits</span>
+                  <span style={{ fontWeight: 700 }}>£{Math.round(benefitsValue).toLocaleString()}</span>
+                </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}>
                   <span style={{ color: 'var(--ink2)' }}>Hotel spend this year</span>
                   <span style={{ fontWeight: 700 }}>£{Math.round(hotelSpend).toLocaleString()}</span>
                 </div>
                 <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 4 }}>
-                  Flight and upgrade savings aren't tracked yet — this is hotel rates only.
+                  Flight savings aren't tracked yet — this is hotels only. Log benefits like free breakfast or a room upgrade when adding or editing a stay.
                 </div>
               </div>
             </div>
@@ -160,18 +167,9 @@ export function Home() {
             <h2>Under way</h2>
           </div>
           <div className="stack">
-            <div className="trip">
-              <div className="body">
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="t" style={{ fontSize: 15, fontWeight: 700 }}>
-                    {currentTrip.title}
-                  </div>
-                  <div className="s">
-                    Day {daysBetween(currentTrip.start, TODAY) + 1} of {daysBetween(currentTrip.start, currentTrip.end)}
-                  </div>
-                </div>
-                <span className="pill live">Under way</span>
-              </div>
+            <TripCard trip={currentTrip} />
+            <div style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600, padding: '0 4px' }}>
+              Day {daysBetween(currentTrip.start, TODAY) + 1} of {daysBetween(currentTrip.start, currentTrip.end)}
             </div>
           </div>
         </>
@@ -183,18 +181,9 @@ export function Home() {
             <h2>Upcoming trip</h2>
           </div>
           <div className="stack">
-            <div className="trip">
-              <div className="body">
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="t" style={{ fontSize: 15, fontWeight: 700 }}>
-                    {upcomingTrip.title}
-                  </div>
-                  <div className="s">
-                    {fmt(upcomingTrip.start)} – {fmt(upcomingTrip.end)} · {upcomingTrip.hotels.length} hotels · {upcomingTrip.flights.length} flights
-                  </div>
-                </div>
-                <span className="pill brand">in {daysBetween(TODAY, upcomingTrip.start)}d</span>
-              </div>
+            <TripCard trip={upcomingTrip} />
+            <div style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600, padding: '0 4px' }}>
+              In {daysBetween(TODAY, upcomingTrip.start)} days
             </div>
           </div>
         </>

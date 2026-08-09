@@ -19,6 +19,8 @@ export interface Hotel {
   category: 'Luxury' | 'Premium' | 'Midscale' | 'Budget';
   lat: number;
   lng: number;
+  benefitValue: number | null; // £ value of upgrades/perks received, e.g. free breakfast, suite upgrade
+  benefitNote: string | null; // what the benefit actually was
 }
 
 export interface Flight {
