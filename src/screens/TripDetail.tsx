@@ -4,6 +4,7 @@ import { useTrips } from '../lib/useLiveData';
 import { uploadTripPhoto } from '../lib/queries';
 import { BackIcon } from '../components/Icons';
 import { DestinationPhoto } from '../components/DestinationPhoto';
+import { destinationQuery } from '../components/TripCard';
 
 type Seg = 'overview' | 'itinerary' | 'expenses' | 'notes';
 
@@ -61,7 +62,7 @@ export function TripDetail() {
       >
         {!heroImage && (
           <div style={{ position: 'absolute', inset: 0 }}>
-            <DestinationPhoto query={trip.hotels[0]?.country || trip.title.split(/[·+]/)[0].trim()} seed={trip.id} height={220} />
+            <DestinationPhoto query={destinationQuery(trip)} seed={trip.id} height={220} />
           </div>
         )}
         <div className="grad" />

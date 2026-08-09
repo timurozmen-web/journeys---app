@@ -5,7 +5,7 @@ export function Trips() {
   const { data: trips, isLive } = useTrips();
   const current = trips.filter((t) => t.section === 'current');
   const upcoming = trips.filter((t) => t.section === 'upcoming');
-  const past = trips.filter((t) => t.section === 'past');
+  const past = trips.filter((t) => t.section === 'past').sort((a, b) => b.start.localeCompare(a.start));
 
   return (
     <div>

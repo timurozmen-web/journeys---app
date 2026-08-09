@@ -60,6 +60,10 @@
 .pill.brand{background:rgba(19,34,71,.09);color:var(--brand)}
 .pill.live{background:rgba(52,211,153,.15);color:var(--green)}
 .pill.grey{background:var(--card2);color:var(--ink3);border:1px solid var(--line)}
+.pill.onphoto{background:rgba(255,255,255,.95);box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.pill.onphoto.live{color:#0C7A42}
+.pill.onphoto.brand{color:var(--brand)}
+.pill.onphoto.grey{color:var(--ink2)}
 
 .rowlist{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden}
 .row{display:flex;align-items:center;gap:var(--s3);padding:var(--s3) var(--s4);width:100%;

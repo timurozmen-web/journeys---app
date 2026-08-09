@@ -16,6 +16,13 @@ function delta(n: number) {
   return n === 0 ? '±0 vs last year' : n > 0 ? `+${n} vs last year` : `${n} vs last year`;
 }
 
+function greeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
 export function Home() {
   const { data: trips, isLive } = useTrips();
   const { data: hotels } = useAllHotels();
@@ -59,7 +66,7 @@ export function Home() {
   return (
     <div>
       <div className="head">
-        <div className="h1">Good morning, Timur 👋</div>
+        <div className="h1">{greeting()}, Timur 👋</div>
         <div className="h-sub">
           Here's your travel snapshot {!isLive && <span style={{ opacity: 0.6 }}>· sample data</span>}
         </div>

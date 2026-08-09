@@ -32,7 +32,8 @@ function writeCache(query: string, photo: UnsplashPhoto | null) {
   }
 }
 
-export async function getDestinationPhoto(query: string): Promise<UnsplashPhoto | null> {
+export async function getDestinationPhoto(rawQuery: string): Promise<UnsplashPhoto | null> {
+  const query = rawQuery.trim().toLowerCase();
   if (!KEY) return null; // no key configured -- caller falls back to the generated scene
 
   const cached = readCache(query);

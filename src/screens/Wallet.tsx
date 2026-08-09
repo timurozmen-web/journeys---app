@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLoyaltyProgrammes, usePaymentCards, useAllHotels, useAllFlights } from '../lib/useLiveData';
 import { computeCardResults } from '../lib/cardMath';
+import { BrandMark } from '../components/BrandMark';
 
 type Seg = 'loyalty' | 'payment' | 'status';
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -23,14 +24,14 @@ export function Wallet() {
   const totalValue = loyaltyProgrammes.reduce((s, p) => s + (p.points * p.ptValue) / 100, 0);
   const statusItems = loyaltyProgrammes.filter((p) => p.nextTier && p.nightsNeeded != null);
 
-  let items: { key: string; color: string; name: string; sub: string; big: string; biglab: string; val: string; vallab: string; pct: number | null; detail: React.ReactNode }[] = [];
+  let items: { key: string; color: string; name: string; sub: string; big: string; biglab: string; val: string; vallab: string; pct: number | null; detail: React.ReactNode; shape?: string; font?: string; accent?: string }[] = [];
 
   if (seg === 'loyalty') {
     items = loyaltyProgrammes.map((p) => ({
       key: p.name, color: p.color, name: p.name, sub: p.tier ?? '—',
-      big: p.points.toLocaleString(), biglab: 'points',
-      val: `£${Math.round((p.points * p.ptValue) / 100).toLocaleString()}`, vallab: 'est. value',
-      pct: p.nextTier && p.nights != null && p.nightsNeeded != null ? (p.nights / (p.nights + p.nightsNeeded)) * 100 : null,
+      big: `${p.points.toLocaleString()} pts`, biglab: '',
+      val: `£${Math.round((p.points * p.ptValue) / 100).toLocaleString()}`, vallab: '',
+      pct: null, shape: p.shape, font: p.font, accent: p.accent,
       detail: (
         <div className="dd-row">
           <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Rate</span>
@@ -39,13 +40,16 @@ export function Wallet() {
       ),
     }));
   } else if (seg === 'payment') {
-    items = cardResults.map((r) => ({
-      key: r.card.id, color: '#132247', name: r.card.id,
-      sub: r.cardRow?.openDate ? `Opened ${r.cardRow.openDate}` : 'Open date not set',
-      big: money(r.net), biglab: 'net this card-year',
-      val: r.card.feeLabel, vallab: 'annual fee',
-      pct: r.nextMilestone ? Math.min(100, (r.autoSpend / (r.nextMilestone.m.spendRequired ?? 1)) * 100) : null,
-      detail: (
+    items = cardResults.map((r) => {
+      const prog = loyaltyProgrammes.find((p) => p.name === r.card.programmeBrand);
+      return {
+        key: r.card.id, color: prog?.color ?? '#132247', name: r.card.id,
+        sub: r.cardRow?.openDate ? `Opened ${r.cardRow.openDate}` : 'Open date not set',
+        big: money(r.net), biglab: 'net this card-year',
+        val: r.card.feeLabel, vallab: 'annual fee',
+        pct: r.nextMilestone ? Math.min(100, (r.autoSpend / (r.nextMilestone.m.spendRequired ?? 1)) * 100) : null,
+        shape: prog?.shape, font: prog?.font, accent: prog?.accent,
+        detail: (
         <>
           <div className="dd-row">
             <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Spend this card-year</span>
@@ -80,14 +84,16 @@ export function Wallet() {
             </div>
           )}
         </>
-      ),
-    }));
+        ),
+      };
+    });
   } else {
     items = statusItems.map((p) => ({
       key: p.name, color: p.color, name: p.name, sub: p.tier ?? '',
       big: `${p.nights}`, biglab: `of ${(p.nights ?? 0) + (p.nightsNeeded ?? 0)} nights`,
       val: `${p.nightsNeeded}`, vallab: `to ${p.nextTier}`,
       pct: p.nights != null && p.nightsNeeded != null ? (p.nights / (p.nights + p.nightsNeeded)) * 100 : null,
+      shape: p.shape, font: p.font, accent: p.accent,
       detail: (
         <div className="dd-row">
           <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Status</span>
@@ -142,10 +148,14 @@ export function Wallet() {
                 <div className="top">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span className="deckmark">
-                      <span style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{it.name.slice(0, 2).toUpperCase()}</span>
+                      {it.shape ? (
+                        <BrandMark shape={it.shape} color={it.accent ?? '#fff'} size={18} />
+                      ) : (
+                        <span style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{it.name.slice(0, 2).toUpperCase()}</span>
+                      )}
                     </span>
                     <div>
-                      <div className="deckname">{it.name}</div>
+                      <div className="deckname" style={it.font ? { fontFamily: it.font } : undefined}>{it.name}</div>
                       <div className="decksub">{it.sub}</div>
                     </div>
                   </div>

@@ -7,8 +7,8 @@ import type { Trip } from '../types';
 function nightsOf(t: Trip) {
   return t.hotels.reduce((s, h) => s + h.nights, 0);
 }
-function destinationQuery(t: Trip) {
-  return t.hotels[0]?.country || t.title.split(/[·+]/)[0].trim();
+export function destinationQuery(t: Trip) {
+  return t.hotels[0]?.country?.trim() || t.title.split(/[·+]/)[0].trim();
 }
 
 const SECTION_PILL: Record<Trip['section'], { label: string; cls: string }> = {
@@ -44,7 +44,7 @@ export function TripCard({ trip }: { trip: Trip }) {
             {formatDateRange(trip.start, trip.end)}
           </div>
         </div>
-        <span className={`pill ${pill.cls}`} style={{ position: 'absolute', top: 12, right: 12 }}>
+        <span className={`pill onphoto ${pill.cls}`} style={{ position: 'absolute', top: 12, right: 12 }}>
           {pill.label}
         </span>
       </div>
