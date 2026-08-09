@@ -44,4 +44,13 @@ export const CaptureIcon = wrap(
 export const DiscoverIcon = wrap(
   '<path d="M12 3.5 13.9 9l5.6.3-4.4 3.5 1.5 5.4L12 15.2 7.4 18.2l1.5-5.4L4.5 9.3 10.1 9z"/>'
 );
+export const BedIcon = wrap(
+  '<path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18h18M7 10V7h10v3"/>'
+);
+export const HotelIcon = wrap(
+  '<path d="M3 21h18M5 21V8l7-5 7 5v13M10 21v-5h4v5"/>'
+);
+export const PlaneIcon = wrap(
+  '<path d="M2 12h6l4-7 2 1-2 6h5l2-3h2l-1.5 4L21 16h-2l-2-3h-5l2 6-2 1-4-7H2z"/>'
+);
 export const BackIcon = wrap('<path d="M15 5 8 12l7 7"/>');
