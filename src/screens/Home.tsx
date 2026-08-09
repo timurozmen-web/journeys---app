@@ -30,9 +30,12 @@ export function Home() {
     .filter((t) => t.section === 'upcoming')
     .sort((a, b) => a.start.localeCompare(b.start))[0];
 
-  // Real year-over-year deltas, completed stays/flights only.
-  const completedHotels = hotels.filter((h) => h.status === 'Completed');
-  const completedFlights = flights.filter((f) => f.status === 'Completed');
+  // A stay only counts as done if the stored status says so AND the date
+  // has actually passed — don't trust status alone, since a future-dated
+  // row could be mislabelled.
+  const isActuallyDone = (date: string, status: string) => status === 'Completed' && date <= TODAY;
+  const completedHotels = hotels.filter((h) => isActuallyDone(h.date, h.status));
+  const completedFlights = flights.filter((f) => f.date && isActuallyDone(f.date, f.status));
   const nightsThisYear = completedHotels.filter((h) => yearOf(h.date) === THIS_YEAR).reduce((s, h) => s + h.nights, 0);
   const nightsLastYear = completedHotels.filter((h) => yearOf(h.date) === LAST_YEAR).reduce((s, h) => s + h.nights, 0);
   const staysThisYear = completedHotels.filter((h) => yearOf(h.date) === THIS_YEAR).length;
@@ -69,7 +72,7 @@ export function Home() {
             <BedIcon size={16} color="var(--brand)" />
           </div>
           <div className="lab">Nights</div>
-          <div className="val">{nightsThisYear + nightsLastYear === 0 ? '—' : completedHotels.reduce((s, h) => s + h.nights, 0)}</div>
+          <div className="val">{nightsThisYear}</div>
           <div className="delta" style={{ color: nightsThisYear - nightsLastYear >= 0 ? 'var(--green)' : 'var(--red)' }}>
             {delta(nightsThisYear - nightsLastYear)}
           </div>
@@ -79,7 +82,7 @@ export function Home() {
             <HotelIcon size={16} color="var(--green)" />
           </div>
           <div className="lab">Stays</div>
-          <div className="val">{completedHotels.length}</div>
+          <div className="val">{staysThisYear}</div>
           <div className="delta" style={{ color: staysThisYear - staysLastYear >= 0 ? 'var(--green)' : 'var(--red)' }}>
             {delta(staysThisYear - staysLastYear)}
           </div>
@@ -89,7 +92,7 @@ export function Home() {
             <PlaneIcon size={16} color="var(--amber)" />
           </div>
           <div className="lab">Flights</div>
-          <div className="val">{completedFlights.length}</div>
+          <div className="val">{flightsThisYear}</div>
           <div className="delta" style={{ color: flightsThisYear - flightsLastYear >= 0 ? 'var(--green)' : 'var(--red)' }}>
             {delta(flightsThisYear - flightsLastYear)}
           </div>

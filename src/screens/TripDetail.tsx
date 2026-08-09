@@ -151,7 +151,7 @@ export function TripDetail() {
                   </div>
                 );
               })}
-            <div style={{ display: 'flex', gap: 10, marginTop: 14, marginBottom: 100 }}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
               <button
                 onClick={() => navigate('/log-hotel', { state: { tripId: trip.id } })}
                 style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--card2)', color: 'var(--ink)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}

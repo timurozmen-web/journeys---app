@@ -25,10 +25,16 @@ html {
   background-color: #F4F6FA !important;
   color-scheme: light only;
 }
-html, body, #root {
+html {
   background-color: #F4F6FA !important;
   height: 100%;
   min-height: 100%;
+}
+body {
+  background-color: #F4F6FA !important;
+}
+#root {
+  background-color: #F4F6FA !important;
 }
 * { box-sizing: border-box; }
 body {
@@ -38,4 +44,5 @@ body {
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
   font-variant-numeric: tabular-nums;
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
 }
