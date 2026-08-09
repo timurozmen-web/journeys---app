@@ -155,7 +155,7 @@ export function Wallet() {
                       )}
                     </span>
                     <div>
-                      <div className="deckname" style={it.font ? { fontFamily: it.font } : undefined}>{it.name}</div>
+                      <div className="deckname">{it.name}</div>
                       <div className="decksub">{it.sub}</div>
                     </div>
                   </div>
