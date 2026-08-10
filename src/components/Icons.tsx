@@ -54,3 +54,7 @@ export const PlaneIcon = wrap(
   '<path d="M2 12h6l4-7 2 1-2 6h5l2-3h2l-1.5 4L21 16h-2l-2-3h-5l2 6-2 1-4-7H2z"/>'
 );
 export const BackIcon = wrap('<path d="M15 5 8 12l7 7"/>');
+export const CameraIcon = wrap(
+  '<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>'
+);
+export const ChevronDownIcon = wrap('<path d="m6 9 6 6 6-6"/>');

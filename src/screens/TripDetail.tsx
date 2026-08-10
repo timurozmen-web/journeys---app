@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTrips, useLoyaltyProgrammes } from '../lib/useLiveData';
 import { uploadTripPhoto } from '../lib/queries';
-import { BackIcon } from '../components/Icons';
+import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, PlaneIcon } from '../components/Icons';
 import { DestinationPhoto } from '../components/DestinationPhoto';
 import { destinationQuery } from '../components/TripCard';
 import { formatDateRange } from '../lib/format';
@@ -27,6 +27,8 @@ export function TripDetail() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
+
+  const [expandedDest, setExpandedDest] = useState<number | null>(null);
 
   if (!trip) return <div className="head">Trip not found</div>;
 
@@ -81,7 +83,7 @@ export function TripDetail() {
           onClick={() => fileInput.current?.click()}
           disabled={uploading}
         >
-          {uploading ? '…' : '📷'}
+          {uploading ? '…' : <CameraIcon size={18} color="#fff" />}
         </button>
         <input ref={fileInput} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
         <div className="tdtitle">
@@ -154,7 +156,15 @@ export function TripDetail() {
                         : navigate('/log-flight', { state: { flight: leg, tripId: trip.id } })
                     }
                   >
-                    <span className="dot" style={{ background: isHotel ? '#0C7A42' : '#132247' }} />
+                    <span
+                      style={{
+                        width: 26, height: 26, borderRadius: 8, flexShrink: 0,
+                        background: isHotel ? 'rgba(12,122,66,.1)' : 'rgba(19,34,71,.08)',
+                        display: 'grid', placeItems: 'center',
+                      }}
+                    >
+                      {isHotel ? <BedIcon size={14} color="#0C7A42" /> : <PlaneIcon size={14} color="var(--brand)" />}
+                    </span>
                     <div className="line">
                       <div className="t">{isHotel ? leg.name : `${leg.from} → ${leg.to}`}</div>
                       <div className="s">{fmt(leg.date)}</div>
@@ -196,19 +206,56 @@ export function TripDetail() {
             <h2>Destinations</h2>
           </div>
           <div style={{ display: 'grid', gap: 10, padding: '0 20px 20px' }}>
-            {destinations.map((d, i) => (
-              <div key={i} style={{ display: 'flex', gap: 12, borderRadius: 14, overflow: 'hidden', background: 'var(--card)', border: '1px solid var(--line)' }}>
-                <div style={{ width: 90, flexShrink: 0 }}>
-                  <DestinationPhoto query={d.place} seed={`${trip.id}-${d.place}`} height={90} />
-                </div>
-                <div style={{ padding: '10px 12px 10px 0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{d.place}</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink3)', marginTop: 3 }}>
-                    {formatDateRange(d.start, d.end)} · {d.nights} nights
+            {destinations.map((d, i) => {
+              const isOpen = expandedDest === i;
+              const destTotal = d.hotels.reduce((s, h) => s + (h.total ?? 0), 0);
+              return (
+                <div key={i} style={{ borderRadius: 14, overflow: 'hidden', background: 'var(--card)', border: '1px solid var(--line)' }}>
+                  <div
+                    style={{ display: 'flex', gap: 12, cursor: 'pointer' }}
+                    onClick={() => setExpandedDest(isOpen ? null : i)}
+                  >
+                    <div style={{ width: 90, flexShrink: 0 }}>
+                      <DestinationPhoto query={d.place} seed={`${trip.id}-${d.place}`} height={90} />
+                    </div>
+                    <div style={{ padding: '10px 12px 10px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1, minWidth: 0 }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700 }}>{d.place}</div>
+                        <div style={{ fontSize: 11.5, color: 'var(--ink3)', marginTop: 3 }}>
+                          {formatDateRange(d.start, d.end)} · {d.nights} nights
+                        </div>
+                      </div>
+                      <ChevronDownIcon size={16} color="var(--ink3)" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', flexShrink: 0 }} />
+                    </div>
                   </div>
+                  {isOpen && (
+                    <div style={{ padding: '4px 14px 14px', borderTop: '1px solid var(--line)' }}>
+                      {d.hotels.map((h) => (
+                        <div key={h.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '9px 0' }}>
+                          <span style={{ width: 24, height: 24, borderRadius: 7, background: 'rgba(12,122,66,.1)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                            <BedIcon size={13} color="#0C7A42" />
+                          </span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12.5, fontWeight: 700 }}>{h.name}</div>
+                            <div style={{ fontSize: 10.5, color: 'var(--ink3)' }}>
+                              {fmt(h.date)} · {h.nights} night{h.nights === 1 ? '' : 's'}
+                            </div>
+                          </div>
+                          <div style={{ fontSize: 12.5, fontWeight: 700, flexShrink: 0 }}>{h.total != null ? `£${h.total}` : '—'}</div>
+                        </div>
+                      ))}
+                      {d.hotels.length > 1 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, marginTop: 4, borderTop: '1px solid var(--line)' }}>
+                          <span style={{ fontSize: 11.5, color: 'var(--ink3)', fontWeight: 600 }}>Total</span>
+                          <span style={{ fontSize: 12.5, fontWeight: 800 }}>£{destTotal}</span>
+                        </div>
+                      )}
+                      <div style={{ fontSize: 10, color: 'var(--ink3)', marginTop: 8 }}>Other costs (transfers, activities) aren't tracked yet.</div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
