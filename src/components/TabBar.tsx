@@ -14,23 +14,22 @@ export function TabBar() {
 
   return (
     <>
-      {open && <div className="scrim" onClick={() => setOpen(false)} />}
+      <div className={`scrim ${open ? 'on' : ''}`} onClick={() => setOpen(false)} />
       <div className="radial" aria-hidden={!open}>
-        {RADIAL.map((r, i) => (
+        <svg className="rtrack" viewBox="0 0 200 120" fill="none">
+          <path d="M13.4,70 A100,100 0 0,1 100,20 A100,100 0 0,1 186.6,70" stroke="var(--line)" strokeWidth="1.5" strokeDasharray="1 7" strokeLinecap="round" />
+          {[
+            [13.4, 70],
+            [100, 20],
+            [186.6, 70],
+          ].map(([cx, cy], i) => (
+            <circle key={i} cx={cx} cy={cy} r="2.5" fill="var(--line)" />
+          ))}
+        </svg>
+        {RADIAL.map((r) => (
           <button
             key={r.key}
             className="ract"
-            style={{
-              opacity: open ? 1 : 0,
-              pointerEvents: open ? 'auto' : 'none',
-              transform: open
-                ? [
-                    'translate(-98px,-46px) scale(1)',
-                    'translate(0,-104px) scale(1)',
-                    'translate(98px,-46px) scale(1)',
-                  ][i]
-                : undefined,
-            }}
             onClick={() => {
               setOpen(false);
               navigate(`/action/${r.key}`);
