@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useLoyaltyProgrammes, usePaymentCards, useAllHotels, useAllFlights } from '../lib/useLiveData';
 import { computeCardResults } from '../lib/cardMath';
-import { computeBaseProgramPoints } from '../lib/loyaltyPoints';
 import { BrandMark } from '../components/BrandMark';
 
 type Seg = 'loyalty' | 'payment' | 'status';
@@ -23,10 +22,6 @@ export function Wallet() {
   // Card results only need ptValue for the value-lookup, not the points
   // balance itself, so this can run against the raw (pre-override) data.
   const cardResults = computeCardResults(hotels, flights, paymentCards, rawLoyaltyProgrammes, TODAY);
-  const cardIssuedPointsByBrand = new Map<string, number>();
-  for (const r of cardResults) {
-    cardIssuedPointsByBrand.set(r.card.programmeBrand, (cardIssuedPointsByBrand.get(r.card.programmeBrand) ?? 0) + r.autoPts);
-  }
 
   // One Key Cash isn't a fixed balance -- it's 6% of what's actually been
   // booked through Expedia at Platinum tier, so it's computed live from
@@ -39,14 +34,14 @@ export function Wallet() {
   // program points (rate × elite tier bonus, computed from real spend) +
   // whatever the card-issued side already earned. These are two genuinely
   // separate earning streams, not alternatives to each other.
-  const HOTEL_BRANDS_WITH_LIVE_CALC = new Set(['Marriott Bonvoy', 'Hilton Honors', 'IHG One Rewards', 'Accor ALL']);
-  const loyaltyProgrammes = rawLoyaltyProgrammes.map((p) => {
-    if (p.name === 'Expedia One Key Cash') return { ...p, points: Math.round(oneKeyCash), ptValue: 100 };
-    if (!HOTEL_BRANDS_WITH_LIVE_CALC.has(p.name)) return p; // no comprehensive live model for this one yet (e.g. Virgin's flight-mile earning) -- leave the stored balance alone
-    const basePts = computeBaseProgramPoints(hotels, p.name);
-    const cardPts = cardIssuedPointsByBrand.get(p.name) ?? 0;
-    return { ...p, points: basePts + cardPts };
-  });
+  // Marriott/Hilton/IHG/Accor balances were already manually tracked to
+  // include card spend and other factors -- overriding them with only
+  // what this app can compute would lose real information. The formula
+  // below is used prospectively instead (Trip Detail's per-trip points),
+  // not retroactively against the whole stored balance.
+  const loyaltyProgrammes = rawLoyaltyProgrammes.map((p) =>
+    p.name === 'Expedia One Key Cash' ? { ...p, points: Math.round(oneKeyCash), ptValue: 100 } : p
+  );
 
   const totalValue = loyaltyProgrammes.reduce((s, p) => s + (p.points * p.ptValue) / 100, 0);
   const statusItems = loyaltyProgrammes.filter((p) => p.nextTier && p.nightsNeeded != null);

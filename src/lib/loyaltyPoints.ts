@@ -52,18 +52,15 @@ export const BASE_PROGRAMS: BaseProgramDef[] = [
   },
 ];
 
-export function computeBaseProgramPoints(hotels: Hotel[], brand: string): number {
-  const def = BASE_PROGRAMS.find((d) => d.brand === brand);
-  if (!def) return 0;
+export function basePointsForHotel(h: Hotel): number {
+  const def = BASE_PROGRAMS.find((d) => d.brand === h.brand);
+  if (!def || !h.total || h.status !== 'Completed') return 0;
   const fx = def.currency === 'USD' ? GBP_TO_USD : GBP_TO_EUR;
+  const basePoints = h.total * fx * def.baseRatePerUnit;
+  const bonusPct = def.tierBonusFor(h.date);
+  return Math.round(basePoints * (1 + bonusPct));
+}
 
-  let total = 0;
-  for (const h of hotels) {
-    if (h.brand !== brand || !h.total || h.status !== 'Completed') continue;
-    const spendInLocalCurrency = h.total * fx;
-    const basePoints = spendInLocalCurrency * def.baseRatePerUnit;
-    const bonusPct = def.tierBonusFor(h.date);
-    total += basePoints * (1 + bonusPct);
-  }
-  return Math.round(total);
+export function computeBaseProgramPoints(hotels: Hotel[], brand: string): number {
+  return hotels.filter((h) => h.brand === brand).reduce((s, h) => s + basePointsForHotel(h), 0);
 }
