@@ -19,18 +19,22 @@ const labelStyle: React.CSSProperties = {
 export function LogFlight() {
   const navigate = useNavigate();
   const location = useLocation();
-  const editing = (location.state as { flight?: Flight; tripId?: string } | null)?.flight;
-  const presetTripId = (location.state as { flight?: Flight; tripId?: string } | null)?.tripId;
+  const state = location.state as { flight?: Flight; tripId?: string; prefill?: Partial<Flight>; extractNote?: string } | null;
+  const editing = state?.flight;
+  const presetTripId = state?.tripId;
+  const prefill = state?.prefill;
+  const src = editing ?? prefill;
+  const extractNote = state?.extractNote as string | undefined;
   const { data: trips } = useTrips();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
-    date: editing?.date ?? '', from: editing?.from ?? '', to: editing?.to ?? '',
-    airline: editing?.airline ?? '', flightNo: editing?.flightNo ?? '',
-    cabin: (editing?.cabin ?? 'Economy') as (typeof CABINS)[number],
-    status: (editing?.status ?? 'Completed') as (typeof STATUSES)[number],
-    cost: editing?.cost != null ? String(editing.cost) : '',
-    award: editing?.award ?? false, tripId: presetTripId ?? '',
+    date: src?.date ?? '', from: src?.from ?? '', to: src?.to ?? '',
+    airline: src?.airline ?? '', flightNo: src?.flightNo ?? '',
+    cabin: (src?.cabin ?? 'Economy') as (typeof CABINS)[number],
+    status: (src?.status ?? 'Completed') as (typeof STATUSES)[number],
+    cost: src?.cost != null ? String(src.cost) : '',
+    award: src?.award ?? false, tripId: presetTripId ?? '',
   });
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -133,6 +137,11 @@ export function LogFlight() {
           </select>
         </div>
 
+        {extractNote && (
+          <div style={{ background: 'rgba(156,95,8,.1)', color: 'var(--amber)', fontSize: 12.5, padding: '10px 14px', borderRadius: 10, fontWeight: 600 }}>
+            {extractNote}
+          </div>
+        )}
         {error && <div style={{ color: 'var(--red)', fontSize: 13 }}>{error}</div>}
 
         <button type="submit" disabled={saving} style={{

@@ -10,6 +10,7 @@ import { Action } from './screens/Action';
 import { Capture } from './screens/Capture';
 import { LogHotel } from './screens/LogHotel';
 import { LogFlight } from './screens/LogFlight';
+import { ScanEmail } from './screens/ScanEmail';
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/capture" element={<Capture />} />
           <Route path="/log-hotel" element={<LogHotel />} />
           <Route path="/log-flight" element={<LogFlight />} />
+          <Route path="/scan-email" element={<ScanEmail />} />
           <Route path="/action/:kind" element={<Action />} />
         </Routes>
       </div>

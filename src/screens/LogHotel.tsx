@@ -19,21 +19,25 @@ const labelStyle: React.CSSProperties = {
 export function LogHotel() {
   const navigate = useNavigate();
   const location = useLocation();
-  const editing = (location.state as { hotel?: Hotel; tripId?: string } | null)?.hotel;
-  const presetTripId = (location.state as { hotel?: Hotel; tripId?: string } | null)?.tripId;
+  const state = location.state as { hotel?: Hotel; tripId?: string; prefill?: Partial<Hotel>; extractNote?: string } | null;
+  const editing = state?.hotel;
+  const presetTripId = state?.tripId;
+  const prefill = state?.prefill;
+  const extractNote = state?.extractNote as string | undefined;
+  const src = editing ?? prefill; // either populates the form; only `editing` triggers update-mode
   const { data: trips } = useTrips();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
-    name: editing?.name ?? '', country: editing?.country ?? '', city: editing?.city ?? '', brand: editing?.brand ?? '',
-    nights: String(editing?.nights ?? 1), date: editing?.date ?? '',
-    status: (editing?.status ?? 'Completed') as (typeof STATUSES)[number],
-    total: editing?.total != null ? String(editing.total) : '',
-    card: editing?.card ?? '', category: (editing?.category ?? 'Premium') as (typeof CATEGORIES)[number],
+    name: src?.name ?? '', country: src?.country ?? '', city: src?.city ?? '', brand: src?.brand ?? '',
+    nights: String(src?.nights ?? 1), date: src?.date ?? '',
+    status: (src?.status ?? 'Completed') as (typeof STATUSES)[number],
+    total: src?.total != null ? String(src.total) : '',
+    card: src?.card ?? '', category: (src?.category ?? 'Premium') as (typeof CATEGORIES)[number],
     tripId: presetTripId ?? '',
-    benefitValue: editing?.benefitValue != null ? String(editing.benefitValue) : '',
-    benefitNote: editing?.benefitNote ?? '',
-    bookingChannel: editing?.bookingChannel ?? '',
+    benefitValue: src?.benefitValue != null ? String(src.benefitValue) : '',
+    benefitNote: src?.benefitNote ?? '',
+    bookingChannel: src?.bookingChannel ?? '',
   });
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -156,6 +160,11 @@ export function LogHotel() {
           </select>
         </div>
 
+        {extractNote && (
+          <div style={{ background: 'rgba(156,95,8,.1)', color: 'var(--amber)', fontSize: 12.5, padding: '10px 14px', borderRadius: 10, fontWeight: 600 }}>
+            {extractNote}
+          </div>
+        )}
         {error && <div style={{ color: 'var(--red)', fontSize: 13 }}>{error}</div>}
 
         <button type="submit" disabled={saving} style={{

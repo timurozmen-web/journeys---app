@@ -4,8 +4,9 @@ import { BackIcon } from '../components/Icons';
 const CONTENT: Record<string, { title: string; body: string; actions?: { label: string; to: string }[] }> = {
   capture: {
     title: 'Capture',
-    body: 'Log a stay or flight manually now. Scanning confirmation emails and screenshots automatically comes later — this is the foundation it writes to.',
+    body: 'Paste a confirmation email to have the details pulled out automatically, or log a stay or flight by hand.',
     actions: [
+      { label: '✉️ Scan an email', to: '/scan-email' },
       { label: '+ Log a stay', to: '/log-hotel' },
       { label: '+ Log a flight', to: '/log-flight' },
     ],
