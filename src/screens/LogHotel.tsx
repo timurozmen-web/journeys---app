@@ -33,6 +33,7 @@ export function LogHotel() {
     tripId: presetTripId ?? '',
     benefitValue: editing?.benefitValue != null ? String(editing.benefitValue) : '',
     benefitNote: editing?.benefitNote ?? '',
+    bookingChannel: editing?.bookingChannel ?? '',
   });
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -56,6 +57,7 @@ export function LogHotel() {
         tripId: form.tripId || null,
         benefitValue: form.benefitValue ? parseFloat(form.benefitValue) : null,
         benefitNote: form.benefitNote || null,
+        bookingChannel: form.bookingChannel || null,
       };
       if (editing) {
         await updateHotel(editing.id, payload);
@@ -141,6 +143,10 @@ export function LogHotel() {
             <label style={labelStyle}>What was it</label>
             <input style={inputStyle} value={form.benefitNote} onChange={(e) => set('benefitNote', e.target.value)} placeholder="Suite upgrade, breakfast…" />
           </div>
+        </div>
+        <div>
+          <label style={labelStyle}>Booked via (leave blank if direct)</label>
+          <input style={inputStyle} value={form.bookingChannel} onChange={(e) => set('bookingChannel', e.target.value)} placeholder="e.g. Expedia" />
         </div>
         <div>
           <label style={labelStyle}>Attach to trip</label>

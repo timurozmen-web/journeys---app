@@ -29,6 +29,7 @@ function mapHotel(h: any): Hotel {
     nightlyRate: h.nightly_rate, avgRate: h.avg_rate, sqm: h.sqm, card: h.card,
     category: h.category, lat: h.lat, lng: h.lng,
     benefitValue: h.benefit_value ?? null, benefitNote: h.benefit_note ?? null,
+    bookingChannel: h.booking_channel ?? null,
   };
 }
 function mapFlight(f: any): Flight {
@@ -109,13 +110,14 @@ export interface NewHotelInput {
   nights: number; date: string; status: 'Completed' | 'Booked' | 'needs-confirm';
   total: number | null; card: string | null; category: 'Luxury' | 'Premium' | 'Midscale' | 'Budget';
   tripId: string | null; benefitValue: number | null; benefitNote: string | null;
+  bookingChannel: string | null;
 }
 export async function addHotel(input: NewHotelInput) {
   const { error } = await supabase.from('hotels').insert({
     name: input.name, country: input.country, city: input.city, brand: input.brand, tier: input.tier || null,
     nights: input.nights, date: input.date, status: input.status, total: input.total,
     card: input.card, category: input.category, trip_id: input.tripId,
-    benefit_value: input.benefitValue, benefit_note: input.benefitNote,
+    benefit_value: input.benefitValue, benefit_note: input.benefitNote, booking_channel: input.bookingChannel,
   });
   if (error) throw error;
 }
@@ -125,7 +127,7 @@ export async function updateHotel(id: string, input: NewHotelInput) {
     name: input.name, country: input.country, city: input.city, brand: input.brand, tier: input.tier || null,
     nights: input.nights, date: input.date, status: input.status, total: input.total,
     card: input.card, category: input.category, trip_id: input.tripId,
-    benefit_value: input.benefitValue, benefit_note: input.benefitNote,
+    benefit_value: input.benefitValue, benefit_note: input.benefitNote, booking_channel: input.bookingChannel,
   }).eq('id', id);
   if (error) throw error;
 }

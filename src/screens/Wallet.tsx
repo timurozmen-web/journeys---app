@@ -14,10 +14,20 @@ function money(n: number) {
 export function Wallet() {
   const [seg, setSeg] = useState<Seg>('loyalty');
   const [open, setOpen] = useState<string | null>(null);
-  const { data: loyaltyProgrammes, isLive } = useLoyaltyProgrammes();
+  const { data: rawLoyaltyProgrammes, isLive } = useLoyaltyProgrammes();
   const { data: paymentCards } = usePaymentCards();
   const { data: hotels } = useAllHotels();
   const { data: flights } = useAllFlights();
+
+  // One Key Cash isn't a fixed balance -- it's 6% of what's actually been
+  // booked through Expedia at Platinum tier, so it's computed live from
+  // real bookings rather than trusted as a stored number.
+  const oneKeyCash = hotels
+    .filter((h) => h.bookingChannel === 'Expedia' && h.status === 'Completed' && h.total)
+    .reduce((s, h) => s + (h.total ?? 0) * 0.06, 0);
+  const loyaltyProgrammes = rawLoyaltyProgrammes.map((p) =>
+    p.name === 'Expedia One Key Cash' ? { ...p, points: Math.round(oneKeyCash), ptValue: 100 } : p
+  );
 
   const cardResults = computeCardResults(hotels, flights, paymentCards, loyaltyProgrammes, TODAY);
 
