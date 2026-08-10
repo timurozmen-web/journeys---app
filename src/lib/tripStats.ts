@@ -73,14 +73,15 @@ export function groupDestinations(trip: Trip): Destination[] {
   const sorted = [...trip.hotels].sort((a, b) => a.date.localeCompare(b.date));
   const groups: Destination[] = [];
   for (const h of sorted) {
+    const place = h.city || h.country;
     const last = groups[groups.length - 1];
-    if (last && last.place === h.country) {
+    if (last && last.place === place) {
       last.nights += h.nights;
       last.hotels.push(h);
       const hotelEnd = addDays(h.date, h.nights);
       if (hotelEnd > last.end) last.end = hotelEnd;
     } else {
-      groups.push({ place: h.country, start: h.date, end: addDays(h.date, h.nights), nights: h.nights, hotels: [h] });
+      groups.push({ place, start: h.date, end: addDays(h.date, h.nights), nights: h.nights, hotels: [h] });
     }
   }
   return groups;

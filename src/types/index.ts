@@ -6,6 +6,7 @@ export interface Hotel {
   id: string;
   name: string;
   country: string;
+  city: string | null;
   brand: string;
   tier?: string;
   nights: number;

@@ -24,7 +24,7 @@ export async function fetchTrips(): Promise<Trip[]> {
 
 function mapHotel(h: any): Hotel {
   return {
-    id: h.id, name: h.name, country: h.country, brand: h.brand, tier: h.tier,
+    id: h.id, name: h.name, country: h.country, city: h.city ?? null, brand: h.brand, tier: h.tier,
     nights: h.nights, date: h.date, status: h.status, total: h.total,
     nightlyRate: h.nightly_rate, avgRate: h.avg_rate, sqm: h.sqm, card: h.card,
     category: h.category, lat: h.lat, lng: h.lng,
@@ -105,14 +105,14 @@ export async function uploadTripPhoto(tripId: string, file: File): Promise<strin
 }
 
 export interface NewHotelInput {
-  name: string; country: string; brand: string; tier?: string;
+  name: string; country: string; city: string | null; brand: string; tier?: string;
   nights: number; date: string; status: 'Completed' | 'Booked' | 'needs-confirm';
   total: number | null; card: string | null; category: 'Luxury' | 'Premium' | 'Midscale' | 'Budget';
   tripId: string | null; benefitValue: number | null; benefitNote: string | null;
 }
 export async function addHotel(input: NewHotelInput) {
   const { error } = await supabase.from('hotels').insert({
-    name: input.name, country: input.country, brand: input.brand, tier: input.tier || null,
+    name: input.name, country: input.country, city: input.city, brand: input.brand, tier: input.tier || null,
     nights: input.nights, date: input.date, status: input.status, total: input.total,
     card: input.card, category: input.category, trip_id: input.tripId,
     benefit_value: input.benefitValue, benefit_note: input.benefitNote,
@@ -122,7 +122,7 @@ export async function addHotel(input: NewHotelInput) {
 
 export async function updateHotel(id: string, input: NewHotelInput) {
   const { error } = await supabase.from('hotels').update({
-    name: input.name, country: input.country, brand: input.brand, tier: input.tier || null,
+    name: input.name, country: input.country, city: input.city, brand: input.brand, tier: input.tier || null,
     nights: input.nights, date: input.date, status: input.status, total: input.total,
     card: input.card, category: input.category, trip_id: input.tripId,
     benefit_value: input.benefitValue, benefit_note: input.benefitNote,

@@ -25,7 +25,7 @@ export function LogHotel() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
-    name: editing?.name ?? '', country: editing?.country ?? '', brand: editing?.brand ?? '',
+    name: editing?.name ?? '', country: editing?.country ?? '', city: editing?.city ?? '', brand: editing?.brand ?? '',
     nights: String(editing?.nights ?? 1), date: editing?.date ?? '',
     status: (editing?.status ?? 'Completed') as (typeof STATUSES)[number],
     total: editing?.total != null ? String(editing.total) : '',
@@ -49,7 +49,7 @@ export function LogHotel() {
     setError('');
     try {
       const payload = {
-        name: form.name, country: form.country, brand: form.brand || 'Other',
+        name: form.name, country: form.country, city: form.city || null, brand: form.brand || 'Other',
         nights: parseInt(form.nights, 10) || 1, date: form.date, status: form.status,
         total: form.total ? parseFloat(form.total) : null,
         card: form.card || null, category: form.category,
@@ -90,9 +90,13 @@ export function LogHotel() {
             <input style={inputStyle} value={form.country} onChange={(e) => set('country', e.target.value)} placeholder="United Kingdom" />
           </div>
           <div>
-            <label style={labelStyle}>Brand</label>
-            <input style={inputStyle} value={form.brand} onChange={(e) => set('brand', e.target.value)} placeholder="Marriott Bonvoy" />
+            <label style={labelStyle}>City</label>
+            <input style={inputStyle} value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="London" />
           </div>
+        </div>
+        <div>
+          <label style={labelStyle}>Brand</label>
+          <input style={inputStyle} value={form.brand} onChange={(e) => set('brand', e.target.value)} placeholder="Marriott Bonvoy" />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>

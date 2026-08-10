@@ -195,13 +195,17 @@ export function TripDetail() {
           <div className="sect">
             <h2>Destinations</h2>
           </div>
-          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', padding: '0 20px 20px' }}>
+          <div style={{ display: 'grid', gap: 10, padding: '0 20px 20px' }}>
             {destinations.map((d, i) => (
-              <div key={i} style={{ flexShrink: 0, width: 140, borderRadius: 14, overflow: 'hidden', background: 'var(--card)', border: '1px solid var(--line)' }}>
-                <DestinationPhoto query={d.place} seed={`${trip.id}-${d.place}`} height={80} />
-                <div style={{ padding: '8px 10px' }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 700 }}>{d.place}</div>
-                  <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 2 }}>{d.nights} nights</div>
+              <div key={i} style={{ display: 'flex', gap: 12, borderRadius: 14, overflow: 'hidden', background: 'var(--card)', border: '1px solid var(--line)' }}>
+                <div style={{ width: 90, flexShrink: 0 }}>
+                  <DestinationPhoto query={d.place} seed={`${trip.id}-${d.place}`} height={90} />
+                </div>
+                <div style={{ padding: '10px 12px 10px 0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>{d.place}</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--ink3)', marginTop: 3 }}>
+                    {formatDateRange(d.start, d.end)} · {d.nights} nights
+                  </div>
                 </div>
               </div>
             ))}
