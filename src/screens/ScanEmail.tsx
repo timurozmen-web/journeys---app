@@ -63,6 +63,7 @@ export function ScanEmail() {
             prefill: {
               name: data.name, country: data.country, city: data.city, brand: data.brand,
               date: data.checkIn, nights: data.nights, total: data.total,
+              roomType: data.roomType ?? null, rateType: data.rateType ?? 'Standard',
             },
             extractNote: data.currency && data.currency !== 'GBP' ? `Detected amount was in ${data.currency} — double-check the £ figure.` : undefined,
           },

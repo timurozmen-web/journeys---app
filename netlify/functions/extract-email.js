@@ -7,7 +7,7 @@ const SYSTEM_PROMPT = `You extract structured travel booking data from a hotel o
 Determine if it's a HOTEL booking or a FLIGHT booking, then return ONLY a JSON object (no other text, no markdown fences) matching one of these shapes:
 
 For a hotel:
-{"type":"hotel","name":string,"country":string|null,"city":string|null,"brand":string|null,"checkIn":"YYYY-MM-DD","nights":number|null,"total":number|null,"currency":string|null}
+{"type":"hotel","name":string,"country":string|null,"city":string|null,"brand":string|null,"checkIn":"YYYY-MM-DD","nights":number|null,"total":number|null,"currency":string|null,"roomType":string|null,"rateType":"Standard"|"Member"|"Promotional"|"Non-refundable"|"Other"|null}
 
 For a flight:
 {"type":"flight","date":"YYYY-MM-DD","from":string|null,"to":string|null,"airline":string|null,"flightNo":string|null,"cabin":string|null,"cost":number|null,"currency":string|null}
@@ -18,6 +18,7 @@ Rules:
 - "currency" should be a 3-letter ISO code (GBP, USD, EUR, etc) if determinable, otherwise null.
 - If multiple images are provided, they may be different parts of the same scrolled confirmation -- combine what you learn from all of them into one result.
 - If you genuinely cannot tell whether it's a hotel or flight booking, or the content isn't a booking confirmation at all, return {"type":"unknown"}.
+- "rateType": use "Standard" if the confirmation gives no indication of a special rate; only use another value if the confirmation explicitly says so (e.g. "Member Rate", "Non-refundable", "Advance Purchase" -> "Promotional").
 - Never guess at a field you can't find evidence for -- use null instead.`;
 
 const MAX_IMAGES = 4;

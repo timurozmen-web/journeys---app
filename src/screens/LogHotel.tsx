@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { addHotel, updateHotel, deleteHotel } from '../lib/queries';
+import { addHotel, updateHotel, deleteHotel, addTrip, updateTrip } from '../lib/queries';
+import { suggestTripAssignment } from '../lib/autoTrip';
 import type { Hotel } from '../types';
-import { useTrips, useAllHotels } from '../lib/useLiveData';
+import { useTrips, useAllHotels, useAllFlights } from '../lib/useLiveData';
 import { BackIcon } from '../components/Icons';
 
 const CATEGORIES = ['Luxury', 'Premium', 'Midscale', 'Budget'] as const;
 const STATUSES = ['Completed', 'Booked', 'needs-confirm'] as const;
+const RATE_TYPES = ['Standard', 'Member', 'Promotional', 'Non-refundable', 'Other'] as const;
 const inputStyle: React.CSSProperties = {
   background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 10,
   color: 'var(--ink)', fontSize: 15, padding: '11px 12px', width: '100%', outline: 'none', minWidth: 0, boxSizing: 'border-box',
@@ -27,23 +29,30 @@ export function LogHotel() {
   const src = editing ?? prefill; // either populates the form; only `editing` triggers update-mode
   const { data: trips } = useTrips();
   const { data: allHotels } = useAllHotels();
+  const { data: allFlights } = useAllFlights();
   const knownHotels = Array.from(new Map(allHotels.map((h) => [h.name, h])).values());
+  const [manualTripOverride, setManualTripOverride] = useState(!!presetTripId || !!editing);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [overlapWarning, setOverlapWarning] = useState<string | null>(null);
   const [confirmedOverlap, setConfirmedOverlap] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [statusTouched, setStatusTouched] = useState(!!src?.status); // don't auto-override an explicit status from editing/extraction
+  const TODAY = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({
     name: src?.name ?? '', country: src?.country ?? '', city: src?.city ?? '', brand: src?.brand ?? '',
     nights: String(src?.nights ?? 1), date: src?.date ?? '',
-    status: (src?.status ?? 'Completed') as (typeof STATUSES)[number],
+    status: (src?.status ?? (src?.date && src.date > TODAY ? 'Booked' : 'Completed')) as (typeof STATUSES)[number],
     total: src?.total != null ? String(src.total) : '',
     card: src?.card ?? '', category: (src?.category ?? 'Premium') as (typeof CATEGORIES)[number],
     tripId: presetTripId ?? '',
     benefitValue: src?.benefitValue != null ? String(src.benefitValue) : '',
     benefitNote: src?.benefitNote ?? '',
     bookingChannel: src?.bookingChannel ?? '',
+    roomType: src?.roomType ?? '',
+    rateType: (src?.rateType ?? 'Standard') as (typeof RATE_TYPES)[number],
+    avgRate: src?.avgRate != null ? String(src.avgRate) : '',
   });
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -51,6 +60,8 @@ export function LogHotel() {
     setConfirmedOverlap(false);
     setOverlapWarning(null);
   }
+
+  const autoSuggestion = suggestTripAssignment(form.date || TODAY, form.city || null, form.country, trips, allFlights);
 
   function findOverlap(): string | null {
     if (!form.tripId || !form.date) return null;
@@ -87,22 +98,56 @@ export function LogHotel() {
     setSaving(true);
     setError('');
     try {
+      const nights = parseInt(form.nights, 10) || 1;
+      const total = form.total ? parseFloat(form.total) : null;
+      const avgRate = form.rateType === 'Standard' ? (total != null ? total / nights : null) : form.avgRate ? parseFloat(form.avgRate) : null;
+
+      let resolvedTripId = form.tripId || null;
+      if (!manualTripOverride) {
+        if (autoSuggestion.tripId) {
+          resolvedTripId = autoSuggestion.tripId;
+          const existingTrip = trips.find((t) => t.id === autoSuggestion.tripId);
+          if (existingTrip) {
+            const newEnd = new Date(form.date);
+            newEnd.setDate(newEnd.getDate() + nights);
+            const newEndStr = newEnd.toISOString().slice(0, 10);
+            if (newEndStr > existingTrip.end) {
+              await updateTrip(existingTrip.id, {
+                title: existingTrip.title, start: existingTrip.start, end: newEndStr,
+                tripType: existingTrip.tripType, notes: existingTrip.notes,
+              });
+            }
+          }
+        } else {
+          const end = new Date(form.date);
+          end.setDate(end.getDate() + nights);
+          resolvedTripId = await addTrip({
+            title: autoSuggestion.suggestedTitle, start: form.date, end: end.toISOString().slice(0, 10),
+            tripType: autoSuggestion.tripType, notes: '',
+          });
+        }
+      }
+
       const payload = {
         name: form.name, country: form.country, city: form.city || null, brand: form.brand || 'Other',
-        nights: parseInt(form.nights, 10) || 1, date: form.date, status: form.status,
-        total: form.total ? parseFloat(form.total) : null,
+        nights, date: form.date, status: form.status,
+        total,
         card: form.card || null, category: form.category,
-        tripId: form.tripId || null,
+        tripId: resolvedTripId,
         benefitValue: form.benefitValue ? parseFloat(form.benefitValue) : null,
         benefitNote: form.benefitNote || null,
         bookingChannel: form.bookingChannel || null,
+        roomType: form.roomType || null,
+        rateType: form.rateType,
+        nightlyRate: total != null ? total / nights : null,
+        avgRate,
       };
       if (editing) {
         await updateHotel(editing.id, payload);
       } else {
         await addHotel(payload);
       }
-      navigate(form.tripId ? `/trips/${form.tripId}` : '/trips');
+      navigate(resolvedTripId ? `/trips/${resolvedTripId}` : '/trips');
     } catch (err) {
       const message =
         err instanceof Error
@@ -168,7 +213,17 @@ export function LogHotel() {
         </div>
         <div>
           <label style={labelStyle}>Check-in date *</label>
-          <input style={inputStyle} type="date" value={form.date} onChange={(e) => set('date', e.target.value)} />
+          <input
+            style={inputStyle}
+            type="date"
+            value={form.date}
+            onChange={(e) => {
+              const date = e.target.value;
+              setForm((f) => ({ ...f, date, status: statusTouched ? f.status : date > TODAY ? 'Booked' : 'Completed' }));
+              setConfirmedOverlap(false);
+              setOverlapWarning(null);
+            }}
+          />
         </div>
         <div>
           <label style={labelStyle}>Nights</label>
@@ -177,7 +232,7 @@ export function LogHotel() {
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
             <label style={labelStyle}>Status</label>
-            <select style={inputStyle} value={form.status} onChange={(e) => set('status', e.target.value as (typeof STATUSES)[number])}>
+            <select style={inputStyle} value={form.status} onChange={(e) => { setStatusTouched(true); set('status', e.target.value as (typeof STATUSES)[number]); }}>
               {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
@@ -198,6 +253,40 @@ export function LogHotel() {
             <input style={inputStyle} value={form.card} onChange={(e) => set('card', e.target.value)} placeholder="Optional" />
           </div>
         </div>
+        <div>
+          <label style={labelStyle}>Room type</label>
+          <input style={inputStyle} value={form.roomType} onChange={(e) => set('roomType', e.target.value)} placeholder="e.g. Deluxe King, City View" />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
+          <div>
+            <label style={labelStyle}>Rate type</label>
+            <select
+              style={inputStyle}
+              value={form.rateType}
+              onChange={(e) => {
+                const rateType = e.target.value as (typeof RATE_TYPES)[number];
+                setForm((f) => ({
+                  ...f, rateType,
+                  avgRate: rateType === 'Standard' && f.total ? (parseFloat(f.total) / (parseInt(f.nights, 10) || 1)).toFixed(2) : f.avgRate,
+                }));
+              }}
+            >
+              {RATE_TYPES.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Standard rate (£/night)</label>
+            <input
+              style={{ ...inputStyle, opacity: form.rateType === 'Standard' ? 0.6 : 1 }}
+              type="number"
+              step="0.01"
+              value={form.rateType === 'Standard' && form.total ? (parseFloat(form.total) / (parseInt(form.nights, 10) || 1)).toFixed(2) : form.avgRate}
+              onChange={(e) => set('avgRate', e.target.value)}
+              disabled={form.rateType === 'Standard'}
+              placeholder="What it would've cost at standard rate"
+            />
+          </div>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
             <label style={labelStyle}>Benefit value (£)</label>
@@ -213,11 +302,47 @@ export function LogHotel() {
           <input style={inputStyle} value={form.bookingChannel} onChange={(e) => set('bookingChannel', e.target.value)} placeholder="e.g. Expedia" />
         </div>
         <div>
-          <label style={labelStyle}>Attach to trip</label>
-          <select style={inputStyle} value={form.tripId} onChange={(e) => set('tripId', e.target.value)}>
-            <option value="">No trip — standalone</option>
-            {trips.map((t) => <option key={t.id} value={t.id}>{t.title} ({t.start})</option>)}
-          </select>
+          <label style={labelStyle}>Trip</label>
+          {!manualTripOverride ? (
+            <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 10, padding: '11px 12px' }}>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>
+                {autoSuggestion.tripId ? autoSuggestion.suggestedTitle : `New trip: ${autoSuggestion.suggestedTitle}`}
+                <span
+                  style={{
+                    marginLeft: 8, fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 99,
+                    background: autoSuggestion.tripType === 'work' ? 'rgba(19,34,71,.09)' : 'rgba(12,122,66,.1)',
+                    color: autoSuggestion.tripType === 'work' ? 'var(--brand)' : 'var(--green)',
+                  }}
+                >
+                  {autoSuggestion.tripType}
+                </span>
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 3 }}>{autoSuggestion.reason}</div>
+              <button
+                type="button"
+                onClick={() => setManualTripOverride(true)}
+                style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: '6px 0 0' }}
+              >
+                Choose a different trip
+              </button>
+            </div>
+          ) : (
+            <>
+              <select style={inputStyle} value={form.tripId} onChange={(e) => set('tripId', e.target.value)}>
+                <option value="">No trip — standalone</option>
+                {trips.map((t) => <option key={t.id} value={t.id}>{t.title} ({t.start})</option>)}
+              </select>
+              {!presetTripId && !editing && (
+                <button
+                  type="button"
+                  onClick={() => setManualTripOverride(false)}
+                  style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: '6px 0 0' }}
+                >
+                  Use automatic detection instead
+                </button>
+              )}
+            </>
+          )}
         </div>
 
         {extractNote && (

@@ -23,6 +23,8 @@ export interface Hotel {
   benefitValue: number | null; // £ value of upgrades/perks received, e.g. free breakfast, suite upgrade
   benefitNote: string | null; // what the benefit actually was
   bookingChannel: string | null; // e.g. 'Expedia' — which OTA/channel this was booked through, if not direct
+  roomType: string | null;
+  rateType: string | null; // 'Standard' | 'Member' | 'Promotional' | 'Non-refundable' | 'Other'
 }
 
 export interface Flight {

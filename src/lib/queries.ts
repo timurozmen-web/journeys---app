@@ -73,6 +73,7 @@ function mapHotel(h: any): Hotel {
     category: h.category, lat: h.lat, lng: h.lng,
     benefitValue: h.benefit_value ?? null, benefitNote: h.benefit_note ?? null,
     bookingChannel: h.booking_channel ?? null,
+    roomType: h.room_type ?? null, rateType: h.rate_type ?? null,
   };
 }
 function mapFlight(f: any): Flight {
@@ -153,7 +154,8 @@ export interface NewHotelInput {
   nights: number; date: string; status: 'Completed' | 'Booked' | 'needs-confirm';
   total: number | null; card: string | null; category: 'Luxury' | 'Premium' | 'Midscale' | 'Budget';
   tripId: string | null; benefitValue: number | null; benefitNote: string | null;
-  bookingChannel: string | null;
+  bookingChannel: string | null; roomType: string | null; rateType: string | null;
+  nightlyRate: number | null; avgRate: number | null;
 }
 export async function addHotel(input: NewHotelInput) {
   const { error } = await supabase.from('hotels').insert({
@@ -161,6 +163,7 @@ export async function addHotel(input: NewHotelInput) {
     nights: input.nights, date: input.date, status: input.status, total: input.total,
     card: input.card, category: input.category, trip_id: input.tripId,
     benefit_value: input.benefitValue, benefit_note: input.benefitNote, booking_channel: input.bookingChannel,
+    room_type: input.roomType, rate_type: input.rateType, nightly_rate: input.nightlyRate, avg_rate: input.avgRate,
   });
   if (error) throw error;
 }
@@ -171,6 +174,7 @@ export async function updateHotel(id: string, input: NewHotelInput) {
     nights: input.nights, date: input.date, status: input.status, total: input.total,
     card: input.card, category: input.category, trip_id: input.tripId,
     benefit_value: input.benefitValue, benefit_note: input.benefitNote, booking_channel: input.bookingChannel,
+    room_type: input.roomType, rate_type: input.rateType, nightly_rate: input.nightlyRate, avg_rate: input.avgRate,
   }).eq('id', id);
   if (error) throw error;
 }
