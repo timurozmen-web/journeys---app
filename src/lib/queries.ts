@@ -175,6 +175,11 @@ export async function updateHotel(id: string, input: NewHotelInput) {
   if (error) throw error;
 }
 
+export async function deleteHotel(id: string) {
+  const { error } = await supabase.from('hotels').delete().eq('id', id);
+  if (error) throw error;
+}
+
 export interface NewFlightInput {
   date: string; from: string; to: string; airline: string; flightNo: string | null;
   cabin: 'Economy' | 'Premium Economy' | 'Business' | 'First';
@@ -196,5 +201,10 @@ export async function updateFlight(id: string, input: NewFlightInput) {
     airline: input.airline, flight_no: input.flightNo, cabin: input.cabin,
     status: input.status, cost: input.cost, award: input.award, overnight: input.overnight, trip_id: input.tripId,
   }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteFlight(id: string) {
+  const { error } = await supabase.from('flights').delete().eq('id', id);
   if (error) throw error;
 }

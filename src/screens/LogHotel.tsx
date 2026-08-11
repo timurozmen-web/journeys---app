@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { addHotel, updateHotel } from '../lib/queries';
+import { addHotel, updateHotel, deleteHotel } from '../lib/queries';
 import type { Hotel } from '../types';
 import { useTrips, useAllHotels } from '../lib/useLiveData';
 import { BackIcon } from '../components/Icons';
@@ -32,6 +32,8 @@ export function LogHotel() {
   const [error, setError] = useState('');
   const [overlapWarning, setOverlapWarning] = useState<string | null>(null);
   const [confirmedOverlap, setConfirmedOverlap] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState({
     name: src?.name ?? '', country: src?.country ?? '', city: src?.city ?? '', brand: src?.brand ?? '',
     nights: String(src?.nights ?? 1), date: src?.date ?? '',
@@ -258,6 +260,49 @@ export function LogHotel() {
         }}>
           {saving ? 'Saving…' : editing ? 'Save changes' : 'Save stay'}
         </button>
+
+        {editing && !confirmingDelete && (
+          <button
+            type="button"
+            onClick={() => setConfirmingDelete(true)}
+            style={{ background: 'none', border: 'none', color: 'var(--red)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', padding: '6px 0' }}
+          >
+            Delete this stay
+          </button>
+        )}
+        {editing && confirmingDelete && (
+          <div style={{ background: 'rgba(210,60,60,.08)', border: '1px solid rgba(210,60,60,.25)', borderRadius: 10, padding: '12px 14px' }}>
+            <div style={{ fontSize: 12.5, color: 'var(--red)', fontWeight: 600, marginBottom: 8 }}>
+              Delete "{editing.name}" permanently? This can't be undone.
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={async () => {
+                  setDeleting(true);
+                  try {
+                    await deleteHotel(editing.id);
+                    navigate(form.tripId ? `/trips/${form.tripId}` : '/trips');
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : 'Failed to delete.');
+                    setDeleting(false);
+                  }
+                }}
+                style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--red)', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+              >
+                {deleting ? 'Deleting…' : 'Yes, delete it'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </form>
       <div style={{ height: 30 }} />
     </div>

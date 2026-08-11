@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { addFlight, updateFlight } from '../lib/queries';
+import { addFlight, updateFlight, deleteFlight } from '../lib/queries';
 import type { Flight } from '../types';
 import { useTrips } from '../lib/useLiveData';
 import { BackIcon } from '../components/Icons';
@@ -27,6 +27,8 @@ export function LogFlight() {
   const extractNote = state?.extractNote as string | undefined;
   const { data: trips } = useTrips();
   const [saving, setSaving] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
     date: src?.date ?? '', from: src?.from ?? '', to: src?.to ?? '',
@@ -163,6 +165,49 @@ export function LogFlight() {
         }}>
           {saving ? 'Saving…' : editing ? 'Save changes' : 'Save flight'}
         </button>
+
+        {editing && !confirmingDelete && (
+          <button
+            type="button"
+            onClick={() => setConfirmingDelete(true)}
+            style={{ background: 'none', border: 'none', color: 'var(--red)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', padding: '6px 0' }}
+          >
+            Delete this flight
+          </button>
+        )}
+        {editing && confirmingDelete && (
+          <div style={{ background: 'rgba(210,60,60,.08)', border: '1px solid rgba(210,60,60,.25)', borderRadius: 10, padding: '12px 14px' }}>
+            <div style={{ fontSize: 12.5, color: 'var(--red)', fontWeight: 600, marginBottom: 8 }}>
+              Delete this {editing.from} → {editing.to} flight permanently? This can't be undone.
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={async () => {
+                  setDeleting(true);
+                  try {
+                    await deleteFlight(editing.id);
+                    navigate(form.tripId ? `/trips/${form.tripId}` : '/trips');
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : 'Failed to delete.');
+                    setDeleting(false);
+                  }
+                }}
+                style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--red)', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+              >
+                {deleting ? 'Deleting…' : 'Yes, delete it'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </form>
       <div style={{ height: 30 }} />
     </div>
