@@ -2,7 +2,10 @@
 // environment variable, so it never gets bundled into the public app --
 // only this function, running on Netlify's servers, ever sees it.
 
-const SYSTEM_PROMPT = `You extract structured travel booking data from a hotel or flight confirmation, given either as plain text or as one or more screenshot images of the confirmation (read any text visible in the images).
+function buildSystemPrompt(today) {
+  return `You extract structured travel booking data from a hotel or flight confirmation, given either as plain text or as one or more screenshot images of the confirmation (read any text visible in the images).
+
+Today's real date is ${today}.
 
 Determine if it's a HOTEL booking or a FLIGHT booking, then return ONLY a JSON object (no other text, no markdown fences) matching one of these shapes:
 
@@ -19,7 +22,10 @@ Rules:
 - If multiple images are provided, they may be different parts of the same scrolled confirmation -- combine what you learn from all of them into one result.
 - If you genuinely cannot tell whether it's a hotel or flight booking, or the content isn't a booking confirmation at all, return {"type":"unknown"}.
 - "rateType": use "Standard" if the confirmation gives no indication of a special rate; only use another value if the confirmation explicitly says so (e.g. "Member Rate", "Non-refundable", "Advance Purchase" -> "Promotional").
+- "roomType": keep this brief -- just the room category/tier as named by the property (e.g. "Studio Suite", "Deluxe Room", "Junior Suite"). Leave out bed configuration (e.g. "King Bed", "Twin"), view, floor, or any other descriptive extras that are sometimes appended to the room name.
+- Date year inference: if a date in the confirmation has no year printed on it, infer the year yourself using today's date (${today}) as the anchor -- if that month/day has already passed this year, it means next year; if it hasn't happened yet this year, use this year. Never default to some fixed or arbitrary year.
 - Never guess at a field you can't find evidence for -- use null instead.`;
+}
 
 const MAX_IMAGES = 4;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
@@ -75,7 +81,7 @@ export const handler = async (event) => {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 500,
-        system: SYSTEM_PROMPT,
+        system: buildSystemPrompt(new Date().toISOString().slice(0, 10)),
         messages: [{ role: 'user', content }],
       }),
     });
