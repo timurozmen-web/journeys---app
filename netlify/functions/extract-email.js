@@ -2,9 +2,9 @@
 // environment variable, so it never gets bundled into the public app --
 // only this function, running on Netlify's servers, ever sees it.
 
-const SYSTEM_PROMPT = `You extract structured travel booking data from confirmation email text.
+const SYSTEM_PROMPT = `You extract structured travel booking data from a hotel or flight confirmation, given either as plain text or as one or more screenshot images of the confirmation (read any text visible in the images).
 
-Read the email and determine if it's a HOTEL booking or a FLIGHT booking, then return ONLY a JSON object (no other text, no markdown fences) matching one of these shapes:
+Determine if it's a HOTEL booking or a FLIGHT booking, then return ONLY a JSON object (no other text, no markdown fences) matching one of these shapes:
 
 For a hotel:
 {"type":"hotel","name":string,"country":string|null,"city":string|null,"brand":string|null,"checkIn":"YYYY-MM-DD","nights":number|null,"total":number|null,"currency":string|null}
@@ -16,8 +16,12 @@ Rules:
 - "from"/"to" should be 3-letter IATA airport codes if you can determine them, otherwise null.
 - "total"/"cost" should be a plain number with no currency symbol or commas.
 - "currency" should be a 3-letter ISO code (GBP, USD, EUR, etc) if determinable, otherwise null.
-- If you genuinely cannot tell whether it's a hotel or flight booking, or the text isn't a booking confirmation at all, return {"type":"unknown"}.
-- Never guess at a field you can't find evidence for in the text -- use null instead.`;
+- If multiple images are provided, they may be different parts of the same scrolled confirmation -- combine what you learn from all of them into one result.
+- If you genuinely cannot tell whether it's a hotel or flight booking, or the content isn't a booking confirmation at all, return {"type":"unknown"}.
+- Never guess at a field you can't find evidence for -- use null instead.`;
+
+const MAX_IMAGES = 4;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -29,18 +33,35 @@ export const handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: 'Server not configured: missing ANTHROPIC_API_KEY' }) };
   }
 
-  let emailText;
+  let body;
   try {
-    ({ emailText } = JSON.parse(event.body || '{}'));
+    body = JSON.parse(event.body || '{}');
   } catch {
     return { statusCode: 400, body: JSON.stringify({ error: 'Invalid request body' }) };
   }
-  if (!emailText || typeof emailText !== 'string' || emailText.trim().length < 10) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Paste the email text first' }) };
+  const { emailText, images } = body;
+
+  const content = [];
+  if (Array.isArray(images) && images.length > 0) {
+    if (images.length > MAX_IMAGES) {
+      return { statusCode: 400, body: JSON.stringify({ error: `Send at most ${MAX_IMAGES} screenshots at a time.` }) };
+    }
+    for (const img of images) {
+      if (!img || typeof img.mediaType !== 'string' || typeof img.data !== 'string') {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Malformed image data' }) };
+      }
+      if (!ALLOWED_IMAGE_TYPES.has(img.mediaType)) {
+        return { statusCode: 400, body: JSON.stringify({ error: `Unsupported image type: ${img.mediaType}` }) };
+      }
+      content.push({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.data } });
+    }
   }
-  // Basic length guard -- a booking confirmation is never this long, and
-  // this keeps a stray huge paste from becoming an expensive call.
-  const trimmedText = emailText.slice(0, 12000);
+  if (emailText && typeof emailText === 'string' && emailText.trim().length >= 10) {
+    content.push({ type: 'text', text: emailText.slice(0, 12000) });
+  }
+  if (content.length === 0) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'Paste some email text or attach at least one screenshot.' }) };
+  }
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -54,7 +75,7 @@ export const handler = async (event) => {
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 500,
         system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: trimmedText }],
+        messages: [{ role: 'user', content }],
       }),
     });
 
