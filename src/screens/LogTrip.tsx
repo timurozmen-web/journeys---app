@@ -73,15 +73,13 @@ export function LogTrip() {
           <label style={labelStyle}>Trip name *</label>
           <input style={inputStyle} value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. Japan 2027" />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-          <div>
-            <label style={labelStyle}>Start date *</label>
-            <input style={inputStyle} type="date" value={form.start} onChange={(e) => set('start', e.target.value)} />
-          </div>
-          <div>
-            <label style={labelStyle}>End date *</label>
-            <input style={inputStyle} type="date" value={form.end} onChange={(e) => set('end', e.target.value)} />
-          </div>
+        <div>
+          <label style={labelStyle}>Start date *</label>
+          <input style={inputStyle} type="date" value={form.start} onChange={(e) => set('start', e.target.value)} />
+        </div>
+        <div>
+          <label style={labelStyle}>End date *</label>
+          <input style={inputStyle} type="date" value={form.end} onChange={(e) => set('end', e.target.value)} />
         </div>
 
         <div>

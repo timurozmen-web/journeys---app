@@ -114,10 +114,13 @@ export interface Gap {
 // Every night of a trip should be covered by some hotel. This finds the
 // stretches that aren't, so they can be filled in rather than left silent.
 export function findGaps(trip: Trip): Gap[] {
-  const intervals = trip.hotels
+  const hotelIntervals = trip.hotels
     .filter((h) => h.nights > 0)
-    .map((h) => ({ start: h.date, end: addDays(h.date, h.nights) }))
-    .sort((a, b) => a.start.localeCompare(b.start));
+    .map((h) => ({ start: h.date, end: addDays(h.date, h.nights) }));
+  const overnightFlightIntervals = trip.flights
+    .filter((f) => f.overnight && f.date)
+    .map((f) => ({ start: f.date as string, end: addDays(f.date as string, 1) }));
+  const intervals = [...hotelIntervals, ...overnightFlightIntervals].sort((a, b) => a.start.localeCompare(b.start));
 
   // Merge overlapping/adjacent covered ranges.
   const merged: { start: string; end: string }[] = [];

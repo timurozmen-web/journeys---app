@@ -13,8 +13,8 @@ export const trips: Trip[] = [
       { id: 'h3', name: 'Maxx Royal Bodrum', country: 'Türkiye', city: 'Bodrum', brand: 'Independent', nights: 2, date: '2026-08-13', status: 'Booked', total: 620, nightlyRate: 310, avgRate: 350, sqm: null, card: null, category: 'Luxury', lat: 37.0, lng: 27.4, benefitValue: null, benefitNote: null, bookingChannel: null },
     ],
     flights: [
-      { id: 'f1', date: '2026-07-25', from: 'LGW', via: [], to: 'DLM', airline: 'easyJet', flightNo: 'U2 8565', cabin: 'Economy', status: 'Completed', cost: 180, award: false },
-      { id: 'f2', date: '2026-08-15', from: 'BJV', via: [], to: 'LTN', airline: 'easyJet', flightNo: 'U2 2554', cabin: 'Economy', status: 'Booked', cost: 210, award: false },
+      { id: 'f1', date: '2026-07-25', from: 'LGW', via: [], to: 'DLM', airline: 'easyJet', flightNo: 'U2 8565', cabin: 'Economy', status: 'Completed', cost: 180, award: false, overnight: false },
+      { id: 'f2', date: '2026-08-15', from: 'BJV', via: [], to: 'LTN', airline: 'easyJet', flightNo: 'U2 2554', cabin: 'Economy', status: 'Booked', cost: 210, award: false, overnight: false },
     ],
   },
   {

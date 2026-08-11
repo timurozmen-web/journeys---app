@@ -214,7 +214,10 @@ export function TripDetail() {
             <h2>Missing nights</h2>
           </div>
           <div style={{ display: 'grid', gap: 8, padding: '0 20px 20px' }}>
-            {gaps.map((g, i) => (
+            {gaps.map((g, i) => {
+              const before = [...destinations].reverse().find((d) => d.end <= g.start);
+              const guessedCountry = (before ?? destinations[0])?.hotels[0]?.country ?? '';
+              return (
               <div
                 key={i}
                 style={{
@@ -231,7 +234,11 @@ export function TripDetail() {
                   </div>
                 </div>
                 <button
-                  onClick={() => navigate('/log-hotel', { state: { tripId: trip.id, prefill: { date: g.start, nights: g.nights } } })}
+                  onClick={() =>
+                    navigate('/log-hotel', {
+                      state: { tripId: trip.id, prefill: { date: g.start, nights: g.nights, country: guessedCountry } },
+                    })
+                  }
                   style={{
                     flexShrink: 0, padding: '8px 14px', borderRadius: 10, border: 'none',
                     background: 'var(--amber)', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
@@ -240,7 +247,8 @@ export function TripDetail() {
                   + Add hotel
                 </button>
               </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}

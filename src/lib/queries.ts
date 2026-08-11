@@ -79,7 +79,7 @@ function mapFlight(f: any): Flight {
   return {
     id: f.id, date: f.date, from: f.from, via: f.via ?? [], to: f.to,
     airline: f.airline, flightNo: f.flight_no, cabin: f.cabin, status: f.status,
-    cost: f.cost, award: f.award,
+    cost: f.cost, award: f.award, overnight: f.overnight ?? false,
   };
 }
 
@@ -178,14 +178,14 @@ export async function updateHotel(id: string, input: NewHotelInput) {
 export interface NewFlightInput {
   date: string; from: string; to: string; airline: string; flightNo: string | null;
   cabin: 'Economy' | 'Premium Economy' | 'Business' | 'First';
-  status: 'Completed' | 'Booked'; cost: number | null; award: boolean;
+  status: 'Completed' | 'Booked'; cost: number | null; award: boolean; overnight: boolean;
   tripId: string | null;
 }
 export async function addFlight(input: NewFlightInput) {
   const { error } = await supabase.from('flights').insert({
     date: input.date, from: input.from.toUpperCase(), to: input.to.toUpperCase(),
     airline: input.airline, flight_no: input.flightNo, cabin: input.cabin,
-    status: input.status, cost: input.cost, award: input.award, trip_id: input.tripId,
+    status: input.status, cost: input.cost, award: input.award, overnight: input.overnight, trip_id: input.tripId,
   });
   if (error) throw error;
 }
@@ -194,7 +194,7 @@ export async function updateFlight(id: string, input: NewFlightInput) {
   const { error } = await supabase.from('flights').update({
     date: input.date, from: input.from.toUpperCase(), to: input.to.toUpperCase(),
     airline: input.airline, flight_no: input.flightNo, cabin: input.cabin,
-    status: input.status, cost: input.cost, award: input.award, trip_id: input.tripId,
+    status: input.status, cost: input.cost, award: input.award, overnight: input.overnight, trip_id: input.tripId,
   }).eq('id', id);
   if (error) throw error;
 }

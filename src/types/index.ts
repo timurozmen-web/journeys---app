@@ -37,6 +37,7 @@ export interface Flight {
   status: 'Completed' | 'Booked';
   cost: number | null;
   award: boolean;
+  overnight: boolean; // true if this flight itself covers a night (long-haul, no hotel needed that night)
 }
 
 export interface LoyaltyProgramme {

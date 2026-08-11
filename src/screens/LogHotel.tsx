@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { addHotel, updateHotel } from '../lib/queries';
 import type { Hotel } from '../types';
-import { useTrips } from '../lib/useLiveData';
+import { useTrips, useAllHotels } from '../lib/useLiveData';
 import { BackIcon } from '../components/Icons';
 
 const CATEGORIES = ['Luxury', 'Premium', 'Midscale', 'Budget'] as const;
@@ -26,6 +26,8 @@ export function LogHotel() {
   const extractNote = state?.extractNote as string | undefined;
   const src = editing ?? prefill; // either populates the form; only `editing` triggers update-mode
   const { data: trips } = useTrips();
+  const { data: allHotels } = useAllHotels();
+  const knownHotels = Array.from(new Map(allHotels.map((h) => [h.name, h])).values());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
@@ -94,7 +96,29 @@ export function LogHotel() {
       <form onSubmit={handleSubmit} style={{ padding: '0 20px', display: 'grid', gap: 14 }}>
         <div>
           <label style={labelStyle}>Hotel name *</label>
-          <input style={inputStyle} value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Marriott Marble Arch" />
+          <input
+            style={inputStyle}
+            list="known-hotels"
+            value={form.name}
+            onChange={(e) => {
+              const name = e.target.value;
+              const match = knownHotels.find((h) => h.name === name);
+              if (match) {
+                setForm((f) => ({
+                  ...f, name, country: match.country, city: match.city ?? '', brand: match.brand,
+                  category: match.category, card: match.card ?? '',
+                }));
+              } else {
+                set('name', name);
+              }
+            }}
+            placeholder="e.g. Marriott Marble Arch"
+          />
+          <datalist id="known-hotels">
+            {knownHotels.map((h) => (
+              <option key={h.id} value={h.name} />
+            ))}
+          </datalist>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
@@ -110,15 +134,13 @@ export function LogHotel() {
           <label style={labelStyle}>Brand</label>
           <input style={inputStyle} value={form.brand} onChange={(e) => set('brand', e.target.value)} placeholder="Marriott Bonvoy" />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-          <div>
-            <label style={labelStyle}>Check-in date *</label>
-            <input style={inputStyle} type="date" value={form.date} onChange={(e) => set('date', e.target.value)} />
-          </div>
-          <div>
-            <label style={labelStyle}>Nights</label>
-            <input style={inputStyle} type="number" min="1" value={form.nights} onChange={(e) => set('nights', e.target.value)} />
-          </div>
+        <div>
+          <label style={labelStyle}>Check-in date *</label>
+          <input style={inputStyle} type="date" value={form.date} onChange={(e) => set('date', e.target.value)} />
+        </div>
+        <div>
+          <label style={labelStyle}>Nights</label>
+          <input style={inputStyle} type="number" min="1" value={form.nights} onChange={(e) => set('nights', e.target.value)} />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>

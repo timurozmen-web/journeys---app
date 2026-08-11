@@ -34,7 +34,7 @@ export function LogFlight() {
     cabin: (src?.cabin ?? 'Economy') as (typeof CABINS)[number],
     status: (src?.status ?? 'Completed') as (typeof STATUSES)[number],
     cost: src?.cost != null ? String(src.cost) : '',
-    award: src?.award ?? false, tripId: presetTripId ?? '',
+    award: src?.award ?? false, overnight: src?.overnight ?? false, tripId: presetTripId ?? '',
   });
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -53,7 +53,7 @@ export function LogFlight() {
       const payload = {
         date: form.date, from: form.from, to: form.to, airline: form.airline,
         flightNo: form.flightNo || null, cabin: form.cabin, status: form.status,
-        cost: form.cost ? parseFloat(form.cost) : null, award: form.award,
+        cost: form.cost ? parseFloat(form.cost) : null, award: form.award, overnight: form.overnight,
         tripId: form.tripId || null,
       };
       if (editing) {
@@ -134,6 +134,12 @@ export function LogFlight() {
               Award / points redemption
             </label>
           </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--ink2)' }}>
+            <input type="checkbox" checked={form.overnight} onChange={(e) => set('overnight', e.target.checked)} />
+            Overnight flight — no hotel needed that night
+          </label>
         </div>
         <div>
           <label style={labelStyle}>Attach to trip</label>
