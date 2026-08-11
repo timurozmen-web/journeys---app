@@ -15,11 +15,54 @@ export async function fetchTrips(): Promise<Trip[]> {
     start: t.start_date,
     end: t.end_date,
     section: t.section,
+    tripType: (t.trip_type as 'work' | 'leisure') ?? 'leisure',
     notes: t.notes ?? '',
     heroImageUrl: t.hero_image_url,
     hotels: (hotels ?? []).filter((h) => h.trip_id === t.id).map(mapHotel),
     flights: (flights ?? []).filter((f) => f.trip_id === t.id).map(mapFlight),
   }));
+}
+
+function computeSection(start: string, end: string, today: string): 'current' | 'upcoming' | 'past' {
+  if (start <= today && today <= end) return 'current';
+  if (start > today) return 'upcoming';
+  return 'past';
+}
+
+export interface NewTripInput {
+  title: string;
+  start: string;
+  end: string;
+  tripType: 'work' | 'leisure';
+  notes: string;
+}
+
+export async function addTrip(input: NewTripInput): Promise<string> {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data, error } = await supabase
+    .from('trips')
+    .insert({
+      title: input.title, start_date: input.start, end_date: input.end,
+      section: computeSection(input.start, input.end, today),
+      trip_type: input.tripType, notes: input.notes,
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+export async function updateTrip(id: string, input: NewTripInput) {
+  const today = new Date().toISOString().slice(0, 10);
+  const { error } = await supabase
+    .from('trips')
+    .update({
+      title: input.title, start_date: input.start, end_date: input.end,
+      section: computeSection(input.start, input.end, today),
+      trip_type: input.tripType, notes: input.notes,
+    })
+    .eq('id', id);
+  if (error) throw error;
 }
 
 function mapHotel(h: any): Hotel {

@@ -68,6 +68,7 @@ export interface Trip {
   start: string;
   end: string;
   section: 'current' | 'upcoming' | 'past';
+  tripType: 'work' | 'leisure';
   hotels: Hotel[];
   flights: Flight[];
   notes: string;

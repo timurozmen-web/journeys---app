@@ -58,3 +58,4 @@ export const CameraIcon = wrap(
   '<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>'
 );
 export const ChevronDownIcon = wrap('<path d="m6 9 6 6 6-6"/>');
+export const EditIcon = wrap('<path d="M17 3a2.85 2.65 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>');

@@ -9,6 +9,7 @@ import { TripDetail } from './screens/TripDetail';
 import { Action } from './screens/Action';
 import { LogHotel } from './screens/LogHotel';
 import { LogFlight } from './screens/LogFlight';
+import { LogTrip } from './screens/LogTrip';
 import { ScanEmail } from './screens/ScanEmail';
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/log-hotel" element={<LogHotel />} />
           <Route path="/log-flight" element={<LogFlight />} />
+          <Route path="/log-trip" element={<LogTrip />} />
           <Route path="/scan-email" element={<ScanEmail />} />
           <Route path="/action/:kind" element={<Action />} />
         </Routes>

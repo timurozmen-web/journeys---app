@@ -5,7 +5,7 @@ import type { Trip, LoyaltyProgramme, PaymentCard, Review } from '../types';
 
 export const trips: Trip[] = [
   {
-    id: 'tr1', title: 'Türkiye', start: '2026-07-25', end: '2026-08-15', section: 'current',
+    id: 'tr1', title: 'Türkiye', start: '2026-07-25', end: '2026-08-15', section: 'current', tripType: 'leisure',
     notes: 'Kemer check-in from 3pm — flag Titanium status on arrival.', heroImageUrl: null,
     hotels: [
       { id: 'h1', name: 'Hilton Dalaman', country: 'Türkiye', city: 'Dalaman', brand: 'Hilton Honors', nights: 3, date: '2026-07-25', status: 'Completed', total: 480, nightlyRate: 160, avgRate: 190, sqm: null, card: 'Hilton Debit', category: 'Premium', lat: 36.7, lng: 28.8, benefitValue: null, benefitNote: null, bookingChannel: null },
@@ -18,15 +18,15 @@ export const trips: Trip[] = [
     ],
   },
   {
-    id: 'tr2', title: 'India · Spain', start: '2027-01-16', end: '2027-01-23', section: 'upcoming',
+    id: 'tr2', title: 'India · Spain', start: '2027-01-16', end: '2027-01-23', section: 'upcoming', tripType: 'leisure',
     notes: '', heroImageUrl: null, hotels: [], flights: [],
   },
   {
-    id: 'tr3', title: 'Australia · Indonesia +2', start: '2026-05-03', end: '2026-06-01', section: 'past',
+    id: 'tr3', title: 'Australia · Indonesia +2', start: '2026-05-03', end: '2026-06-01', section: 'past', tripType: 'leisure',
     notes: '', heroImageUrl: null, hotels: [], flights: [],
   },
   {
-    id: 'tr4', title: 'Canada', start: '2026-04-09', end: '2026-04-14', section: 'past',
+    id: 'tr4', title: 'Canada', start: '2026-04-09', end: '2026-04-14', section: 'past', tripType: 'leisure',
     notes: '', heroImageUrl: null, hotels: [], flights: [],
   },
 ];

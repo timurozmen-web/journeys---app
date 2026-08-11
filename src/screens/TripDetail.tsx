@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTrips, useLoyaltyProgrammes } from '../lib/useLiveData';
 import { uploadTripPhoto } from '../lib/queries';
-import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, PlaneIcon } from '../components/Icons';
+import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, PlaneIcon, EditIcon } from '../components/Icons';
 import { DestinationPhoto } from '../components/DestinationPhoto';
 import { destinationQuery } from '../components/TripCard';
 import { formatDateRange } from '../lib/format';
@@ -76,6 +76,13 @@ export function TripDetail() {
         <div className="grad" />
         <button className="tdback" onClick={() => navigate('/trips')}>
           <BackIcon size={18} color="#fff" />
+        </button>
+        <button
+          className="tdback"
+          style={{ left: 'auto', right: 64 }}
+          onClick={() => navigate('/log-trip', { state: { trip } })}
+        >
+          <EditIcon size={17} color="#fff" />
         </button>
         <button
           className="tdback"

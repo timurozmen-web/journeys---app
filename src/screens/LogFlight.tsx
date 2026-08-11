@@ -63,7 +63,13 @@ export function LogFlight() {
       }
       navigate(form.tripId ? `/trips/${form.tripId}` : '/trips');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save.');
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'object' && err !== null && 'message' in err
+          ? String((err as { message: unknown }).message)
+          : 'Failed to save.';
+      setError(message);
     } finally {
       setSaving(false);
     }
