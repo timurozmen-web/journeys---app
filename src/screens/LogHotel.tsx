@@ -30,6 +30,8 @@ export function LogHotel() {
   const knownHotels = Array.from(new Map(allHotels.map((h) => [h.name, h])).values());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [overlapWarning, setOverlapWarning] = useState<string | null>(null);
+  const [confirmedOverlap, setConfirmedOverlap] = useState(false);
   const [form, setForm] = useState({
     name: src?.name ?? '', country: src?.country ?? '', city: src?.city ?? '', brand: src?.brand ?? '',
     nights: String(src?.nights ?? 1), date: src?.date ?? '',
@@ -44,6 +46,27 @@ export function LogHotel() {
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+    setConfirmedOverlap(false);
+    setOverlapWarning(null);
+  }
+
+  function findOverlap(): string | null {
+    if (!form.tripId || !form.date) return null;
+    const trip = trips.find((t) => t.id === form.tripId);
+    if (!trip) return null;
+    const start = form.date;
+    const nights = parseInt(form.nights, 10) || 1;
+    const end = new Date(start);
+    end.setDate(end.getDate() + nights);
+    const endStr = end.toISOString().slice(0, 10);
+    for (const h of trip.hotels) {
+      if (editing && h.id === editing.id) continue;
+      const hEnd = new Date(h.date);
+      hEnd.setDate(hEnd.getDate() + h.nights);
+      const hEndStr = hEnd.toISOString().slice(0, 10);
+      if (start < hEndStr && h.date < endStr) return h.name;
+    }
+    return null;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -51,6 +74,13 @@ export function LogHotel() {
     if (!form.name || !form.country || !form.date) {
       setError('Name, country and date are required.');
       return;
+    }
+    if (!confirmedOverlap) {
+      const overlap = findOverlap();
+      if (overlap) {
+        setOverlapWarning(overlap);
+        return;
+      }
     }
     setSaving(true);
     setError('');
@@ -191,6 +221,32 @@ export function LogHotel() {
         {extractNote && (
           <div style={{ background: 'rgba(156,95,8,.1)', color: 'var(--amber)', fontSize: 12.5, padding: '10px 14px', borderRadius: 10, fontWeight: 600 }}>
             {extractNote}
+          </div>
+        )}
+        {overlapWarning && (
+          <div style={{ background: 'rgba(156,95,8,.1)', border: '1px solid rgba(156,95,8,.25)', borderRadius: 10, padding: '12px 14px' }}>
+            <div style={{ fontSize: 12.5, color: 'var(--amber)', fontWeight: 600, marginBottom: 8 }}>
+              These dates overlap with "{overlapWarning}", already logged on this trip. Save anyway?
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmedOverlap(true);
+                  setOverlapWarning(null);
+                }}
+                style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--amber)', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+              >
+                Save anyway
+              </button>
+              <button
+                type="button"
+                onClick={() => setOverlapWarning(null)}
+                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+              >
+                Let me fix it
+              </button>
+            </div>
           </div>
         )}
         {error && <div style={{ color: 'var(--red)', fontSize: 13 }}>{error}</div>}
