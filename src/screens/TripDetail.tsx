@@ -6,7 +6,7 @@ import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, PlaneIcon, EditIcon } f
 import { DestinationPhoto } from '../components/DestinationPhoto';
 import { destinationQuery } from '../components/TripCard';
 import { formatDateRange } from '../lib/format';
-import { computeTripPoints, computeTripSavings, groupDestinations } from '../lib/tripStats';
+import { computeTripPoints, computeTripSavings, groupDestinations, findGaps } from '../lib/tripStats';
 
 type Seg = 'overview' | 'itinerary' | 'expenses' | 'notes';
 
@@ -61,6 +61,7 @@ export function TripDetail() {
   const points = computeTripPoints(trip, loyaltyProgrammes);
   const savings = computeTripSavings(trip);
   const destinations = groupDestinations(trip);
+  const gaps = findGaps(trip);
 
   return (
     <div>
@@ -206,6 +207,43 @@ export function TripDetail() {
           )}
         {seg === 'notes' && <p style={{ fontSize: 13.5, color: 'var(--ink2)' }}>{trip.notes || 'No notes yet.'}</p>}
       </div>
+
+      {gaps.length > 0 && (
+        <>
+          <div className="sect">
+            <h2>Missing nights</h2>
+          </div>
+          <div style={{ display: 'grid', gap: 8, padding: '0 20px 20px' }}>
+            {gaps.map((g, i) => (
+              <div
+                key={i}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                  padding: '12px 14px', borderRadius: 12, background: 'rgba(156,95,8,.08)', border: '1px solid rgba(156,95,8,.2)',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>
+                    {formatDateRange(g.start, g.end)}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 2 }}>
+                    {g.nights} night{g.nights === 1 ? '' : 's'} not accounted for
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate('/log-hotel', { state: { tripId: trip.id, prefill: { date: g.start, nights: g.nights } } })}
+                  style={{
+                    flexShrink: 0, padding: '8px 14px', borderRadius: 10, border: 'none',
+                    background: 'var(--amber)', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  + Add hotel
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {destinations.length > 0 && (
         <>

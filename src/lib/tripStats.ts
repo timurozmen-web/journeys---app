@@ -104,3 +104,46 @@ function addDays(iso: string, days: number) {
   d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
 }
+
+export interface Gap {
+  start: string;
+  end: string;
+  nights: number;
+}
+
+// Every night of a trip should be covered by some hotel. This finds the
+// stretches that aren't, so they can be filled in rather than left silent.
+export function findGaps(trip: Trip): Gap[] {
+  const intervals = trip.hotels
+    .filter((h) => h.nights > 0)
+    .map((h) => ({ start: h.date, end: addDays(h.date, h.nights) }))
+    .sort((a, b) => a.start.localeCompare(b.start));
+
+  // Merge overlapping/adjacent covered ranges.
+  const merged: { start: string; end: string }[] = [];
+  for (const iv of intervals) {
+    const last = merged[merged.length - 1];
+    if (last && iv.start <= last.end) {
+      if (iv.end > last.end) last.end = iv.end;
+    } else {
+      merged.push({ ...iv });
+    }
+  }
+
+  const gaps: Gap[] = [];
+  let cursor = trip.start;
+  for (const iv of merged) {
+    if (iv.start > cursor) {
+      gaps.push({ start: cursor, end: iv.start, nights: nightsBetween(cursor, iv.start) });
+    }
+    if (iv.end > cursor) cursor = iv.end;
+  }
+  if (cursor < trip.end) {
+    gaps.push({ start: cursor, end: trip.end, nights: nightsBetween(cursor, trip.end) });
+  }
+  return gaps;
+}
+
+function nightsBetween(start: string, end: string) {
+  return Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86400000);
+}
