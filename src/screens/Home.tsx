@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes } from '../lib/useLiveData';
 import { BedIcon, HotelIcon, PlaneIcon } from '../components/Icons';
 import { TripCard } from '../components/TripCard';
@@ -61,7 +62,12 @@ export function Home() {
     if (h.benefitValue) benefitsValue += h.benefitValue;
   }
 
-  const marriott = loyaltyProgrammes.find((p) => p.name === 'Marriott Bonvoy');
+  const topProgress = loyaltyProgrammes
+    .filter((p) => p.nextTier && p.nights != null && p.nightsNeeded != null && p.nightsNeeded > 0)
+    .map((p) => ({ ...p, pct: (p.nights! / (p.nights! + p.nightsNeeded!)) * 100 }))
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, 3);
+  const [progressIndex, setProgressIndex] = useState(0);
 
   return (
     <div>
@@ -105,35 +111,61 @@ export function Home() {
         </div>
       </div>
 
-      {marriott && marriott.nextTier && (
+      {topProgress.length > 0 && (
         <div className="stack" style={{ marginTop: 12 }}>
-          <div className="hero">
-            <div className="k">Loyalty progress</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <div className="brand">{marriott.name}</div>
-                <div className="tier">{marriott.tier}</div>
-              </div>
-              {marriott.nightsNeeded != null && (
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 22, fontWeight: 800 }}>{marriott.nightsNeeded}</div>
-                  <div style={{ fontSize: 9.5, opacity: 0.85, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                    nights to<br />{marriott.nextTier}
+          <div
+            ref={(el) => {
+              if (!el || (el as any)._wired) return;
+              (el as any)._wired = true;
+              el.addEventListener('scroll', () => {
+                const idx = Math.round(el.scrollLeft / el.clientWidth);
+                setProgressIndex(idx);
+              });
+            }}
+            style={{
+              display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', gap: 0,
+              scrollbarWidth: 'none', borderRadius: 'var(--r-lg)',
+            }}
+          >
+            {topProgress.map((p) => (
+              <div key={p.name} style={{ flex: '0 0 100%', scrollSnapAlign: 'start' }}>
+                <div className="hero">
+                  <div className="k">Loyalty progress</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div className="brand">{p.name}</div>
+                      <div className="tier">{p.tier}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 22, fontWeight: 800 }}>{p.nightsNeeded}</div>
+                      <div style={{ fontSize: 9.5, opacity: 0.85, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                        nights to<br />{p.nextTier}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="hbar" style={{ marginTop: 12 }}>
+                    <i style={{ width: `${p.pct}%` }} />
+                  </div>
+                  <div className="note" style={{ color: 'rgba(255,255,255,.85)' }}>
+                    {p.nights} / {p.nights! + p.nightsNeeded!} nights
                   </div>
                 </div>
-              )}
-            </div>
-            {marriott.nights != null && marriott.nightsNeeded != null && (
-              <>
-                <div className="hbar" style={{ marginTop: 12 }}>
-                  <i style={{ width: `${(marriott.nights / (marriott.nights + marriott.nightsNeeded)) * 100}%` }} />
-                </div>
-                <div className="note" style={{ color: 'rgba(255,255,255,.85)' }}>
-                  {marriott.nights} / {marriott.nights + marriott.nightsNeeded} nights
-                </div>
-              </>
-            )}
+              </div>
+            ))}
           </div>
+          {topProgress.length > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 8 }}>
+              {topProgress.map((p, i) => (
+                <span
+                  key={p.name}
+                  style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: i === progressIndex ? 'var(--brand)' : 'var(--line)',
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
