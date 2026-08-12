@@ -50,7 +50,7 @@ export function Wallet() {
   const totalValue = loyaltyProgrammes.reduce((s, p) => s + (p.points * p.ptValue) / 100, 0);
   const statusItems = loyaltyProgrammes.filter((p) => p.nextTier && p.nightsNeeded != null);
 
-  let items: { key: string; color: string; name: string; sub: string; big: string; biglab: string; val: string; vallab: string; pct: number | null; detail: React.ReactNode; shape?: string; font?: string; accent?: string }[] = [];
+  let items: { key: string; color: string; name: string; sub: string; big: string; biglab: string; val: string; vallab: string; pct: number | null; pct2?: number | null; detail: React.ReactNode; shape?: string; font?: string; accent?: string }[] = [];
 
   if (seg === 'loyalty') {
     items = loyaltyProgrammes.map((p) => ({
@@ -114,19 +114,36 @@ export function Wallet() {
       };
     });
   } else {
-    items = statusItems.map((p) => ({
-      key: p.name, color: p.color, name: p.name, sub: p.tier ?? '',
-      big: `${p.nights}`, biglab: `of ${(p.nights ?? 0) + (p.nightsNeeded ?? 0)} nights`,
-      val: `${p.nightsNeeded}`, vallab: `to ${p.nextTier}`,
-      pct: p.nights != null && p.nightsNeeded != null ? (p.nights / (p.nights + p.nightsNeeded)) * 100 : null,
-      shape: p.shape, font: p.font, accent: p.accent,
-      detail: (
-        <div className="dd-row">
-          <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Status</span>
-          <span style={{ fontSize: 12.5, fontWeight: 700 }}>{p.tier}</span>
-        </div>
-      ),
-    }));
+    const currentYear = new Date().getFullYear();
+    items = statusItems.map((p) => {
+      const bookedNights = hotels
+        .filter((h) => h.brand === p.name && h.status === 'Booked' && Number(h.date.slice(0, 4)) === currentYear)
+        .reduce((s, h) => s + h.nights, 0);
+      const total = (p.nights ?? 0) + (p.nightsNeeded ?? 0);
+      const projected = Math.min(total, (p.nights ?? 0) + bookedNights);
+      return {
+        key: p.name, color: p.color, name: p.name, sub: p.tier ?? '',
+        big: `${p.nights}`, biglab: bookedNights > 0 ? `of ${total} nights (+${bookedNights} booked)` : `of ${total} nights`,
+        val: `${p.nightsNeeded}`, vallab: `to ${p.nextTier}`,
+        pct: p.nights != null && p.nightsNeeded != null ? (p.nights / total) * 100 : null,
+        pct2: bookedNights > 0 ? (projected / total) * 100 : null,
+        shape: p.shape, font: p.font, accent: p.accent,
+        detail: (
+          <>
+            <div className="dd-row">
+              <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Status</span>
+              <span style={{ fontSize: 12.5, fontWeight: 700 }}>{p.tier}</span>
+            </div>
+            {bookedNights > 0 && (
+              <div className="dd-row">
+                <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Booked, not yet stayed</span>
+                <span style={{ fontSize: 12.5, fontWeight: 700 }}>+{bookedNights} nights</span>
+              </div>
+            )}
+          </>
+        ),
+      };
+    });
   }
 
   return (
@@ -190,8 +207,11 @@ export function Wallet() {
                   </span>
                 </div>
                 {it.pct != null && (
-                  <div className="hbar" style={{ background: 'rgba(255,255,255,.22)', marginTop: 12 }}>
-                    <i style={{ width: `${Math.max(0, Math.min(100, it.pct))}%`, background: '#fff' }} />
+                  <div className="hbar" style={{ background: 'rgba(255,255,255,.22)', marginTop: 12, position: 'relative' }}>
+                    {it.pct2 != null && (
+                      <i style={{ width: `${Math.max(0, Math.min(100, it.pct2))}%`, background: 'rgba(255,255,255,.55)', position: 'absolute', left: 0, top: 0, bottom: 0 }} />
+                    )}
+                    <i style={{ width: `${Math.max(0, Math.min(100, it.pct))}%`, background: '#fff', position: 'relative' }} />
                   </div>
                 )}
                 <div className="deckbot">
