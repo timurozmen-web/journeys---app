@@ -136,3 +136,14 @@ create table promotions (
 
 alter table promotions enable row level security;
 create policy "own rows only" on promotions for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+alter table promotions add column if not exists promo_type text not null default 'other'
+  check (promo_type in ('multiplier', 'threshold_bonus', 'fixed_discount', 'status_boost', 'airline_partner', 'other'));
+alter table promotions add column if not exists multiplier numeric;
+alter table promotions add column if not exists threshold_spend numeric;
+alter table promotions add column if not exists bonus_points numeric;
+alter table promotions add column if not exists discount_value numeric;
+alter table promotions add column if not exists discount_used boolean not null default false;
+alter table promotions add column if not exists status_nights_bonus int;
+alter table promotions add column if not exists status_nights_applied boolean not null default false;
+alter table promotions add column if not exists partner_airline text;

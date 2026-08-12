@@ -18,7 +18,8 @@ const CONTENT: Record<string, { title: string; body: string; actions?: { label: 
   },
   discover: {
     title: 'Discover',
-    body: 'Surfaces promotions and redemptions worth using, filtered by the balances and cards you actually hold. Not built yet — needs a live award/promo data source.',
+    body: 'Scan a promotion to have it read and classified automatically. Full personalized redemption suggestions still need a live award/promo data source, but this part is real now.',
+    actions: [{ label: '📷 Scan a promotion', to: '/scan-promotion' }],
   },
 };
 

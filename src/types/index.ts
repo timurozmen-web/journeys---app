@@ -99,6 +99,8 @@ export interface Voucher {
   sourceKey: string | null; // stable key for auto-synced card vouchers, prevents duplicate creation
 }
 
+export type PromoType = 'multiplier' | 'threshold_bonus' | 'fixed_discount' | 'status_boost' | 'airline_partner' | 'other';
+
 export interface Promotion {
   id: string;
   title: string;
@@ -106,4 +108,13 @@ export interface Promotion {
   brand: string | null;
   startDate: string | null;
   endDate: string | null;
+  promoType: PromoType | null;
+  multiplier: number | null; // e.g. 2 for "2x points"
+  thresholdSpend: number | null; // £ needed to earn bonus_points
+  bonusPoints: number | null;
+  discountValue: number | null; // £ off
+  discountUsed: boolean;
+  statusNightsBonus: number | null;
+  statusNightsApplied: boolean; // has the qualifying stay happened
+  partnerAirline: string | null; // for airline_partner type -- which airline programme also earns
 }

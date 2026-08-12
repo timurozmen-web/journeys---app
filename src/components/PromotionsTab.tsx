@@ -1,12 +1,45 @@
 import { useState } from 'react';
 import { usePromotions } from '../lib/useLiveData';
-import { addPromotion, deletePromotion } from '../lib/queries';
+import { addPromotion, deletePromotion, setPromotionDiscountUsed, setPromotionStatusNightsApplied } from '../lib/queries';
+import type { Promotion, PromoType } from '../types';
+
+const TYPE_LABELS: Record<PromoType, string> = {
+  multiplier: 'Earning multiplier',
+  threshold_bonus: 'Spend threshold bonus',
+  fixed_discount: 'Fixed discount',
+  status_boost: 'Status night boost',
+  airline_partner: 'Airline joint earning',
+  other: 'Other',
+};
+
+function summarize(p: Promotion): string | null {
+  switch (p.promoType) {
+    case 'multiplier':
+      return p.multiplier != null ? `${p.multiplier}x points${p.brand ? ` on ${p.brand}` : ''}` : null;
+    case 'threshold_bonus':
+      return p.thresholdSpend != null && p.bonusPoints != null
+        ? `Spend £${p.thresholdSpend.toLocaleString()} → ${p.bonusPoints.toLocaleString()} pts`
+        : null;
+    case 'fixed_discount':
+      return p.discountValue != null ? `£${p.discountValue.toFixed(2)} off` : null;
+    case 'status_boost':
+      return p.statusNightsBonus != null ? `+${p.statusNightsBonus} status nights` : null;
+    case 'airline_partner':
+      return p.partnerAirline ? `Joint earning: ${p.brand ?? 'hotel'} + ${p.partnerAirline}` : null;
+    default:
+      return null;
+  }
+}
 
 export function PromotionsTab() {
   const { data: promotions, refetch } = usePromotions();
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', brand: '', startDate: '', endDate: '' });
+  const [form, setForm] = useState({
+    title: '', description: '', brand: '', startDate: '', endDate: '',
+    promoType: 'multiplier' as PromoType,
+    multiplier: '', thresholdSpend: '', bonusPoints: '', discountValue: '', statusNightsBonus: '', partnerAirline: '',
+  });
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -16,9 +49,15 @@ export function PromotionsTab() {
     try {
       await addPromotion({
         title: form.title, description: form.description || null, brand: form.brand || null,
-        startDate: form.startDate || null, endDate: form.endDate || null,
+        startDate: form.startDate || null, endDate: form.endDate || null, promoType: form.promoType,
+        multiplier: form.multiplier ? parseFloat(form.multiplier) : null,
+        thresholdSpend: form.thresholdSpend ? parseFloat(form.thresholdSpend) : null,
+        bonusPoints: form.bonusPoints ? parseFloat(form.bonusPoints) : null,
+        discountValue: form.discountValue ? parseFloat(form.discountValue) : null,
+        statusNightsBonus: form.statusNightsBonus ? parseInt(form.statusNightsBonus, 10) : null,
+        partnerAirline: form.partnerAirline || null,
       });
-      setForm({ title: '', description: '', brand: '', startDate: '', endDate: '' });
+      setForm({ title: '', description: '', brand: '', startDate: '', endDate: '', promoType: 'multiplier', multiplier: '', thresholdSpend: '', bonusPoints: '', discountValue: '', statusNightsBonus: '', partnerAirline: '' });
       setAdding(false);
       refetch();
     } finally {
@@ -30,12 +69,13 @@ export function PromotionsTab() {
     <div className="stack" style={{ display: 'grid', gap: 10 }}>
       {promotions.length === 0 && !adding && (
         <div style={{ padding: '20px 4px', textAlign: 'center', color: 'var(--ink3)', fontSize: 13 }}>
-          No promotions logged yet.
+          No promotions logged yet. Scan one from Capture, or add manually below.
         </div>
       )}
 
       {promotions.map((p) => {
         const isActive = (!p.startDate || p.startDate <= today) && (!p.endDate || p.endDate >= today);
+        const summary = summarize(p);
         return (
           <div
             key={p.id}
@@ -44,7 +84,7 @@ export function PromotionsTab() {
               border: `1px solid ${isActive ? 'var(--brand)' : 'var(--line)'}`, position: 'relative',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, paddingRight: 20 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700 }}>{p.title}</div>
               {isActive && (
                 <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand)', background: 'rgba(19,34,71,.08)', padding: '2px 8px', borderRadius: 99, flexShrink: 0 }}>
@@ -52,16 +92,34 @@ export function PromotionsTab() {
                 </span>
               )}
             </div>
-            {p.brand && <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 3 }}>{p.brand}</div>}
+            <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 3, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {p.brand && <span>{p.brand}</span>}
+              {p.promoType && <span>· {TYPE_LABELS[p.promoType]}</span>}
+            </div>
+            {summary && <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand)', marginTop: 6 }}>{summary}</div>}
             {p.description && <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 6 }}>{p.description}</div>}
             {(p.startDate || p.endDate) && (
               <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 6 }}>
                 {p.startDate ?? '…'} – {p.endDate ?? '…'}
               </div>
             )}
+
+            {p.promoType === 'fixed_discount' && (
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 12.5, fontWeight: 600, color: p.discountUsed ? 'var(--ink3)' : 'var(--ink2)' }}>
+                <input type="checkbox" checked={p.discountUsed} onChange={(e) => setPromotionDiscountUsed(p.id, e.target.checked).then(refetch)} />
+                {p.discountUsed ? 'Used' : 'Mark as used'}
+              </label>
+            )}
+            {p.promoType === 'status_boost' && (
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 12.5, fontWeight: 600, color: p.statusNightsApplied ? 'var(--ink3)' : 'var(--ink2)' }}>
+                <input type="checkbox" checked={p.statusNightsApplied} onChange={(e) => setPromotionStatusNightsApplied(p.id, e.target.checked).then(refetch)} />
+                {p.statusNightsApplied ? 'Applied to status' : 'Mark qualifying stay complete'}
+              </label>
+            )}
+
             <button
               onClick={() => deletePromotion(p.id).then(refetch)}
-              style={{ position: 'absolute', top: 10, right: isActive ? 68 : 10, background: 'none', border: 'none', color: 'var(--ink3)', fontSize: 12, cursor: 'pointer' }}
+              style={{ position: 'absolute', top: 10, right: 10, background: 'none', border: 'none', color: 'var(--ink3)', fontSize: 12, cursor: 'pointer' }}
             >
               ✕
             </button>
@@ -87,14 +145,55 @@ export function PromotionsTab() {
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid var(--line)', fontSize: 13.5 }}
           />
+          <select
+            value={form.promoType}
+            onChange={(e) => setForm((f) => ({ ...f, promoType: e.target.value as PromoType }))}
+            style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid var(--line)', fontSize: 13.5 }}
+          >
+            {(Object.keys(TYPE_LABELS) as PromoType[]).filter((t) => t !== 'other').map((t) => (
+              <option key={t} value={t}>{TYPE_LABELS[t]}</option>
+            ))}
+          </select>
           <input
             placeholder="Brand (optional)"
             value={form.brand}
             onChange={(e) => setForm((f) => ({ ...f, brand: e.target.value }))}
             style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid var(--line)', fontSize: 13.5 }}
           />
+
+          {form.promoType === 'multiplier' && (
+            <input placeholder="Multiplier (e.g. 2 for 2x)" type="number" step="0.1" value={form.multiplier}
+              onChange={(e) => setForm((f) => ({ ...f, multiplier: e.target.value }))}
+              style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid var(--line)', fontSize: 13.5 }} />
+          )}
+          {form.promoType === 'threshold_bonus' && (
+            <>
+              <input placeholder="Spend required (£)" type="number" step="0.01" value={form.thresholdSpend}
+                onChange={(e) => setForm((f) => ({ ...f, thresholdSpend: e.target.value }))}
+                style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid var(--line)', fontSize: 13.5 }} />
+              <input placeholder="Bonus points" type="number" value={form.bonusPoints}
+                onChange={(e) => setForm((f) => ({ ...f, bonusPoints: e.target.value }))}
+                style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid var(--line)', fontSize: 13.5 }} />
+            </>
+          )}
+          {form.promoType === 'fixed_discount' && (
+            <input placeholder="Discount amount (£)" type="number" step="0.01" value={form.discountValue}
+              onChange={(e) => setForm((f) => ({ ...f, discountValue: e.target.value }))}
+              style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid var(--line)', fontSize: 13.5 }} />
+          )}
+          {form.promoType === 'status_boost' && (
+            <input placeholder="Bonus status nights" type="number" value={form.statusNightsBonus}
+              onChange={(e) => setForm((f) => ({ ...f, statusNightsBonus: e.target.value }))}
+              style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid var(--line)', fontSize: 13.5 }} />
+          )}
+          {form.promoType === 'airline_partner' && (
+            <input placeholder="Airline programme (e.g. Virgin Points)" value={form.partnerAirline}
+              onChange={(e) => setForm((f) => ({ ...f, partnerAirline: e.target.value }))}
+              style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid var(--line)', fontSize: 13.5 }} />
+          )}
+
           <textarea
-            placeholder="What it offers (optional)"
+            placeholder="Description (optional)"
             value={form.description}
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             rows={2}

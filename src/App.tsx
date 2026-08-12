@@ -11,6 +11,7 @@ import { LogHotel } from './screens/LogHotel';
 import { LogFlight } from './screens/LogFlight';
 import { LogTrip } from './screens/LogTrip';
 import { ScanEmail } from './screens/ScanEmail';
+import { ScanPromotion } from './screens/ScanPromotion';
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/log-flight" element={<LogFlight />} />
           <Route path="/log-trip" element={<LogTrip />} />
           <Route path="/scan-email" element={<ScanEmail />} />
+          <Route path="/scan-promotion" element={<ScanPromotion />} />
           <Route path="/action/:kind" element={<Action />} />
         </Routes>
       </div>

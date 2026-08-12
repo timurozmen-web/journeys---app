@@ -1,6 +1,6 @@
 import { CARDS_STATIC, defaultCardFor, isEuropeOrUK, isIHGPremiumCountry } from '../data/cardDefs';
 import { basePointsForHotel } from './loyaltyPoints';
-import type { Trip, Hotel, LoyaltyProgramme } from '../types';
+import type { Trip, Hotel, LoyaltyProgramme, Promotion } from '../types';
 
 export interface TripPointsResult {
   totalPoints: number;
@@ -8,7 +8,7 @@ export interface TripPointsResult {
   centsPerPoint: number; // pence per point, blended
 }
 
-export function computeTripPoints(trip: Trip, loyaltyProgrammes: LoyaltyProgramme[]): TripPointsResult {
+export function computeTripPoints(trip: Trip, loyaltyProgrammes: LoyaltyProgramme[], promotions: Promotion[] = []): TripPointsResult {
   const ptValueByBrand = new Map(loyaltyProgrammes.map((p) => [p.name, p.ptValue]));
   let totalPoints = 0;
   let totalValue = 0;
@@ -18,7 +18,7 @@ export function computeTripPoints(trip: Trip, loyaltyProgrammes: LoyaltyProgramm
 
     // Base hotel-loyalty-program points (rate × elite tier bonus) --
     // earned by staying, independent of which card paid.
-    const basePts = basePointsForHotel(h);
+    const basePts = basePointsForHotel(h, promotions);
     if (basePts > 0) {
       const basePtVal = ptValueByBrand.get(h.brand) ?? 1;
       totalPoints += basePts;

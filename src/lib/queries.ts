@@ -1,7 +1,7 @@
 // Real Supabase queries. Same shape as src/data/mock.ts, so components
 // don't need to change when they switch from mock data to this.
 import { supabase } from './supabase';
-import type { Trip, Hotel, Flight, LoyaltyProgramme, PaymentCard, Review, Voucher, Promotion } from '../types';
+import type { Trip, Hotel, Flight, LoyaltyProgramme, PaymentCard, Review, Voucher, Promotion, PromoType } from '../types';
 
 export async function fetchTrips(): Promise<Trip[]> {
   const { data: trips, error } = await supabase.from('trips').select('*');
@@ -266,7 +266,12 @@ export async function deleteVoucher(id: string) {
 }
 
 function mapPromotion(p: any): Promotion {
-  return { id: p.id, title: p.title, description: p.description, brand: p.brand, startDate: p.start_date, endDate: p.end_date };
+  return {
+    id: p.id, title: p.title, description: p.description, brand: p.brand, startDate: p.start_date, endDate: p.end_date,
+    promoType: p.promo_type ?? null, multiplier: p.multiplier, thresholdSpend: p.threshold_spend,
+    bonusPoints: p.bonus_points, discountValue: p.discount_value, discountUsed: p.discount_used ?? false,
+    statusNightsBonus: p.status_nights_bonus, statusNightsApplied: p.status_nights_applied ?? false, partnerAirline: p.partner_airline,
+  };
 }
 
 export async function fetchPromotions(): Promise<Promotion[]> {
@@ -277,12 +282,26 @@ export async function fetchPromotions(): Promise<Promotion[]> {
 
 export interface NewPromotionInput {
   title: string; description: string | null; brand: string | null; startDate: string | null; endDate: string | null;
+  promoType: PromoType | null; multiplier: number | null; thresholdSpend: number | null; bonusPoints: number | null;
+  discountValue: number | null; statusNightsBonus: number | null; partnerAirline: string | null;
 }
 export async function addPromotion(input: NewPromotionInput) {
   const { error } = await supabase.from('promotions').insert({
     title: input.title, description: input.description, brand: input.brand,
-    start_date: input.startDate, end_date: input.endDate,
+    start_date: input.startDate, end_date: input.endDate, promo_type: input.promoType,
+    multiplier: input.multiplier, threshold_spend: input.thresholdSpend, bonus_points: input.bonusPoints,
+    discount_value: input.discountValue, status_nights_bonus: input.statusNightsBonus, partner_airline: input.partnerAirline,
   });
+  if (error) throw error;
+}
+
+export async function setPromotionDiscountUsed(id: string, used: boolean) {
+  const { error } = await supabase.from('promotions').update({ discount_used: used }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function setPromotionStatusNightsApplied(id: string, applied: boolean) {
+  const { error } = await supabase.from('promotions').update({ status_nights_applied: applied }).eq('id', id);
   if (error) throw error;
 }
 

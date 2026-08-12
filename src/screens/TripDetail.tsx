@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTrips, useLoyaltyProgrammes } from '../lib/useLiveData';
+import { useTrips, useLoyaltyProgrammes, usePromotions } from '../lib/useLiveData';
 import { uploadTripPhoto } from '../lib/queries';
 import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, PlaneIcon, EditIcon } from '../components/Icons';
 import { DestinationPhoto } from '../components/DestinationPhoto';
@@ -22,6 +22,7 @@ export function TripDetail() {
   const [seg, setSeg] = useState<Seg>('overview');
   const { data: trips } = useTrips();
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
+  const { data: promotions } = usePromotions();
   const trip = trips.find((t) => t.id === id);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -58,7 +59,7 @@ export function TripDetail() {
 
   const spend = trip.hotels.reduce((s, h) => s + (h.total ?? 0), 0) + trip.flights.reduce((s, f) => s + (f.cost ?? 0), 0);
   const nights = trip.hotels.reduce((s, h) => s + h.nights, 0);
-  const points = computeTripPoints(trip, loyaltyProgrammes);
+  const points = computeTripPoints(trip, loyaltyProgrammes, promotions);
   const savings = computeTripSavings(trip);
   const destinations = groupDestinations(trip);
   const gaps = findGaps(trip);

@@ -1,4 +1,4 @@
-import type { Hotel } from '../types';
+import type { Hotel, Promotion } from '../types';
 
 // Approximate FX rates -- not live, just a reasonable current approximation
 // since these programs are priced in USD/EUR, not GBP.
@@ -52,15 +52,28 @@ export const BASE_PROGRAMS: BaseProgramDef[] = [
   },
 ];
 
-export function basePointsForHotel(h: Hotel): number {
+function activeMultiplierFor(h: Hotel, promotions: Promotion[]): number {
+  const match = promotions.find(
+    (p) =>
+      p.promoType === 'multiplier' &&
+      p.multiplier != null &&
+      (!p.brand || p.brand === h.brand) &&
+      (!p.startDate || h.date >= p.startDate) &&
+      (!p.endDate || h.date <= p.endDate)
+  );
+  return match?.multiplier ?? 1;
+}
+
+export function basePointsForHotel(h: Hotel, promotions: Promotion[] = []): number {
   const def = BASE_PROGRAMS.find((d) => d.brand === h.brand);
   if (!def || !h.total || h.status !== 'Completed') return 0;
   const fx = def.currency === 'USD' ? GBP_TO_USD : GBP_TO_EUR;
   const basePoints = h.total * fx * def.baseRatePerUnit;
   const bonusPct = def.tierBonusFor(h.date);
-  return Math.round(basePoints * (1 + bonusPct));
+  const promoMultiplier = activeMultiplierFor(h, promotions);
+  return Math.round(basePoints * (1 + bonusPct) * promoMultiplier);
 }
 
-export function computeBaseProgramPoints(hotels: Hotel[], brand: string): number {
-  return hotels.filter((h) => h.brand === brand).reduce((s, h) => s + basePointsForHotel(h), 0);
+export function computeBaseProgramPoints(hotels: Hotel[], brand: string, promotions: Promotion[] = []): number {
+  return hotels.filter((h) => h.brand === brand).reduce((s, h) => s + basePointsForHotel(h, promotions), 0);
 }
