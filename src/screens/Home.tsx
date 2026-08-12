@@ -164,7 +164,7 @@ export function Home() {
                   )}
                   {p.progress.spendBar && (
                     <>
-                      <div style={{ fontSize: 9.5, opacity: 0.85, fontWeight: 700, marginTop: 8 }}>
+                      <div style={{ fontSize: 9.5, opacity: 0.85, fontWeight: 700, marginTop: 8, color: '#fff' }}>
                         Qualifying spend: ${Math.round(p.progress.spendBar.spendUSD).toLocaleString()} / $23,000
                       </div>
                       <div className="hbar" style={{ marginTop: 4 }}>

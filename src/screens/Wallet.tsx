@@ -291,7 +291,7 @@ export function Wallet() {
                 )}
                 {it.spendBar && (
                   <>
-                    <div style={{ fontSize: 9.5, opacity: 0.85, fontWeight: 700, marginTop: 8 }}>
+                    <div style={{ fontSize: 9.5, opacity: 0.85, fontWeight: 700, marginTop: 8, color: '#fff' }}>
                       Qualifying spend: ${Math.round(it.spendBar.spendUSD).toLocaleString()} / $23,000
                     </div>
                     <div className="hbar" style={{ background: 'rgba(255,255,255,.22)', marginTop: 4 }}>
