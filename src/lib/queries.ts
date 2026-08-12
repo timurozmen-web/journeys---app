@@ -314,3 +314,46 @@ export async function deletePromotion(id: string) {
   const { error } = await supabase.from('promotions').delete().eq('id', id);
   if (error) throw error;
 }
+
+export interface BankConnection {
+  id: string; aspspName: string; aspspCountry: string; accountName: string | null;
+  consentValidUntil: string; lastSyncedAt: string | null;
+}
+export async function fetchBankConnections(): Promise<BankConnection[]> {
+  const { data, error } = await supabase.from('bank_connections').select('*');
+  if (error) throw error;
+  return (data ?? []).map((c) => ({
+    id: c.id, aspspName: c.aspsp_name, aspspCountry: c.aspsp_country, accountName: c.account_name,
+    consentValidUntil: c.consent_valid_until, lastSyncedAt: c.last_synced_at,
+  }));
+}
+
+export interface BankTransaction {
+  id: string; connectionId: string; date: string; amount: number; currency: string;
+  description: string | null; matchedCardId: string | null; dismissed: boolean;
+}
+export async function fetchUnreviewedBankTransactions(): Promise<BankTransaction[]> {
+  const { data, error } = await supabase
+    .from('bank_transactions')
+    .select('*')
+    .is('matched_card_id', null)
+    .eq('dismissed', false)
+    .order('transaction_date', { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((t) => ({
+    id: t.id, connectionId: t.connection_id, date: t.transaction_date, amount: t.amount, currency: t.currency,
+    description: t.description, matchedCardId: t.matched_card_id, dismissed: t.dismissed,
+  }));
+}
+
+export async function assignBankTransactionToCard(transactionId: string, cardId: string, currentAdjustment: number, amountGBP: number) {
+  const { error: e1 } = await supabase.from('bank_transactions').update({ matched_card_id: cardId }).eq('id', transactionId);
+  if (e1) throw e1;
+  const { error: e2 } = await supabase.from('payment_cards').update({ manual_spend_adjustment: currentAdjustment + amountGBP }).eq('id', cardId);
+  if (e2) throw e2;
+}
+
+export async function dismissBankTransaction(transactionId: string) {
+  const { error } = await supabase.from('bank_transactions').update({ dismissed: true }).eq('id', transactionId);
+  if (error) throw error;
+}

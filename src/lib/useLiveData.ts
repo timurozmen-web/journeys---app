@@ -4,7 +4,7 @@
 // and rows exist.
 import { useCallback, useEffect, useState } from 'react';
 import * as mock from '../data/mock';
-import { fetchTrips, fetchLoyaltyProgrammes, fetchPaymentCards, fetchReviews, fetchAllHotels, fetchAllFlights, fetchVouchers, fetchPromotions } from './queries';
+import { fetchTrips, fetchLoyaltyProgrammes, fetchPaymentCards, fetchReviews, fetchAllHotels, fetchAllFlights, fetchVouchers, fetchPromotions, fetchBankConnections, fetchUnreviewedBankTransactions } from './queries';
 
 function useLive<T>(fetcher: () => Promise<T[]>, fallback: T[]) {
   const [data, setData] = useState<T[]>(fallback);
@@ -41,3 +41,5 @@ export const useAllHotels = () => useLive(fetchAllHotels, mock.trips.flatMap((t)
 export const useAllFlights = () => useLive(fetchAllFlights, mock.trips.flatMap((t) => t.flights));
 export const useVouchers = () => useLive(fetchVouchers, []);
 export const usePromotions = () => useLive(fetchPromotions, []);
+export const useBankConnections = () => useLive(fetchBankConnections, []);
+export const useUnreviewedBankTransactions = () => useLive(fetchUnreviewedBankTransactions, []);

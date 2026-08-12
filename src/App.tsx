@@ -12,6 +12,7 @@ import { LogFlight } from './screens/LogFlight';
 import { LogTrip } from './screens/LogTrip';
 import { ScanEmail } from './screens/ScanEmail';
 import { ScanPromotion } from './screens/ScanPromotion';
+import { BankSync } from './screens/BankSync';
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/log-trip" element={<LogTrip />} />
           <Route path="/scan-email" element={<ScanEmail />} />
           <Route path="/scan-promotion" element={<ScanPromotion />} />
+          <Route path="/bank-sync" element={<BankSync />} />
           <Route path="/action/:kind" element={<Action />} />
         </Routes>
       </div>

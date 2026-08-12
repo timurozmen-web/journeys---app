@@ -149,3 +149,35 @@ alter table promotions add column if not exists status_nights_applied boolean no
 alter table promotions add column if not exists partner_airline text;
 
 alter table payment_cards add column if not exists manual_spend_adjustment numeric not null default 0;
+
+create table bank_connections (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users not null default auth.uid(),
+  aspsp_name text not null,
+  aspsp_country text not null,
+  session_id text not null,
+  account_uid text not null,
+  account_name text,
+  consent_valid_until timestamptz not null,
+  last_synced_at timestamptz,
+  created_at timestamptz default now()
+);
+alter table bank_connections enable row level security;
+create policy "own rows only" on bank_connections for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create table bank_transactions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users not null default auth.uid(),
+  connection_id uuid references bank_connections not null,
+  external_transaction_id text not null,
+  transaction_date date not null,
+  amount numeric not null,
+  currency text not null,
+  description text,
+  matched_card_id text references payment_cards(id),
+  dismissed boolean not null default false,
+  created_at timestamptz default now(),
+  unique (user_id, external_transaction_id)
+);
+alter table bank_transactions enable row level security;
+create policy "own rows only" on bank_transactions for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

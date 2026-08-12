@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLoyaltyProgrammes, usePaymentCards, useAllHotels, useAllFlights, usePromotions } from '../lib/useLiveData';
 import { computeCardResults } from '../lib/cardMath';
 import { computeStatusProgress } from '../lib/statusProgress';
@@ -23,6 +24,7 @@ function moneyPrecise(n: number) {
 }
 
 export function Wallet() {
+  const navigate = useNavigate();
   const [seg, setSeg] = useState<Seg>('loyalty');
   const [editingSpendCard, setEditingSpendCard] = useState<string | null>(null);
   const [spendInput, setSpendInput] = useState('');
@@ -242,6 +244,17 @@ export function Wallet() {
           </button>
         ))}
       </div>
+
+      {seg === 'payment' && (
+        <div style={{ padding: '0 20px 4px' }}>
+          <button
+            onClick={() => navigate('/bank-sync')}
+            style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', padding: 0 }}
+          >
+            🏦 Sync spend from your bank
+          </button>
+        </div>
+      )}
 
       {(seg === 'loyalty' || seg === 'payment' || seg === 'status') && (
       <div className="stack">
