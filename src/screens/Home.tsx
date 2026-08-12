@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes } from '../lib/useLiveData';
+import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes, usePromotions } from '../lib/useLiveData';
+import { computeStatusProgress } from '../lib/statusProgress';
 import { BedIcon, HotelIcon, PlaneIcon } from '../components/Icons';
 import { TripCard } from '../components/TripCard';
 
@@ -26,6 +27,7 @@ export function Home() {
   const LAST_YEAR = THIS_YEAR - 1;
   const { data: trips, isLive } = useTrips();
   const { data: hotels } = useAllHotels();
+  const { data: promotions } = usePromotions();
   const { data: flights } = useAllFlights();
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
 
@@ -63,8 +65,8 @@ export function Home() {
 
   const topProgress = loyaltyProgrammes
     .filter((p) => p.nextTier && p.nights != null && p.nightsNeeded != null && p.nightsNeeded > 0)
-    .map((p) => ({ ...p, pct: (p.nights! / (p.nights! + p.nightsNeeded!)) * 100 }))
-    .sort((a, b) => b.pct - a.pct)
+    .map((p) => ({ ...p, progress: computeStatusProgress(p, hotels, promotions) }))
+    .sort((a, b) => (b.progress.pct ?? 0) - (a.progress.pct ?? 0))
     .slice(0, 3);
   const [progressIndex, setProgressIndex] = useState(0);
 
@@ -142,12 +144,34 @@ export function Home() {
                       </div>
                     </div>
                   </div>
-                  <div className="hbar" style={{ marginTop: 12 }}>
-                    <i style={{ width: `${p.pct}%` }} />
+                  <div className="hbar" style={{ marginTop: 12, position: 'relative' }}>
+                    {p.progress.pct3 != null && (
+                      <i style={{ width: `${Math.max(0, Math.min(100, p.progress.pct3))}%`, background: 'rgba(255,193,90,.6)', position: 'absolute', left: 0, top: 0, bottom: 0 }} />
+                    )}
+                    {p.progress.pct2 != null && (
+                      <i style={{ width: `${Math.max(0, Math.min(100, p.progress.pct2))}%`, background: 'rgba(255,255,255,.55)', position: 'absolute', left: 0, top: 0, bottom: 0 }} />
+                    )}
+                    <i style={{ width: `${p.progress.pct ?? 0}%`, position: 'relative' }} />
                   </div>
                   <div className="note" style={{ color: 'rgba(255,255,255,.85)' }}>
                     {p.nights} / {p.nights! + p.nightsNeeded!} nights
+                    {p.progress.bookedNights > 0 && ` (+${p.progress.bookedNights} booked)`}
                   </div>
+                  {p.progress.pendingPromo && (
+                    <div className="note" style={{ color: '#FFC15A', fontWeight: 700 }}>
+                      Pending: {p.progress.pendingPromo.title} (+{p.progress.pendingNights} on next stay)
+                    </div>
+                  )}
+                  {p.progress.spendBar && (
+                    <>
+                      <div style={{ fontSize: 9.5, opacity: 0.85, fontWeight: 700, marginTop: 8 }}>
+                        Qualifying spend: ${Math.round(p.progress.spendBar.spendUSD).toLocaleString()} / $23,000
+                      </div>
+                      <div className="hbar" style={{ marginTop: 4 }}>
+                        <i style={{ width: `${p.progress.spendBar.pct}%` }} />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             ))}

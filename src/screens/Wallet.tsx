@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLoyaltyProgrammes, usePaymentCards, useAllHotels, useAllFlights, usePromotions } from '../lib/useLiveData';
 import { computeCardResults } from '../lib/cardMath';
+import { computeStatusProgress } from '../lib/statusProgress';
 import { updateManualSpendAdjustment } from '../lib/queries';
 import { BrandMark } from '../components/BrandMark';
 import { VouchersTab } from '../components/VouchersTab';
@@ -173,51 +174,17 @@ export function Wallet() {
       };
     });
   } else {
-    const currentYear = new Date().getFullYear();
     items = statusItems.map((p) => {
-      const bookedNights = hotels
-        .filter((h) => h.brand === p.name && h.status === 'Booked' && Number(h.date.slice(0, 4)) === currentYear)
-        .reduce((s, h) => s + h.nights, 0);
-
-      // A status_boost promotion for this brand, active now, not yet
-      // applied -- its bonus nights land all at once on the next
-      // qualifying stay, so shown as a separate "pending" projection
-      // rather than folded into booked nights.
-      const today = new Date().toISOString().slice(0, 10);
-      const pendingPromo = promotions.find(
-        (promo) =>
-          promo.promoType === 'status_boost' &&
-          promo.statusNightsBonus != null &&
-          !promo.statusNightsApplied &&
-          (!promo.brand || promo.brand === p.name) &&
-          (!promo.startDate || promo.startDate <= today) &&
-          (!promo.endDate || promo.endDate >= today)
-      );
-      const pendingNights = pendingPromo?.statusNightsBonus ?? 0;
-
-      const total = (p.nights ?? 0) + (p.nightsNeeded ?? 0);
-      const projectedBooked = Math.min(total, (p.nights ?? 0) + bookedNights);
-      const projectedWithPromo = Math.min(total, projectedBooked + pendingNights);
-
-      // Marriott's Ambassador tier has a genuinely separate, second
-      // requirement -- $23,000 USD qualifying spend in the calendar year,
-      // alongside the 100 nights -- so it gets its own bar too.
-      let spendBar: { spendUSD: number; spendRequiredUSD: number; pct: number } | null = null;
-      if (p.name === 'Marriott Bonvoy' && p.nextTier === 'Ambassador') {
-        const spendGBP = hotels
-          .filter((h) => h.brand === 'Marriott Bonvoy' && h.status === 'Completed' && Number(h.date.slice(0, 4)) === currentYear)
-          .reduce((s, h) => s + (h.total ?? 0), 0);
-        const spendUSD = spendGBP * 1.27;
-        spendBar = { spendUSD, spendRequiredUSD: 23000, pct: Math.min(100, (spendUSD / 23000) * 100) };
-      }
+      const progress = computeStatusProgress(p, hotels, promotions);
+      const { total, bookedNights, pendingPromo, pendingNights, spendBar } = progress;
 
       return {
         key: p.name, color: p.color, name: p.name, sub: p.tier ?? '',
         big: `${p.nights}`, biglab: bookedNights > 0 ? `of ${total} nights (+${bookedNights} booked)` : `of ${total} nights`,
         val: `${p.nightsNeeded}`, vallab: `to ${p.nextTier}`,
-        pct: p.nights != null && p.nightsNeeded != null ? (p.nights / total) * 100 : null,
-        pct2: bookedNights > 0 ? (projectedBooked / total) * 100 : null,
-        pct3: pendingNights > 0 ? (projectedWithPromo / total) * 100 : null,
+        pct: progress.pct,
+        pct2: progress.pct2,
+        pct3: progress.pct3,
         shape: p.shape, font: p.font, accent: p.accent,
         spendBar,
         detail: (
