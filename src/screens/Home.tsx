@@ -30,9 +30,9 @@ export function Home() {
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
 
   const currentTrip = trips.find((t) => t.section === 'current');
-  const upcomingTrip = trips
-    .filter((t) => t.section === 'upcoming')
-    .sort((a, b) => a.start.localeCompare(b.start))[0];
+  const upcomingTrips = trips.filter((t) => t.section === 'upcoming').sort((a, b) => a.start.localeCompare(b.start));
+  const nextLeisureTrip = upcomingTrips.find((t) => t.tripType === 'leisure');
+  const nextWorkTrip = upcomingTrips.find((t) => t.tripType === 'work');
 
   // A stay only counts as done if the stored status says so AND the date
   // has actually passed — don't trust status alone, since a future-dated
@@ -182,15 +182,29 @@ export function Home() {
         </>
       )}
 
-      {upcomingTrip && (
+      {nextLeisureTrip && (
         <>
           <div className="sect">
-            <h2>Upcoming trip</h2>
+            <h2>Next leisure trip</h2>
           </div>
           <div className="stack">
-            <TripCard trip={upcomingTrip} />
+            <TripCard trip={nextLeisureTrip} />
             <div style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600, padding: '0 4px' }}>
-              In {daysBetween(TODAY, upcomingTrip.start)} days
+              In {daysBetween(TODAY, nextLeisureTrip.start)} days
+            </div>
+          </div>
+        </>
+      )}
+
+      {nextWorkTrip && (
+        <>
+          <div className="sect">
+            <h2>Next work trip</h2>
+          </div>
+          <div className="stack">
+            <TripCard trip={nextWorkTrip} />
+            <div style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600, padding: '0 4px' }}>
+              In {daysBetween(TODAY, nextWorkTrip.start)} days
             </div>
           </div>
         </>

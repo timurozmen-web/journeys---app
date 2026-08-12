@@ -10,6 +10,10 @@ function money(n: number) {
   const sign = n < 0 ? '−' : '';
   return `${sign}£${Math.round(Math.abs(n)).toLocaleString()}`;
 }
+function moneyPrecise(n: number) {
+  const sign = n < 0 ? '−' : '';
+  return `${sign}£${Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
 export function Wallet() {
   const [seg, setSeg] = useState<Seg>('loyalty');
@@ -75,16 +79,16 @@ export function Wallet() {
         <>
           <div className="dd-row">
             <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Spend this card-year</span>
-            <span style={{ fontSize: 12.5, fontWeight: 700 }}>{money(r.autoSpend)}</span>
+            <span style={{ fontSize: 12.5, fontWeight: 700 }}>{moneyPrecise(r.autoSpend)}</span>
           </div>
           <div className="dd-row">
             <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Points earned</span>
-            <span style={{ fontSize: 12.5, fontWeight: 700 }}>{r.autoPts.toLocaleString()} pts ({money(r.ptsValue)})</span>
+            <span style={{ fontSize: 12.5, fontWeight: 700 }}>{r.autoPts.toLocaleString()} pts ({moneyPrecise(r.ptsValue)})</span>
           </div>
           {r.totalEliteNights > 0 && (
             <div className="dd-row">
               <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Elite nights</span>
-              <span style={{ fontSize: 12.5, fontWeight: 700 }}>{r.totalEliteNights} ({money(r.eliteNightValue)} at £10/night)</span>
+              <span style={{ fontSize: 12.5, fontWeight: 700 }}>{r.totalEliteNights} ({moneyPrecise(r.eliteNightValue)} at £10/night)</span>
             </div>
           )}
           {r.milestoneResults.map((m) => (
@@ -93,7 +97,7 @@ export function Wallet() {
                 {m.hit ? '✓' : '—'} {m.m.rewardLabel}
               </span>
               <span style={{ fontSize: 12.5, fontWeight: 700, opacity: m.superseded ? 0.5 : 1 }}>
-                {m.hit && !m.superseded ? money(m.value) : ''}
+                {m.hit && !m.superseded ? moneyPrecise(m.value) : ''}
               </span>
             </div>
           ))}

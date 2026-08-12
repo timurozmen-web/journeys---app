@@ -5,7 +5,7 @@ import { uploadTripPhoto } from '../lib/queries';
 import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, PlaneIcon, EditIcon } from '../components/Icons';
 import { DestinationPhoto } from '../components/DestinationPhoto';
 import { destinationQuery } from '../components/TripCard';
-import { formatDateRange } from '../lib/format';
+import { formatDateRange, formatMoney } from '../lib/format';
 import { computeTripPoints, computeTripSavings, groupDestinations, findGaps } from '../lib/tripStats';
 
 type Seg = 'overview' | 'itinerary' | 'expenses' | 'notes';
@@ -134,10 +134,10 @@ export function TripDetail() {
           <div className="card">
             <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 12 }}>Trip summary</div>
             <div style={{ display: 'grid', gap: 9 }}>
-              <SummaryRow label="Total cash spent" value={`£${Math.round(spend).toLocaleString()}`} />
+              <SummaryRow label="Total cash spent" value={formatMoney(spend)} />
               <SummaryRow label="Points earned" value={`${points.totalPoints.toLocaleString()} pts`} />
-              <SummaryRow label="Value of points earned" value={`£${Math.round(points.totalValue).toLocaleString()}`} />
-              <SummaryRow label="Total savings" value={`£${Math.round(savings).toLocaleString()}`} valueColor="var(--green)" />
+              <SummaryRow label="Value of points earned" value={formatMoney(points.totalValue)} />
+              <SummaryRow label="Total savings" value={formatMoney(savings)} valueColor="var(--green)" />
               <SummaryRow label="Pence per point (earned)" value={points.totalPoints > 0 ? `${points.centsPerPoint.toFixed(2)}p` : '—'} />
             </div>
             {trip.flights.some((f) => f.award) && (

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { addHotel, updateHotel, deleteHotel, addTrip, updateTrip } from '../lib/queries';
 import { suggestTripAssignment } from '../lib/autoTrip';
+import { normalizeBrand } from '../data/brandMap';
 import type { Hotel } from '../types';
 import { useTrips, useAllHotels, useAllFlights } from '../lib/useLiveData';
 import { BackIcon } from '../components/Icons';
@@ -129,7 +130,7 @@ export function LogHotel() {
       }
 
       const payload = {
-        name: form.name, country: form.country, city: form.city || null, brand: form.brand || 'Other',
+        name: form.name, country: form.country, city: form.city || null, brand: normalizeBrand(form.brand || 'Other'),
         nights, date: form.date, status: form.status,
         total,
         card: form.card || null, category: form.category,
@@ -182,7 +183,7 @@ export function LogHotel() {
               const match = knownHotels.find((h) => h.name === name);
               if (match) {
                 setForm((f) => ({
-                  ...f, name, country: match.country, city: match.city ?? '', brand: match.brand,
+                  ...f, name, country: match.country, city: match.city ?? '', brand: normalizeBrand(match.brand),
                   category: match.category, card: match.card ?? '',
                 }));
               } else {
@@ -209,7 +210,13 @@ export function LogHotel() {
         </div>
         <div>
           <label style={labelStyle}>Brand</label>
-          <input style={inputStyle} value={form.brand} onChange={(e) => set('brand', e.target.value)} placeholder="Marriott Bonvoy" />
+          <input
+            style={inputStyle}
+            value={form.brand}
+            onChange={(e) => set('brand', e.target.value)}
+            onBlur={(e) => e.target.value && set('brand', normalizeBrand(e.target.value))}
+            placeholder="Marriott Bonvoy"
+          />
         </div>
         <div>
           <label style={labelStyle}>Check-in date *</label>

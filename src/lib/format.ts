@@ -24,3 +24,13 @@ export function formatDateRange(startIso: string, endIso: string) {
   }
   return `${s.d} ${MONTHS_SHORT[s.m]} ${s.y} - ${e.d} ${MONTHS_SHORT[e.m]} ${e.y}`;
 }
+
+// Line-item amounts show 2dp; headline/big totals round to whole pounds.
+export function formatMoney(n: number) {
+  const sign = n < 0 ? '−' : '';
+  return `${sign}£${Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+export function formatMoneyHeadline(n: number) {
+  const sign = n < 0 ? '−' : '';
+  return `${sign}£${Math.round(Math.abs(n)).toLocaleString()}`;
+}

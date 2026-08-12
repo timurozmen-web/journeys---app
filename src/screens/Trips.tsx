@@ -7,8 +7,8 @@ export function Trips() {
   const [tripType, setTripType] = useState<'work' | 'leisure'>('leisure');
   const trips = allTrips.filter((t) => t.tripType === tripType);
 
-  const current = trips.filter((t) => t.section === 'current');
-  const upcoming = trips.filter((t) => t.section === 'upcoming');
+  const current = trips.filter((t) => t.section === 'current').sort((a, b) => a.start.localeCompare(b.start));
+  const upcoming = trips.filter((t) => t.section === 'upcoming').sort((a, b) => a.start.localeCompare(b.start));
   const past = trips.filter((t) => t.section === 'past').sort((a, b) => b.start.localeCompare(a.start));
 
   return (

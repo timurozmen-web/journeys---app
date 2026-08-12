@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BackIcon, CameraIcon } from '../components/Icons';
+import { normalizeBrand } from '../data/brandMap';
 
 const labelStyle: React.CSSProperties = { fontSize: 11.5, fontWeight: 700, color: 'var(--ink3)', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 6, display: 'block' };
 const MAX_IMAGES = 4;
@@ -61,7 +62,7 @@ export function ScanEmail() {
         navigate('/log-hotel', {
           state: {
             prefill: {
-              name: data.name, country: data.country, city: data.city, brand: data.brand,
+              name: data.name, country: data.country, city: data.city, brand: data.brand ? normalizeBrand(data.brand) : null,
               date: data.checkIn, nights: data.nights, total: data.total,
               roomType: data.roomType ?? null, rateType: data.rateType ?? 'Standard',
             },
