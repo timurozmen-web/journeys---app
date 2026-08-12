@@ -3,10 +3,6 @@ import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes } from '../
 import { BedIcon, HotelIcon, PlaneIcon } from '../components/Icons';
 import { TripCard } from '../components/TripCard';
 
-const TODAY = '2026-07-30';
-const THIS_YEAR = 2026;
-const LAST_YEAR = 2025;
-
 function daysBetween(a: string, b: string) {
   return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000);
 }
@@ -25,6 +21,9 @@ function greeting() {
 }
 
 export function Home() {
+  const TODAY = new Date().toISOString().slice(0, 10);
+  const THIS_YEAR = new Date().getFullYear();
+  const LAST_YEAR = THIS_YEAR - 1;
   const { data: trips, isLive } = useTrips();
   const { data: hotels } = useAllHotels();
   const { data: flights } = useAllFlights();
