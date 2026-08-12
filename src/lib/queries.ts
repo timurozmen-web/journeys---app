@@ -1,7 +1,7 @@
 // Real Supabase queries. Same shape as src/data/mock.ts, so components
 // don't need to change when they switch from mock data to this.
 import { supabase } from './supabase';
-import type { Trip, Hotel, Flight, LoyaltyProgramme, PaymentCard, Review } from '../types';
+import type { Trip, Hotel, Flight, LoyaltyProgramme, PaymentCard, Review, Voucher, Promotion } from '../types';
 
 export async function fetchTrips(): Promise<Trip[]> {
   const { data: trips, error } = await supabase.from('trips').select('*');
@@ -210,5 +210,83 @@ export async function updateFlight(id: string, input: NewFlightInput) {
 
 export async function deleteFlight(id: string) {
   const { error } = await supabase.from('flights').delete().eq('id', id);
+  if (error) throw error;
+}
+
+function mapVoucher(v: any): Voucher {
+  return {
+    id: v.id, name: v.name, source: v.source, value: v.value,
+    earnedDate: v.earned_date, expiryDate: v.expiry_date,
+    redeemed: v.redeemed, redeemedDate: v.redeemed_date, sourceKey: v.source_key,
+  };
+}
+
+export async function fetchVouchers(): Promise<Voucher[]> {
+  const { data, error } = await supabase.from('vouchers').select('*').order('earned_date', { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map(mapVoucher);
+}
+
+export interface NewVoucherInput {
+  name: string; source: string; value: number | null; earnedDate: string; expiryDate: string | null; sourceKey: string | null;
+}
+export async function addVoucher(input: NewVoucherInput) {
+  const { error } = await supabase.from('vouchers').insert({
+    name: input.name, source: input.source, value: input.value,
+    earned_date: input.earnedDate, expiry_date: input.expiryDate, source_key: input.sourceKey,
+  });
+  if (error) throw error;
+}
+
+// Auto-sync uses upsert on the (user_id, source_key) unique constraint so
+// re-running this for the same card-year milestone never creates a
+// duplicate row -- it only inserts genuinely new ones.
+export async function syncCardVouchers(inputs: NewVoucherInput[]) {
+  if (inputs.length === 0) return;
+  const { error } = await supabase.from('vouchers').upsert(
+    inputs.map((v) => ({
+      name: v.name, source: v.source, value: v.value,
+      earned_date: v.earnedDate, expiry_date: v.expiryDate, source_key: v.sourceKey,
+    })),
+    { onConflict: 'user_id,source_key', ignoreDuplicates: true }
+  );
+  if (error) throw error;
+}
+
+export async function setVoucherRedeemed(id: string, redeemed: boolean) {
+  const { error } = await supabase.from('vouchers').update({
+    redeemed, redeemed_date: redeemed ? new Date().toISOString().slice(0, 10) : null,
+  }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteVoucher(id: string) {
+  const { error } = await supabase.from('vouchers').delete().eq('id', id);
+  if (error) throw error;
+}
+
+function mapPromotion(p: any): Promotion {
+  return { id: p.id, title: p.title, description: p.description, brand: p.brand, startDate: p.start_date, endDate: p.end_date };
+}
+
+export async function fetchPromotions(): Promise<Promotion[]> {
+  const { data, error } = await supabase.from('promotions').select('*').order('start_date', { ascending: false, nullsFirst: false });
+  if (error) throw error;
+  return (data ?? []).map(mapPromotion);
+}
+
+export interface NewPromotionInput {
+  title: string; description: string | null; brand: string | null; startDate: string | null; endDate: string | null;
+}
+export async function addPromotion(input: NewPromotionInput) {
+  const { error } = await supabase.from('promotions').insert({
+    title: input.title, description: input.description, brand: input.brand,
+    start_date: input.startDate, end_date: input.endDate,
+  });
+  if (error) throw error;
+}
+
+export async function deletePromotion(id: string) {
+  const { error } = await supabase.from('promotions').delete().eq('id', id);
   if (error) throw error;
 }

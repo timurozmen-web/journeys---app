@@ -97,3 +97,25 @@ export function computeCardResults(
     return { card, cardRow, autoSpend, autoPts: Math.round(autoPts), yearWindow, milestoneResults, milestoneValue, totalEliteNights, eliteNightValue, ptsValue, gross, net, nextMilestone };
   });
 }
+
+// Hit, non-superseded milestones flagged isVoucher become real voucher
+// candidates -- the sourceKey is stable per card-year, so re-running this
+// on every load never creates duplicates, only genuinely new vouchers.
+export function computeCardVoucherCandidates(results: CardResult[]) {
+  const candidates: { name: string; source: string; value: number; earnedDate: string; expiryDate: string | null; sourceKey: string }[] = [];
+  for (const r of results) {
+    if (!r.yearWindow) continue;
+    for (const m of r.milestoneResults) {
+      if (!m.hit || m.superseded || !m.m.isVoucher) continue;
+      candidates.push({
+        name: m.m.rewardLabel,
+        source: r.card.id,
+        value: m.value,
+        earnedDate: r.yearWindow.start,
+        expiryDate: r.yearWindow.end,
+        sourceKey: `${r.card.id}::${m.m.id}::${r.yearWindow.start}`,
+      });
+    }
+  }
+  return candidates;
+}

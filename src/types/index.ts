@@ -86,3 +86,24 @@ export interface Review {
   category: string;
   score: number; // 1–10, derived from the bucket-ranking algorithm
 }
+
+export interface Voucher {
+  id: string;
+  name: string;
+  source: string;
+  value: number | null;
+  earnedDate: string;
+  expiryDate: string | null;
+  redeemed: boolean;
+  redeemedDate: string | null;
+  sourceKey: string | null; // stable key for auto-synced card vouchers, prevents duplicate creation
+}
+
+export interface Promotion {
+  id: string;
+  title: string;
+  description: string | null;
+  brand: string | null;
+  startDate: string | null;
+  endDate: string | null;
+}

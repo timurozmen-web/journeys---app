@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useLoyaltyProgrammes, usePaymentCards, useAllHotels, useAllFlights } from '../lib/useLiveData';
 import { computeCardResults } from '../lib/cardMath';
 import { BrandMark } from '../components/BrandMark';
+import { VouchersTab } from '../components/VouchersTab';
+import { PromotionsTab } from '../components/PromotionsTab';
 
-type Seg = 'loyalty' | 'payment' | 'status';
+type Seg = 'loyalty' | 'payment' | 'status' | 'vouchers' | 'promotions';
 const TODAY = new Date().toISOString().slice(0, 10);
 
 function money(n: number) {
@@ -157,8 +159,8 @@ export function Wallet() {
         </div>
       </div>
 
-      <div className="wseg" style={{ margin: '8px 20px 16px' }}>
-        {(['loyalty', 'payment', 'status'] as Seg[]).map((s) => (
+      <div className="catchip" style={{ margin: '8px 0 16px' }}>
+        {(['loyalty', 'payment', 'status', 'vouchers', 'promotions'] as Seg[]).map((s) => (
           <button
             key={s}
             className={seg === s ? 'won' : ''}
@@ -172,6 +174,7 @@ export function Wallet() {
         ))}
       </div>
 
+      {(seg === 'loyalty' || seg === 'payment' || seg === 'status') && (
       <div className="stack">
         {items.map((it, idx) => {
           const isOpen = open === it.key;
@@ -234,6 +237,10 @@ export function Wallet() {
           );
         })}
       </div>
+      )}
+
+      {seg === 'vouchers' && <VouchersTab cardResults={cardResults} />}
+      {seg === 'promotions' && <PromotionsTab />}
     </div>
   );
 }

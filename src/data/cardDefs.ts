@@ -8,6 +8,7 @@ export interface Milestone {
   windowMonths?: number;
   supersedes?: string;
   rewardLabel: string;
+  isVoucher?: boolean; // a discrete certificate/choice reward to track and redeem, not just an automatic points credit
 }
 export interface CardDef {
   id: string;
@@ -42,8 +43,8 @@ export const CARDS_STATIC: CardDef[] = [
     eliteNights: { auto: 15, perSpendAmount: 4000, perSpendCap: 5 },
     milestones: [
       { id: 'welcome30k', type: 'spend', spendRequired: 3000, rewardPoints: 30000, windowMonths: 3, rewardLabel: '30,000pt welcome bonus (£3k spend within 3mo)' },
-      { id: 'renew25k', type: 'spend', spendRequired: 4500, rewardPoints: 25000, rewardLabel: '25,000pt renewal voucher (£4.5k–£9k spend)' },
-      { id: 'renew50k', type: 'spend', spendRequired: 9000, rewardPoints: 50000, supersedes: 'renew25k', rewardLabel: '50,000pt renewal voucher (£9k+ spend)' },
+      { id: 'renew25k', type: 'spend', spendRequired: 4500, rewardPoints: 25000, rewardLabel: '25,000pt renewal voucher (£4.5k–£9k spend)', isVoucher: true },
+      { id: 'renew50k', type: 'spend', spendRequired: 9000, rewardPoints: 50000, supersedes: 'renew25k', rewardLabel: '50,000pt renewal voucher (£9k+ spend)', isVoucher: true },
     ],
     perks: [{ id: 'status', label: 'Marriott Gold status' }, { id: 'fx', label: '0.99% FX fee (vs ~2.99% typical)' }],
   },
@@ -75,9 +76,9 @@ export const CARDS_STATIC: CardDef[] = [
     eliteNights: { auto: 15, perSpendAmount: 4000, perSpendCap: null },
     milestones: [
       { id: 'welcome30k', type: 'spend', spendRequired: 3000, rewardPoints: 30000, windowMonths: 3, rewardLabel: '30,000pt welcome bonus (£3k spend within 3mo)' },
-      { id: 'choice1', type: 'spend', spendRequired: 10000, rewardPoints: 5000, rewardLabel: 'Cardmember Choice Reward (5k pts / 2×£15 F&B / Suite Upgrade)' },
-      { id: 'flexnight', type: 'spend', spendRequired: 15000, rewardPoints: 40000, rewardLabel: 'Flex Night Certificate (worth up to 40k pts)' },
-      { id: 'choice2', type: 'spend', spendRequired: 25000, rewardPoints: 5000, rewardLabel: 'Cardmember Choice Reward #2' },
+      { id: 'choice1', type: 'spend', spendRequired: 10000, rewardPoints: 5000, rewardLabel: 'Cardmember Choice Reward (5k pts / 2×£15 F&B / Suite Upgrade)', isVoucher: true },
+      { id: 'flexnight', type: 'spend', spendRequired: 15000, rewardPoints: 40000, rewardLabel: 'Flex Night Certificate (worth up to 40k pts)', isVoucher: true },
+      { id: 'choice2', type: 'spend', spendRequired: 25000, rewardPoints: 5000, rewardLabel: 'Cardmember Choice Reward #2', isVoucher: true },
       { id: 'diamond', type: 'spend', spendRequired: 35000, rewardPoints: 0, rewardLabel: 'Diamond Elite status upgrade (rest of this yr + all next yr)' },
     ],
     perks: [{ id: 'status', label: 'IHG Platinum status' }, { id: 'promo', label: 'Enhanced IHG earn rates until 31 Oct 2026' }],
@@ -88,7 +89,7 @@ export const CARDS_STATIC: CardDef[] = [
     eliteNights: { auto: 0, perSpendAmount: null, perSpendCap: null },
     milestones: [
       { id: 'welcome30k', type: 'tick', rewardPoints: 30000, rewardLabel: '30,000pt welcome bonus (on approval)' },
-      { id: 'bonus75k', type: 'spend', spendRequired: 10000, rewardPoints: 75000, rewardLabel: '75,000pt bonus voucher (£10k spend in 12mo)' },
+      { id: 'bonus75k', type: 'spend', spendRequired: 10000, rewardPoints: 75000, rewardLabel: '75,000pt bonus voucher (£10k spend in 12mo)', isVoucher: true },
     ],
     perks: [],
   },

@@ -105,3 +105,34 @@ create policy "own rows only" on trips for all using (auth.uid() = user_id) with
 create policy "own rows only" on loyalty_programmes for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own rows only" on payment_cards for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own rows only" on reviews for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create table vouchers (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users not null default auth.uid(),
+  name text not null,
+  source text not null,
+  value numeric,
+  earned_date date not null,
+  expiry_date date,
+  redeemed boolean not null default false,
+  redeemed_date date,
+  source_key text,
+  unique (user_id, source_key)
+);
+
+alter table vouchers enable row level security;
+create policy "own rows only" on vouchers for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create table promotions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users not null default auth.uid(),
+  title text not null,
+  description text,
+  brand text,
+  start_date date,
+  end_date date,
+  created_at timestamptz default now()
+);
+
+alter table promotions enable row level security;
+create policy "own rows only" on promotions for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
