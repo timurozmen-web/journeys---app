@@ -63,6 +63,7 @@ export interface PaymentCard {
   annualFee: number;
   feeLabel: string;
   openDate: string;
+  manualSpendAdjustment: number; // spend not captured by logged hotels/flights (everyday purchases etc)
 }
 
 export interface Trip {

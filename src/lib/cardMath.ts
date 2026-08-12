@@ -70,6 +70,11 @@ export function computeCardResults(
       }
     }
 
+    // Spend not captured by a logged hotel/flight (everyday purchases,
+    // etc) -- counts toward milestone/voucher thresholds, but isn't run
+    // through the points-rate math since we don't know what it was for.
+    autoSpend += cardRow?.manualSpendAdjustment ?? 0;
+
     const milestoneResults: MilestoneResult[] = card.milestones.map((m) => {
       const hit = m.type === 'tick' ? true : autoSpend >= (m.spendRequired ?? Infinity);
       return { m, hit, value: Math.round((m.rewardPoints * ptVal) / 100), superseded: false };

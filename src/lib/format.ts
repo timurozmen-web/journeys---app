@@ -25,10 +25,15 @@ export function formatDateRange(startIso: string, endIso: string) {
   return `${s.d} ${MONTHS_SHORT[s.m]} ${s.y} - ${e.d} ${MONTHS_SHORT[e.m]} ${e.y}`;
 }
 
-// Line-item amounts show 2dp; headline/big totals round to whole pounds.
+// Line-item amounts show 2dp only when under £100 and the cents aren't
+// .00 (no point showing decimals that add nothing); headline/big totals
+// always round to whole pounds.
 export function formatMoney(n: number) {
   const sign = n < 0 ? '−' : '';
-  return `${sign}£${Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const abs = Math.abs(n);
+  const hasCents = Math.round(abs * 100) % 100 !== 0;
+  const showDecimals = abs < 100 && hasCents;
+  return `${sign}£${abs.toLocaleString(undefined, { minimumFractionDigits: showDecimals ? 2 : 0, maximumFractionDigits: showDecimals ? 2 : 0 })}`;
 }
 export function formatMoneyHeadline(n: number) {
   const sign = n < 0 ? '−' : '';

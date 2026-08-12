@@ -147,3 +147,5 @@ alter table promotions add column if not exists discount_used boolean not null d
 alter table promotions add column if not exists status_nights_bonus int;
 alter table promotions add column if not exists status_nights_applied boolean not null default false;
 alter table promotions add column if not exists partner_airline text;
+
+alter table payment_cards add column if not exists manual_spend_adjustment numeric not null default 0;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useLoyaltyProgrammes, usePaymentCards, useAllHotels, useAllFlights } from '../lib/useLiveData';
+import { useLoyaltyProgrammes, usePaymentCards, useAllHotels, useAllFlights, usePromotions } from '../lib/useLiveData';
 import { computeCardResults } from '../lib/cardMath';
+import { updateManualSpendAdjustment } from '../lib/queries';
 import { BrandMark } from '../components/BrandMark';
 import { VouchersTab } from '../components/VouchersTab';
 import { PromotionsTab } from '../components/PromotionsTab';
@@ -14,15 +15,22 @@ function money(n: number) {
 }
 function moneyPrecise(n: number) {
   const sign = n < 0 ? '−' : '';
-  return `${sign}£${Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const abs = Math.abs(n);
+  const hasCents = Math.round(abs * 100) % 100 !== 0;
+  const showDecimals = abs < 100 && hasCents;
+  return `${sign}£${abs.toLocaleString(undefined, { minimumFractionDigits: showDecimals ? 2 : 0, maximumFractionDigits: showDecimals ? 2 : 0 })}`;
 }
 
 export function Wallet() {
   const [seg, setSeg] = useState<Seg>('loyalty');
+  const [editingSpendCard, setEditingSpendCard] = useState<string | null>(null);
+  const [spendInput, setSpendInput] = useState('');
+  const [spendSaveError, setSpendSaveError] = useState('');
   const [open, setOpen] = useState<string | null>(null);
   const { data: rawLoyaltyProgrammes, isLive } = useLoyaltyProgrammes();
-  const { data: paymentCards } = usePaymentCards();
+  const { data: paymentCards, refetch: refetchCards } = usePaymentCards();
   const { data: hotels } = useAllHotels();
+  const { data: promotions } = usePromotions();
   const { data: flights } = useAllFlights();
 
   // Card results only need ptValue for the value-lookup, not the points
@@ -52,7 +60,7 @@ export function Wallet() {
   const totalValue = loyaltyProgrammes.reduce((s, p) => s + (p.points * p.ptValue) / 100, 0);
   const statusItems = loyaltyProgrammes.filter((p) => p.nextTier && p.nightsNeeded != null);
 
-  let items: { key: string; color: string; name: string; sub: string; big: string; biglab: string; val: string; vallab: string; pct: number | null; pct2?: number | null; detail: React.ReactNode; shape?: string; font?: string; accent?: string }[] = [];
+  let items: { key: string; color: string; name: string; sub: string; big: string; biglab: string; val: string; vallab: string; pct: number | null; pct2?: number | null; pct3?: number | null; spendBar?: { spendUSD: number; spendRequiredUSD: number; pct: number } | null; detail: React.ReactNode; shape?: string; font?: string; accent?: string }[] = [];
 
   if (seg === 'loyalty') {
     items = loyaltyProgrammes.map((p) => ({
@@ -75,13 +83,62 @@ export function Wallet() {
         sub: r.cardRow?.openDate ? `Opened ${r.cardRow.openDate}` : 'Open date not set',
         big: money(r.net), biglab: 'net this card-year',
         val: r.card.feeLabel, vallab: 'annual fee',
-        pct: r.nextMilestone ? Math.min(100, (r.autoSpend / (r.nextMilestone.m.spendRequired ?? 1)) * 100) : null,
+        pct: null,
         shape: prog?.shape, font: prog?.font, accent: prog?.accent,
         detail: (
         <>
           <div className="dd-row">
             <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Spend this card-year</span>
             <span style={{ fontSize: 12.5, fontWeight: 700 }}>{moneyPrecise(r.autoSpend)}</span>
+          </div>
+          <div style={{ padding: '8px 0', borderBottom: '1px solid var(--line)', marginBottom: 4 }}>
+            {editingSpendCard === r.card.id ? (
+              <div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input
+                    type="number" step="0.01" autoFocus value={spendInput}
+                    onChange={(e) => setSpendInput(e.target.value)}
+                    placeholder="Other spend not logged here (£)"
+                    style={{ flex: 1, padding: '6px 9px', borderRadius: 7, border: '1px solid var(--line)', fontSize: 12.5 }}
+                  />
+                  <button
+                    onClick={async () => {
+                      setSpendSaveError('');
+                      try {
+                        await updateManualSpendAdjustment(r.card.id, spendInput ? parseFloat(spendInput) : 0);
+                        setEditingSpendCard(null);
+                        refetchCards();
+                      } catch (err) {
+                        const message =
+                          err instanceof Error
+                            ? err.message
+                            : typeof err === 'object' && err !== null && 'message' in err
+                            ? String((err as { message: unknown }).message)
+                            : 'Failed to save';
+                        setSpendSaveError(message);
+                      }
+                    }}
+                    style={{ padding: '6px 10px', borderRadius: 7, border: 'none', background: 'var(--brand)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                  >
+                  Save
+                </button>
+                </div>
+                {spendSaveError && (
+                  <div style={{ color: 'var(--red)', fontSize: 11.5, marginTop: 6 }}>{spendSaveError}</div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setEditingSpendCard(r.card.id);
+                  setSpendSaveError('');
+                  setSpendInput(r.cardRow?.manualSpendAdjustment ? String(r.cardRow.manualSpendAdjustment) : '');
+                }}
+                style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0 }}
+              >
+                {r.cardRow?.manualSpendAdjustment ? `+ ${moneyPrecise(r.cardRow.manualSpendAdjustment)} other spend added — edit` : '+ Add other spend not logged here'}
+              </button>
+            )}
           </div>
           <div className="dd-row">
             <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Points earned</span>
@@ -121,15 +178,48 @@ export function Wallet() {
       const bookedNights = hotels
         .filter((h) => h.brand === p.name && h.status === 'Booked' && Number(h.date.slice(0, 4)) === currentYear)
         .reduce((s, h) => s + h.nights, 0);
+
+      // A status_boost promotion for this brand, active now, not yet
+      // applied -- its bonus nights land all at once on the next
+      // qualifying stay, so shown as a separate "pending" projection
+      // rather than folded into booked nights.
+      const today = new Date().toISOString().slice(0, 10);
+      const pendingPromo = promotions.find(
+        (promo) =>
+          promo.promoType === 'status_boost' &&
+          promo.statusNightsBonus != null &&
+          !promo.statusNightsApplied &&
+          (!promo.brand || promo.brand === p.name) &&
+          (!promo.startDate || promo.startDate <= today) &&
+          (!promo.endDate || promo.endDate >= today)
+      );
+      const pendingNights = pendingPromo?.statusNightsBonus ?? 0;
+
       const total = (p.nights ?? 0) + (p.nightsNeeded ?? 0);
-      const projected = Math.min(total, (p.nights ?? 0) + bookedNights);
+      const projectedBooked = Math.min(total, (p.nights ?? 0) + bookedNights);
+      const projectedWithPromo = Math.min(total, projectedBooked + pendingNights);
+
+      // Marriott's Ambassador tier has a genuinely separate, second
+      // requirement -- $23,000 USD qualifying spend in the calendar year,
+      // alongside the 100 nights -- so it gets its own bar too.
+      let spendBar: { spendUSD: number; spendRequiredUSD: number; pct: number } | null = null;
+      if (p.name === 'Marriott Bonvoy' && p.nextTier === 'Ambassador') {
+        const spendGBP = hotels
+          .filter((h) => h.brand === 'Marriott Bonvoy' && h.status === 'Completed' && Number(h.date.slice(0, 4)) === currentYear)
+          .reduce((s, h) => s + (h.total ?? 0), 0);
+        const spendUSD = spendGBP * 1.27;
+        spendBar = { spendUSD, spendRequiredUSD: 23000, pct: Math.min(100, (spendUSD / 23000) * 100) };
+      }
+
       return {
         key: p.name, color: p.color, name: p.name, sub: p.tier ?? '',
         big: `${p.nights}`, biglab: bookedNights > 0 ? `of ${total} nights (+${bookedNights} booked)` : `of ${total} nights`,
         val: `${p.nightsNeeded}`, vallab: `to ${p.nextTier}`,
         pct: p.nights != null && p.nightsNeeded != null ? (p.nights / total) * 100 : null,
-        pct2: bookedNights > 0 ? (projected / total) * 100 : null,
+        pct2: bookedNights > 0 ? (projectedBooked / total) * 100 : null,
+        pct3: pendingNights > 0 ? (projectedWithPromo / total) * 100 : null,
         shape: p.shape, font: p.font, accent: p.accent,
+        spendBar,
         detail: (
           <>
             <div className="dd-row">
@@ -140,6 +230,18 @@ export function Wallet() {
               <div className="dd-row">
                 <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Booked, not yet stayed</span>
                 <span style={{ fontSize: 12.5, fontWeight: 700 }}>+{bookedNights} nights</span>
+              </div>
+            )}
+            {pendingPromo && (
+              <div className="dd-row">
+                <span style={{ fontSize: 12, color: 'var(--amber)', fontWeight: 600 }}>Pending: {pendingPromo.title}</span>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--amber)' }}>+{pendingNights} nights on next stay</span>
+              </div>
+            )}
+            {spendBar && (
+              <div className="dd-row">
+                <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Qualifying spend</span>
+                <span style={{ fontSize: 12.5, fontWeight: 700 }}>${Math.round(spendBar.spendUSD).toLocaleString()} / $23,000</span>
               </div>
             )}
           </>
@@ -211,11 +313,24 @@ export function Wallet() {
                 </div>
                 {it.pct != null && (
                   <div className="hbar" style={{ background: 'rgba(255,255,255,.22)', marginTop: 12, position: 'relative' }}>
+                    {it.pct3 != null && (
+                      <i style={{ width: `${Math.max(0, Math.min(100, it.pct3))}%`, background: 'rgba(255,193,90,.6)', position: 'absolute', left: 0, top: 0, bottom: 0 }} />
+                    )}
                     {it.pct2 != null && (
                       <i style={{ width: `${Math.max(0, Math.min(100, it.pct2))}%`, background: 'rgba(255,255,255,.55)', position: 'absolute', left: 0, top: 0, bottom: 0 }} />
                     )}
                     <i style={{ width: `${Math.max(0, Math.min(100, it.pct))}%`, background: '#fff', position: 'relative' }} />
                   </div>
+                )}
+                {it.spendBar && (
+                  <>
+                    <div style={{ fontSize: 9.5, opacity: 0.85, fontWeight: 700, marginTop: 8 }}>
+                      Qualifying spend: ${Math.round(it.spendBar.spendUSD).toLocaleString()} / $23,000
+                    </div>
+                    <div className="hbar" style={{ background: 'rgba(255,255,255,.22)', marginTop: 4 }}>
+                      <i style={{ width: `${Math.max(0, Math.min(100, it.spendBar.pct))}%`, background: '#fff' }} />
+                    </div>
+                  </>
                 )}
                 <div className="deckbot">
                   <div>

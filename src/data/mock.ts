@@ -44,11 +44,11 @@ export const loyaltyProgrammes: LoyaltyProgramme[] = [
 ];
 
 export const paymentCards: PaymentCard[] = [
-  { id: 'Marriott Bonvoy Debit', programmeBrand: 'Marriott Bonvoy', annualFee: 165, feeLabel: '£165/yr', openDate: '2025-12-01' },
-  { id: 'Virgin Atlantic Reward+', programmeBrand: 'Virgin Points', annualFee: 160, feeLabel: '£160/yr', openDate: '2025-09-07' },
-  { id: 'Marriott Bonvoy Amex', programmeBrand: 'Marriott Bonvoy', annualFee: 95, feeLabel: '£95/yr', openDate: '2025-08-15' },
-  { id: 'Hilton Honors Debit', programmeBrand: 'Hilton Honors', annualFee: 150, feeLabel: '£150/yr', openDate: '2025-08-29' },
-  { id: 'IHG One Rewards Elite', programmeBrand: 'IHG One Rewards', annualFee: 216, feeLabel: '£216/yr', openDate: '2026-07-24' },
+  { id: 'Marriott Bonvoy Debit', programmeBrand: 'Marriott Bonvoy', annualFee: 165, feeLabel: '£165/yr', openDate: '2025-12-01', manualSpendAdjustment: 0 },
+  { id: 'Virgin Atlantic Reward+', programmeBrand: 'Virgin Points', annualFee: 160, feeLabel: '£160/yr', openDate: '2025-09-07', manualSpendAdjustment: 0 },
+  { id: 'Marriott Bonvoy Amex', programmeBrand: 'Marriott Bonvoy', annualFee: 95, feeLabel: '£95/yr', openDate: '2025-08-15', manualSpendAdjustment: 0 },
+  { id: 'Hilton Honors Debit', programmeBrand: 'Hilton Honors', annualFee: 150, feeLabel: '£150/yr', openDate: '2025-08-29', manualSpendAdjustment: 0 },
+  { id: 'IHG One Rewards Elite', programmeBrand: 'IHG One Rewards', annualFee: 216, feeLabel: '£216/yr', openDate: '2026-07-24', manualSpendAdjustment: 0 },
 ];
 
 export const reviews: Review[] = [
