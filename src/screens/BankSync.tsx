@@ -25,10 +25,15 @@ export function BankSync() {
   useEffect(() => {
     if (connections.length > 0 || banks.length > 0) return;
     setLoadingBanks(true);
+    setError('');
     fetch('/.netlify/functions/bank-list?country=GB')
-      .then((r) => r.json())
+      .then(async (r) => {
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || `Request failed (${r.status})`);
+        return d;
+      })
       .then((d) => setBanks(d.banks || []))
-      .catch(() => setError('Could not load the bank list.'))
+      .catch((err) => setError(err instanceof Error ? err.message : 'Could not load the bank list.'))
       .finally(() => setLoadingBanks(false));
   }, [connections.length, banks.length]);
 
