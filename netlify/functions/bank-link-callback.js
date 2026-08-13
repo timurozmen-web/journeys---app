@@ -1,11 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
+import { withLambda } from '@netlify/aws-lambda-compat';
 import { enableBankingFetch } from '../lib/enableBankingAuth.js';
 
 function html(body) {
   return { statusCode: 200, headers: { 'Content-Type': 'text/html' }, body };
 }
 
-export const handler = async (event) => {
+export default withLambda(async (event) => {
   const { code, state, error, error_description } = event.queryStringParameters || {};
 
   if (error) {
@@ -49,4 +50,4 @@ export const handler = async (event) => {
   } catch (err) {
     return html(`<h2>Bank connection failed</h2><p>${err.message || 'Unknown error'}</p>`);
   }
-};
+});

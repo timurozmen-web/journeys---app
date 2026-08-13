@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
+import { withLambda } from '@netlify/aws-lambda-compat';
 import { enableBankingFetch } from '../lib/enableBankingAuth.js';
 
 export const config = { schedule: '0 6 * * *' }; // daily, 06:00 UTC
 
-export const handler = async () => {
+export default withLambda(async () => {
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceKey) {
@@ -62,4 +63,4 @@ export const handler = async () => {
   }
 
   return { statusCode: 200, body: JSON.stringify({ results }) };
-};
+});

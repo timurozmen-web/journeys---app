@@ -27,10 +27,12 @@ Rules:
 - Never guess at a field you can't find evidence for -- use null instead.`;
 }
 
+import { withLambda } from '@netlify/aws-lambda-compat';
+
 const MAX_IMAGES = 4;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
-export const handler = async (event) => {
+export default withLambda(async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
@@ -106,4 +108,4 @@ export const handler = async (event) => {
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: err instanceof Error ? err.message : 'Unknown error' }) };
   }
-};
+});

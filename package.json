@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@netlify/aws-lambda-compat": "^1.0.2",
     "@supabase/supabase-js": "^2.111.0",
     "d3-geo": "^3.1.1",
     "jsonwebtoken": "^9.0.3",

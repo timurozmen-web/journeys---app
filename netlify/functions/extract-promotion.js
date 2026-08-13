@@ -1,3 +1,5 @@
+import { withLambda } from '@netlify/aws-lambda-compat';
+
 const SYSTEM_PROMPT = `You extract and classify a travel loyalty promotion from a screenshot (e.g. an email, app screen, or website page advertising a hotel/airline promotion).
 
 Classify it into exactly one of these types, and return ONLY a JSON object (no other text, no markdown fences):
@@ -22,7 +24,7 @@ Rules:
 const MAX_IMAGES = 4;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
-export const handler = async (event) => {
+export default withLambda(async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
@@ -98,4 +100,4 @@ export const handler = async (event) => {
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: err instanceof Error ? err.message : 'Unknown error' }) };
   }
-};
+});

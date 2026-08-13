@@ -1,6 +1,7 @@
+import { withLambda } from '@netlify/aws-lambda-compat';
 import { enableBankingFetch } from '../lib/enableBankingAuth.js';
 
-export const handler = async (event) => {
+export default withLambda(async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
@@ -45,4 +46,4 @@ export const handler = async (event) => {
       body: JSON.stringify({ error: err.message, detail: err.body }),
     };
   }
-};
+});
