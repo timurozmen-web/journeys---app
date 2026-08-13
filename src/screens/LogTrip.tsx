@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { addTrip, updateTrip } from '../lib/queries';
+import { addTrip, updateTrip, deleteTrip } from '../lib/queries';
 import type { Trip } from '../types';
 import { BackIcon } from '../components/Icons';
 
@@ -19,6 +19,8 @@ export function LogTrip() {
   const editing = (location.state as { trip?: Trip } | null)?.trip;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState({
     title: editing?.title ?? '',
     start: editing?.start ?? '',
@@ -139,6 +141,55 @@ export function LogTrip() {
         >
           {saving ? 'Saving…' : editing ? 'Save changes' : 'Create trip'}
         </button>
+
+        {editing && !confirmingDelete && (
+          <button
+            type="button"
+            onClick={() => setConfirmingDelete(true)}
+            style={{ background: 'none', border: 'none', color: 'var(--red)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', padding: '6px 0' }}
+          >
+            Delete this trip
+          </button>
+        )}
+        {editing && confirmingDelete && (
+          <div style={{ background: 'rgba(210,60,60,.08)', border: '1px solid rgba(210,60,60,.25)', borderRadius: 10, padding: '12px 14px' }}>
+            <div style={{ fontSize: 12.5, color: 'var(--red)', fontWeight: 600, marginBottom: 8 }}>
+              Delete "{editing.title}" permanently? This also removes {editing.hotels.length} stay{editing.hotels.length === 1 ? '' : 's'} and {editing.flights.length} flight{editing.flights.length === 1 ? '' : 's'} logged under it. This can't be undone.
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={async () => {
+                  setDeleting(true);
+                  try {
+                    await deleteTrip(editing.id);
+                    navigate('/trips');
+                  } catch (err) {
+                    const message =
+                      err instanceof Error
+                        ? err.message
+                        : typeof err === 'object' && err !== null && 'message' in err
+                        ? String((err as { message: unknown }).message)
+                        : 'Failed to delete.';
+                    setError(message);
+                    setDeleting(false);
+                  }
+                }}
+                style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--red)', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+              >
+                {deleting ? 'Deleting…' : 'Yes, delete it'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </form>
     </div>
   );

@@ -65,6 +65,18 @@ export async function updateTrip(id: string, input: NewTripInput) {
   if (error) throw error;
 }
 
+// trip_id on hotels/flights isn't a real foreign key, so deleting a trip
+// wouldn't fail on its own -- it would just leave orphaned rows pointing
+// at a trip that no longer exists. Cascade properly instead.
+export async function deleteTrip(id: string) {
+  const { error: hotelsErr } = await supabase.from('hotels').delete().eq('trip_id', id);
+  if (hotelsErr) throw hotelsErr;
+  const { error: flightsErr } = await supabase.from('flights').delete().eq('trip_id', id);
+  if (flightsErr) throw flightsErr;
+  const { error: tripErr } = await supabase.from('trips').delete().eq('id', id);
+  if (tripErr) throw tripErr;
+}
+
 function mapHotel(h: any): Hotel {
   return {
     id: h.id, name: h.name, country: h.country, city: h.city ?? null, brand: h.brand, tier: h.tier,
