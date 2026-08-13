@@ -2,17 +2,36 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { BackIcon } from '../components/Icons';
 import { addReview } from '../lib/queries';
-import { computeBucketScore, INTENSITY_LABELS, REVIEW_CATEGORIES, type ReviewIntensity } from '../lib/reviewScoring';
+import { useReviews } from '../lib/useLiveData';
+import { REVIEW_CATEGORIES } from '../lib/reviewScoring';
+import {
+  pickComparisonCandidate, narrowRange, computeFinalScore, sortedSameBand,
+  SENTIMENT_LABELS, type Sentiment, type RankedItem,
+} from '../lib/reviewRanking';
 import type { HotelNeedingReview } from '../lib/reviewScoring';
 
-type Answer = { liked: boolean; intensity: ReviewIntensity } | null;
+type Phase = 'sentiment' | 'comparing' | 'done';
+
+interface CategoryState {
+  sentiment: Sentiment | null;
+  sameBand: RankedItem[];
+  lo: number;
+  hi: number;
+  score: number | null;
+}
+
+function freshCategoryState(): CategoryState {
+  return { sentiment: null, sameBand: [], lo: 0, hi: 0, score: null };
+}
 
 export function ReviewTrip() {
   const navigate = useNavigate();
   const location = useLocation();
   const hotel = (location.state as { hotel?: HotelNeedingReview } | null)?.hotel;
+  const { data: allReviews } = useReviews();
+
   const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<Answer[]>(REVIEW_CATEGORIES.map(() => null));
+  const [states, setStates] = useState<CategoryState[]>(REVIEW_CATEGORIES.map(() => freshCategoryState()));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -28,18 +47,32 @@ export function ReviewTrip() {
   }
 
   const category = REVIEW_CATEGORIES[step];
-  const answer = answers[step];
+  const current = states[step];
+  const phase: Phase = current.score != null ? 'done' : current.sentiment == null ? 'sentiment' : 'comparing';
 
-  function setLiked(liked: boolean) {
-    const next = [...answers];
-    next[step] = { liked, intensity: 'strong' };
-    setAnswers(next);
+  function updateCurrent(patch: Partial<CategoryState>) {
+    setStates((prev) => prev.map((s, i) => (i === step ? { ...s, ...patch } : s)));
   }
-  function setIntensity(intensity: ReviewIntensity) {
-    if (!answer) return;
-    const next = [...answers];
-    next[step] = { ...answer, intensity };
-    setAnswers(next);
+
+  function chooseSentiment(sentiment: Sentiment) {
+    const existingInCategory = allReviews.filter((r) => r.category === category.key).map((r) => ({ hotelName: r.hotelName, score: r.score }));
+    const sameBand = sortedSameBand(sentiment, existingInCategory);
+    if (sameBand.length === 0) {
+      // Nothing to compare against yet -- land on the band midpoint directly.
+      updateCurrent({ sentiment, sameBand, lo: 0, hi: 0, score: computeFinalScore(sentiment, [], 0) });
+      return;
+    }
+    updateCurrent({ sentiment, sameBand, lo: 0, hi: sameBand.length, score: null });
+  }
+
+  function answerComparison(preferredNew: boolean) {
+    const mid = Math.floor((current.lo + current.hi) / 2);
+    const { lo, hi } = narrowRange(current.lo, current.hi, mid, preferredNew);
+    if (lo >= hi) {
+      updateCurrent({ lo, hi, score: computeFinalScore(current.sentiment!, current.sameBand, lo) });
+    } else {
+      updateCurrent({ lo, hi });
+    }
   }
 
   async function handleNext() {
@@ -47,17 +80,15 @@ export function ReviewTrip() {
       setStep(step + 1);
       return;
     }
-    // Last category answered -- save everything.
     setSaving(true);
     setError('');
     try {
       for (let i = 0; i < REVIEW_CATEGORIES.length; i++) {
-        const a = answers[i];
-        if (!a) continue; // category was skipped
+        const s = states[i];
+        if (s.score == null) continue; // category skipped
         await addReview({
           hotelId: hotel!.hotelId, hotelName: hotel!.hotelName, country: hotel!.country,
-          date: hotel!.date, category: REVIEW_CATEGORIES[i].key,
-          score: computeBucketScore(a.liked, a.intensity),
+          date: hotel!.date, category: REVIEW_CATEGORIES[i].key, score: s.score,
         });
       }
       navigate('/profile');
@@ -74,6 +105,8 @@ export function ReviewTrip() {
     }
   }
 
+  const comparisonCandidate = phase === 'comparing' ? pickComparisonCandidate(current.sameBand, current.lo, current.hi) : null;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
       <div className="head" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -87,67 +120,75 @@ export function ReviewTrip() {
         <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, marginBottom: 16, textAlign: 'center' }}>
           {step + 1} of {REVIEW_CATEGORIES.length}
         </div>
+        <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 24, textAlign: 'center' }}>{category.label}</div>
 
-        <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 20, textAlign: 'center' }}>{category.label}</div>
-
-        <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-          <button
-            onClick={() => setLiked(true)}
-            style={{
-              flex: 1, padding: '16px 0', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer',
-              border: answer?.liked === true ? '2px solid var(--green)' : '1px solid var(--line)',
-              background: answer?.liked === true ? 'rgba(12,122,66,.08)' : 'var(--card)',
-              color: answer?.liked === true ? 'var(--green)' : 'var(--ink)',
-            }}
-          >
-            👍 Liked it
-          </button>
-          <button
-            onClick={() => setLiked(false)}
-            style={{
-              flex: 1, padding: '16px 0', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer',
-              border: answer?.liked === false ? '2px solid var(--red)' : '1px solid var(--line)',
-              background: answer?.liked === false ? 'rgba(210,60,60,.08)' : 'var(--card)',
-              color: answer?.liked === false ? 'var(--red)' : 'var(--ink)',
-            }}
-          >
-            👎 Not for me
-          </button>
-        </div>
-
-        {answer && (
-          <div style={{ display: 'grid', gap: 8, marginBottom: 24 }}>
-            {(['mild', 'strong', 'extreme'] as ReviewIntensity[]).map((level) => (
+        {phase === 'sentiment' && (
+          <div style={{ display: 'grid', gap: 10 }}>
+            {(['liked', 'okay', 'disliked'] as Sentiment[]).map((s) => (
               <button
-                key={level}
-                onClick={() => setIntensity(level)}
+                key={s}
+                onClick={() => chooseSentiment(s)}
                 style={{
-                  padding: '11px 14px', borderRadius: 10, textAlign: 'left', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
-                  border: answer.intensity === level ? '1px solid var(--brand)' : '1px solid var(--line)',
-                  background: answer.intensity === level ? 'rgba(19,34,71,.06)' : 'var(--card)',
-                  color: 'var(--ink)',
+                  padding: '15px 0', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                  border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink)',
                 }}
               >
-                {answer.liked ? INTENSITY_LABELS[level].liked : INTENSITY_LABELS[level].disliked}
+                {SENTIMENT_LABELS[s]}
               </button>
             ))}
           </div>
         )}
 
-        {error && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+        {phase === 'comparing' && comparisonCandidate && (
+          <div>
+            <div style={{ fontSize: 12.5, color: 'var(--ink3)', textAlign: 'center', marginBottom: 14 }}>
+              Which did you prefer?
+            </div>
+            <div style={{ display: 'grid', gap: 10 }}>
+              <button
+                onClick={() => answerComparison(true)}
+                style={{ padding: '18px 14px', borderRadius: 12, border: '2px solid var(--brand)', background: 'rgba(19,34,71,.05)', cursor: 'pointer', textAlign: 'center' }}
+              >
+                <div style={{ fontSize: 15, fontWeight: 800 }}>This stay</div>
+                <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 2 }}>{hotel.hotelName}</div>
+              </button>
+              <button
+                onClick={() => answerComparison(false)}
+                style={{ padding: '18px 14px', borderRadius: 12, border: '1px solid var(--line)', background: 'var(--card)', cursor: 'pointer', textAlign: 'center' }}
+              >
+                <div style={{ fontSize: 15, fontWeight: 800 }}>{comparisonCandidate.hotelName}</div>
+                <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 2 }}>Your earlier rating</div>
+              </button>
+            </div>
+          </div>
+        )}
 
-        <button
-          onClick={handleNext}
-          disabled={!answer || saving}
-          style={{
-            width: '100%', padding: '13px 0', borderRadius: 12, border: 'none', fontSize: 15, fontWeight: 700,
-            background: answer && !saving ? 'var(--brand)' : 'var(--card2)',
-            color: answer && !saving ? '#fff' : 'var(--ink3)',
-            cursor: answer && !saving ? 'pointer' : 'default',
-          }}
-        >
-          {saving ? 'Saving…' : step < REVIEW_CATEGORIES.length - 1 ? 'Next' : 'Finish'}
-        </button>
+        {phase === 'done' && (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 40, fontWeight: 800, color: 'var(--brand)' }}>{current.score!.toFixed(2)}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--ink3)', marginTop: 4 }}>
+              {current.sameBand.length === 0
+                ? `First ${SENTIMENT_LABELS[current.sentiment!].toLowerCase()} rating in this category`
+                : 'Ranked against your other stays'}
+            </div>
+          </div>
+        )}
+
+        {error && <div style={{ color: 'var(--red)', fontSize: 13, margin: '16px 0 0', textAlign: 'center' }}>{error}</div>}
+
+        {phase === 'done' && (
+          <button
+            onClick={handleNext}
+            disabled={saving}
+            style={{
+              width: '100%', marginTop: 28, padding: '13px 0', borderRadius: 12, border: 'none', fontSize: 15, fontWeight: 700,
+              background: saving ? 'var(--card2)' : 'var(--brand)', color: saving ? 'var(--ink3)' : '#fff',
+              cursor: saving ? 'default' : 'pointer',
+            }}
+          >
+            {saving ? 'Saving…' : step < REVIEW_CATEGORIES.length - 1 ? 'Next' : 'Finish'}
+          </button>
+        )}
       </div>
     </div>
   );
