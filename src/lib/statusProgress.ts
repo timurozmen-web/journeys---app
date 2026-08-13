@@ -2,6 +2,7 @@ import type { Hotel, LoyaltyProgramme, Promotion } from '../types';
 
 export interface StatusProgress {
   total: number;
+  currentNights: number; // static baseline + newly-completed stays since the baseline date
   pct: number | null; // current, solid segment
   pct2: number | null; // + booked nights, projected
   pct3: number | null; // + pending promotion bonus nights, projected
@@ -14,6 +15,17 @@ export interface StatusProgress {
 export function computeStatusProgress(p: LoyaltyProgramme, hotels: Hotel[], promotions: Promotion[]): StatusProgress {
   const currentYear = new Date().getFullYear();
   const today = new Date().toISOString().slice(0, 10);
+
+  // Current nights = the static baseline (accurate as of nightsBaselineDate)
+  // plus any stays for this brand completed *after* that date -- avoids
+  // double-counting nights already folded into the baseline, while still
+  // growing live as new stays actually complete.
+  const newlyCompletedNights = p.nightsBaselineDate
+    ? hotels
+        .filter((h) => h.brand === p.name && h.status === 'Completed' && h.date > p.nightsBaselineDate!)
+        .reduce((s, h) => s + h.nights, 0)
+    : 0;
+  const currentNights = (p.nights ?? 0) + newlyCompletedNights;
 
   const bookedNights = hotels
     .filter((h) => h.brand === p.name && h.status === 'Booked' && Number(h.date.slice(0, 4)) === currentYear)
@@ -36,7 +48,7 @@ export function computeStatusProgress(p: LoyaltyProgramme, hotels: Hotel[], prom
   const pendingNights = pendingPromo?.statusNightsBonus ?? 0;
 
   const total = (p.nights ?? 0) + (p.nightsNeeded ?? 0);
-  const projectedBooked = Math.min(total, (p.nights ?? 0) + bookedNights);
+  const projectedBooked = Math.min(total, currentNights + bookedNights);
   const projectedWithPromo = Math.min(total, projectedBooked + pendingNights);
 
   // Marriott's Ambassador tier has a genuinely separate, second
@@ -53,7 +65,8 @@ export function computeStatusProgress(p: LoyaltyProgramme, hotels: Hotel[], prom
 
   return {
     total,
-    pct: p.nights != null && p.nightsNeeded != null ? (p.nights / total) * 100 : null,
+    currentNights,
+    pct: p.nights != null && p.nightsNeeded != null ? (currentNights / total) * 100 : null,
     pct2: bookedNights > 0 ? (projectedBooked / total) * 100 : null,
     pct3: pendingNights > 0 ? (projectedWithPromo / total) * 100 : null,
     bookedNights,

@@ -20,7 +20,8 @@
 .tile .val{font-size:23px;font-weight:800;letter-spacing:-.7px;margin-top:2px;color:var(--ink)}
 .tile .delta{font-size:11px;font-weight:600;color:var(--green);margin-top:var(--s1)}
 
-.hero{border-radius:var(--r-lg);padding:var(--s5);color:#fff;
+.hero{border-radius:var(--r-lg);padding:var(--s5);color:#fff;min-height:196px;box-sizing:border-box;
+  display:flex;flex-direction:column;
   background:linear-gradient(140deg,#132247 0%,#26355F 55%,#3A4C82 100%);
   box-shadow:0 10px 30px rgba(76,79,214,.28)}
 .hero .k{font-size:12px;font-weight:700;opacity:.9;text-transform:uppercase;letter-spacing:.06em}

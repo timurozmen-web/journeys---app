@@ -63,7 +63,7 @@ export function Wallet() {
   const totalValue = loyaltyProgrammes.reduce((s, p) => s + (p.points * p.ptValue) / 100, 0);
   const statusItems = loyaltyProgrammes.filter((p) => p.nextTier && p.nightsNeeded != null);
 
-  let items: { key: string; color: string; name: string; sub: string; big: string; biglab: string; val: string; vallab: string; pct: number | null; pct2?: number | null; pct3?: number | null; spendBar?: { spendUSD: number; spendRequiredUSD: number; pct: number } | null; detail: React.ReactNode; shape?: string; font?: string; accent?: string }[] = [];
+  let items: { key: string; color: string; name: string; sub: string; big: string; biglab: string; pending?: string | null; val: string; vallab: string; pct: number | null; pct2?: number | null; pct3?: number | null; spendBar?: { spendUSD: number; spendRequiredUSD: number; pct: number } | null; detail: React.ReactNode; shape?: string; font?: string; accent?: string }[] = [];
 
   if (seg === 'loyalty') {
     items = loyaltyProgrammes.map((p) => ({
@@ -180,10 +180,12 @@ export function Wallet() {
       const progress = computeStatusProgress(p, hotels, promotions);
       const { total, bookedNights, pendingPromo, pendingNights, spendBar } = progress;
 
+      const pendingTotal = bookedNights + pendingNights;
       return {
         key: p.name, color: p.color, name: p.name, sub: p.tier ?? '',
-        big: `${p.nights}`, biglab: bookedNights > 0 ? `of ${total} nights (+${bookedNights} booked)` : `of ${total} nights`,
-        val: `${p.nightsNeeded}`, vallab: `to ${p.nextTier}`,
+        big: `${progress.currentNights}`, biglab: `of ${total} nights`,
+        pending: pendingTotal > 0 ? `+${pendingTotal} pending` : null,
+        val: `${Math.max(0, total - progress.currentNights)}`, vallab: `to ${p.nextTier}`,
         pct: progress.pct,
         pct2: progress.pct2,
         pct3: progress.pct3,
@@ -197,14 +199,14 @@ export function Wallet() {
             </div>
             {bookedNights > 0 && (
               <div className="dd-row">
-                <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Booked, not yet stayed</span>
-                <span style={{ fontSize: 12.5, fontWeight: 700 }}>+{bookedNights} nights</span>
+                <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Booked</span>
+                <span style={{ fontSize: 12.5, fontWeight: 700 }}>+{bookedNights}</span>
               </div>
             )}
             {pendingPromo && (
               <div className="dd-row">
-                <span style={{ fontSize: 12, color: 'var(--amber)', fontWeight: 600 }}>Pending: {pendingPromo.title}</span>
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--amber)' }}>+{pendingNights} nights on next stay</span>
+                <span style={{ fontSize: 12, color: 'var(--amber)', fontWeight: 600 }}>{pendingPromo.title}</span>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--amber)' }}>+{pendingNights}</span>
               </div>
             )}
             {spendBar && (
@@ -314,7 +316,14 @@ export function Wallet() {
                 )}
                 <div className="deckbot">
                   <div>
-                    <div className="deckbig">{it.big}</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                      <div className="deckbig">{it.big}</div>
+                      {it.pending && (
+                        <span style={{ fontSize: 10.5, fontWeight: 700, color: '#FFC15A', background: 'rgba(255,193,90,.18)', padding: '1px 7px', borderRadius: 99 }}>
+                          {it.pending}
+                        </span>
+                      )}
+                    </div>
                     <div className="decklab">{it.biglab}</div>
                   </div>
                   <div>

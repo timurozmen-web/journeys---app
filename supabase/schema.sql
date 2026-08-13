@@ -181,3 +181,11 @@ create table bank_transactions (
 );
 alter table bank_transactions enable row level security;
 create policy "own rows only" on bank_transactions for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+alter table hotels add column if not exists created_at timestamptz default now();
+alter table loyalty_programmes add column if not exists nights_baseline_date date;
+
+-- Establish "today" as the reconciliation point: everything already
+-- reflected in the current nights figure stays as-is, and only stays
+-- completed from this point forward add on top live.
+update loyalty_programmes set nights_baseline_date = current_date where nights_baseline_date is null;

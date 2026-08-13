@@ -103,6 +103,7 @@ export async function fetchLoyaltyProgrammes(): Promise<LoyaltyProgramme[]> {
     name: p.name, abbr: p.abbr, points: p.points, ptValue: p.pt_value,
     color: p.color, accent: p.accent, font: p.font, shape: p.shape,
     tier: p.tier, nextTier: p.next_tier, nights: p.nights, nightsNeeded: p.nights_needed,
+    nightsBaselineDate: p.nights_baseline_date ?? null,
   }));
 }
 

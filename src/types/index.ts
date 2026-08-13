@@ -55,6 +55,7 @@ export interface LoyaltyProgramme {
   nextTier?: string;
   nights?: number;
   nightsNeeded?: number;
+  nightsBaselineDate?: string | null; // nights count is accurate as of this date; only Completed stays after it add on top live
 }
 
 export interface PaymentCard {

@@ -138,7 +138,7 @@ export function Home() {
                       <div className="tier">{p.tier}</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 22, fontWeight: 800 }}>{p.nightsNeeded}</div>
+                      <div style={{ fontSize: 22, fontWeight: 800 }}>{Math.max(0, p.progress.total - p.progress.currentNights)}</div>
                       <div style={{ fontSize: 9.5, opacity: 0.85, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>
                         nights to<br />{p.nextTier}
                       </div>
@@ -153,15 +153,14 @@ export function Home() {
                     )}
                     <i style={{ width: `${p.progress.pct ?? 0}%`, position: 'relative' }} />
                   </div>
-                  <div className="note" style={{ color: 'rgba(255,255,255,.85)' }}>
-                    {p.nights} / {p.nights! + p.nightsNeeded!} nights
-                    {p.progress.bookedNights > 0 && ` (+${p.progress.bookedNights} booked)`}
+                  <div className="note" style={{ color: 'rgba(255,255,255,.85)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>{p.progress.currentNights} / {p.progress.total} nights</span>
+                    {(p.progress.bookedNights + p.progress.pendingNights) > 0 && (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#FFC15A', background: 'rgba(255,193,90,.18)', padding: '1px 7px', borderRadius: 99 }}>
+                        +{p.progress.bookedNights + p.progress.pendingNights} pending
+                      </span>
+                    )}
                   </div>
-                  {p.progress.pendingPromo && (
-                    <div className="note" style={{ color: '#FFC15A', fontWeight: 700 }}>
-                      Pending: {p.progress.pendingPromo.title} (+{p.progress.pendingNights} on next stay)
-                    </div>
-                  )}
                   {p.progress.spendBar && (
                     <>
                       <div style={{ fontSize: 9.5, opacity: 0.85, fontWeight: 700, marginTop: 8, color: '#fff' }}>

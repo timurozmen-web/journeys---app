@@ -55,7 +55,7 @@ export function TripCard({ trip }: { trip: Trip }) {
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <HotelIcon size={13} color="var(--ink3)" />
-          <span style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 600 }}>{trip.hotels.length} stays</span>
+          <span style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 600 }}>{trip.hotels.length} {trip.hotels.length === 1 ? 'stay' : 'stays'}</span>
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <PlaneIcon size={13} color="var(--ink3)" />
