@@ -75,7 +75,7 @@ export function ReviewTrip() {
   }
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
       <div className="head" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0 }}>
           <BackIcon size={20} color="var(--ink)" />
@@ -83,12 +83,12 @@ export function ReviewTrip() {
         <div className="h1" style={{ fontSize: 21 }}>Rate {hotel.hotelName}</div>
       </div>
 
-      <div style={{ padding: '0 20px' }}>
-        <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, marginBottom: 16 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 20px 100px' }}>
+        <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, marginBottom: 16, textAlign: 'center' }}>
           {step + 1} of {REVIEW_CATEGORIES.length}
         </div>
 
-        <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 20 }}>{category.label}</div>
+        <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 20, textAlign: 'center' }}>{category.label}</div>
 
         <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
           <button

@@ -41,18 +41,25 @@ export interface HotelNeedingReview {
 // A hotel needs review once its trip has actually finished (not just
 // "past" by section label, which can be stale -- checked against the
 // trip's real end date) and it has no "overall" review logged yet.
+// Matches by hotel_id where available, but falls back to matching by
+// name -- the originally-imported reviews predate this app's own hotel
+// records and may not have a reliable hotel_id link.
 export function findHotelsNeedingReview(
   trips: { id: string; title: string; end: string; hotels: { id: string; name: string; country: string; date: string; status: string }[] }[],
-  reviews: { hotelId: string; category: string }[],
+  reviews: { hotelId: string | null; hotelName: string; category: string }[],
   today: string
 ): HotelNeedingReview[] {
-  const reviewedHotelIds = new Set(reviews.filter((r) => r.category === 'overall').map((r) => r.hotelId));
+  const overallReviews = reviews.filter((r) => r.category === 'overall');
+  const reviewedHotelIds = new Set(overallReviews.map((r) => r.hotelId).filter(Boolean));
+  const reviewedHotelNames = new Set(overallReviews.map((r) => r.hotelName.trim().toLowerCase()));
+
   const result: HotelNeedingReview[] = [];
   for (const trip of trips) {
     if (trip.end >= today) continue; // trip hasn't actually finished yet
     for (const h of trip.hotels) {
       if (h.status !== 'Completed') continue;
       if (reviewedHotelIds.has(h.id)) continue;
+      if (reviewedHotelNames.has(h.name.trim().toLowerCase())) continue;
       result.push({ tripId: trip.id, tripTitle: trip.title, hotelId: h.id, hotelName: h.name, country: h.country, date: h.date });
     }
   }

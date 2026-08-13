@@ -27,8 +27,11 @@ export function computeStatusProgress(p: LoyaltyProgramme, hotels: Hotel[], prom
     : 0;
   const currentNights = (p.nights ?? 0) + newlyCompletedNights;
 
+  // Any future booked stay counts as pending progress -- not restricted
+  // to the current calendar year, since a stay booked for January next
+  // year is still real, upcoming progress a user would want to see.
   const bookedNights = hotels
-    .filter((h) => h.brand === p.name && h.status === 'Booked' && Number(h.date.slice(0, 4)) === currentYear)
+    .filter((h) => h.brand === p.name && h.status === 'Booked')
     .reduce((s, h) => s + h.nights, 0);
 
   // A status_boost promotion for this brand, active now, not yet applied
@@ -45,7 +48,14 @@ export function computeStatusProgress(p: LoyaltyProgramme, hotels: Hotel[], prom
         (!promo.startDate || promo.startDate <= today) &&
         (!promo.endDate || promo.endDate >= today)
     ) ?? null;
-  const pendingNights = pendingPromo?.statusNightsBonus ?? 0;
+  // The promo's bonus nights land alongside the 1 real night of whatever
+  // stay triggers it. If a booked stay already exists, that's presumably
+  // the trigger and its night is already counted via bookedNights -- add
+  // just the bonus on top. If there's no booked stay yet, this is a pure
+  // projection of "your next stay, whenever it happens" -- so the +1
+  // triggering night needs to be added explicitly, or a 15-night bonus
+  // would incorrectly show as only +15 instead of the real +16.
+  const pendingNights = pendingPromo ? pendingPromo.statusNightsBonus! + (bookedNights > 0 ? 0 : 1) : 0;
 
   const total = (p.nights ?? 0) + (p.nightsNeeded ?? 0);
   const projectedBooked = Math.min(total, currentNights + bookedNights);
