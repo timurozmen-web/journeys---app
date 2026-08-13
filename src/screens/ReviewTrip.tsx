@@ -206,7 +206,7 @@ export function ReviewTrip() {
                 }}
               >
                 <div style={{ fontSize: 15, fontWeight: 800, textAlign: 'center' }}>{comparisonCandidate.hotelName}</div>
-                <div style={{ fontSize: 11, color: 'var(--ink3)' }}>{comparisonCandidate.score.toFixed(2)}</div>
+                <div style={{ fontSize: 11, color: 'var(--ink3)' }}>{comparisonCandidate.score.toFixed(1)}</div>
               </button>
               <span
                 style={{
@@ -239,7 +239,7 @@ export function ReviewTrip() {
               <div style={{ fontSize: 15, color: 'var(--ink3)', fontWeight: 600 }}>Skipped</div>
             ) : (
               <>
-                <div style={{ fontSize: 40, fontWeight: 800, color: 'var(--brand)' }}>{current.score!.toFixed(2)}</div>
+                <div style={{ fontSize: 40, fontWeight: 800, color: 'var(--brand)' }}>{current.score!.toFixed(1)}</div>
                 <div style={{ fontSize: 12.5, color: 'var(--ink3)', marginTop: 4 }}>
                   {current.sameBand.length === 0 ? 'First rating in this category' : 'Ranked against your other stays'}
                 </div>
