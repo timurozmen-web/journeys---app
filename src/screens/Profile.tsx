@@ -1,5 +1,7 @@
 import { useState, lazy, Suspense } from 'react';
-import { useReviews, useAllHotels, useAllFlights } from '../lib/useLiveData';
+import { useNavigate } from 'react-router-dom';
+import { useReviews, useAllHotels, useAllFlights, useTrips } from '../lib/useLiveData';
+import { findHotelsNeedingReview } from '../lib/reviewScoring';
 const WorldMap = lazy(() => import('../components/WorldMap').then((m) => ({ default: m.WorldMap })));
 
 const REGIONS = [
@@ -19,10 +21,14 @@ const CATEGORIES = [
 ];
 
 export function Profile() {
+  const navigate = useNavigate();
   const [cat, setCat] = useState('overall');
   const { data: reviews } = useReviews();
   const { data: hotels } = useAllHotels();
   const { data: flights } = useAllFlights();
+  const { data: trips } = useTrips();
+  const today = new Date().toISOString().slice(0, 10);
+  const needsReview = findHotelsNeedingReview(trips, reviews, today);
   const visitedCountries = new Set(hotels.map((h) => h.country.trim()).filter(Boolean));
   const filtered = reviews.filter((r) => r.category === cat).sort((a, b) => b.score - a.score);
 
@@ -44,6 +50,33 @@ export function Profile() {
           <div className="h-sub">32 countries · 97 nights · since 2015</div>
         </div>
       </div>
+
+      {needsReview.length > 0 && (
+        <div style={{ padding: '0 20px 16px' }}>
+          <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>
+            Outstanding
+          </div>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {needsReview.map((h) => (
+              <button
+                key={h.hotelId}
+                onClick={() => navigate('/review-trip', { state: { hotel: h } })}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+                  padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(19,34,71,.15)',
+                  background: 'rgba(19,34,71,.04)', textAlign: 'left', cursor: 'pointer', width: '100%',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>Rate your stay at {h.hotelName}</div>
+                  <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 2 }}>{h.tripTitle} · {h.date}</div>
+                </div>
+                <span style={{ color: 'var(--brand)', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>Rate ›</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="stack">
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>

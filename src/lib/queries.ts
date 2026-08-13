@@ -129,6 +129,17 @@ export async function fetchReviews(): Promise<Review[]> {
   }));
 }
 
+export interface NewReviewInput {
+  hotelId: string; hotelName: string; country: string; date: string; category: string; score: number;
+}
+export async function addReview(input: NewReviewInput) {
+  const { error } = await supabase.from('reviews').insert({
+    hotel_id: input.hotelId, hotel_name: input.hotelName, country: input.country,
+    date: input.date, category: input.category, score: input.score,
+  });
+  if (error) throw error;
+}
+
 /* Uploads a photo to the `trip-photos` bucket under the signed-in user's own
    folder (required by the storage RLS policy), then saves the public URL
    against the trip. Returns the URL so the UI can show it immediately

@@ -189,3 +189,5 @@ alter table loyalty_programmes add column if not exists nights_baseline_date dat
 -- reflected in the current nights figure stays as-is, and only stays
 -- completed from this point forward add on top live.
 update loyalty_programmes set nights_baseline_date = current_date where nights_baseline_date is null;
+
+alter table reviews add column if not exists category text not null default 'overall';
