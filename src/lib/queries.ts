@@ -129,8 +129,15 @@ export async function fetchPaymentCards(): Promise<PaymentCard[]> {
 }
 
 export async function updateManualSpendAdjustment(cardId: string, amount: number) {
-  const { error } = await supabase.from('payment_cards').update({ manual_spend_adjustment: amount }).eq('id', cardId);
+  const { data, error } = await supabase
+    .from('payment_cards')
+    .update({ manual_spend_adjustment: amount })
+    .eq('id', cardId)
+    .select();
   if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error(`No payment card found with id "${cardId}" -- the update silently matched nothing.`);
+  }
 }
 
 export async function fetchReviews(): Promise<Review[]> {
