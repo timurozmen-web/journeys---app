@@ -6,7 +6,7 @@ import { useReviews } from '../lib/useLiveData';
 import { REVIEW_CATEGORIES } from '../lib/reviewScoring';
 import {
   pickComparisonCandidate, narrowRange, computeFinalScore, sortedSameBand,
-  SENTIMENT_LABELS, type Sentiment, type RankedItem,
+  type Sentiment, type RankedItem,
 } from '../lib/reviewRanking';
 import type { HotelNeedingReview } from '../lib/reviewScoring';
 
@@ -17,12 +17,20 @@ interface CategoryState {
   sameBand: RankedItem[];
   lo: number;
   hi: number;
+  history: { lo: number; hi: number }[];
   score: number | null;
+  skipped: boolean;
 }
 
 function freshCategoryState(): CategoryState {
-  return { sentiment: null, sameBand: [], lo: 0, hi: 0, score: null };
+  return { sentiment: null, sameBand: [], lo: 0, hi: 0, history: [], score: null, skipped: false };
 }
+
+const SENTIMENT_CIRCLES: { key: Sentiment; label: string; color: string }[] = [
+  { key: 'liked', label: 'I liked it!', color: 'var(--green)' },
+  { key: 'okay', label: 'It was fine', color: 'var(--amber)' },
+  { key: 'disliked', label: "I didn't like it", color: 'var(--red)' },
+];
 
 export function ReviewTrip() {
   const navigate = useNavigate();
@@ -48,7 +56,7 @@ export function ReviewTrip() {
 
   const category = REVIEW_CATEGORIES[step];
   const current = states[step];
-  const phase: Phase = current.score != null ? 'done' : current.sentiment == null ? 'sentiment' : 'comparing';
+  const phase: Phase = current.score != null || current.skipped ? 'done' : current.sentiment == null ? 'sentiment' : 'comparing';
 
   function updateCurrent(patch: Partial<CategoryState>) {
     setStates((prev) => prev.map((s, i) => (i === step ? { ...s, ...patch } : s)));
@@ -58,21 +66,43 @@ export function ReviewTrip() {
     const existingInCategory = allReviews.filter((r) => r.category === category.key).map((r) => ({ hotelName: r.hotelName, score: r.score }));
     const sameBand = sortedSameBand(sentiment, existingInCategory);
     if (sameBand.length === 0) {
-      // Nothing to compare against yet -- land on the band midpoint directly.
-      updateCurrent({ sentiment, sameBand, lo: 0, hi: 0, score: computeFinalScore(sentiment, [], 0) });
+      updateCurrent({ sentiment, sameBand, lo: 0, hi: 0, history: [], score: computeFinalScore(sentiment, [], 0) });
       return;
     }
-    updateCurrent({ sentiment, sameBand, lo: 0, hi: sameBand.length, score: null });
+    updateCurrent({ sentiment, sameBand, lo: 0, hi: sameBand.length, history: [], score: null });
   }
 
   function answerComparison(preferredNew: boolean) {
     const mid = Math.floor((current.lo + current.hi) / 2);
     const { lo, hi } = narrowRange(current.lo, current.hi, mid, preferredNew);
+    const history = [...current.history, { lo: current.lo, hi: current.hi }];
     if (lo >= hi) {
-      updateCurrent({ lo, hi, score: computeFinalScore(current.sentiment!, current.sameBand, lo) });
+      updateCurrent({ lo, hi, history, score: computeFinalScore(current.sentiment!, current.sameBand, lo) });
     } else {
-      updateCurrent({ lo, hi });
+      updateCurrent({ lo, hi, history });
     }
+  }
+
+  function tooTough() {
+    // Too close to call -- settle right at this candidate's position
+    // rather than continuing to narrow further.
+    const mid = Math.floor((current.lo + current.hi) / 2);
+    const history = [...current.history, { lo: current.lo, hi: current.hi }];
+    updateCurrent({ lo: mid, hi: mid, history, score: computeFinalScore(current.sentiment!, current.sameBand, mid) });
+  }
+
+  function undo() {
+    if (current.history.length === 0) {
+      // Nothing to undo within comparisons -- back out of sentiment choice entirely.
+      updateCurrent(freshCategoryState());
+      return;
+    }
+    const prevState = current.history[current.history.length - 1];
+    updateCurrent({ lo: prevState.lo, hi: prevState.hi, history: current.history.slice(0, -1), score: null });
+  }
+
+  function skipCategory() {
+    updateCurrent({ skipped: true, score: null });
   }
 
   async function handleNext() {
@@ -85,7 +115,7 @@ export function ReviewTrip() {
     try {
       for (let i = 0; i < REVIEW_CATEGORIES.length; i++) {
         const s = states[i];
-        if (s.score == null) continue; // category skipped
+        if (s.score == null) continue;
         await addReview({
           hotelId: hotel!.hotelId, hotelName: hotel!.hotelName, country: hotel!.country,
           date: hotel!.date, category: REVIEW_CATEGORIES[i].key, score: s.score,
@@ -120,20 +150,23 @@ export function ReviewTrip() {
         <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, marginBottom: 16, textAlign: 'center' }}>
           {step + 1} of {REVIEW_CATEGORIES.length}
         </div>
-        <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 24, textAlign: 'center' }}>{category.label}</div>
+        <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 28, textAlign: 'center' }}>{category.label}</div>
 
         {phase === 'sentiment' && (
-          <div style={{ display: 'grid', gap: 10 }}>
-            {(['liked', 'okay', 'disliked'] as Sentiment[]).map((s) => (
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+            {SENTIMENT_CIRCLES.map((s) => (
               <button
-                key={s}
-                onClick={() => chooseSentiment(s)}
-                style={{
-                  padding: '15px 0', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer',
-                  border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink)',
-                }}
+                key={s.key}
+                onClick={() => chooseSentiment(s.key)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, flex: 1 }}
               >
-                {SENTIMENT_LABELS[s]}
+                <span
+                  style={{
+                    width: 68, height: 68, borderRadius: '50%', background: s.color,
+                    display: 'grid', placeItems: 'center', boxShadow: '0 6px 16px rgba(0,0,0,.15)',
+                  }}
+                />
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>{s.label}</span>
               </button>
             ))}
           </div>
@@ -141,23 +174,49 @@ export function ReviewTrip() {
 
         {phase === 'comparing' && comparisonCandidate && (
           <div>
-            <div style={{ fontSize: 12.5, color: 'var(--ink3)', textAlign: 'center', marginBottom: 14 }}>
-              Which did you prefer?
+            <div style={{ fontSize: 15, fontWeight: 800, textAlign: 'center', marginBottom: 16 }}>
+              Which do you prefer?
             </div>
-            <div style={{ display: 'grid', gap: 10 }}>
+            <div style={{ position: 'relative', display: 'flex', gap: 10 }}>
               <button
                 onClick={() => answerComparison(true)}
-                style={{ padding: '18px 14px', borderRadius: 12, border: '2px solid var(--brand)', background: 'rgba(19,34,71,.05)', cursor: 'pointer', textAlign: 'center' }}
+                style={{
+                  flex: 1, minHeight: 150, padding: '18px 12px', borderRadius: 14, border: '2px solid var(--brand)',
+                  background: 'rgba(19,34,71,.05)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
               >
-                <div style={{ fontSize: 15, fontWeight: 800 }}>This stay</div>
-                <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 2 }}>{hotel.hotelName}</div>
+                <div style={{ fontSize: 15, fontWeight: 800, textAlign: 'center' }}>{hotel.hotelName}</div>
               </button>
               <button
                 onClick={() => answerComparison(false)}
-                style={{ padding: '18px 14px', borderRadius: 12, border: '1px solid var(--line)', background: 'var(--card)', cursor: 'pointer', textAlign: 'center' }}
+                style={{
+                  flex: 1, minHeight: 150, padding: '18px 12px', borderRadius: 14, border: '1px solid var(--line)',
+                  background: 'var(--card)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+                }}
               >
-                <div style={{ fontSize: 15, fontWeight: 800 }}>{comparisonCandidate.hotelName}</div>
-                <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 2 }}>Your earlier rating</div>
+                <div style={{ fontSize: 15, fontWeight: 800, textAlign: 'center' }}>{comparisonCandidate.hotelName}</div>
+                <div style={{ fontSize: 11, color: 'var(--ink3)' }}>{comparisonCandidate.score.toFixed(2)}</div>
+              </button>
+              <span
+                style={{
+                  position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+                  width: 34, height: 34, borderRadius: '50%', background: 'var(--brand)', color: '#fff',
+                  fontSize: 10.5, fontWeight: 800, display: 'grid', placeItems: 'center', boxShadow: '0 2px 8px rgba(0,0,0,.25)',
+                }}
+              >
+                OR
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 18 }}>
+              <button onClick={undo} style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>
+                ‹ Undo
+              </button>
+              <button onClick={tooTough} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 99, padding: '7px 16px', color: 'var(--ink)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>
+                Too tough
+              </button>
+              <button onClick={skipCategory} style={{ background: 'none', border: 'none', color: 'var(--ink3)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>
+                Skip ›
               </button>
             </div>
           </div>
@@ -165,12 +224,16 @@ export function ReviewTrip() {
 
         {phase === 'done' && (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 40, fontWeight: 800, color: 'var(--brand)' }}>{current.score!.toFixed(2)}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--ink3)', marginTop: 4 }}>
-              {current.sameBand.length === 0
-                ? `First ${SENTIMENT_LABELS[current.sentiment!].toLowerCase()} rating in this category`
-                : 'Ranked against your other stays'}
-            </div>
+            {current.skipped ? (
+              <div style={{ fontSize: 15, color: 'var(--ink3)', fontWeight: 600 }}>Skipped</div>
+            ) : (
+              <>
+                <div style={{ fontSize: 40, fontWeight: 800, color: 'var(--brand)' }}>{current.score!.toFixed(2)}</div>
+                <div style={{ fontSize: 12.5, color: 'var(--ink3)', marginTop: 4 }}>
+                  {current.sameBand.length === 0 ? 'First rating in this category' : 'Ranked against your other stays'}
+                </div>
+              </>
+            )}
           </div>
         )}
 
