@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BackIcon, CameraIcon } from '../components/Icons';
 import { addPromotion, type NewPromotionInput } from '../lib/queries';
+import { useLoyaltyProgrammes } from '../lib/useLiveData';
 import { normalizeBrand } from '../data/brandMap';
 
 const inputStyle: React.CSSProperties = {
@@ -27,6 +28,7 @@ function fileToBase64(file: File): Promise<string> {
 
 export function ScanPromotion() {
   const navigate = useNavigate();
+  const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
   const [text, setText] = useState('');
   const [images, setImages] = useState<PickedImage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -64,7 +66,8 @@ export function ScanPromotion() {
         return;
       }
       setResult({
-        title: data.title, description: data.description, brand: data.brand ? normalizeBrand(data.brand) : null,
+        title: data.title, description: data.description,
+        brand: data.brand && loyaltyProgrammes.some((p) => p.name === normalizeBrand(data.brand)) ? normalizeBrand(data.brand) : null,
         startDate: data.startDate, endDate: data.endDate, promoType: data.promoType,
         multiplier: data.multiplier, thresholdSpend: data.thresholdSpend, bonusPoints: data.bonusPoints,
         discountValue: data.discountValue, statusNightsBonus: data.statusNightsBonus, partnerAirline: data.partnerAirline,
@@ -172,7 +175,12 @@ export function ScanPromotion() {
           </div>
           <div>
             <label style={labelStyle}>Brand</label>
-            <input style={inputStyle} value={result.brand ?? ''} onChange={(e) => set('brand', e.target.value || null)} onBlur={(e) => e.target.value && set('brand', normalizeBrand(e.target.value))} />
+            <select style={inputStyle} value={result.brand ?? ''} onChange={(e) => set('brand', e.target.value || null)}>
+              <option value="">No specific brand</option>
+              {loyaltyProgrammes.map((p) => (
+                <option key={p.name} value={p.name}>{p.name}</option>
+              ))}
+            </select>
           </div>
 
           {result.promoType === 'multiplier' && (

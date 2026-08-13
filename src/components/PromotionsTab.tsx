@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePromotions } from '../lib/useLiveData';
+import { usePromotions, useLoyaltyProgrammes } from '../lib/useLiveData';
 import { addPromotion, deletePromotion, setPromotionDiscountUsed, setPromotionStatusNightsApplied } from '../lib/queries';
 import type { Promotion, PromoType } from '../types';
 
@@ -33,6 +33,7 @@ function summarize(p: Promotion): string | null {
 
 export function PromotionsTab() {
   const { data: promotions, refetch } = usePromotions();
+  const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -154,12 +155,16 @@ export function PromotionsTab() {
               <option key={t} value={t}>{TYPE_LABELS[t]}</option>
             ))}
           </select>
-          <input
-            placeholder="Brand (optional)"
+          <select
             value={form.brand}
             onChange={(e) => setForm((f) => ({ ...f, brand: e.target.value }))}
             style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid var(--line)', fontSize: 13.5 }}
-          />
+          >
+            <option value="">No specific brand</option>
+            {loyaltyProgrammes.map((p) => (
+              <option key={p.name} value={p.name}>{p.name}</option>
+            ))}
+          </select>
 
           {form.promoType === 'multiplier' && (
             <input placeholder="Multiplier (e.g. 2 for 2x)" type="number" step="0.1" value={form.multiplier}
