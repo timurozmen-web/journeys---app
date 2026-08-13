@@ -153,22 +153,33 @@ export function ReviewTrip() {
         <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 28, textAlign: 'center' }}>{category.label}</div>
 
         {phase === 'sentiment' && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-            {SENTIMENT_CIRCLES.map((s) => (
-              <button
-                key={s.key}
-                onClick={() => chooseSentiment(s.key)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, flex: 1 }}
-              >
-                <span
-                  style={{
-                    width: 68, height: 68, borderRadius: '50%', background: s.color,
-                    display: 'grid', placeItems: 'center', boxShadow: '0 6px 16px rgba(0,0,0,.15)',
-                  }}
-                />
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>{s.label}</span>
-              </button>
-            ))}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+              {SENTIMENT_CIRCLES.map((s) => (
+                <button
+                  key={s.key}
+                  onClick={() => chooseSentiment(s.key)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, flex: 1 }}
+                >
+                  <span
+                    style={{
+                      width: 68, height: 68, borderRadius: '50%', background: s.color,
+                      display: 'grid', placeItems: 'center', boxShadow: '0 6px 16px rgba(0,0,0,.15)',
+                    }}
+                  />
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>{s.label}</span>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={skipCategory}
+              style={{
+                display: 'block', margin: '28px auto 0', background: 'none', border: 'none',
+                color: 'var(--ink3)', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              }}
+            >
+              N/A for this stay
+            </button>
           </div>
         )}
 
