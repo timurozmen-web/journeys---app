@@ -193,3 +193,28 @@ update loyalty_programmes set nights_baseline_date = current_date where nights_b
 alter table reviews add column if not exists category text not null default 'overall';
 
 alter table payment_cards add column if not exists manual_spend_is_uk boolean not null default true;
+
+create table promotion_scan_candidates (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users not null default auth.uid(),
+  source text not null,
+  brand text,
+  title text not null,
+  description text,
+  start_date date,
+  end_date date,
+  promo_type text not null default 'other' check (promo_type in ('multiplier','threshold_bonus','fixed_discount','status_boost','airline_partner','other')),
+  multiplier numeric,
+  threshold_spend numeric,
+  bonus_points numeric,
+  discount_value numeric,
+  status_nights_bonus int,
+  partner_airline text,
+  fingerprint text not null,
+  dismissed boolean not null default false,
+  promoted boolean not null default false,
+  created_at timestamptz default now(),
+  unique (user_id, fingerprint)
+);
+alter table promotion_scan_candidates enable row level security;
+create policy "own rows only" on promotion_scan_candidates for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

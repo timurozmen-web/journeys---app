@@ -347,6 +347,44 @@ export async function deletePromotion(id: string) {
   if (error) throw error;
 }
 
+export interface PromotionCandidate {
+  id: string; source: string; brand: string | null; title: string; description: string | null;
+  startDate: string | null; endDate: string | null; promoType: PromoType;
+  multiplier: number | null; thresholdSpend: number | null; bonusPoints: number | null;
+  discountValue: number | null; statusNightsBonus: number | null; partnerAirline: string | null;
+}
+export async function fetchPromotionCandidates(): Promise<PromotionCandidate[]> {
+  const { data, error } = await supabase
+    .from('promotion_scan_candidates')
+    .select('*')
+    .eq('dismissed', false)
+    .eq('promoted', false)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((p) => ({
+    id: p.id, source: p.source, brand: p.brand, title: p.title, description: p.description,
+    startDate: p.start_date, endDate: p.end_date, promoType: p.promo_type,
+    multiplier: p.multiplier, thresholdSpend: p.threshold_spend, bonusPoints: p.bonus_points,
+    discountValue: p.discount_value, statusNightsBonus: p.status_nights_bonus, partnerAirline: p.partner_airline,
+  }));
+}
+
+export async function acceptPromotionCandidate(candidate: PromotionCandidate) {
+  await addPromotion({
+    title: candidate.title, description: candidate.description, brand: candidate.brand,
+    startDate: candidate.startDate, endDate: candidate.endDate, promoType: candidate.promoType,
+    multiplier: candidate.multiplier, thresholdSpend: candidate.thresholdSpend, bonusPoints: candidate.bonusPoints,
+    discountValue: candidate.discountValue, statusNightsBonus: candidate.statusNightsBonus, partnerAirline: candidate.partnerAirline,
+  });
+  const { error } = await supabase.from('promotion_scan_candidates').update({ promoted: true }).eq('id', candidate.id);
+  if (error) throw error;
+}
+
+export async function dismissPromotionCandidate(id: string) {
+  const { error } = await supabase.from('promotion_scan_candidates').update({ dismissed: true }).eq('id', id);
+  if (error) throw error;
+}
+
 export interface BankConnection {
   id: string; aspspName: string; aspspCountry: string; accountName: string | null;
   consentValidUntil: string; lastSyncedAt: string | null;
