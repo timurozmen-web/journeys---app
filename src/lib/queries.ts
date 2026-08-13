@@ -125,13 +125,14 @@ export async function fetchPaymentCards(): Promise<PaymentCard[]> {
   return (data ?? []).map((c) => ({
     id: c.id, programmeBrand: c.programme_brand, annualFee: c.annual_fee,
     feeLabel: c.fee_label, openDate: c.open_date, manualSpendAdjustment: c.manual_spend_adjustment ?? 0,
+    manualSpendIsUK: c.manual_spend_is_uk ?? true,
   }));
 }
 
-export async function updateManualSpendAdjustment(cardId: string, amount: number) {
+export async function updateManualSpendAdjustment(cardId: string, amount: number, isUK: boolean) {
   const { data, error } = await supabase
     .from('payment_cards')
-    .update({ manual_spend_adjustment: amount })
+    .update({ manual_spend_adjustment: amount, manual_spend_is_uk: isUK })
     .eq('id', cardId)
     .select();
   if (error) throw error;

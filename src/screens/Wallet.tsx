@@ -28,6 +28,7 @@ export function Wallet() {
   const [seg, setSeg] = useState<Seg>('loyalty');
   const [editingSpendCard, setEditingSpendCard] = useState<string | null>(null);
   const [spendInput, setSpendInput] = useState('');
+  const [spendIsUK, setSpendIsUK] = useState(true);
   const [spendSaveError, setSpendSaveError] = useState('');
   const [open, setOpen] = useState<string | null>(null);
   const { data: rawLoyaltyProgrammes, isLive } = useLoyaltyProgrammes();
@@ -108,7 +109,7 @@ export function Wallet() {
                     onClick={async () => {
                       setSpendSaveError('');
                       try {
-                        await updateManualSpendAdjustment(r.card.id, spendInput ? parseFloat(spendInput) : 0);
+                        await updateManualSpendAdjustment(r.card.id, spendInput ? parseFloat(spendInput) : 0, spendIsUK);
                         setEditingSpendCard(null);
                         refetchCards();
                       } catch (err) {
@@ -126,6 +127,25 @@ export function Wallet() {
                   Save
                 </button>
                 </div>
+                <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                  {[{ v: true, l: 'UK spend' }, { v: false, l: 'Overseas spend' }].map((opt) => (
+                    <button
+                      key={String(opt.v)}
+                      onClick={() => setSpendIsUK(opt.v)}
+                      style={{
+                        padding: '4px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                        border: spendIsUK === opt.v ? '1px solid var(--brand)' : '1px solid var(--line)',
+                        background: spendIsUK === opt.v ? 'rgba(19,34,71,.06)' : 'var(--card)',
+                        color: spendIsUK === opt.v ? 'var(--brand)' : 'var(--ink3)',
+                      }}
+                    >
+                      {opt.l}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 6 }}>
+                  Earning rate differs by region -- this is used to work out the points this spend earns.
+                </div>
                 {spendSaveError && (
                   <div style={{ color: 'var(--red)', fontSize: 11.5, marginTop: 6 }}>{spendSaveError}</div>
                 )}
@@ -136,6 +156,7 @@ export function Wallet() {
                   setEditingSpendCard(r.card.id);
                   setSpendSaveError('');
                   setSpendInput(r.cardRow?.manualSpendAdjustment ? String(r.cardRow.manualSpendAdjustment) : '');
+                  setSpendIsUK(r.cardRow?.manualSpendIsUK ?? true);
                 }}
                 style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0 }}
               >

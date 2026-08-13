@@ -65,6 +65,7 @@ export interface PaymentCard {
   feeLabel: string;
   openDate: string;
   manualSpendAdjustment: number; // spend not captured by logged hotels/flights (everyday purchases etc)
+  manualSpendIsUK: boolean; // whether that manual spend was in the UK, since earning rates differ
 }
 
 export interface Trip {

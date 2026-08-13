@@ -191,3 +191,5 @@ alter table loyalty_programmes add column if not exists nights_baseline_date dat
 update loyalty_programmes set nights_baseline_date = current_date where nights_baseline_date is null;
 
 alter table reviews add column if not exists category text not null default 'overall';
+
+alter table payment_cards add column if not exists manual_spend_is_uk boolean not null default true;

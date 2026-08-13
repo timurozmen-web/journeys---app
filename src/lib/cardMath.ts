@@ -71,9 +71,13 @@ export function computeCardResults(
     }
 
     // Spend not captured by a logged hotel/flight (everyday purchases,
-    // etc) -- counts toward milestone/voucher thresholds, but isn't run
-    // through the points-rate math since we don't know what it was for.
-    autoSpend += cardRow?.manualSpendAdjustment ?? 0;
+    // etc) -- counts toward milestone/voucher thresholds AND earns real
+    // points, at the card's own general (non-own-brand) rate, using
+    // whichever region the user specified for that spend.
+    const manualSpend = cardRow?.manualSpendAdjustment ?? 0;
+    const manualIsUK = cardRow?.manualSpendIsUK ?? true;
+    autoSpend += manualSpend;
+    autoPts += manualSpend * card.rateFor({ ownBrand: false, isUK: manualIsUK, isUKEurope: manualIsUK, isPremiumCountry: false, date: today });
 
     const milestoneResults: MilestoneResult[] = card.milestones.map((m) => {
       const hit = m.type === 'tick' ? true : autoSpend >= (m.spendRequired ?? Infinity);
