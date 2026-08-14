@@ -218,3 +218,6 @@ create table promotion_scan_candidates (
 );
 alter table promotion_scan_candidates enable row level security;
 create policy "own rows only" on promotion_scan_candidates for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+alter table loyalty_programmes add column if not exists category text not null default 'hotel' check (category in ('hotel','airline'));
+update loyalty_programmes set category = 'airline' where name in ('Avios', 'Virgin Points', 'Singapore KrisFlyer', 'Qantas Points');

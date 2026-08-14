@@ -1,14 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLoyaltyProgrammes, usePaymentCards, useAllHotels, useAllFlights, usePromotions } from '../lib/useLiveData';
-import { computeCardResults } from '../lib/cardMath';
-import { computeStatusProgress } from '../lib/statusProgress';
-import { updateManualSpendAdjustment } from '../lib/queries';
+import { computeCardResults, computeCardVoucherCandidates } from '../lib/cardMath';
+import { updateManualSpendAdjustment, syncCardVouchers } from '../lib/queries';
 import { BrandMark } from '../components/BrandMark';
-import { VouchersTab } from '../components/VouchersTab';
+import { LoyaltyTab } from '../components/LoyaltyTab';
 import { PromotionsTab } from '../components/PromotionsTab';
 
-type Seg = 'loyalty' | 'payment' | 'status' | 'vouchers' | 'promotions';
+type Seg = 'loyalty' | 'payment' | 'promotions';
 const TODAY = new Date().toISOString().slice(0, 10);
 
 function money(n: number) {
@@ -41,6 +40,19 @@ export function Wallet() {
   // balance itself, so this can run against the raw (pre-override) data.
   const cardResults = computeCardResults(hotels, flights, paymentCards, rawLoyaltyProgrammes, TODAY);
 
+  // Auto-sync any newly-hit card vouchers once real card results are
+  // available. Runs here rather than inside a specific tab's component,
+  // since vouchers are now folded into the Loyalty view and this should
+  // stay in sync regardless of which segment the user has open.
+  useEffect(() => {
+    if (cardResults.length === 0) return;
+    const candidates = computeCardVoucherCandidates(cardResults);
+    if (candidates.length === 0) return;
+    syncCardVouchers(candidates).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardResults.length]);
+
+
   // One Key Cash isn't a fixed balance -- it's 6% of what's actually been
   // booked through Expedia at Platinum tier, so it's computed live from
   // real bookings rather than trusted as a stored number.
@@ -62,24 +74,10 @@ export function Wallet() {
   );
 
   const totalValue = loyaltyProgrammes.reduce((s, p) => s + (p.points * p.ptValue) / 100, 0);
-  const statusItems = loyaltyProgrammes.filter((p) => p.nextTier && p.nightsNeeded != null);
 
   let items: { key: string; color: string; name: string; sub: string; big: string; biglab: string; pending?: string | null; val: string; vallab: string; pct: number | null; pct2?: number | null; pct3?: number | null; spendBar?: { spendUSD: number; spendRequiredUSD: number; pct: number } | null; detail: React.ReactNode; shape?: string; font?: string; accent?: string }[] = [];
 
-  if (seg === 'loyalty') {
-    items = loyaltyProgrammes.map((p) => ({
-      key: p.name, color: p.color, name: p.name, sub: p.tier ?? '—',
-      big: `${p.points.toLocaleString()} pts`, biglab: '',
-      val: `£${Math.round((p.points * p.ptValue) / 100).toLocaleString()}`, vallab: '',
-      pct: null, shape: p.shape, font: p.font, accent: p.accent,
-      detail: (
-        <div className="dd-row">
-          <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Rate</span>
-          <span style={{ fontSize: 12.5, fontWeight: 700 }}>{p.ptValue}p per point</span>
-        </div>
-      ),
-    }));
-  } else if (seg === 'payment') {
+  if (seg === 'payment') {
     items = cardResults.map((r) => {
       const prog = loyaltyProgrammes.find((p) => p.name === r.card.programmeBrand);
       return {
@@ -196,50 +194,6 @@ export function Wallet() {
         ),
       };
     });
-  } else {
-    items = statusItems.map((p) => {
-      const progress = computeStatusProgress(p, hotels, promotions);
-      const { total, bookedNights, pendingPromo, pendingNights, spendBar } = progress;
-
-      const pendingTotal = bookedNights + pendingNights;
-      return {
-        key: p.name, color: p.color, name: p.name, sub: p.tier ?? '',
-        big: `${progress.currentNights}`, biglab: `of ${total} nights`,
-        pending: pendingTotal > 0 ? `+${pendingTotal} pending` : null,
-        val: `${Math.max(0, total - progress.currentNights)}`, vallab: `to ${p.nextTier}`,
-        pct: progress.pct,
-        pct2: progress.pct2,
-        pct3: progress.pct3,
-        shape: p.shape, font: p.font, accent: p.accent,
-        spendBar,
-        detail: (
-          <>
-            <div className="dd-row">
-              <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Status</span>
-              <span style={{ fontSize: 12.5, fontWeight: 700 }}>{p.tier}</span>
-            </div>
-            {bookedNights > 0 && (
-              <div className="dd-row">
-                <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Booked</span>
-                <span style={{ fontSize: 12.5, fontWeight: 700 }}>+{bookedNights}</span>
-              </div>
-            )}
-            {pendingPromo && (
-              <div className="dd-row">
-                <span style={{ fontSize: 12, color: 'var(--amber)', fontWeight: 600 }}>{pendingPromo.title}</span>
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--amber)' }}>+{pendingNights}</span>
-              </div>
-            )}
-            {spendBar && (
-              <div className="dd-row">
-                <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>Qualifying spend</span>
-                <span style={{ fontSize: 12.5, fontWeight: 700 }}>${Math.round(spendBar.spendUSD).toLocaleString()} / $23,000</span>
-              </div>
-            )}
-          </>
-        ),
-      };
-    });
   }
 
   return (
@@ -266,7 +220,7 @@ export function Wallet() {
       </div>
 
       <div className="catchip" style={{ margin: '8px 0 16px' }}>
-        {(['loyalty', 'payment', 'status', 'vouchers', 'promotions'] as Seg[]).map((s) => (
+        {(['loyalty', 'payment', 'promotions'] as Seg[]).map((s) => (
           <button
             key={s}
             className={seg === s ? 'won' : ''}
@@ -291,7 +245,11 @@ export function Wallet() {
         </div>
       )}
 
-      {(seg === 'loyalty' || seg === 'payment' || seg === 'status') && (
+      {seg === 'loyalty' && (
+        <LoyaltyTab programmes={loyaltyProgrammes} hotels={hotels} promotions={promotions} paymentCards={paymentCards} />
+      )}
+
+      {seg === 'payment' && (
       <div className="stack">
         {items.map((it, idx) => {
           const isOpen = open === it.key;
@@ -376,7 +334,6 @@ export function Wallet() {
       </div>
       )}
 
-      {seg === 'vouchers' && <VouchersTab cardResults={cardResults} />}
       {seg === 'promotions' && <PromotionsTab />}
     </div>
   );

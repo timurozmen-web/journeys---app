@@ -18,6 +18,7 @@ export function LogLoyaltyProgramme() {
   const [error, setError] = useState('');
   const [form, setForm] = useState({
     name: '', points: '', ptValue: '0.5', tier: '', nextTier: '', nightsNeeded: '',
+    category: 'hotel' as 'hotel' | 'airline',
   });
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -40,6 +41,7 @@ export function LogLoyaltyProgramme() {
         tier: form.tier.trim() || null,
         nextTier: form.nextTier.trim() || null,
         nightsNeeded: form.nightsNeeded ? parseInt(form.nightsNeeded, 10) : null,
+        category: form.category,
       });
       navigate('/wallet');
     } catch (err) {
@@ -68,6 +70,27 @@ export function LogLoyaltyProgramme() {
         <div>
           <label style={labelStyle}>Programme name</label>
           <input style={inputStyle} value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. World of Hyatt" autoFocus />
+        </div>
+
+        <div>
+          <label style={labelStyle}>Type</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {(['hotel', 'airline'] as const).map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => set('category', c)}
+                style={{
+                  flex: 1, padding: '10px 0', borderRadius: 10, fontSize: 13.5, fontWeight: 700, cursor: 'pointer',
+                  border: form.category === c ? '2px solid var(--brand)' : '1px solid var(--line)',
+                  background: form.category === c ? 'rgba(91,63,166,.08)' : 'var(--card)',
+                  color: form.category === c ? 'var(--brand)' : 'var(--ink)',
+                }}
+              >
+                {c === 'hotel' ? 'Hotel' : 'Airline'}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
