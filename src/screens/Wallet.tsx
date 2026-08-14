@@ -83,7 +83,7 @@ export function Wallet() {
     items = cardResults.map((r) => {
       const prog = loyaltyProgrammes.find((p) => p.name === r.card.programmeBrand);
       return {
-        key: r.card.id, color: prog?.color ?? '#132247', name: r.card.id,
+        key: r.card.id, color: prog?.color ?? '#5B3FA6', name: r.card.id,
         sub: r.cardRow?.openDate ? `Opened ${r.cardRow.openDate}` : 'Open date not set',
         big: money(r.net), biglab: 'net this card-year',
         val: r.card.feeLabel, vallab: 'annual fee',
@@ -133,7 +133,7 @@ export function Wallet() {
                       key={String(opt.v)}
                       onClick={() => setSpendIsUK(opt.v)}
                       style={{
-                        padding: '4px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                        padding: '4px 10px', borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: 'pointer',
                         border: spendIsUK === opt.v ? '1px solid var(--brand)' : '1px solid var(--line)',
                         background: spendIsUK === opt.v ? 'rgba(19,34,71,.06)' : 'var(--card)',
                         color: spendIsUK === opt.v ? 'var(--brand)' : 'var(--ink3)',
@@ -143,11 +143,11 @@ export function Wallet() {
                     </button>
                   ))}
                 </div>
-                <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 6 }}>
+                <div style={{ fontSize: 12, color: 'var(--ink3)', marginTop: 6 }}>
                   Earning rate differs by region -- this is used to work out the points this spend earns.
                 </div>
                 {spendSaveError && (
-                  <div style={{ color: 'var(--red)', fontSize: 11.5, marginTop: 6 }}>{spendSaveError}</div>
+                  <div style={{ color: 'var(--red)', fontSize: 12, marginTop: 6 }}>{spendSaveError}</div>
                 )}
               </div>
             ) : (
@@ -327,7 +327,7 @@ export function Wallet() {
                 )}
                 {it.spendBar && (
                   <>
-                    <div style={{ fontSize: 9.5, opacity: 0.85, fontWeight: 700, marginTop: 8, color: '#fff' }}>
+                    <div style={{ fontSize: 12, opacity: 0.85, fontWeight: 700, marginTop: 8, color: '#fff' }}>
                       Qualifying spend: ${Math.round(it.spendBar.spendUSD).toLocaleString()} / $23,000
                     </div>
                     <div className="hbar" style={{ background: 'rgba(255,255,255,.22)', marginTop: 4 }}>
@@ -340,7 +340,7 @@ export function Wallet() {
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
                       <div className="deckbig">{it.big}</div>
                       {it.pending && (
-                        <span style={{ fontSize: 10.5, fontWeight: 700, color: '#FFC15A', background: 'rgba(255,193,90,.18)', padding: '1px 7px', borderRadius: 99 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#FFC15A', background: 'rgba(255,193,90,.18)', padding: '1px 7px', borderRadius: 99 }}>
                           {it.pending}
                         </span>
                       )}

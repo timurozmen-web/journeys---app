@@ -139,7 +139,7 @@ export function Home() {
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: 22, fontWeight: 800 }}>{Math.max(0, p.progress.total - p.progress.currentNights)}</div>
-                      <div style={{ fontSize: 9.5, opacity: 0.85, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                      <div style={{ fontSize: 12, opacity: 0.85, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>
                         nights to<br />{p.nextTier}
                       </div>
                     </div>
@@ -156,14 +156,14 @@ export function Home() {
                   <div className="note" style={{ color: 'rgba(255,255,255,.85)', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span>{p.progress.currentNights} / {p.progress.total} nights</span>
                     {(p.progress.bookedNights + p.progress.pendingNights) > 0 && (
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#FFC15A', background: 'rgba(255,193,90,.18)', padding: '1px 7px', borderRadius: 99 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#FFC15A', background: 'rgba(255,193,90,.18)', padding: '1px 7px', borderRadius: 99 }}>
                         +{p.progress.bookedNights + p.progress.pendingNights} pending
                       </span>
                     )}
                   </div>
                   {p.progress.spendBar && (
                     <>
-                      <div style={{ fontSize: 9.5, opacity: 0.85, fontWeight: 700, marginTop: 8, color: '#fff' }}>
+                      <div style={{ fontSize: 12, opacity: 0.85, fontWeight: 700, marginTop: 8, color: '#fff' }}>
                         Qualifying spend: ${Math.round(p.progress.spendBar.spendUSD).toLocaleString()} / $23,000
                       </div>
                       <div className="hbar" style={{ marginTop: 4 }}>
@@ -213,7 +213,7 @@ export function Home() {
                   <span style={{ color: 'var(--ink2)' }}>Hotel spend this year</span>
                   <span style={{ fontWeight: 700 }}>£{Math.round(hotelSpend).toLocaleString()}</span>
                 </div>
-                <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 4 }}>
+                <div style={{ fontSize: 12, color: 'var(--ink3)', marginTop: 4 }}>
                   Flight savings aren't tracked yet — this is hotels only. Log benefits like free breakfast or a room upgrade when adding or editing a stay.
                 </div>
               </div>

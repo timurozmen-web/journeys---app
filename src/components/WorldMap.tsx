@@ -133,10 +133,10 @@ export function WorldMap({ hotels, flights }: { hotels: Hotel[]; flights: Flight
         })}
         {showRoutes &&
           routeLines.map((r) => (
-            <path key={r.key} d={r.d} fill="none" stroke="#132247" strokeWidth={0.7} strokeDasharray="2 1.5" opacity={0.75} />
+            <path key={r.key} d={r.d} fill="none" stroke="#5B3FA6" strokeWidth={0.7} strokeDasharray="2 1.5" opacity={0.75} />
           ))}
         {showRoutes &&
-          airportDots.map((a) => <circle key={a.code} cx={a.x} cy={a.y} r={1.6} fill="#132247" stroke="#fff" strokeWidth={0.5} />)}
+          airportDots.map((a) => <circle key={a.code} cx={a.x} cy={a.y} r={1.6} fill="#5B3FA6" stroke="#fff" strokeWidth={0.5} />)}
       </svg>
     </div>
   );
@@ -144,7 +144,7 @@ export function WorldMap({ hotels, flights }: { hotels: Hotel[]; flights: Flight
 
 function shadeFor(nights: number, max: number) {
   const t = Math.min(1, nights / max);
-  const shades = ['#8797BC', '#5F71A0', '#3A4C82', '#132247'];
+  const shades = ['#8797BC', '#5F71A0', '#8560D6', '#5B3FA6'];
   const idx = Math.min(shades.length - 1, Math.floor(t * shades.length));
   return shades[idx];
 }

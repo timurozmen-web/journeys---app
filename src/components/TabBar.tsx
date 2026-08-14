@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { HomeIcon, TripsIcon, WalletIcon, ProfileIcon, PlanIcon, CaptureIcon, DiscoverIcon } from './Icons';
 
 const RADIAL = [
-  { key: 'plan', label: 'Plan', Icon: PlanIcon, color: '#132247' },
+  { key: 'plan', label: 'Plan', Icon: PlanIcon, color: '#5B3FA6' },
   { key: 'capture', label: 'Capture', Icon: CaptureIcon, color: '#0C7A42' },
   { key: 'discover', label: 'Discover', Icon: DiscoverIcon, color: '#9C5F08' },
 ] as const;

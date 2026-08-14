@@ -5,8 +5,8 @@ import { findHotelsNeedingReview } from '../lib/reviewScoring';
 const WorldMap = lazy(() => import('../components/WorldMap').then((m) => ({ default: m.WorldMap })));
 
 const REGIONS = [
-  { n: 'Oceania & SE Asia', nights: 21, c: '#132247' },
-  { n: 'Europe & Middle East', nights: 10, c: '#3A4C82' },
+  { n: 'Oceania & SE Asia', nights: 21, c: '#5B3FA6' },
+  { n: 'Europe & Middle East', nights: 10, c: '#8560D6' },
   { n: 'Americas', nights: 12, c: '#6B7FA8' },
   { n: 'South Asia', nights: 8, c: '#8797BC' },
 ];
@@ -37,7 +37,7 @@ export function Profile() {
       <div className="head" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <div
           style={{
-            width: 56, height: 56, borderRadius: 18, background: 'linear-gradient(140deg,#132247,#3A4C82)',
+            width: 56, height: 56, borderRadius: 18, background: 'linear-gradient(140deg,#5B3FA6,#8560D6)',
             display: 'grid', placeItems: 'center', fontSize: 20, fontWeight: 800, color: '#fff',
           }}
         >

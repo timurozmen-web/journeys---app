@@ -89,7 +89,7 @@ export function PromotionsTab() {
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, paddingRight: 20 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700 }}>{p.title}</div>
               {isActive && (
-                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand)', background: 'rgba(19,34,71,.08)', padding: '2px 8px', borderRadius: 99, flexShrink: 0 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand)', background: 'rgba(19,34,71,.08)', padding: '2px 8px', borderRadius: 99, flexShrink: 0 }}>
                   ACTIVE
                 </span>
               )}
@@ -101,7 +101,7 @@ export function PromotionsTab() {
             {summary && <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand)', marginTop: 6 }}>{summary}</div>}
             {p.description && <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 6 }}>{p.description}</div>}
             {(p.startDate || p.endDate) && (
-              <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 6 }}>
+              <div style={{ fontSize: 12, color: 'var(--ink3)', marginTop: 6 }}>
                 {p.startDate ?? '…'} – {p.endDate ?? '…'}
               </div>
             )}

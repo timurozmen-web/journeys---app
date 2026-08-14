@@ -23,7 +23,7 @@
 
 .hero{border-radius:var(--r-lg);padding:var(--s5);color:#fff;min-height:196px;box-sizing:border-box;
   display:flex;flex-direction:column;
-  background:linear-gradient(140deg,#132247 0%,#26355F 55%,#3A4C82 100%);
+  background:linear-gradient(140deg,#5B3FA6 0%,#6F4BC0 55%,#8560D6 100%);
   box-shadow:0 10px 30px rgba(76,79,214,.28)}
 .hero .k{font-size:12px;font-weight:700;opacity:.9;text-transform:uppercase;letter-spacing:.06em}
 .hero .brand{font-size:13px;font-weight:600;opacity:.92;margin-top:var(--s3)}
@@ -174,7 +174,7 @@
 .tab span{font-size:10px;font-weight:600}
 .tab.active{color:var(--brand)}
 .fab{width:50px;height:50px;border-radius:50%;border:0;flex-shrink:0;margin:0 var(--s1);
-  background:linear-gradient(140deg,#132247,#3A4C82);color:#fff;font-size:24px;font-weight:300;
+  background:linear-gradient(140deg,#5B3FA6,#8560D6);color:#fff;font-size:24px;font-weight:300;
   cursor:pointer;box-shadow:0 6px 18px rgba(76,79,214,.4);display:grid;place-items:center;line-height:1;
   position:relative;z-index:82}
 .fab::before{content:"";position:absolute;inset:-6px;border-radius:50%;
