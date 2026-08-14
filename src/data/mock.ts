@@ -52,11 +52,11 @@ export const paymentCards: PaymentCard[] = [
 ];
 
 export const reviews: Review[] = [
-  { hotelId: 'r1', hotelName: 'Taaktana Komodo', country: 'Indonesia', date: '2026-05', category: 'overall', score: 10.0 },
-  { hotelId: 'r2', hotelName: 'W Melbourne', country: 'Australia', date: '2026-05', category: 'overall', score: 9.9 },
-  { hotelId: 'r3', hotelName: 'Waldorf Astoria Bangkok', country: 'Thailand', date: '2025-07', category: 'overall', score: 9.8 },
-  { hotelId: 'r4', hotelName: 'St Regis Kanai', country: 'Mexico', date: '2026-02', category: 'overall', score: 9.7 },
-  { hotelId: 'r5', hotelName: 'Marriott Marble Arch', country: 'United Kingdom', date: '2026-07', category: 'overall', score: 9.4 },
-  { hotelId: 'r6', hotelName: 'Hilton Dalaman', country: 'Türkiye', date: '2026-07', category: 'overall', score: 8.6 },
-  { hotelId: 'r7', hotelName: 'Courtyard London City', country: 'United Kingdom', date: '2026-07', category: 'overall', score: 5.8 },
+  { id: 'rev1', hotelId: 'r1', hotelName: 'Taaktana Komodo', country: 'Indonesia', date: '2026-05', category: 'overall', score: 10.0 },
+  { id: 'rev2', hotelId: 'r2', hotelName: 'W Melbourne', country: 'Australia', date: '2026-05', category: 'overall', score: 9.9 },
+  { id: 'rev3', hotelId: 'r3', hotelName: 'Waldorf Astoria Bangkok', country: 'Thailand', date: '2025-07', category: 'overall', score: 9.8 },
+  { id: 'rev4', hotelId: 'r4', hotelName: 'St Regis Kanai', country: 'Mexico', date: '2026-02', category: 'overall', score: 9.7 },
+  { id: 'rev5', hotelId: 'r5', hotelName: 'Marriott Marble Arch', country: 'United Kingdom', date: '2026-07', category: 'overall', score: 9.4 },
+  { id: 'rev6', hotelId: 'r6', hotelName: 'Hilton Dalaman', country: 'Türkiye', date: '2026-07', category: 'overall', score: 8.6 },
+  { id: 'rev7', hotelId: 'r7', hotelName: 'Courtyard London City', country: 'United Kingdom', date: '2026-07', category: 'overall', score: 5.8 },
 ];

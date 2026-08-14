@@ -83,6 +83,7 @@ export interface Trip {
 }
 
 export interface Review {
+  id: string;
   hotelId: string | null;
   hotelName: string;
   country: string;
