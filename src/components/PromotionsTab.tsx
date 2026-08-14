@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { usePromotions, useLoyaltyProgrammes, usePromotionCandidates } from '../lib/useLiveData';
-import { addPromotion, deletePromotion, setPromotionDiscountUsed, setPromotionStatusNightsApplied, acceptPromotionCandidate, dismissPromotionCandidate } from '../lib/queries';
+import { usePromotions, useLoyaltyProgrammes } from '../lib/useLiveData';
+import { addPromotion, deletePromotion, setPromotionDiscountUsed, setPromotionStatusNightsApplied } from '../lib/queries';
 import type { Promotion, PromoType } from '../types';
 
 const TYPE_LABELS: Record<PromoType, string> = {
@@ -33,7 +33,6 @@ function summarize(p: Promotion): string | null {
 
 export function PromotionsTab() {
   const { data: promotions, refetch } = usePromotions();
-  const { data: candidates, refetch: refetchCandidates } = usePromotionCandidates();
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -69,41 +68,6 @@ export function PromotionsTab() {
 
   return (
     <div className="stack" style={{ display: 'grid', gap: 10 }}>
-      {candidates.length > 0 && (
-        <div style={{ display: 'grid', gap: 8, marginBottom: 4 }}>
-          <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-            Detected ({candidates.length})
-          </div>
-          {candidates.map((c) => (
-            <div key={c.id} style={{ padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(19,34,71,.15)', background: 'rgba(19,34,71,.04)' }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700 }}>{c.title}</div>
-              {c.brand && <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 2 }}>{c.brand}</div>}
-              {c.description && <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 4 }}>{c.description}</div>}
-              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                <button
-                  onClick={async () => {
-                    await acceptPromotionCandidate(c);
-                    refetchCandidates();
-                    refetch();
-                  }}
-                  style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--brand)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
-                >
-                  Add
-                </button>
-                <button
-                  onClick={async () => {
-                    await dismissPromotionCandidate(c.id);
-                    refetchCandidates();
-                  }}
-                  style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
-                >
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {promotions.length === 0 && !adding && (
         <div style={{ padding: '20px 4px', textAlign: 'center', color: 'var(--ink3)', fontSize: 13 }}>

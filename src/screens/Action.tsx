@@ -16,11 +16,6 @@ const CONTENT: Record<string, { title: string; body: string; actions?: { label: 
     title: 'Plan',
     body: 'Scores destinations against your real balances using the redemption maths already in Wallet. Not built yet — live award availability needs an external data feed first.',
   },
-  discover: {
-    title: 'Discover',
-    body: 'Scan a promotion to have it read and classified automatically. Full personalized redemption suggestions still need a live award/promo data source, but this part is real now.',
-    actions: [{ label: '📷 Scan a promotion', to: '/scan-promotion' }],
-  },
 };
 
 export function Action() {

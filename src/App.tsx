@@ -7,6 +7,7 @@ import { Wallet } from './screens/Wallet';
 import { Profile } from './screens/Profile';
 import { TripDetail } from './screens/TripDetail';
 import { Action } from './screens/Action';
+import { Discover } from './screens/Discover';
 import { LogHotel } from './screens/LogHotel';
 import { LogFlight } from './screens/LogFlight';
 import { LogTrip } from './screens/LogTrip';
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/bank-sync" element={<BankSync />} />
           <Route path="/review-trip" element={<ReviewTrip />} />
           <Route path="/action/:kind" element={<Action />} />
+          <Route path="/action/discover" element={<Discover />} />
         </Routes>
       </div>
       <TabBar />
