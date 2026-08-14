@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { HomeIcon, TripsIcon, WalletIcon, ProfileIcon, PlanIcon, CaptureIcon, DiscoverIcon } from './Icons';
+import { HomeIcon, TripsIcon, WalletIcon, ProfileIcon, PlanIcon, CaptureIcon, DiscoverIcon, HomeIconFilled, TripsIconFilled, WalletIconFilled, ProfileIconFilled } from './Icons';
 
 const RADIAL = [
   { key: 'plan', label: 'Plan', Icon: PlanIcon, color: '#5B3FA6' },
@@ -45,19 +45,39 @@ export function TabBar() {
 
       <nav className="tabs" role="tablist">
         <NavLink to="/" end className="tab">
-          <HomeIcon /> <span>Home</span>
+          {({ isActive }) => (
+            <>
+              {isActive ? <HomeIconFilled /> : <HomeIcon />}
+              <span>Home</span>
+            </>
+          )}
         </NavLink>
         <NavLink to="/trips" className="tab">
-          <TripsIcon /> <span>Trips</span>
+          {({ isActive }) => (
+            <>
+              {isActive ? <TripsIconFilled /> : <TripsIcon />}
+              <span>Trips</span>
+            </>
+          )}
         </NavLink>
         <button className={`fab ${open ? 'open' : ''}`} onClick={() => setOpen((v) => !v)} aria-label="Actions">
           +
         </button>
         <NavLink to="/wallet" className="tab">
-          <WalletIcon /> <span>Wallet</span>
+          {({ isActive }) => (
+            <>
+              {isActive ? <WalletIconFilled /> : <WalletIcon />}
+              <span>Wallet</span>
+            </>
+          )}
         </NavLink>
         <NavLink to="/profile" className="tab">
-          <ProfileIcon /> <span>Profile</span>
+          {({ isActive }) => (
+            <>
+              {isActive ? <ProfileIconFilled /> : <ProfileIcon />}
+              <span>Profile</span>
+            </>
+          )}
         </NavLink>
       </nav>
     </>

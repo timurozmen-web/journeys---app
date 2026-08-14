@@ -38,6 +38,36 @@ export const ProfileIcon = wrap(
 export const PlanIcon = wrap(
   '<circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.2 13 13l-3.8 1.8L11 11z"/>'
 );
+
+// Filled variants -- bolder, solid silhouettes for the bottom tab bar,
+// matching a more app-native look than the thin-stroke set above.
+const wrapFilled = (path: string) => ({ size = 22, color = 'currentColor', style }: IconProps) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill={color}
+    stroke="none"
+    style={style}
+    dangerouslySetInnerHTML={{ __html: path }}
+  />
+);
+
+export const HomeIconFilled = wrapFilled(
+  '<path d="M12 2.9a1 1 0 0 1 .64.23l8.5 7.1a1 1 0 0 1-1.28 1.54l-.36-.3V19.5a2 2 0 0 1-2 2h-3.25a.75.75 0 0 1-.75-.75V16a1.5 1.5 0 0 0-3 0v4.75a.75.75 0 0 1-.75.75H6.5a2 2 0 0 1-2-2v-8.03l-.36.3a1 1 0 0 1-1.28-1.54l8.5-7.1A1 1 0 0 1 12 2.9z"/>'
+);
+
+export const TripsIconFilled = wrapFilled(
+  '<path d="M6 3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1h4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5h.5A2.5 2.5 0 0 1 21 7v11.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V7a2.5 2.5 0 0 1 2.5-2.5H6z"/><path d="M5 10.5h14v1.6H5zM5 15h14v1.6H5z" fill="var(--card)" opacity=".85"/>'
+);
+
+export const WalletIconFilled = wrapFilled(
+  '<path d="M2.5 8.7A3.2 3.2 0 0 1 5.7 5.5h11.6a3.2 3.2 0 0 1 3.2 3.2v.3H2.5z"/><path d="M2.5 10.5h19V16A3.2 3.2 0 0 1 18.3 19.2H5.7A3.2 3.2 0 0 1 2.5 16z"/><circle cx="17" cy="14.5" r="1.6" fill="var(--card)"/>'
+);
+
+export const ProfileIconFilled = wrapFilled(
+  '<circle cx="12" cy="8.2" r="3.9"/><path d="M4.2 20.2a7.8 7.8 0 0 1 15.6 0 1 1 0 0 1-1 1.05H5.2a1 1 0 0 1-1-1.05z"/>'
+);
 export const CaptureIcon = wrap(
   '<path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/>'
 );
