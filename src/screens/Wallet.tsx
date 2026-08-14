@@ -244,13 +244,25 @@ export function Wallet() {
 
   return (
     <div>
-      <div className="head">
-        <div className="h-sub" style={{ margin: '0 0 2px' }}>
-          My wallet {!isLive && <span style={{ opacity: 0.6 }}>· sample data</span>}
+      <div className="head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <div className="h-sub" style={{ margin: '0 0 2px' }}>
+            My wallet {!isLive && <span style={{ opacity: 0.6 }}>· sample data</span>}
+          </div>
+          <div className="wtotal" style={{ padding: 0 }}>
+            <div className="val">£{Math.round(totalValue).toLocaleString()}</div>
+          </div>
         </div>
-        <div className="wtotal" style={{ padding: 0 }}>
-          <div className="val">£{Math.round(totalValue).toLocaleString()}</div>
-        </div>
+        <button
+          onClick={() => navigate('/log-loyalty-programme')}
+          aria-label="Add a loyalty scheme"
+          style={{
+            width: 34, height: 34, borderRadius: '50%', border: 'none', background: 'var(--brand)', color: '#fff',
+            fontSize: 20, fontWeight: 700, display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0, marginTop: 2,
+          }}
+        >
+          +
+        </button>
       </div>
 
       <div className="catchip" style={{ margin: '8px 0 16px' }}>

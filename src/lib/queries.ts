@@ -52,6 +52,28 @@ export async function addTrip(input: NewTripInput): Promise<string> {
   return data.id;
 }
 
+export interface NewLoyaltyProgrammeInput {
+  name: string; points: number; ptValue: number; tier: string | null; nextTier: string | null;
+  nightsNeeded: number | null;
+}
+export async function addLoyaltyProgramme(input: NewLoyaltyProgrammeInput) {
+  const abbr = input.name
+    .split(' ')
+    .filter((w) => w.length > 2 && w[0] === w[0].toUpperCase())
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 4) || input.name.slice(0, 3).toUpperCase();
+  const today = new Date().toISOString().slice(0, 10);
+  const { error } = await supabase.from('loyalty_programmes').insert({
+    name: input.name, abbr, points: input.points, pt_value: input.ptValue,
+    color: '#5B3FA6', accent: '#7B5FC7', font: 'default', shape: 'orbit',
+    tier: input.tier, next_tier: input.nextTier,
+    nights: input.nextTier ? 0 : null, nights_needed: input.nextTier ? input.nightsNeeded : null,
+    nights_baseline_date: today,
+  });
+  if (error) throw error;
+}
+
 export async function updateTrip(id: string, input: NewTripInput) {
   const today = new Date().toISOString().slice(0, 10);
   const { error } = await supabase
