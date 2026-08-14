@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTrips, useLoyaltyProgrammes, usePromotions } from '../lib/useLiveData';
 import { uploadTripPhoto } from '../lib/queries';
 import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, PlaneIcon, EditIcon } from '../components/Icons';
 import { DestinationPhoto } from '../components/DestinationPhoto';
+const TripMap = lazy(() => import('../components/TripMap').then((m) => ({ default: m.TripMap })));
 import { destinationQuery } from '../components/TripCard';
 import { formatDateRange, formatMoney } from '../lib/format';
 import { computeTripPoints, computeTripSavings, groupDestinations, findGaps } from '../lib/tripStats';
@@ -132,7 +133,13 @@ export function TripDetail() {
 
       <div className="tdpane">
         {seg === 'overview' && (
-          <div className="card">
+          <>
+            <div style={{ marginBottom: 14 }}>
+              <Suspense fallback={<div style={{ height: 220, background: '#DCE7F5', borderRadius: 16 }} />}>
+                <TripMap hotels={trip.hotels} flights={trip.flights} />
+              </Suspense>
+            </div>
+            <div className="card">
             <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 12 }}>Trip summary</div>
             <div style={{ display: 'grid', gap: 9 }}>
               <SummaryRow label="Total cash spent" value={formatMoney(spend)} />
@@ -146,7 +153,8 @@ export function TripDetail() {
                 This trip includes an award flight — points redeemed aren't tracked as a value yet.
               </div>
             )}
-          </div>
+            </div>
+          </>
         )}
         {seg === 'itinerary' && (
           <>

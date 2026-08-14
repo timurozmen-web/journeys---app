@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { geoNaturalEarth1, geoPath } from 'd3-geo';
-import { feature } from 'topojson-client';
-import worldTopo from 'world-atlas/countries-50m.json';
+import { worldGeo } from '../data/worldGeo';
 import { AIRPORTS, COUNTRY_NAME_MAP } from '../data/airports';
 import type { Hotel, Flight } from '../types';
 
@@ -10,7 +9,7 @@ const HEIGHT = 200;
 
 // Real country boundaries + projection math, computed once (doesn't depend
 // on live data, so no reason to recompute on every render).
-const geo = feature(worldTopo as any, (worldTopo as any).objects.countries) as any;
+const geo = worldGeo;
 const projection = geoNaturalEarth1().fitSize([WIDTH, HEIGHT], geo);
 const pathGen = geoPath(projection);
 const countryPaths: { name: string; d: string }[] = geo.features
