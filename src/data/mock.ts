@@ -32,7 +32,7 @@ export const trips: Trip[] = [
 ];
 
 export const loyaltyProgrammes: LoyaltyProgramme[] = [
-  { name: 'Marriott Bonvoy', abbr: 'MA', points: 415343, ptValue: 0.5, color: '#5B2245', accent: '#D8B673', font: "'Playfair Display', serif", shape: 'crown', tier: 'Titanium Elite', nextTier: 'Ambassador', nights: 77, nightsNeeded: 23 , category: 'hotel' },
+  { name: 'Marriott Bonvoy', abbr: 'MA', points: 415343, ptValue: 0.5, color: '#1C1C1C', accent: '#FF9962', font: "'Playfair Display', serif", shape: 'crown', tier: 'Titanium Elite', nextTier: 'Ambassador', nights: 77, nightsNeeded: 23 , category: 'hotel' },
   { name: 'Avios', abbr: 'AV', points: 67309, ptValue: 1, color: '#1544A6', accent: '#AFC4EE', font: "'DM Sans', sans-serif", shape: 'wing' , category: 'airline' },
   { name: 'Hilton Honors', abbr: 'HI', points: 63963, ptValue: 0.4, color: '#0B4F9C', accent: '#BFD9F2', font: "'Poppins', sans-serif", shape: 'shield', tier: 'Gold', nextTier: 'Diamond', nights: 0, nightsNeeded: 30 , category: 'hotel' },
   { name: 'Virgin Points', abbr: 'VI', points: 24005, ptValue: 1, color: '#C8102E', accent: '#FFE5E5', font: "'Yellowtail', cursive", shape: 'arrowUp' , category: 'airline' },

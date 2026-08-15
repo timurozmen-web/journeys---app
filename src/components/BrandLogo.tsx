@@ -6,6 +6,7 @@ import { BrandMark } from './BrandMark';
 // abstract BrandMark shape until then.
 export const BRAND_LOGOS: Record<string, string> = {
   'Accor ALL': '/brand-logos/accor.jpg',
+  'Marriott Bonvoy': '/brand-logos/marriott.png',
 };
 
 export function BrandLogo({
@@ -15,21 +16,19 @@ export function BrandLogo({
 }) {
   const logoUrl = BRAND_LOGOS[name];
 
-  if (logoUrl) {
-    return (
-      <img
-        src={logoUrl}
-        alt={`${name} logo`}
-        width={size}
-        height={size}
-        style={{ borderRadius: 10, objectFit: 'cover', flexShrink: 0, display: 'block' }}
-      />
-    );
-  }
-
   return (
-    <div style={{ width: size, height: size, borderRadius: 10, background: color || '#5B3FA6', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-      {shape && <BrandMark shape={shape} color={accent || '#fff'} size={Math.round(size * 0.47)} />}
+    <div style={{ width: size, height: size, borderRadius: 10, background: color || '#5B3FA6', display: 'grid', placeItems: 'center', flexShrink: 0, overflow: 'hidden' }}>
+      {logoUrl ? (
+        <img
+          src={logoUrl}
+          alt={`${name} logo`}
+          width={size}
+          height={size}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+        />
+      ) : (
+        shape && <BrandMark shape={shape} color={accent || '#fff'} size={Math.round(size * 0.47)} />
+      )}
     </div>
   );
 }
