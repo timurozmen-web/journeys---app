@@ -44,11 +44,11 @@ export const loyaltyProgrammes: LoyaltyProgramme[] = [
 ];
 
 export const paymentCards: PaymentCard[] = [
-  { id: 'Marriott Debit', programmeBrand: 'Marriott Bonvoy', annualFee: 165, feeLabel: '£165/yr', openDate: '2025-12-01', manualSpendAdjustment: 1000, manualSpendIsUK: true },
-  { id: 'Virgin Atlantic Mastercard+', programmeBrand: 'Virgin Points', annualFee: 160, feeLabel: '£160/yr', openDate: '2025-09-07', manualSpendAdjustment: 0, manualSpendIsUK: true },
-  { id: 'Marriott Amex', programmeBrand: 'Marriott Bonvoy', annualFee: 95, feeLabel: '£95/yr', openDate: '2025-08-15', manualSpendAdjustment: 0, manualSpendIsUK: true },
-  { id: 'Hilton Debit', programmeBrand: 'Hilton Honors', annualFee: 150, feeLabel: '£150/yr', openDate: '2025-08-29', manualSpendAdjustment: 0, manualSpendIsUK: true },
-  { id: 'IHG Revolut Elite', programmeBrand: 'IHG One Rewards', annualFee: 216, feeLabel: '£216/yr', openDate: '2026-07-24', manualSpendAdjustment: 0, manualSpendIsUK: true },
+  { id: 'Marriott Debit', programmeBrand: 'Marriott Bonvoy', annualFee: 165, feeLabel: '£165/yr', openDate: '2025-12-01', manualSpendAdjustment: 1000, manualSpendIsUK: true, closedDate: null },
+  { id: 'Virgin Atlantic Mastercard+', programmeBrand: 'Virgin Points', annualFee: 160, feeLabel: '£160/yr', openDate: '2025-09-07', manualSpendAdjustment: 0, manualSpendIsUK: true, closedDate: null },
+  { id: 'Marriott Amex', programmeBrand: 'Marriott Bonvoy', annualFee: 95, feeLabel: '£95/yr', openDate: '2025-08-15', manualSpendAdjustment: 0, manualSpendIsUK: true, closedDate: null },
+  { id: 'Hilton Debit', programmeBrand: 'Hilton Honors', annualFee: 150, feeLabel: '£150/yr', openDate: '2025-08-29', manualSpendAdjustment: 0, manualSpendIsUK: true, closedDate: null },
+  { id: 'IHG Revolut Elite', programmeBrand: 'IHG One Rewards', annualFee: 216, feeLabel: '£216/yr', openDate: '2026-07-24', manualSpendAdjustment: 0, manualSpendIsUK: true, closedDate: null },
 ];
 
 export const reviews: Review[] = [

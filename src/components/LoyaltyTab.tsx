@@ -93,22 +93,35 @@ export function LoyaltyTab({
                       </span>
                       <span style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 600 }}>{p.nextTier}</span>
                     </div>
-                    <div className="hbar" style={{ position: 'relative' }}>
-                      {progress.pct3 != null && (
-                        <i style={{ width: `${Math.max(0, Math.min(100, progress.pct3))}%`, background: 'rgba(156,95,8,.35)', position: 'absolute', left: 0, top: 0, bottom: 0 }} />
+                    <div
+                      className="hbar"
+                      style={{
+                        position: 'relative', background: 'var(--card2)',
+                        border: '1px solid var(--line)', boxSizing: 'border-box',
+                      }}
+                    >
+                      {progress.pendingPct != null && (
+                        <i
+                          style={{
+                            width: `${Math.max(0, Math.min(100, progress.pendingPct))}%`, background: 'rgba(156,95,8,.4)',
+                            position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 99,
+                          }}
+                        />
                       )}
-                      {progress.pct2 != null && (
-                        <i style={{ width: `${Math.max(0, Math.min(100, progress.pct2))}%`, background: 'var(--card2)', position: 'absolute', left: 0, top: 0, bottom: 0 }} />
-                      )}
-                      <i style={{ width: `${progress.pct ?? 0}%`, background: p.color, position: 'relative' }} />
+                      <i
+                        style={{
+                          width: `${Math.max(0, Math.min(100, progress.pct ?? 0))}%`, background: p.color,
+                          position: 'relative', borderRadius: 99, display: 'block', height: '100%',
+                        }}
+                      />
                     </div>
                     {progress.spendBar && (
                       <>
                         <div style={{ fontSize: 11.5, color: 'var(--ink2)', fontWeight: 600, marginTop: 8 }}>
                           Qualifying spend: ${Math.round(progress.spendBar.spendUSD).toLocaleString()} / $23,000
                         </div>
-                        <div className="hbar" style={{ marginTop: 4 }}>
-                          <i style={{ width: `${progress.spendBar.pct}%`, background: p.color }} />
+                        <div className="hbar" style={{ marginTop: 4, background: 'var(--card2)', border: '1px solid var(--line)', boxSizing: 'border-box' }}>
+                          <i style={{ width: `${progress.spendBar.pct}%`, background: p.color, borderRadius: 99, display: 'block', height: '100%' }} />
                         </div>
                       </>
                     )}

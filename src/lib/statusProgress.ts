@@ -6,6 +6,7 @@ export interface StatusProgress {
   pct: number | null; // current, solid segment
   pct2: number | null; // + booked nights, projected
   pct3: number | null; // + pending promotion bonus nights, projected
+  pendingPct: number | null; // + booked and/or promo nights combined, whichever is present -- always populated when either exists
   bookedNights: number;
   pendingPromo: Promotion | null;
   pendingNights: number;
@@ -27,11 +28,12 @@ export function computeStatusProgress(p: LoyaltyProgramme, hotels: Hotel[], prom
     : 0;
   const currentNights = (p.nights ?? 0) + newlyCompletedNights;
 
-  // Any future booked stay counts as pending progress -- not restricted
-  // to the current calendar year, since a stay booked for January next
-  // year is still real, upcoming progress a user would want to see.
+  // Only stays booked within the current qualification year count as
+  // pending progress toward it -- a stay booked for next year belongs to
+  // a separate, future qualification period and shouldn't inflate this
+  // year's bar.
   const bookedNights = hotels
-    .filter((h) => h.brand === p.name && h.status === 'Booked')
+    .filter((h) => h.brand === p.name && h.status === 'Booked' && Number(h.date.slice(0, 4)) === currentYear)
     .reduce((s, h) => s + h.nights, 0);
 
   // A status_boost promotion for this brand, active now, not yet applied
@@ -79,6 +81,7 @@ export function computeStatusProgress(p: LoyaltyProgramme, hotels: Hotel[], prom
     pct: p.nights != null && p.nightsNeeded != null ? (currentNights / total) * 100 : null,
     pct2: bookedNights > 0 ? (projectedBooked / total) * 100 : null,
     pct3: pendingNights > 0 ? (projectedWithPromo / total) * 100 : null,
+    pendingPct: bookedNights + pendingNights > 0 ? (projectedWithPromo / total) * 100 : null,
     bookedNights,
     pendingPromo,
     pendingNights,

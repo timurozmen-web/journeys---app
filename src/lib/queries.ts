@@ -147,8 +147,20 @@ export async function fetchPaymentCards(): Promise<PaymentCard[]> {
   return (data ?? []).map((c) => ({
     id: c.id, programmeBrand: c.programme_brand, annualFee: c.annual_fee,
     feeLabel: c.fee_label, openDate: c.open_date, manualSpendAdjustment: c.manual_spend_adjustment ?? 0,
-    manualSpendIsUK: c.manual_spend_is_uk ?? true,
+    manualSpendIsUK: c.manual_spend_is_uk ?? true, closedDate: c.closed_date ?? null,
   }));
+}
+
+export async function updateCardClosedDate(cardId: string, closedDate: string | null) {
+  const { data, error } = await supabase
+    .from('payment_cards')
+    .update({ closed_date: closedDate })
+    .eq('id', cardId)
+    .select();
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error(`No payment card found with id "${cardId}" -- the update silently matched nothing.`);
+  }
 }
 
 export async function updateManualSpendAdjustment(cardId: string, amount: number, isUK: boolean) {

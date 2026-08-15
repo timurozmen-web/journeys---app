@@ -221,3 +221,5 @@ create policy "own rows only" on promotion_scan_candidates for all using (auth.u
 
 alter table loyalty_programmes add column if not exists category text not null default 'hotel' check (category in ('hotel','airline'));
 update loyalty_programmes set category = 'airline' where name in ('Avios', 'Virgin Points', 'Singapore KrisFlyer', 'Qantas Points');
+
+alter table payment_cards add column if not exists closed_date date;

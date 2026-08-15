@@ -67,6 +67,7 @@ export interface PaymentCard {
   openDate: string;
   manualSpendAdjustment: number; // spend not captured by logged hotels/flights (everyday purchases etc)
   manualSpendIsUK: boolean; // whether that manual spend was in the UK, since earning rates differ
+  closedDate: string | null; // set once the card has been closed -- moves it into the archived section
 }
 
 export interface Trip {
