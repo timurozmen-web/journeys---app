@@ -7,6 +7,8 @@ import { BrandMark } from './BrandMark';
 export const BRAND_LOGOS: Record<string, string> = {
   'Accor ALL': '/brand-logos/accor.jpg',
   'Marriott Bonvoy': '/brand-logos/marriott.png',
+  'Qantas Points': '/brand-logos/qantas.png',
+  'Singapore KrisFlyer': '/brand-logos/singapore-airlines.png',
 };
 
 export function BrandLogo({

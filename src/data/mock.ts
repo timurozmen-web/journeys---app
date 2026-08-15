@@ -33,14 +33,14 @@ export const trips: Trip[] = [
 
 export const loyaltyProgrammes: LoyaltyProgramme[] = [
   { name: 'Marriott Bonvoy', abbr: 'MA', points: 415343, ptValue: 0.5, color: '#1C1C1C', accent: '#FF9962', font: "'Playfair Display', serif", shape: 'crown', tier: 'Titanium Elite', nextTier: 'Ambassador', nights: 77, nightsNeeded: 23 , category: 'hotel' },
-  { name: 'Avios', abbr: 'AV', points: 67309, ptValue: 1, color: '#1544A6', accent: '#AFC4EE', font: "'DM Sans', sans-serif", shape: 'wing' , category: 'airline' },
-  { name: 'Hilton Honors', abbr: 'HI', points: 63963, ptValue: 0.4, color: '#0B4F9C', accent: '#BFD9F2', font: "'Poppins', sans-serif", shape: 'shield', tier: 'Gold', nextTier: 'Diamond', nights: 0, nightsNeeded: 30 , category: 'hotel' },
-  { name: 'Virgin Points', abbr: 'VI', points: 24005, ptValue: 1, color: '#C8102E', accent: '#FFE5E5', font: "'Yellowtail', cursive", shape: 'arrowUp' , category: 'airline' },
+  { name: 'Avios', abbr: 'AV', points: 67309, ptValue: 1, color: '#2D5495', accent: '#FFFFFF', font: "'DM Sans', sans-serif", shape: 'wing' , category: 'airline' },
+  { name: 'Hilton Honors', abbr: 'HI', points: 63963, ptValue: 0.4, color: '#012F60', accent: '#FFFFFF', font: "'Poppins', sans-serif", shape: 'shield', tier: 'Gold', nextTier: 'Diamond', nights: 0, nightsNeeded: 30 , category: 'hotel' },
+  { name: 'Virgin Points', abbr: 'VI', points: 24005, ptValue: 1, color: '#DA0630', accent: '#FFFFFF', font: "'Yellowtail', cursive", shape: 'arrowUp' , category: 'airline' },
   { name: 'Accor ALL', abbr: 'AC', points: 7157, ptValue: 1.72, color: '#050033', accent: '#B88D5B', font: "'Space Grotesk', sans-serif", shape: 'orbit', tier: 'Gold', nextTier: 'Platinum', nights: 31, nightsNeeded: 29 , category: 'hotel' },
-  { name: 'Singapore KrisFlyer', abbr: 'SI', points: 7553, ptValue: 1.2, color: '#0A2240', accent: '#C6A15B', font: "'Marcellus', serif", shape: 'bird' , category: 'airline' },
-  { name: 'Qantas Points', abbr: 'QA', points: 2460, ptValue: 1, color: '#D2001F', accent: '#FFFFFF', font: "'Barlow Semi Condensed', sans-serif", shape: 'starCompass' , category: 'airline' },
-  { name: 'World of Hyatt', abbr: 'WO', points: 0, ptValue: 1.5, color: '#0F2B46', accent: '#C6A15B', font: "'Jost', sans-serif", shape: 'gem', tier: 'Member', nextTier: 'Discoverist', nights: 0, nightsNeeded: 10 , category: 'hotel' },
-  { name: 'IHG One Rewards', abbr: 'IH', points: 0, ptValue: 0.45, color: '#4A2F6B', accent: '#D8C9EE', font: "'Manrope', sans-serif", shape: 'compass', tier: 'Member', nextTier: 'Silver Elite', nights: 0, nightsNeeded: 10 , category: 'hotel' },
+  { name: 'Singapore KrisFlyer', abbr: 'SI', points: 7553, ptValue: 1.2, color: '#00266B', accent: '#FFA107', font: "'Marcellus', serif", shape: 'bird' , category: 'airline' },
+  { name: 'Qantas Points', abbr: 'QA', points: 2460, ptValue: 1, color: '#E40000', accent: '#FFFFFF', font: "'Barlow Semi Condensed', sans-serif", shape: 'starCompass' , category: 'airline' },
+  { name: 'World of Hyatt', abbr: 'WO', points: 0, ptValue: 1.5, color: '#041761', accent: '#FFB612', font: "'Jost', sans-serif", shape: 'gem', tier: 'Member', nextTier: 'Discoverist', nights: 0, nightsNeeded: 10 , category: 'hotel' },
+  { name: 'IHG One Rewards', abbr: 'IH', points: 0, ptValue: 0.45, color: '#000000', accent: '#FFFFFF', font: "'Manrope', sans-serif", shape: 'compass', tier: 'Member', nextTier: 'Silver Elite', nights: 0, nightsNeeded: 10 , category: 'hotel' },
 ];
 
 export const paymentCards: PaymentCard[] = [
