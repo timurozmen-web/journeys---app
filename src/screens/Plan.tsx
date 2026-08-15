@@ -13,11 +13,18 @@ const HOME_AIRPORTS = ['LHR', 'LGW', 'STN', 'LTN', 'LCY'];
 
 interface SuggestedCity {
   city: string;
+  country: string;
   lat: number;
   lng: number;
   nights: number;
   why: string;
   nearestAirport: string | null;
+}
+
+interface Destination {
+  id: string;
+  country: string;
+  nights: string;
 }
 
 const inputStyle: React.CSSProperties = {
@@ -39,25 +46,43 @@ export function Plan() {
   const navigate = useNavigate();
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
   const { data: allHotels } = useAllHotels();
-  const [country, setCountry] = useState('Japan');
-  const [nights, setNights] = useState('12');
+  const [destinations, setDestinations] = useState<Destination[]>([{ id: 'd0', country: 'Japan', nights: '12' }]);
   const [homeAirport, setHomeAirport] = useState('LHR');
   const [cities, setCities] = useState<SuggestedCity[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  function addDestination() {
+    setDestinations((d) => [...d, { id: `d${Date.now()}`, country: planningCountries()[0], nights: '5' }]);
+  }
+  function removeDestination(id: string) {
+    setDestinations((d) => d.filter((x) => x.id !== id));
+  }
+  function updateDestination(id: string, patch: Partial<Destination>) {
+    setDestinations((d) => d.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  }
+
   async function suggest() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/.netlify/functions/suggest-cities', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ country, nights: nights ? parseInt(nights, 10) : 10 }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not get suggestions');
-      setCities(data.cities ?? []);
+      // Each country's cities are suggested independently, then joined in
+      // the order the user added them -- keeps each request focused and
+      // means one slow/failed country doesn't block the others we already got.
+      const results: SuggestedCity[] = [];
+      for (const dest of destinations) {
+        const res = await fetch('/.netlify/functions/suggest-cities', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ country: dest.country, nights: dest.nights ? parseInt(dest.nights, 10) : 10 }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(`${dest.country}: ${data.error || 'Could not get suggestions'}`);
+        for (const c of data.cities ?? []) {
+          results.push({ ...c, country: dest.country });
+        }
+      }
+      setCities(results);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -65,13 +90,16 @@ export function Plan() {
     }
   }
 
-  const railLikely = STRONG_RAIL_COUNTRIES.has(country);
   const home = PLANNING_AIRPORTS_BY_IATA[homeAirport];
 
-  // Domestic legs between consecutive suggested cities -- distances exact,
-  // modes and durations estimated.
+  // Domestic legs between consecutive suggested cities. Rail is only
+  // considered when both ends of a leg are in the same strong-rail
+  // country -- crossing a border defaults to flight, which is realistic
+  // for the vast majority of country pairs.
   const legs: LegPlan[] = [];
   for (let i = 0; i < cities.length - 1; i++) {
+    const sameCountry = cities[i].country === cities[i + 1].country;
+    const railLikely = sameCountry && STRONG_RAIL_COUNTRIES.has(cities[i].country);
     legs.push(planLeg(cities[i], cities[i + 1], railLikely));
   }
 
@@ -92,21 +120,45 @@ export function Plan() {
         <div className="h1" style={{ fontSize: 21 }}>Plan a trip</div>
       </div>
 
-      <div style={{ padding: '0 20px', display: 'grid', gap: 14 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 10 }}>
-          <div>
-            <label style={labelStyle}>Destination</label>
-            <select style={inputStyle} value={country} onChange={(e) => { setCountry(e.target.value); setCities([]); }}>
-              {planningCountries().map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+      <div style={{ padding: '0 20px', display: 'grid', gap: 10 }}>
+        {destinations.map((dest, i) => (
+          <div key={dest.id} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 30px', gap: 8, alignItems: 'end' }}>
+            <div>
+              {i === 0 && <label style={labelStyle}>Destination</label>}
+              <select
+                style={inputStyle}
+                value={dest.country}
+                onChange={(e) => { updateDestination(dest.id, { country: e.target.value }); setCities([]); }}
+              >
+                {planningCountries().map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              {i === 0 && <label style={labelStyle}>Nights</label>}
+              <input
+                type="number" style={inputStyle} value={dest.nights}
+                onChange={(e) => updateDestination(dest.id, { nights: e.target.value })}
+              />
+            </div>
+            {destinations.length > 1 ? (
+              <button
+                onClick={() => { removeDestination(dest.id); setCities([]); }}
+                style={{ height: 42, background: 'var(--card2)', border: 'none', borderRadius: 8, color: 'var(--ink3)', fontSize: 15, cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            ) : <div />}
           </div>
-          <div>
-            <label style={labelStyle}>Nights</label>
-            <input type="number" style={inputStyle} value={nights} onChange={(e) => setNights(e.target.value)} />
-          </div>
-        </div>
+        ))}
+
+        <button
+          onClick={addDestination}
+          style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', padding: '2px 0', textAlign: 'left' }}
+        >
+          + Add another country
+        </button>
 
         <div>
           <label style={labelStyle}>Flying from</label>
@@ -155,8 +207,14 @@ export function Plan() {
             {cities.map((c, i) => {
               const transfer = c.nearestAirport ? transferForAirport(c.nearestAirport) : null;
               const leg = legs[i];
+              const showCountry = i === 0 || cities[i - 1].country !== c.country;
               return (
-                <div key={c.city}>
+                <div key={`${c.city}-${i}`}>
+                  {showCountry && (
+                    <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', margin: '10px 0 6px' }}>
+                      {c.country}
+                    </div>
+                  )}
                   <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
                       <div style={{ fontSize: 14, fontWeight: 800 }}>{c.city}</div>
