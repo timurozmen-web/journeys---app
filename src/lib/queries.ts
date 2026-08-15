@@ -258,7 +258,7 @@ export async function deleteHotel(id: string) {
 export interface NewFlightInput {
   date: string; from: string; to: string; airline: string; flightNo: string | null;
   cabin: 'Economy' | 'Premium Economy' | 'Business' | 'First';
-  status: 'Completed' | 'Booked'; cost: number | null; award: boolean; overnight: boolean;
+  status: 'Completed' | 'Booked' | 'needs-confirm'; cost: number | null; award: boolean; overnight: boolean;
   tripId: string | null;
 }
 export async function addFlight(input: NewFlightInput) {

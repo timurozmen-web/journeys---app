@@ -36,7 +36,7 @@ export interface Flight {
   airline: string;
   flightNo: string | null;
   cabin: 'Economy' | 'Premium Economy' | 'Business' | 'First';
-  status: 'Completed' | 'Booked';
+  status: 'Completed' | 'Booked' | 'needs-confirm';
   cost: number | null;
   award: boolean;
   overnight: boolean; // true if this flight itself covers a night (long-haul, no hotel needed that night)

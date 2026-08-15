@@ -6,6 +6,7 @@ import { planLeg, transferForAirport, STRONG_RAIL_COUNTRIES, type LegPlan } from
 import { planHotelOptions } from '../lib/hotelPlanner';
 import { useLoyaltyProgrammes, useAllHotels } from '../lib/useLiveData';
 import { haversineKm } from '../lib/travelStats';
+import { addTrip, addHotel, addFlight } from '../lib/queries';
 
 const PlanMap = lazy(() => import('../components/PlanMap').then((m) => ({ default: m.PlanMap })));
 
@@ -51,6 +52,9 @@ export function Plan() {
   const [cities, setCities] = useState<SuggestedCity[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   function addDestination() {
     setDestinations((d) => [...d, { id: `d${Date.now()}`, country: planningCountries()[0], nights: '5' }]);
@@ -110,6 +114,76 @@ export function Plan() {
   const totalNights = cities.reduce((s, c) => s + c.nights, 0);
   const hotelOptions = totalNights > 0 ? planHotelOptions(loyaltyProgrammes, allHotels, totalNights) : [];
   const bestHotel = hotelOptions[0] ?? null;
+
+  async function saveToTrips() {
+    if (!startDate || cities.length === 0) return;
+    setSaving(true);
+    setSaveError('');
+    try {
+      const countries = [...new Set(cities.map((c) => c.country))];
+      const title = countries.join(' & ');
+
+      // Real calendar dates for each city, computed from cumulative nights
+      // starting at the given date -- this is what turns "4 nights in
+      // Tokyo" into an actual bookable check-in/check-out.
+      let cursor = new Date(startDate + 'T00:00:00');
+      const cityDates = cities.map((c) => {
+        const checkIn = cursor.toISOString().slice(0, 10);
+        cursor = new Date(cursor.getTime() + c.nights * 86400000);
+        return { city: c, checkIn };
+      });
+      const endDate = cursor.toISOString().slice(0, 10);
+
+      const tripId = await addTrip({ title, start: startDate, end: endDate, tripType: 'leisure', notes: 'Created from Plan' });
+
+      for (const { city, checkIn } of cityDates) {
+        await addHotel({
+          name: bestHotel ? `${bestHotel.programme} property` : `Hotel in ${city.city}`,
+          country: city.country, city: city.city, brand: bestHotel?.programme ?? 'Independent',
+          nights: city.nights, date: checkIn, status: 'needs-confirm',
+          total: bestHotel ? Math.round(bestHotel.estimatedNightlyGBP * city.nights) : null,
+          card: null, category: 'Premium', tripId,
+          benefitValue: null, benefitNote: null, bookingChannel: null, roomType: null, rateType: null,
+          nightlyRate: bestHotel ? Math.round(bestHotel.estimatedNightlyGBP) : null, avgRate: null,
+        });
+      }
+
+      // Outbound and return flights, plus any inter-city leg recommended
+      // as air travel -- ground legs (rail/road) aren't logged as flights.
+      if (home && cities[0].nearestAirport) {
+        await addFlight({
+          date: startDate, from: homeAirport, to: cities[0].nearestAirport,
+          airline: 'TBC', flightNo: null, cabin: 'Economy', status: 'needs-confirm',
+          cost: Math.round(Math.max(60, outboundKm * 0.11)),
+          award: false, overnight: false, tripId,
+        });
+      }
+      for (let i = 0; i < legs.length; i++) {
+        if (legs[i].recommendedMode !== 'flight') continue;
+        const fromAirport = cities[i].nearestAirport;
+        const toAirport = cities[i + 1].nearestAirport;
+        if (!fromAirport || !toAirport) continue; // no reliable airport code -- skip rather than insert bad data
+        await addFlight({
+          date: cityDates[i + 1].checkIn, from: fromAirport, to: toAirport,
+          airline: 'TBC', flightNo: null, cabin: 'Economy', status: 'needs-confirm',
+          cost: Math.round(legs[i].estimatedCostGBP), award: false, overnight: false, tripId,
+        });
+      }
+      if (home && cities[cities.length - 1].nearestAirport) {
+        await addFlight({
+          date: endDate, from: cities[cities.length - 1].nearestAirport!, to: homeAirport,
+          airline: 'TBC', flightNo: null, cabin: 'Economy', status: 'needs-confirm',
+          cost: Math.round(Math.max(60, returnKm * 0.11)), award: false, overnight: false, tripId,
+        });
+      }
+
+      navigate(`/trips/${tripId}`);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to save this plan');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div>
@@ -306,6 +380,32 @@ export function Plan() {
                 Distances are exact great-circle calculations. Durations and costs are rough estimates
                 for planning only — not live fares, and real journey times vary by route and service.
               </div>
+            </div>
+          </div>
+
+          <div className="stack" style={{ marginTop: 4 }}>
+            <div className="card">
+              <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 8 }}>Save this plan as a trip</div>
+              <input
+                type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+                style={{ ...inputStyle, marginBottom: 10 }}
+              />
+              <button
+                onClick={saveToTrips}
+                disabled={!startDate || saving}
+                style={{
+                  width: '100%', padding: '12px 0', borderRadius: 10, border: 'none', fontSize: 14, fontWeight: 700,
+                  background: !startDate || saving ? 'var(--card2)' : 'var(--brand)', color: !startDate || saving ? 'var(--ink2)' : '#fff',
+                  cursor: !startDate || saving ? 'default' : 'pointer',
+                }}
+              >
+                {saving ? 'Saving…' : 'Save to Trips'}
+              </button>
+              <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 8, lineHeight: 1.5 }}>
+                Creates a real trip with a stay for each city and flights for the international legs,
+                all marked as "needs confirming" until you actually book them.
+              </div>
+              {saveError && <div style={{ color: 'var(--red)', fontSize: 12, marginTop: 6 }}>{saveError}</div>}
             </div>
           </div>
         </>

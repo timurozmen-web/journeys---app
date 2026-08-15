@@ -223,3 +223,6 @@ alter table loyalty_programmes add column if not exists category text not null d
 update loyalty_programmes set category = 'airline' where name in ('Avios', 'Virgin Points', 'Singapore KrisFlyer', 'Qantas Points');
 
 alter table payment_cards add column if not exists closed_date date;
+
+alter table flights drop constraint if exists flights_status_check;
+alter table flights add constraint flights_status_check check (status in ('Completed', 'Booked', 'needs-confirm'));
