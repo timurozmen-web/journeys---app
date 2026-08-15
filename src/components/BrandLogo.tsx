@@ -1,16 +1,24 @@
 import { BrandMark } from './BrandMark';
 
+interface LogoEntry {
+  url: string;
+  aspect: 'square' | 'wide'; // wide = real wordmark, given more horizontal room instead of a cramped square crop
+}
+
 // Maps a loyalty programme's exact name to its real logo asset.
 // Add an entry here once a verified logo/icon is available for that
 // programme -- everything else automatically falls back to the
 // abstract BrandMark shape until then.
-export const BRAND_LOGOS: Record<string, string> = {
-  'Accor ALL': '/brand-logos/accor.jpg',
-  'Marriott Bonvoy': '/brand-logos/marriott.png',
-  'Qantas Points': '/brand-logos/qantas.png',
-  'Singapore KrisFlyer': '/brand-logos/singapore-airlines.png',
-  'Virgin Points': '/brand-logos/virgin-atlantic.png',
-  'Expedia One Key Cash': '/brand-logos/expedia.png',
+export const BRAND_LOGOS: Record<string, LogoEntry> = {
+  'Accor ALL': { url: '/brand-logos/accor.jpg', aspect: 'square' },
+  'Marriott Bonvoy': { url: '/brand-logos/marriott.png', aspect: 'square' },
+  'Qantas Points': { url: '/brand-logos/qantas.png', aspect: 'square' },
+  'Singapore KrisFlyer': { url: '/brand-logos/singapore-airlines.png', aspect: 'square' },
+  'Virgin Points': { url: '/brand-logos/virgin-atlantic.png', aspect: 'square' },
+  'Expedia One Key Cash': { url: '/brand-logos/expedia.png', aspect: 'square' },
+  'Hilton Honors': { url: '/brand-logos/hilton.png', aspect: 'wide' },
+  'IHG One Rewards': { url: '/brand-logos/ihg.png', aspect: 'wide' },
+  'World of Hyatt': { url: '/brand-logos/hyatt.png', aspect: 'wide' },
 };
 
 export function BrandLogo({
@@ -18,17 +26,27 @@ export function BrandLogo({
 }: {
   name: string; shape?: string; color?: string; accent?: string; size?: number;
 }) {
-  const logoUrl = BRAND_LOGOS[name];
+  const logo = BRAND_LOGOS[name];
+  const width = logo?.aspect === 'wide' ? Math.round(size * 2.2) : size;
 
   return (
-    <div style={{ width: size, height: size, borderRadius: 10, background: color || '#5B3FA6', display: 'grid', placeItems: 'center', flexShrink: 0, overflow: 'hidden' }}>
-      {logoUrl ? (
+    <div
+      style={{
+        width, height: size, borderRadius: 10, background: color || '#5B3FA6',
+        display: 'grid', placeItems: 'center', flexShrink: 0, overflow: 'hidden',
+        border: logo?.aspect === 'wide' ? '1px solid var(--line)' : undefined,
+      }}
+    >
+      {logo ? (
         <img
-          src={logoUrl}
+          src={logo.url}
           alt={`${name} logo`}
-          width={size}
-          height={size}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          style={{
+            width: '100%', height: '100%', display: 'block',
+            objectFit: logo.aspect === 'wide' ? 'contain' : 'cover',
+            padding: logo.aspect === 'wide' ? '6px 8px' : 0, boxSizing: 'border-box',
+            background: logo.aspect === 'wide' ? '#fff' : 'transparent',
+          }}
         />
       ) : (
         shape && <BrandMark shape={shape} color={accent || '#fff'} size={Math.round(size * 0.47)} />
