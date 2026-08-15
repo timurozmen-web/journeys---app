@@ -1,7 +1,8 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BackIcon } from '../components/Icons';
 import { planningCountries, PLANNING_AIRPORTS_BY_IATA } from '../data/planningAirports';
+import { allPlanningCountries } from '../data/globalAirportsLoader';
 import { planLeg, transferForAirport, STRONG_RAIL_COUNTRIES, type LegPlan } from '../lib/tripPlanner';
 import { planHotelOptions } from '../lib/hotelPlanner';
 import { useLoyaltyProgrammes, useAllHotels } from '../lib/useLiveData';
@@ -55,9 +56,16 @@ export function Plan() {
   const [startDate, setStartDate] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [allCountries, setAllCountries] = useState<string[]>(planningCountries());
+
+  useEffect(() => {
+    allPlanningCountries().then(setAllCountries).catch(() => {
+      // Global dataset failed to load -- keep the curated fallback list rather than break the form.
+    });
+  }, []);
 
   function addDestination() {
-    setDestinations((d) => [...d, { id: `d${Date.now()}`, country: planningCountries()[0], nights: '5' }]);
+    setDestinations((d) => [...d, { id: `d${Date.now()}`, country: allCountries[0] ?? 'Japan', nights: '5' }]);
   }
   function removeDestination(id: string) {
     setDestinations((d) => d.filter((x) => x.id !== id));
@@ -204,7 +212,7 @@ export function Plan() {
                 value={dest.country}
                 onChange={(e) => { updateDestination(dest.id, { country: e.target.value }); setCities([]); }}
               >
-                {planningCountries().map((c) => (
+                {allCountries.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
