@@ -1,5 +1,42 @@
 import type { Hotel, LoyaltyProgramme, Promotion } from '../types';
 
+// Per-brand spend/status-points requirements, verified against each
+// programme's real published terms rather than assumed to all work like
+// Marriott's flat dollar threshold.
+interface SpendConfig {
+  label: string;
+  unit: 'currency' | 'points';
+  currencySymbol?: string; // for 'currency' unit
+  fxRateFromGBP: number;
+  pointsPerGBP?: number; // for 'points' unit -- computed directly from GBP to avoid a double FX conversion
+  requiredByTier: Record<string, number>; // next-tier name -> required amount, in the unit above
+}
+
+const SPEND_CONFIGS: Record<string, SpendConfig> = {
+  'Marriott Bonvoy': {
+    label: 'Qualifying spend', unit: 'currency', currencySymbol: '$', fxRateFromGBP: 1.27,
+    requiredByTier: { Ambassador: 23000 },
+  },
+  // Accor: 25 status points per €10 spent (2.5/€), verified against
+  // Accor's own published terms. Thresholds per tier, each independently
+  // reachable via nights OR status points -- whichever comes first.
+  'Accor ALL': {
+    label: 'Status points', unit: 'points', fxRateFromGBP: 1.17, pointsPerGBP: 1.17 * 2.5,
+    requiredByTier: { Silver: 2000, Gold: 7000, Platinum: 14000, Diamond: 26000 },
+  },
+};
+
+export interface SpendProgress {
+  label: string;
+  currentAmount: number; // from Completed stays this year
+  pendingAmount: number; // from Booked stays this year, not yet completed
+  requiredAmount: number;
+  unit: 'currency' | 'points';
+  currencySymbol?: string;
+  pct: number; // completed only
+  pendingPct: number | null; // completed + pending combined, when pending > 0
+}
+
 export interface StatusProgress {
   total: number;
   currentNights: number; // static baseline + newly-completed stays since the baseline date
@@ -10,7 +47,7 @@ export interface StatusProgress {
   bookedNights: number;
   pendingPromo: Promotion | null;
   pendingNights: number;
-  spendBar: { spendUSD: number; spendRequiredUSD: number; pct: number } | null;
+  spendProgress: SpendProgress | null;
 }
 
 export function computeStatusProgress(p: LoyaltyProgramme, hotels: Hotel[], promotions: Promotion[]): StatusProgress {
@@ -63,16 +100,29 @@ export function computeStatusProgress(p: LoyaltyProgramme, hotels: Hotel[], prom
   const projectedBooked = Math.min(total, currentNights + bookedNights);
   const projectedWithPromo = Math.min(total, projectedBooked + pendingNights);
 
-  // Marriott's Ambassador tier has a genuinely separate, second
-  // requirement -- $23,000 USD qualifying spend in the calendar year,
-  // alongside the 100 nights.
-  let spendBar: StatusProgress['spendBar'] = null;
-  if (p.name === 'Marriott Bonvoy' && p.nextTier === 'Ambassador') {
-    const spendGBP = hotels
-      .filter((h) => h.brand === 'Marriott Bonvoy' && h.status === 'Completed' && Number(h.date.slice(0, 4)) === currentYear)
-      .reduce((s, h) => s + (h.total ?? 0), 0);
-    const spendUSD = spendGBP * 1.27;
-    spendBar = { spendUSD, spendRequiredUSD: 23000, pct: Math.min(100, (spendUSD / 23000) * 100) };
+  // Any brand with a configured spend/status-points requirement for the
+  // tier being pursued gets a second bar, alongside nights -- not just
+  // Marriott. Completed spend is the solid segment; booked-but-not-yet-
+  // completed spend this year shows as pending, same as nights.
+  let spendProgress: SpendProgress | null = null;
+  const config = SPEND_CONFIGS[p.name];
+  const requiredAmount = config && p.nextTier ? config.requiredByTier[p.nextTier] : undefined;
+  if (config && requiredAmount != null) {
+    const spendGBP = (status: Hotel['status']) =>
+      hotels
+        .filter((h) => h.brand === p.name && h.status === status && Number(h.date.slice(0, 4)) === currentYear)
+        .reduce((s, h) => s + (h.total ?? 0), 0);
+
+    const rate = config.unit === 'points' ? config.pointsPerGBP! : config.fxRateFromGBP;
+    const currentAmount = spendGBP('Completed') * rate;
+    const pendingSpend = spendGBP('Booked') * rate;
+
+    spendProgress = {
+      label: config.label, currentAmount, pendingAmount: pendingSpend, requiredAmount,
+      unit: config.unit, currencySymbol: config.currencySymbol,
+      pct: Math.min(100, (currentAmount / requiredAmount) * 100),
+      pendingPct: pendingSpend > 0 ? Math.min(100, ((currentAmount + pendingSpend) / requiredAmount) * 100) : null,
+    };
   }
 
   return {
@@ -85,6 +135,6 @@ export function computeStatusProgress(p: LoyaltyProgramme, hotels: Hotel[], prom
     bookedNights,
     pendingPromo,
     pendingNights,
-    spendBar,
+    spendProgress,
   };
 }

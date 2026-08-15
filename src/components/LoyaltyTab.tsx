@@ -115,13 +115,30 @@ export function LoyaltyTab({
                         }}
                       />
                     </div>
-                    {progress.spendBar && (
+                    {progress.spendProgress && (
                       <>
                         <div style={{ fontSize: 11.5, color: 'var(--ink2)', fontWeight: 600, marginTop: 8 }}>
-                          Qualifying spend: ${Math.round(progress.spendBar.spendUSD).toLocaleString()} / $23,000
+                          {progress.spendProgress.label}: {progress.spendProgress.currencySymbol ?? ''}
+                          {Math.round(progress.spendProgress.currentAmount).toLocaleString()}
+                          {progress.spendProgress.unit === 'points' ? ' pts' : ''}
+                          {' / '}{progress.spendProgress.currencySymbol ?? ''}{Math.round(progress.spendProgress.requiredAmount).toLocaleString()}
+                          {progress.spendProgress.unit === 'points' ? ' pts' : ''}
+                          {progress.spendProgress.pendingAmount > 0 && (
+                            <span style={{ color: 'var(--amber)', fontWeight: 700 }}>
+                              {' '}(+{Math.round(progress.spendProgress.pendingAmount).toLocaleString()} pending)
+                            </span>
+                          )}
                         </div>
-                        <div className="hbar" style={{ marginTop: 4, background: 'var(--card2)', border: '1px solid var(--line)', boxSizing: 'border-box' }}>
-                          <i style={{ width: `${progress.spendBar.pct}%`, background: p.color, borderRadius: 99, display: 'block', height: '100%' }} />
+                        <div className="hbar" style={{ marginTop: 4, position: 'relative', background: 'var(--card2)', border: '1px solid var(--line)', boxSizing: 'border-box' }}>
+                          {progress.spendProgress.pendingPct != null && (
+                            <i
+                              style={{
+                                width: `${progress.spendProgress.pendingPct}%`, background: 'rgba(156,95,8,.4)',
+                                position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 99,
+                              }}
+                            />
+                          )}
+                          <i style={{ width: `${progress.spendProgress.pct}%`, background: p.color, borderRadius: 99, display: 'block', height: '100%', position: 'relative' }} />
                         </div>
                       </>
                     )}

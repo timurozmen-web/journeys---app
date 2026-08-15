@@ -161,13 +161,17 @@ export function Home() {
                       </span>
                     )}
                   </div>
-                  {p.progress.spendBar && (
+                  {p.progress.spendProgress && (
                     <>
                       <div style={{ fontSize: 12, opacity: 0.85, fontWeight: 700, marginTop: 8, color: '#fff' }}>
-                        Qualifying spend: ${Math.round(p.progress.spendBar.spendUSD).toLocaleString()} / $23,000
+                        {p.progress.spendProgress.label}: {p.progress.spendProgress.currencySymbol ?? ''}
+                        {Math.round(p.progress.spendProgress.currentAmount).toLocaleString()}
+                        {p.progress.spendProgress.unit === 'points' ? ' pts' : ''}
+                        {' / '}{p.progress.spendProgress.currencySymbol ?? ''}{Math.round(p.progress.spendProgress.requiredAmount).toLocaleString()}
+                        {p.progress.spendProgress.unit === 'points' ? ' pts' : ''}
                       </div>
                       <div className="hbar" style={{ marginTop: 4 }}>
-                        <i style={{ width: `${p.progress.spendBar.pct}%` }} />
+                        <i style={{ width: `${p.progress.spendProgress.pct}%` }} />
                       </div>
                     </>
                   )}
