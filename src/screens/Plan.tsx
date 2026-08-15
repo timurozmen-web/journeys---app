@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { BackIcon } from '../components/Icons';
 import { planningCountries, PLANNING_AIRPORTS_BY_IATA } from '../data/planningAirports';
 import { planLeg, transferForAirport, STRONG_RAIL_COUNTRIES, type LegPlan } from '../lib/tripPlanner';
+import { planHotelOptions } from '../lib/hotelPlanner';
+import { useLoyaltyProgrammes, useAllHotels } from '../lib/useLiveData';
 import { haversineKm } from '../lib/travelStats';
 
 const PlanMap = lazy(() => import('../components/PlanMap').then((m) => ({ default: m.PlanMap })));
@@ -35,6 +37,8 @@ function formatHours(h: number): string {
 
 export function Plan() {
   const navigate = useNavigate();
+  const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
+  const { data: allHotels } = useAllHotels();
   const [country, setCountry] = useState('Japan');
   const [nights, setNights] = useState('12');
   const [homeAirport, setHomeAirport] = useState('LHR');
@@ -76,6 +80,8 @@ export function Plan() {
   const domesticKm = legs.reduce((s, l) => s + l.distanceKm, 0);
   const domesticCost = legs.reduce((s, l) => s + l.estimatedCostGBP, 0);
   const totalNights = cities.reduce((s, c) => s + c.nights, 0);
+  const hotelOptions = totalNights > 0 ? planHotelOptions(loyaltyProgrammes, allHotels, totalNights) : [];
+  const bestHotel = hotelOptions[0] ?? null;
 
   return (
     <div>
@@ -179,6 +185,46 @@ export function Plan() {
             })}
           </div>
 
+          {hotelOptions.length > 0 && (
+            <>
+              <div className="sect"><h2>Where to stay</h2></div>
+              <div className="stack" style={{ display: 'grid', gap: 10 }}>
+                {hotelOptions.map((o, i) => (
+                  <div
+                    key={o.programme}
+                    style={{
+                      padding: '12px 14px', borderRadius: 12, background: 'var(--card)',
+                      border: i === 0 ? '2px solid var(--brand)' : '1px solid var(--line)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 800 }}>
+                        {o.programme}
+                        {i === 0 && <span style={{ color: 'var(--brand)', fontSize: 11, marginLeft: 6 }}>BEST VALUE</span>}
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 700 }}>~£{Math.round(o.estimatedNightlyGBP)}/night</div>
+                    </div>
+                    <div style={{ fontSize: 11.5, color: 'var(--ink3)', marginTop: 3 }}>
+                      {o.tier ? `${o.tier} · ` : ''}
+                      {o.rateSource === 'history'
+                        ? `rate from your ${o.historyCount} past stay${o.historyCount === 1 ? '' : 's'}`
+                        : 'no stay history — generic estimate'}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 6 }}>
+                      Earns ~{Math.round(o.pointsEarned).toLocaleString()} pts (~£{Math.round(o.pointsValueGBP)})
+                      · effective ~£{Math.round(o.effectiveNightlyGBP)}/night
+                    </div>
+                    {o.benefits.length > 0 && (
+                      <div style={{ fontSize: 11.5, color: 'var(--ink2)', marginTop: 6, lineHeight: 1.6 }}>
+                        {o.benefits.map((b) => `• ${b}`).join('  ')}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
           <div className="sect"><h2>Estimated totals</h2></div>
           <div className="stack">
             <div className="card" style={{ display: 'grid', gap: 9 }}>
@@ -186,6 +232,18 @@ export function Plan() {
               <Row label="International distance" value={`${Math.round(outboundKm + returnKm).toLocaleString()} km`} />
               <Row label="Domestic distance" value={`${Math.round(domesticKm).toLocaleString()} km`} />
               <Row label="Domestic transport" value={`~£${Math.round(domesticCost).toLocaleString()}`} />
+              {bestHotel && (
+                <Row
+                  label={`Accommodation (${bestHotel.programme})`}
+                  value={`~£${Math.round(bestHotel.estimatedNightlyGBP * totalNights).toLocaleString()}`}
+                />
+              )}
+              {bestHotel && (
+                <Row
+                  label="Points earned on stays"
+                  value={`~${Math.round(bestHotel.pointsEarned).toLocaleString()} pts`}
+                />
+              )}
               <div style={{ fontSize: 11, color: 'var(--ink3)', lineHeight: 1.5, marginTop: 4 }}>
                 Distances are exact great-circle calculations. Durations and costs are rough estimates
                 for planning only — not live fares, and real journey times vary by route and service.
