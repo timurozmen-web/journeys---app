@@ -8,6 +8,7 @@ import { Profile } from './screens/Profile';
 import { TripDetail } from './screens/TripDetail';
 import { Action } from './screens/Action';
 import { Discover } from './screens/Discover';
+import { Plan } from './screens/Plan';
 import { LogLoyaltyProgramme } from './screens/LogLoyaltyProgramme';
 import { LogHotel } from './screens/LogHotel';
 import { LogFlight } from './screens/LogFlight';
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/review-trip" element={<ReviewTrip />} />
           <Route path="/action/:kind" element={<Action />} />
           <Route path="/action/discover" element={<Discover />} />
+          <Route path="/action/plan" element={<Plan />} />
           <Route path="/log-loyalty-programme" element={<LogLoyaltyProgramme />} />
         </Routes>
       </div>

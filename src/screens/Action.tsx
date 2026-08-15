@@ -12,10 +12,6 @@ const CONTENT: Record<string, { title: string; body: string; actions?: { label: 
       { label: '+ Log a flight', to: '/log-flight' },
     ],
   },
-  plan: {
-    title: 'Plan',
-    body: 'Scores destinations against your real balances using the redemption maths already in Wallet. Not built yet — live award availability needs an external data feed first.',
-  },
 };
 
 export function Action() {
