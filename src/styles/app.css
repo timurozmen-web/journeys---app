@@ -31,7 +31,7 @@
 .hero .bignum{font-size:25px;font-weight:800;letter-spacing:-.6px;text-align:right;line-height:1}
 .hero .biglab{font-size:10px;font-weight:700;opacity:.9;text-align:right;text-transform:uppercase;
   letter-spacing:.05em;margin-top:var(--s1);max-width:92px;margin-left:auto}
-.hbar{height:7px;border-radius:99px;background:rgba(255,255,255,.25);margin-top:var(--s4);overflow:hidden}
+.hbar{width:100%;height:7px;border-radius:99px;background:rgba(255,255,255,.25);margin-top:var(--s4);overflow:hidden;box-sizing:border-box}
 .hbar i{display:block;height:100%;border-radius:99px;background:#fff}
 .hero .note{font-size:12px;opacity:.92;margin-top:var(--s2);line-height:1.4}
 .hero button{width:100%;margin-top:var(--s4);padding:11px 0;border:0;border-radius:var(--r-sm);

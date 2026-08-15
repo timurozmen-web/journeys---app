@@ -11,7 +11,7 @@ interface LogoEntry {
 // abstract BrandMark shape until then.
 export const BRAND_LOGOS: Record<string, LogoEntry> = {
   'Accor ALL': { url: '/brand-logos/accor.jpg', aspect: 'square' },
-  'Marriott Bonvoy': { url: '/brand-logos/marriott.png', aspect: 'square' },
+  'Marriott Bonvoy': { url: '/brand-logos/marriott-wordmark.png', aspect: 'wide' },
   'Qantas Points': { url: '/brand-logos/qantas.png', aspect: 'square' },
   'Singapore KrisFlyer': { url: '/brand-logos/singapore-airlines.png', aspect: 'square' },
   'Virgin Points': { url: '/brand-logos/virgin-atlantic.png', aspect: 'square' },
@@ -20,6 +20,10 @@ export const BRAND_LOGOS: Record<string, LogoEntry> = {
   'IHG One Rewards': { url: '/brand-logos/ihg.png', aspect: 'wide' },
   'World of Hyatt': { url: '/brand-logos/hyatt.png', aspect: 'wide' },
 };
+
+export function hasWordmarkLogo(name: string): boolean {
+  return BRAND_LOGOS[name]?.aspect === 'wide';
+}
 
 export function BrandLogo({
   name, shape, color, accent, size = 38,
