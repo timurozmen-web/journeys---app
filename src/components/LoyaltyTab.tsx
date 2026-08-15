@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BrandMark } from './BrandMark';
+import { BrandLogo } from './BrandLogo';
 import { useVouchers } from '../lib/useLiveData';
 import { setVoucherRedeemed } from '../lib/queries';
 import { computeStatusProgress } from '../lib/statusProgress';
@@ -64,9 +64,7 @@ export function LoyaltyTab({
                 background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
               }}
             >
-              <div style={{ width: 38, height: 38, borderRadius: 10, background: p.color, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                <BrandMark shape={p.shape} color={p.accent || '#fff'} size={18} />
-              </div>
+              <BrandLogo name={p.name} shape={p.shape} color={p.color} accent={p.accent} size={38} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>{p.name}</div>
                 <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 1 }}>{p.tier ?? '—'}</div>

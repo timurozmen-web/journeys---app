@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BrandMark } from './BrandMark';
+import { BrandLogo } from './BrandLogo';
 import { updateManualSpendAdjustment } from '../lib/queries';
 import type { CardResult } from '../lib/cardMath';
 import type { LoyaltyProgramme } from '../types';
@@ -39,9 +39,7 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
                 background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
               }}
             >
-              <div style={{ width: 38, height: 38, borderRadius: 10, background: prog?.color ?? '#5B3FA6', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                {prog?.shape && <BrandMark shape={prog.shape} color={prog.accent || '#fff'} size={18} />}
-              </div>
+              <BrandLogo name={prog?.name ?? ''} shape={prog?.shape} color={prog?.color} accent={prog?.accent} size={38} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.card.id}</div>
                 <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 1 }}>
