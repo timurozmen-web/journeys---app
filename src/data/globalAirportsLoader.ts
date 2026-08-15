@@ -5,6 +5,7 @@ export interface GlobalAirport {
   lng: number;
   city: string;
   country: string;
+  large?: boolean;
 }
 
 let cached: GlobalAirport[] | null = null;

@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { BackIcon } from '../components/Icons';
 import { planningCountries, PLANNING_AIRPORTS_BY_IATA } from '../data/planningAirports';
 import { allPlanningCountries } from '../data/globalAirportsLoader';
-import { planLeg, transferForAirport, STRONG_RAIL_COUNTRIES, type LegPlan } from '../lib/tripPlanner';
+import { planLeg, STRONG_RAIL_COUNTRIES, type LegPlan } from '../lib/tripPlanner';
+import { nearestAirportToCity, type NearestAirportResult } from '../data/worldCitiesLoader';
 import { planHotelOptions } from '../lib/hotelPlanner';
 import { useLoyaltyProgrammes, useAllHotels } from '../lib/useLiveData';
 import { haversineKm } from '../lib/travelStats';
@@ -57,6 +58,25 @@ export function Plan() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [allCountries, setAllCountries] = useState<string[]>(planningCountries());
+  const [cityAirports, setCityAirports] = useState<Record<string, NearestAirportResult>>({});
+
+  // Once cities are suggested, verify the real nearest airport for each --
+  // more reliable than trusting Claude's own airport guess, and works for
+  // any city regardless of whether it's in the originally curated set.
+  useEffect(() => {
+    if (cities.length === 0) return;
+    let cancelled = false;
+    Promise.all(cities.map(async (c) => [c.city, await nearestAirportToCity(c.lat, c.lng)] as const)).then((results) => {
+      if (cancelled) return;
+      const entries: [string, NearestAirportResult][] = results.filter(
+        (r): r is [string, NearestAirportResult] => r[1] != null
+      );
+      setCityAirports(Object.fromEntries(entries));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [cities]);
 
   useEffect(() => {
     allPlanningCountries().then(setAllCountries).catch(() => {
@@ -158,9 +178,12 @@ export function Plan() {
 
       // Outbound and return flights, plus any inter-city leg recommended
       // as air travel -- ground legs (rail/road) aren't logged as flights.
-      if (home && cities[0].nearestAirport) {
+      // Verified airport codes are preferred over Claude's own guess.
+      const airportFor = (c: SuggestedCity) => cityAirports[c.city]?.airport.iata ?? c.nearestAirport;
+
+      if (home && airportFor(cities[0])) {
         await addFlight({
-          date: startDate, from: homeAirport, to: cities[0].nearestAirport,
+          date: startDate, from: homeAirport, to: airportFor(cities[0])!,
           airline: 'TBC', flightNo: null, cabin: 'Economy', status: 'needs-confirm',
           cost: Math.round(Math.max(60, outboundKm * 0.11)),
           award: false, overnight: false, tripId,
@@ -168,8 +191,8 @@ export function Plan() {
       }
       for (let i = 0; i < legs.length; i++) {
         if (legs[i].recommendedMode !== 'flight') continue;
-        const fromAirport = cities[i].nearestAirport;
-        const toAirport = cities[i + 1].nearestAirport;
+        const fromAirport = airportFor(cities[i]);
+        const toAirport = airportFor(cities[i + 1]);
         if (!fromAirport || !toAirport) continue; // no reliable airport code -- skip rather than insert bad data
         await addFlight({
           date: cityDates[i + 1].checkIn, from: fromAirport, to: toAirport,
@@ -177,9 +200,9 @@ export function Plan() {
           cost: Math.round(legs[i].estimatedCostGBP), award: false, overnight: false, tripId,
         });
       }
-      if (home && cities[cities.length - 1].nearestAirport) {
+      if (home && airportFor(cities[cities.length - 1])) {
         await addFlight({
-          date: endDate, from: cities[cities.length - 1].nearestAirport!, to: homeAirport,
+          date: endDate, from: airportFor(cities[cities.length - 1])!, to: homeAirport,
           airline: 'TBC', flightNo: null, cabin: 'Economy', status: 'needs-confirm',
           cost: Math.round(Math.max(60, returnKm * 0.11)), award: false, overnight: false, tripId,
         });
@@ -287,7 +310,7 @@ export function Plan() {
             )}
 
             {cities.map((c, i) => {
-              const transfer = c.nearestAirport ? transferForAirport(c.nearestAirport) : null;
+              const transfer = cityAirports[c.city];
               const leg = legs[i];
               const showCountry = i === 0 || cities[i - 1].country !== c.country;
               return (
@@ -305,7 +328,7 @@ export function Plan() {
                     <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 4, lineHeight: 1.5 }}>{c.why}</div>
                     {transfer && (
                       <div style={{ fontSize: 11.5, color: 'var(--ink3)', marginTop: 6 }}>
-                        {transfer.airport.name} ({transfer.airport.iata}) · {Math.round(transfer.distanceToCityKm)} km to centre · ~{transfer.estimatedTransferMinutes} min transfer
+                        {transfer.airport.name || transfer.airport.city} ({transfer.airport.iata}) · {Math.round(transfer.distanceKm)} km to centre · ~{Math.round((transfer.distanceKm / 45) * 60 + 10)} min transfer
                       </div>
                     )}
                   </div>
