@@ -40,7 +40,7 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
               }}
             >
               <div style={{ width: 38, height: 38, borderRadius: 10, background: prog?.color ?? '#5B3FA6', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                {prog?.shape && <BrandMark shape={prog.shape} color="#fff" size={18} />}
+                {prog?.shape && <BrandMark shape={prog.shape} color={prog.accent || '#fff'} size={18} />}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.card.id}</div>

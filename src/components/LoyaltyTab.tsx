@@ -65,7 +65,7 @@ export function LoyaltyTab({
               }}
             >
               <div style={{ width: 38, height: 38, borderRadius: 10, background: p.color, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                <BrandMark shape={p.shape} color="#fff" size={18} />
+                <BrandMark shape={p.shape} color={p.accent || '#fff'} size={18} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>{p.name}</div>
