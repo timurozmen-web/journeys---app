@@ -61,7 +61,7 @@ export function LoyaltyTab({
               onClick={() => setOpen(isOpen ? null : p.name)}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px',
-                background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+                background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'var(--ink)',
               }}
             >
               <BrandLogo name={p.name} shape={p.shape} color={p.color} accent={p.accent} size={38} />

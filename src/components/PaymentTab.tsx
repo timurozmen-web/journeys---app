@@ -36,7 +36,7 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
               onClick={() => setOpen(isOpen ? null : r.card.id)}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px',
-                background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+                background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'var(--ink)',
               }}
             >
               <BrandLogo name={prog?.name ?? ''} shape={prog?.shape} color={prog?.color} accent={prog?.accent} size={38} />

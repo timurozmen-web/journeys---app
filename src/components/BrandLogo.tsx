@@ -9,6 +9,8 @@ export const BRAND_LOGOS: Record<string, string> = {
   'Marriott Bonvoy': '/brand-logos/marriott.png',
   'Qantas Points': '/brand-logos/qantas.png',
   'Singapore KrisFlyer': '/brand-logos/singapore-airlines.png',
+  'Virgin Points': '/brand-logos/virgin-atlantic.png',
+  'Expedia One Key Cash': '/brand-logos/expedia.png',
 };
 
 export function BrandLogo({
