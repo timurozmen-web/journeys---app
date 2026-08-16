@@ -226,3 +226,50 @@ alter table payment_cards add column if not exists closed_date date;
 
 alter table flights drop constraint if exists flights_status_check;
 alter table flights add constraint flights_status_check check (status in ('Completed', 'Booked', 'needs-confirm'));
+
+-- Global landmark/hotspot reference data -- natural, cultural, and historic
+-- sites that aren't captured by the populated-places city dataset (e.g.
+-- Mount Fuji is a mountain, not a city). Read-only global reference data,
+-- not scoped per-user.
+create table landmarks (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  country text not null,
+  lat double precision not null,
+  lng double precision not null,
+  category text not null check (category in ('natural', 'cultural', 'historic', 'beach', 'island')),
+  description text not null,
+  nearest_city text,
+  created_at timestamptz default now()
+);
+alter table landmarks enable row level security;
+create policy "landmarks are readable by all authenticated users" on landmarks
+  for select using (auth.role() = 'authenticated');
+
+insert into landmarks (name, country, lat, lng, category, description, nearest_city) values
+  ('Mount Fuji', 'Japan', 35.3606, 138.7274, 'natural', 'Japan''s iconic peak -- most visitors base themselves in Kawaguchiko or Hakone for the view rather than staying on the mountain itself.', 'Kawaguchiko'),
+  ('Miyajima (Itsukushima)', 'Japan', 34.2966, 132.3200, 'island', 'Small island famous for the floating torii gate, a short ferry ride from Hiroshima.', 'Hiroshima'),
+  ('Hakone', 'Japan', 35.2323, 139.1069, 'natural', 'Hot spring town with views of Mount Fuji, popular for a ryokan stay.', 'Tokyo'),
+  ('Nikko', 'Japan', 36.7199, 139.6982, 'historic', 'UNESCO-listed shrine and temple complex north of Tokyo, set in forested mountains.', 'Tokyo'),
+  ('Shirakawa-go', 'Japan', 36.2578, 136.9066, 'historic', 'UNESCO-listed historic village of traditional thatched-roof farmhouses.', 'Kanazawa'),
+  ('Yakushima', 'Japan', 30.3856, 130.5228, 'natural', 'UNESCO-listed island of ancient cedar forest, said to have inspired Studio Ghibli''s Princess Mononoke.', 'Kagoshima'),
+  ('Ishigaki Island', 'Japan', 24.3448, 124.1572, 'beach', 'Remote Okinawan island known for coral reefs and beaches, distinct from the main Okinawa/Naha area.', 'Naha'),
+  ('Nara Park', 'Japan', 34.6851, 135.8048, 'cultural', 'Free-roaming sacred deer and Todai-ji temple, a common day trip from Kyoto or Osaka.', 'Kyoto'),
+
+  ('Pamukkale', 'Turkey', 37.9142, 29.1198, 'natural', 'Terraced white travertine mineral pools cascading down a hillside.', 'Denizli'),
+  ('Cappadocia', 'Turkey', 38.6428, 34.8289, 'natural', 'Famous for hot air balloon flights over its distinctive rock formations and cave dwellings.', 'Kayseri'),
+  ('Ephesus', 'Turkey', 37.9395, 27.3417, 'historic', 'Ancient Greco-Roman city ruins, one of the best-preserved classical sites in the Mediterranean.', 'Izmir'),
+
+  ('Uluwatu', 'Indonesia', -8.8290, 115.0864, 'beach', 'Clifftop temple and surf beaches on Bali''s southern peninsula.', 'Denpasar'),
+  ('Ubud', 'Indonesia', -8.5069, 115.2625, 'cultural', 'Bali''s cultural heart -- rice terraces, temples, and art villages inland from the coast.', 'Denpasar'),
+  ('Komodo National Park', 'Indonesia', -8.5455, 119.4894, 'natural', 'UNESCO-listed home of the Komodo dragon, reached by boat from Labuan Bajo.', 'Labuan Bajo'),
+
+  ('Phi Phi Islands', 'Thailand', 7.7407, 98.7784, 'island', 'Limestone cliff islands with turquoise bays, a short boat ride from Phuket.', 'Phuket'),
+  ('Railay Beach', 'Thailand', 8.0104, 98.8372, 'beach', 'Rock-climbing and beach peninsula accessible only by boat, near Krabi.', 'Krabi'),
+
+  ('Uluru', 'Australia', -25.3444, 131.0369, 'natural', 'Sacred sandstone monolith in the Red Centre, a defining Australian landmark.', 'Alice Springs'),
+  ('Great Barrier Reef (Cairns)', 'Australia', -16.9203, 145.7710, 'natural', 'World''s largest coral reef system, most commonly accessed via Cairns.', 'Cairns'),
+  ('Blue Mountains', 'Australia', -33.7022, 150.3111, 'natural', 'Eucalyptus-forested escarpment and the Three Sisters rock formation, a day trip from Sydney.', 'Sydney'),
+
+  ('Palawan (El Nido)', 'Philippines', 11.1949, 119.4085, 'island', 'Limestone karst lagoons and beaches on Palawan''s northern tip.', 'Puerto Princesa'),
+  ('Chocolate Hills', 'Philippines', 9.8264, 124.1608, 'natural', 'Over a thousand cone-shaped grass-covered hills on Bohol island.', 'Tagbilaran');

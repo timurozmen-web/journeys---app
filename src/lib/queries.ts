@@ -345,6 +345,20 @@ function mapPromotion(p: any): Promotion {
   };
 }
 
+export interface Landmark {
+  name: string; country: string; lat: number; lng: number;
+  category: 'natural' | 'cultural' | 'historic' | 'beach' | 'island';
+  description: string; nearestCity: string | null;
+}
+export async function fetchLandmarksForCountry(country: string): Promise<Landmark[]> {
+  const { data, error } = await supabase.from('landmarks').select('*').eq('country', country);
+  if (error) throw error;
+  return (data ?? []).map((l) => ({
+    name: l.name, country: l.country, lat: l.lat, lng: l.lng,
+    category: l.category, description: l.description, nearestCity: l.nearest_city,
+  }));
+}
+
 export async function fetchPromotions(): Promise<Promotion[]> {
   const { data, error } = await supabase.from('promotions').select('*').order('start_date', { ascending: false, nullsFirst: false });
   if (error) throw error;

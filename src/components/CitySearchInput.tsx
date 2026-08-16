@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { loadWorldCities, type WorldCity } from '../data/worldCitiesLoader';
+import { fetchLandmarksForCountry, type Landmark } from '../lib/queries';
 
 // Common destination names that don't match the actual city name in the
 // dataset (Okinawa is the island/prefecture; Naha is the city). Small and
@@ -19,12 +20,17 @@ export function CitySearchInput({
 }) {
   const [query, setQuery] = useState('');
   const [allCities, setAllCities] = useState<WorldCity[] | null>(null);
+  const [landmarks, setLandmarks] = useState<Landmark[]>([]);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadWorldCities().then(setAllCities);
   }, []);
+
+  useEffect(() => {
+    fetchLandmarksForCountry(country).then(setLandmarks).catch(() => setLandmarks([]));
+  }, [country]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -36,14 +42,23 @@ export function CitySearchInput({
 
   const selectedNames = new Set(selected.map((c) => c.name));
   const inCountry = (allCities ?? []).filter((c) => c.country === country && !selectedNames.has(c.name));
+  const availableLandmarks = landmarks.filter((l) => !selectedNames.has(l.name));
   const q = query.trim().toLowerCase();
   const aliasTarget = CITY_ALIASES[q];
-  const matches = q
+  const cityMatches = q
     ? inCountry.filter((c) => c.name.toLowerCase().startsWith(q) || (aliasTarget && c.name === aliasTarget)).slice(0, 8)
-    : inCountry.slice(0, 8); // already sorted by population, so this is "biggest cities first"
+    : inCountry.slice(0, 6); // already sorted by population, so this is "biggest cities first"
+  const landmarkMatches = q
+    ? availableLandmarks.filter((l) => l.name.toLowerCase().includes(q)).slice(0, 4)
+    : availableLandmarks.slice(0, 3);
 
   function addCity(city: WorldCity) {
     onChange([...selected, city]);
+    setQuery('');
+    setOpen(false);
+  }
+  function addLandmark(l: Landmark) {
+    onChange([...selected, { name: l.name, lat: l.lat, lng: l.lng, country: l.country, pop: 0 }]);
     setQuery('');
     setOpen(false);
   }
@@ -87,15 +102,15 @@ export function CitySearchInput({
         }}
       />
 
-      {open && matches.length > 0 && (
+      {open && (cityMatches.length > 0 || landmarkMatches.length > 0) && (
         <div
           style={{
             position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 10,
             background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 10,
-            boxShadow: '0 8px 24px rgba(0,0,0,.12)', maxHeight: 220, overflowY: 'auto',
+            boxShadow: '0 8px 24px rgba(0,0,0,.12)', maxHeight: 260, overflowY: 'auto',
           }}
         >
-          {matches.map((c) => (
+          {cityMatches.map((c) => (
             <button
               key={c.name}
               onClick={() => addCity(c)}
@@ -106,6 +121,27 @@ export function CitySearchInput({
               }}
             >
               {c.name}
+            </button>
+          ))}
+          {landmarkMatches.map((l) => (
+            <button
+              key={l.name}
+              onClick={() => addLandmark(l)}
+              style={{
+                display: 'block', width: '100%', textAlign: 'left', padding: '9px 12px',
+                background: 'none', border: 'none', borderBottom: '1px solid var(--line)', cursor: 'pointer',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 13, color: 'var(--ink)' }}>{l.name}</span>
+                <span style={{
+                  fontSize: 9.5, fontWeight: 700, color: 'var(--brand)', background: 'rgba(91,63,166,.1)',
+                  padding: '1px 6px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '.04em',
+                }}>
+                  {l.category}
+                </span>
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 2 }}>{l.description}</div>
             </button>
           ))}
         </div>
