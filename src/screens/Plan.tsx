@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BackIcon, PlaneIcon, TrainIcon, CarIcon, GripIcon } from '../components/Icons';
+import { BackIcon, PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon } from '../components/Icons';
+import { googleFlightsSearchUrl, googleHotelsSearchUrl } from '../lib/externalSearchLinks';
 import { planningCountries, PLANNING_AIRPORTS_BY_IATA } from '../data/planningAirports';
 import { allPlanningCountries } from '../data/globalAirportsLoader';
 import { planLeg, STRONG_RAIL_COUNTRIES, estimateTravelHours, estimateOverheadHours, type LegPlan } from '../lib/tripPlanner';
@@ -204,6 +205,26 @@ export function Plan() {
   const hotelOptions = totalNights > 0 ? planHotelOptions(loyaltyProgrammes, allHotels, totalNights) : [];
   const bestHotel = hotelOptions[0] ?? null;
 
+  // Real calendar dates for each city, computed from cumulative nights
+  // starting at the given date -- this is what turns "4 nights in Tokyo"
+  // into an actual bookable check-in/check-out. Shared by both the flight
+  // search links and the save-to-trips flow, rather than computed twice.
+  const cityDates = (() => {
+    if (!startDate) return cities.map((c) => ({ city: c, checkIn: null as string | null }));
+    let cursor = new Date(startDate + 'T00:00:00');
+    return cities.map((c) => {
+      const checkIn = cursor.toISOString().slice(0, 10);
+      cursor = new Date(cursor.getTime() + c.nights * 86400000);
+      return { city: c, checkIn };
+    });
+  })();
+  const tripEndDate = (() => {
+    if (!startDate) return null;
+    let cursor = new Date(startDate + 'T00:00:00');
+    for (const c of cities) cursor = new Date(cursor.getTime() + c.nights * 86400000);
+    return cursor.toISOString().slice(0, 10);
+  })();
+
   async function saveToTrips() {
     if (!startDate || cities.length === 0) return;
     setSaving(true);
@@ -211,17 +232,7 @@ export function Plan() {
     try {
       const countries = [...new Set(cities.map((c) => c.country))];
       const title = countries.join(' & ');
-
-      // Real calendar dates for each city, computed from cumulative nights
-      // starting at the given date -- this is what turns "4 nights in
-      // Tokyo" into an actual bookable check-in/check-out.
-      let cursor = new Date(startDate + 'T00:00:00');
-      const cityDates = cities.map((c) => {
-        const checkIn = cursor.toISOString().slice(0, 10);
-        cursor = new Date(cursor.getTime() + c.nights * 86400000);
-        return { city: c, checkIn };
-      });
-      const endDate = cursor.toISOString().slice(0, 10);
+      const endDate = tripEndDate!;
 
       const tripId = await addTrip({ title, start: startDate, end: endDate, tripType: 'leisure', notes: 'Created from Plan' });
 
@@ -229,7 +240,7 @@ export function Plan() {
         await addHotel({
           name: bestHotel ? `${bestHotel.programme} property` : `Hotel in ${city.city}`,
           country: city.country, city: city.city, brand: bestHotel?.programme ?? 'Independent',
-          nights: city.nights, date: checkIn, status: 'needs-confirm',
+          nights: city.nights, date: checkIn!, status: 'needs-confirm',
           total: bestHotel ? Math.round(bestHotel.estimatedNightlyGBP * city.nights) : null,
           card: null, category: 'Premium', tripId,
           benefitValue: null, benefitNote: null, bookingChannel: null, roomType: null, rateType: null,
@@ -256,7 +267,7 @@ export function Plan() {
         const toAirport = airportFor(cities[i + 1]);
         if (!fromAirport || !toAirport) continue; // no reliable airport code -- skip rather than insert bad data
         await addFlight({
-          date: cityDates[i + 1].checkIn, from: fromAirport, to: toAirport,
+          date: cityDates[i + 1].checkIn!, from: fromAirport, to: toAirport,
           airline: 'TBC', flightNo: null, cabin: 'Economy', status: 'needs-confirm',
           cost: Math.round(legs[i].estimatedCostGBP), award: false, overnight: false, tripId,
         });
@@ -389,7 +400,18 @@ export function Plan() {
           <div className="stack" style={{ display: 'grid', gap: 10 }}>
             {home && cities.length > 0 && (
               <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)' }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700 }}>{home.city} → {cities[0].city}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>{home.city} → {cities[0].city}</div>
+                  {cityAirports[cities[0].city] && (
+                    <a
+                      href={googleFlightsSearchUrl(homeAirport, cityAirports[cities[0].city].airport.iata, startDate || null)}
+                      target="_blank" rel="noopener noreferrer"
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
+                    >
+                      Search <ExternalLinkIcon size={12} color="var(--brand)" />
+                    </a>
+                  )}
+                </div>
                 <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 3 }}>
                   {Math.round(outboundKm).toLocaleString()} km · flight · est. {formatHours(estimateTravelHours(outboundKm, 'flight'))} flying + ~{formatHours(estimateOverheadHours('flight'))} airports
                 </div>
@@ -441,6 +463,13 @@ export function Plan() {
                           {transfer.airport.name || transfer.airport.city} ({transfer.airport.iata}) · {Math.round(transfer.distanceKm)} km to centre · ~{Math.round((transfer.distanceKm / 45) * 60 + 10)} min transfer
                         </div>
                       )}
+                      <a
+                        href={googleHotelsSearchUrl(c.city, c.country, cityDates[i]?.checkIn ?? null, c.nights)}
+                        target="_blank" rel="noopener noreferrer"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', marginTop: 8 }}
+                      >
+                        Search hotels <ExternalLinkIcon size={11} color="var(--brand)" />
+                      </a>
                     </div>
                   </div>
 
@@ -453,11 +482,24 @@ export function Plan() {
                       ) : (
                         <CarIcon size={16} color="var(--ink3)" />
                       )}
-                      <div style={{ fontSize: 11.5, color: 'var(--ink2)' }}>
+                      <div style={{ fontSize: 11.5, color: 'var(--ink2)', flex: 1 }}>
                         {Math.round(leg.distanceKm)} km · est. {formatHours(leg.estimatedTravelHours)}
                         {leg.estimatedOverheadHours > 0 && ` + ~${formatHours(leg.estimatedOverheadHours)} ${leg.recommendedMode === 'flight' ? 'airports' : 'station'}`}
                         · ~£{Math.round(leg.estimatedCostGBP)}
                       </div>
+                      {leg.recommendedMode === 'flight' && cityAirports[cities[i].city] && cityAirports[cities[i + 1].city] && (
+                        <a
+                          href={googleFlightsSearchUrl(
+                            cityAirports[cities[i].city].airport.iata,
+                            cityAirports[cities[i + 1].city].airport.iata,
+                            cityDates[i + 1]?.checkIn ?? null
+                          )}
+                          target="_blank" rel="noopener noreferrer"
+                          style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'var(--brand)', fontSize: 11, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
+                        >
+                          Search <ExternalLinkIcon size={11} color="var(--brand)" />
+                        </a>
+                      )}
                     </div>
                   )}
                 </div>
