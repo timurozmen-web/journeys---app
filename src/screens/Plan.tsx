@@ -64,6 +64,7 @@ export function Plan() {
   const [cityAirports, setCityAirports] = useState<Record<string, NearestAirportResult>>({});
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [mapFocus, setMapFocus] = useState<string | null>(null);
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   function handleDragStart(index: number, e: React.PointerEvent) {
@@ -193,6 +194,13 @@ export function Plan() {
   const domesticKm = legs.reduce((s, l) => s + l.distanceKm, 0);
   const domesticCost = legs.reduce((s, l) => s + l.estimatedCostGBP, 0);
   const totalNights = cities.reduce((s, c) => s + c.nights, 0);
+  const uniqueCountries = [...new Set(cities.map((c) => c.country))];
+  useEffect(() => {
+    if (mapFocus && !uniqueCountries.includes(mapFocus)) setMapFocus(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cities]);
+  const mapCities = mapFocus ? cities.filter((c) => c.country === mapFocus) : cities;
+  const mapHome = mapFocus ? null : (home ?? null); // the international leg isn't part of a single country's domestic view
   const hotelOptions = totalNights > 0 ? planHotelOptions(loyaltyProgrammes, allHotels, totalNights) : [];
   const bestHotel = hotelOptions[0] ?? null;
 
@@ -355,8 +363,20 @@ export function Plan() {
       {cities.length > 0 && (
         <>
           <div style={{ padding: '16px 20px 0' }}>
+            {uniqueCountries.length > 1 && (
+              <div className="catchip" style={{ margin: '0 0 10px' }}>
+                <button className={mapFocus === null ? 'won' : ''} onClick={() => setMapFocus(null)}>
+                  All
+                </button>
+                {uniqueCountries.map((c) => (
+                  <button key={c} className={mapFocus === c ? 'won' : ''} onClick={() => setMapFocus(c)}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
             <Suspense fallback={<div style={{ height: 220, background: '#DCE7F5', borderRadius: 16 }} />}>
-              <PlanMap home={home ?? null} cities={cities} />
+              <PlanMap home={mapHome} cities={mapCities} />
             </Suspense>
           </div>
 
