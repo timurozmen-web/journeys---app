@@ -1,9 +1,9 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BackIcon } from '../components/Icons';
+import { BackIcon, PlaneIcon, TrainIcon, CarIcon } from '../components/Icons';
 import { planningCountries, PLANNING_AIRPORTS_BY_IATA } from '../data/planningAirports';
 import { allPlanningCountries } from '../data/globalAirportsLoader';
-import { planLeg, STRONG_RAIL_COUNTRIES, type LegPlan } from '../lib/tripPlanner';
+import { planLeg, STRONG_RAIL_COUNTRIES, estimateTravelHours, estimateOverheadHours, type LegPlan } from '../lib/tripPlanner';
 import { nearestAirportToCity, type NearestAirportResult } from '../data/worldCitiesLoader';
 import { planHotelOptions } from '../lib/hotelPlanner';
 import { useLoyaltyProgrammes, useAllHotels } from '../lib/useLiveData';
@@ -331,7 +331,7 @@ export function Plan() {
               <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)' }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700 }}>{home.city} → {cities[0].city}</div>
                 <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 3 }}>
-                  {Math.round(outboundKm).toLocaleString()} km · flight · est. {formatHours(outboundKm / 800 + 3)}
+                  {Math.round(outboundKm).toLocaleString()} km · flight · est. {formatHours(estimateTravelHours(outboundKm, 'flight'))} flying + ~{formatHours(estimateOverheadHours('flight'))} airports
                 </div>
               </div>
             )}
@@ -362,11 +362,17 @@ export function Plan() {
 
                   {leg && (
                     <div style={{ padding: '8px 14px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 15 }}>
-                        {leg.recommendedMode === 'flight' ? '✈️' : leg.recommendedMode === 'rail' ? '🚄' : '🚗'}
-                      </span>
+                      {leg.recommendedMode === 'flight' ? (
+                        <PlaneIcon size={16} color="var(--ink3)" />
+                      ) : leg.recommendedMode === 'rail' ? (
+                        <TrainIcon size={16} color="var(--ink3)" />
+                      ) : (
+                        <CarIcon size={16} color="var(--ink3)" />
+                      )}
                       <div style={{ fontSize: 11.5, color: 'var(--ink2)' }}>
-                        {Math.round(leg.distanceKm)} km · est. {formatHours(leg.estimatedHours)} · ~£{Math.round(leg.estimatedCostGBP)}
+                        {Math.round(leg.distanceKm)} km · est. {formatHours(leg.estimatedTravelHours)}
+                        {leg.estimatedOverheadHours > 0 && ` + ~${formatHours(leg.estimatedOverheadHours)} ${leg.recommendedMode === 'flight' ? 'airports' : 'station'}`}
+                        · ~£{Math.round(leg.estimatedCostGBP)}
                       </div>
                     </div>
                   )}

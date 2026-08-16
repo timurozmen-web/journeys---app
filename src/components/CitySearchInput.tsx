@@ -1,6 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { loadWorldCities, type WorldCity } from '../data/worldCitiesLoader';
 
+// Common destination names that don't match the actual city name in the
+// dataset (Okinawa is the island/prefecture; Naha is the city). Small and
+// hand-curated -- extend as more gaps are found, rather than trying to
+// solve this generally.
+const CITY_ALIASES: Record<string, string> = {
+  okinawa: 'Naha',
+  bali: 'Denpasar',
+  tuscany: 'Florence',
+  provence: 'Marseille',
+};
+
 export function CitySearchInput({
   country, selected, onChange,
 }: {
@@ -25,8 +36,10 @@ export function CitySearchInput({
 
   const selectedNames = new Set(selected.map((c) => c.name));
   const inCountry = (allCities ?? []).filter((c) => c.country === country && !selectedNames.has(c.name));
-  const matches = query.trim()
-    ? inCountry.filter((c) => c.name.toLowerCase().startsWith(query.trim().toLowerCase())).slice(0, 8)
+  const q = query.trim().toLowerCase();
+  const aliasTarget = CITY_ALIASES[q];
+  const matches = q
+    ? inCountry.filter((c) => c.name.toLowerCase().startsWith(q) || (aliasTarget && c.name === aliasTarget)).slice(0, 8)
     : inCountry.slice(0, 8); // already sorted by population, so this is "biggest cities first"
 
   function addCity(city: WorldCity) {

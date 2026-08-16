@@ -9,21 +9,32 @@ export interface LegPlan {
   distanceKm: number; // exact, computed from real coordinates
   recommendedMode: TransportMode;
   rationale: string;
-  estimatedHours: number; // estimated, not looked up
+  estimatedTravelHours: number; // time actually moving -- flight/rail/road duration only
+  estimatedOverheadHours: number; // separate: airport/station time, both ends combined
   estimatedCostGBP: number; // estimated, not looked up
 }
 
-// Rough average speeds including the real overheads that dominate short
-// journeys -- airport check-in/security/transfers, or station access.
-// These are estimates and presented as such in the UI.
-const FLIGHT_CRUISE_KMH = 800;
-const FLIGHT_FIXED_OVERHEAD_H = 3; // check-in, security, boarding, taxi, baggage, both-end transfers
+// Flight time uses a fixed climb/descent allowance plus cruise time --
+// short flights spend proportionally more time climbing and descending
+// than cruising, so a flat cruise-speed-only calculation badly
+// underestimates short-haul routes and a flat "distance/speed" ratio
+// alone doesn't hold. Calibrated against several known real routes
+// (Sapporo-Seoul, London-NY, London-Dubai, Tokyo-Sydney).
+const FLIGHT_CRUISE_KMH = 780;
+const FLIGHT_CLIMB_DESCENT_H = 0.5;
+// Airport overhead is genuinely separate from flight time -- this is what
+// a flight-search tool's "duration" figure excludes. Kept modest since
+// door-to-door inconvenience (not gate-to-gate) is what actually matters
+// for trip planning, and most of it is check-in/security on departure
+// rather than arrival.
+const FLIGHT_OVERHEAD_H = 2;
+
 // High-speed rail (Shinkansen, TGV, Eurostar-class) genuinely averages
 // ~250km/h door-to-door on its core routes -- a single blended figure
 // underestimates these badly, so strong-rail countries use this instead.
 const HIGH_SPEED_RAIL_KMH = 250;
 const CONVENTIONAL_RAIL_KMH = 110;
-const RAIL_FIXED_OVERHEAD_H = 0.75;
+const RAIL_OVERHEAD_H = 0.5;
 const ROAD_AVG_KMH = 80;
 
 export function recommendMode(distanceKm: number, railLikely: boolean): { mode: TransportMode; rationale: string } {
@@ -39,12 +50,16 @@ export function recommendMode(distanceKm: number, railLikely: boolean): { mode: 
   return { mode: 'flight', rationale: 'Long enough that flying wins clearly, even allowing for airport overhead.' };
 }
 
-export function estimateHours(distanceKm: number, mode: TransportMode, highSpeedRail = false): number {
-  if (mode === 'flight') return distanceKm / FLIGHT_CRUISE_KMH + FLIGHT_FIXED_OVERHEAD_H;
-  if (mode === 'rail') {
-    return distanceKm / (highSpeedRail ? HIGH_SPEED_RAIL_KMH : CONVENTIONAL_RAIL_KMH) + RAIL_FIXED_OVERHEAD_H;
-  }
+export function estimateTravelHours(distanceKm: number, mode: TransportMode, highSpeedRail = false): number {
+  if (mode === 'flight') return distanceKm / FLIGHT_CRUISE_KMH + FLIGHT_CLIMB_DESCENT_H;
+  if (mode === 'rail') return distanceKm / (highSpeedRail ? HIGH_SPEED_RAIL_KMH : CONVENTIONAL_RAIL_KMH);
   return distanceKm / ROAD_AVG_KMH;
+}
+
+export function estimateOverheadHours(mode: TransportMode): number {
+  if (mode === 'flight') return FLIGHT_OVERHEAD_H;
+  if (mode === 'rail') return RAIL_OVERHEAD_H;
+  return 0;
 }
 
 // Very rough per-km costs. Real fares vary enormously by route, timing and
@@ -94,7 +109,8 @@ export function planLeg(
     distanceKm,
     recommendedMode: mode,
     rationale,
-    estimatedHours: estimateHours(distanceKm, mode, railLikely),
+    estimatedTravelHours: estimateTravelHours(distanceKm, mode, railLikely),
+    estimatedOverheadHours: estimateOverheadHours(mode),
     estimatedCostGBP: estimateCostGBP(distanceKm, mode),
   };
 }

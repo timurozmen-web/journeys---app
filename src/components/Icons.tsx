@@ -83,6 +83,12 @@ export const HotelIcon = wrap(
 export const PlaneIcon = wrap(
   '<path d="M2 12h6l4-7 2 1-2 6h5l2-3h2l-1.5 4L21 16h-2l-2-3h-5l2 6-2 1-4-7H2z"/>'
 );
+export const TrainIcon = wrap(
+  '<rect x="5" y="3" width="14" height="14" rx="4"/><path d="M5 13h14M9 17l-2 4M15 17l2 4"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/>'
+);
+export const CarIcon = wrap(
+  '<path d="M4 16V11l2-5h12l2 5v5"/><path d="M4 16h16M6 16v2M18 16v2"/><circle cx="7.5" cy="16" r="1.5"/><circle cx="16.5" cy="16" r="1.5"/>'
+);
 export const BackIcon = wrap('<path d="M15 5 8 12l7 7"/>');
 export const CameraIcon = wrap(
   '<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>'
