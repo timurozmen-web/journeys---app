@@ -1,6 +1,6 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BackIcon, PlaneIcon, TrainIcon, CarIcon } from '../components/Icons';
+import { BackIcon, PlaneIcon, TrainIcon, CarIcon, GripIcon } from '../components/Icons';
 import { planningCountries, PLANNING_AIRPORTS_BY_IATA } from '../data/planningAirports';
 import { allPlanningCountries } from '../data/globalAirportsLoader';
 import { planLeg, STRONG_RAIL_COUNTRIES, estimateTravelHours, estimateOverheadHours, type LegPlan } from '../lib/tripPlanner';
@@ -62,6 +62,41 @@ export function Plan() {
   const [saveError, setSaveError] = useState('');
   const [allCountries, setAllCountries] = useState<string[]>(planningCountries());
   const [cityAirports, setCityAirports] = useState<Record<string, NearestAirportResult>>({});
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  function handleDragStart(index: number, e: React.PointerEvent) {
+    setDraggedIndex(index);
+    setDragOverIndex(index);
+    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+  }
+
+  function handleDragMove(e: React.PointerEvent) {
+    if (draggedIndex === null) return;
+    for (let i = 0; i < rowRefs.current.length; i++) {
+      const el = rowRefs.current[i];
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+        if (i !== dragOverIndex) setDragOverIndex(i);
+        break;
+      }
+    }
+  }
+
+  function handleDragEnd() {
+    if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
+      setCities((prev) => {
+        const next = [...prev];
+        const [moved] = next.splice(draggedIndex, 1);
+        next.splice(dragOverIndex, 0, moved);
+        return next;
+      });
+    }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  }
 
   // Once cities are suggested, verify the real nearest airport for each --
   // more reliable than trusting Claude's own airport guess, and works for
@@ -326,6 +361,11 @@ export function Plan() {
           </div>
 
           <div className="sect"><h2>Route</h2></div>
+          {cities.length > 1 && (
+            <div style={{ padding: '0 20px 8px', fontSize: 11.5, color: 'var(--ink3)' }}>
+              Drag the grip to reorder stops
+            </div>
+          )}
           <div className="stack" style={{ display: 'grid', gap: 10 }}>
             {home && cities.length > 0 && (
               <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)' }}>
@@ -347,17 +387,41 @@ export function Plan() {
                       {c.country}
                     </div>
                   )}
-                  <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                      <div style={{ fontSize: 14, fontWeight: 800 }}>{c.city}</div>
-                      <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--brand)' }}>{c.nights}n</div>
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 4, lineHeight: 1.5 }}>{c.why}</div>
-                    {transfer && (
-                      <div style={{ fontSize: 11.5, color: 'var(--ink3)', marginTop: 6 }}>
-                        {transfer.airport.name || transfer.airport.city} ({transfer.airport.iata}) · {Math.round(transfer.distanceKm)} km to centre · ~{Math.round((transfer.distanceKm / 45) * 60 + 10)} min transfer
+                  <div
+                    ref={(el) => { rowRefs.current[i] = el; }}
+                    style={{
+                      padding: '12px 14px', borderRadius: 12, background: 'var(--card)',
+                      border: dragOverIndex === i && draggedIndex !== null && draggedIndex !== i ? '2px solid var(--brand)' : '1px solid var(--line)',
+                      display: 'flex', alignItems: 'flex-start', gap: 8,
+                      opacity: draggedIndex === i ? 0.4 : 1,
+                      transition: 'opacity .15s, border-color .15s',
+                    }}
+                  >
+                    <button
+                      onPointerDown={(e) => handleDragStart(i, e)}
+                      onPointerMove={handleDragMove}
+                      onPointerUp={handleDragEnd}
+                      onPointerCancel={handleDragEnd}
+                      aria-label={`Reorder ${c.city}`}
+                      style={{
+                        background: 'none', border: 'none', padding: '4px 2px', cursor: 'grab',
+                        touchAction: 'none', flexShrink: 0, marginTop: 2,
+                      }}
+                    >
+                      <GripIcon size={18} color="var(--ink3)" />
+                    </button>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+                        <div style={{ fontSize: 14, fontWeight: 800 }}>{c.city}</div>
+                        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--brand)' }}>{c.nights}n</div>
                       </div>
-                    )}
+                      <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 4, lineHeight: 1.5 }}>{c.why}</div>
+                      {transfer && (
+                        <div style={{ fontSize: 11.5, color: 'var(--ink3)', marginTop: 6 }}>
+                          {transfer.airport.name || transfer.airport.city} ({transfer.airport.iata}) · {Math.round(transfer.distanceKm)} km to centre · ~{Math.round((transfer.distanceKm / 45) * 60 + 10)} min transfer
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {leg && (

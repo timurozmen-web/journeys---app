@@ -95,3 +95,6 @@ export const CameraIcon = wrap(
 );
 export const ChevronDownIcon = wrap('<path d="m6 9 6 6 6-6"/>');
 export const EditIcon = wrap('<path d="M17 3a2.85 2.65 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>');
+export const GripIcon = wrap(
+  '<circle cx="9" cy="6" r="1.3"/><circle cx="15" cy="6" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="9" cy="18" r="1.3"/><circle cx="15" cy="18" r="1.3"/>'
+);
