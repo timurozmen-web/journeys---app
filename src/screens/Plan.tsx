@@ -9,6 +9,8 @@ import { planHotelOptions } from '../lib/hotelPlanner';
 import { useLoyaltyProgrammes, useAllHotels } from '../lib/useLiveData';
 import { haversineKm } from '../lib/travelStats';
 import { addTrip, addHotel, addFlight } from '../lib/queries';
+import { CitySearchInput } from '../components/CitySearchInput';
+import type { WorldCity } from '../data/worldCitiesLoader';
 
 const PlanMap = lazy(() => import('../components/PlanMap').then((m) => ({ default: m.PlanMap })));
 
@@ -28,6 +30,7 @@ interface Destination {
   id: string;
   country: string;
   nights: string;
+  cities: WorldCity[];
 }
 
 const inputStyle: React.CSSProperties = {
@@ -49,7 +52,7 @@ export function Plan() {
   const navigate = useNavigate();
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
   const { data: allHotels } = useAllHotels();
-  const [destinations, setDestinations] = useState<Destination[]>([{ id: 'd0', country: 'Japan', nights: '12' }]);
+  const [destinations, setDestinations] = useState<Destination[]>([{ id: 'd0', country: 'Japan', nights: '12', cities: [] }]);
   const [homeAirport, setHomeAirport] = useState('LHR');
   const [cities, setCities] = useState<SuggestedCity[]>([]);
   const [loading, setLoading] = useState(false);
@@ -85,7 +88,7 @@ export function Plan() {
   }, []);
 
   function addDestination() {
-    setDestinations((d) => [...d, { id: `d${Date.now()}`, country: allCountries[0] ?? 'Japan', nights: '5' }]);
+    setDestinations((d) => [...d, { id: `d${Date.now()}`, country: allCountries[0] ?? 'Japan', nights: '5', cities: [] }]);
   }
   function removeDestination(id: string) {
     setDestinations((d) => d.filter((x) => x.id !== id));
@@ -101,12 +104,27 @@ export function Plan() {
       // Each country's cities are suggested independently, then joined in
       // the order the user added them -- keeps each request focused and
       // means one slow/failed country doesn't block the others we already got.
+      // Destinations where the user picked their own cities skip Claude
+      // entirely -- their explicit choice takes priority over a suggestion.
       const results: SuggestedCity[] = [];
       for (const dest of destinations) {
+        const totalNights = dest.nights ? parseInt(dest.nights, 10) : 10;
+
+        if (dest.cities.length > 0) {
+          const perCity = Math.max(1, Math.round(totalNights / dest.cities.length));
+          for (const c of dest.cities) {
+            results.push({
+              city: c.name, country: dest.country, lat: c.lat, lng: c.lng,
+              nights: perCity, why: 'Selected by you', nearestAirport: null,
+            });
+          }
+          continue;
+        }
+
         const res = await fetch('/.netlify/functions/suggest-cities', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ country: dest.country, nights: dest.nights ? parseInt(dest.nights, 10) : 10 }),
+          body: JSON.stringify({ country: dest.country, nights: totalNights }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(`${dest.country}: ${data.error || 'Could not get suggestions'}`);
@@ -227,34 +245,43 @@ export function Plan() {
 
       <div style={{ padding: '0 20px', display: 'grid', gap: 10 }}>
         {destinations.map((dest, i) => (
-          <div key={dest.id} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 30px', gap: 8, alignItems: 'end' }}>
-            <div>
-              {i === 0 && <label style={labelStyle}>Destination</label>}
-              <select
-                style={inputStyle}
-                value={dest.country}
-                onChange={(e) => { updateDestination(dest.id, { country: e.target.value }); setCities([]); }}
-              >
-                {allCountries.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+          <div key={dest.id}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 30px', gap: 8, alignItems: 'end' }}>
+              <div>
+                {i === 0 && <label style={labelStyle}>Destination</label>}
+                <select
+                  style={inputStyle}
+                  value={dest.country}
+                  onChange={(e) => { updateDestination(dest.id, { country: e.target.value, cities: [] }); setCities([]); }}
+                >
+                  {allCountries.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                {i === 0 && <label style={labelStyle}>Nights</label>}
+                <input
+                  type="number" style={inputStyle} value={dest.nights}
+                  onChange={(e) => updateDestination(dest.id, { nights: e.target.value })}
+                />
+              </div>
+              {destinations.length > 1 ? (
+                <button
+                  onClick={() => { removeDestination(dest.id); setCities([]); }}
+                  style={{ height: 42, background: 'var(--card2)', border: 'none', borderRadius: 8, color: 'var(--ink3)', fontSize: 15, cursor: 'pointer' }}
+                >
+                  ✕
+                </button>
+              ) : <div />}
             </div>
-            <div>
-              {i === 0 && <label style={labelStyle}>Nights</label>}
-              <input
-                type="number" style={inputStyle} value={dest.nights}
-                onChange={(e) => updateDestination(dest.id, { nights: e.target.value })}
+            <div style={{ marginTop: 8 }}>
+              <CitySearchInput
+                country={dest.country}
+                selected={dest.cities}
+                onChange={(cities) => { updateDestination(dest.id, { cities }); setCities([]); }}
               />
             </div>
-            {destinations.length > 1 ? (
-              <button
-                onClick={() => { removeDestination(dest.id); setCities([]); }}
-                style={{ height: 42, background: 'var(--card2)', border: 'none', borderRadius: 8, color: 'var(--ink3)', fontSize: 15, cursor: 'pointer' }}
-              >
-                ✕
-              </button>
-            ) : <div />}
           </div>
         ))}
 
