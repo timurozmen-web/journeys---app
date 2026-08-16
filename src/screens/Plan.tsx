@@ -356,6 +356,16 @@ export function Plan() {
           </select>
         </div>
 
+        <div>
+          <label style={labelStyle}>Departure date</label>
+          <input type="date" style={inputStyle} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          {startDate && tripEndDate && (
+            <div style={{ fontSize: 11.5, color: 'var(--ink3)', marginTop: 4 }}>
+              Returns {tripEndDate} · every stop's dates below are worked out from this
+            </div>
+          )}
+        </div>
+
         <button
           onClick={suggest}
           disabled={loading}
@@ -402,15 +412,13 @@ export function Plan() {
               <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700 }}>{home.city} → {cities[0].city}</div>
-                  {cityAirports[cities[0].city] && (
-                    <a
-                      href={googleFlightsSearchUrl(homeAirport, cityAirports[cities[0].city].airport.iata, startDate || null)}
-                      target="_blank" rel="noopener noreferrer"
-                      style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
-                    >
-                      Search <ExternalLinkIcon size={12} color="var(--brand)" />
-                    </a>
-                  )}
+                  <a
+                    href={googleFlightsSearchUrl(home?.city ?? 'London', cities[0].city, startDate || null)}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
+                  >
+                    Search <ExternalLinkIcon size={12} color="var(--brand)" />
+                  </a>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 3 }}>
                   {Math.round(outboundKm).toLocaleString()} km · flight · est. {formatHours(estimateTravelHours(outboundKm, 'flight'))} flying + ~{formatHours(estimateOverheadHours('flight'))} airports
@@ -487,13 +495,9 @@ export function Plan() {
                         {leg.estimatedOverheadHours > 0 && ` + ~${formatHours(leg.estimatedOverheadHours)} ${leg.recommendedMode === 'flight' ? 'airports' : 'station'}`}
                         · ~£{Math.round(leg.estimatedCostGBP)}
                       </div>
-                      {leg.recommendedMode === 'flight' && cityAirports[cities[i].city] && cityAirports[cities[i + 1].city] && (
+                      {leg.recommendedMode === 'flight' && (
                         <a
-                          href={googleFlightsSearchUrl(
-                            cityAirports[cities[i].city].airport.iata,
-                            cityAirports[cities[i + 1].city].airport.iata,
-                            cityDates[i + 1]?.checkIn ?? null
-                          )}
+                          href={googleFlightsSearchUrl(cities[i].city, cities[i + 1].city, cityDates[i + 1]?.checkIn ?? null)}
                           target="_blank" rel="noopener noreferrer"
                           style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'var(--brand)', fontSize: 11, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
                         >
@@ -576,10 +580,15 @@ export function Plan() {
           <div className="stack" style={{ marginTop: 4 }}>
             <div className="card">
               <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 8 }}>Save this plan as a trip</div>
-              <input
-                type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-                style={{ ...inputStyle, marginBottom: 10 }}
-              />
+              {!startDate ? (
+                <div style={{ fontSize: 12.5, color: 'var(--ink2)', marginBottom: 10 }}>
+                  Set a departure date above to save this as a trip.
+                </div>
+              ) : (
+                <div style={{ fontSize: 12.5, color: 'var(--ink2)', marginBottom: 10 }}>
+                  Departing {startDate}, returning {tripEndDate}.
+                </div>
+              )}
               <button
                 onClick={saveToTrips}
                 disabled={!startDate || saving}

@@ -5,9 +5,9 @@
 // since neither service offers one -- worth a quick confirm that these
 // still open correctly, as Google doesn't guarantee the format long-term.
 
-export function googleFlightsSearchUrl(fromIata: string, toIata: string, dateISO: string | null): string {
+export function googleFlightsSearchUrl(fromCity: string, toCity: string, dateISO: string | null): string {
   const dateText = dateISO ? ` on ${dateISO}` : '';
-  const query = `Flights from ${fromIata} to ${toIata}${dateText}`;
+  const query = `One-way flights from ${fromCity} to ${toCity}${dateText}`;
   return `https://www.google.com/travel/flights?q=${encodeURIComponent(query)}`;
 }
 
