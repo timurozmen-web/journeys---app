@@ -201,6 +201,15 @@ export function Plan() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cities]);
   const mapCities = mapFocus ? cities.filter((c) => c.country === mapFocus) : cities;
+  const mapLegs: LegPlan[] = mapFocus
+    ? (() => {
+        const out: LegPlan[] = [];
+        for (let i = 0; i < mapCities.length - 1; i++) {
+          out.push(planLeg(mapCities[i], mapCities[i + 1], STRONG_RAIL_COUNTRIES.has(mapFocus)));
+        }
+        return out;
+      })()
+    : legs;
   const mapHome = mapFocus ? null : (home ?? null); // the international leg isn't part of a single country's domestic view
   const hotelOptions = totalNights > 0 ? planHotelOptions(loyaltyProgrammes, allHotels, totalNights) : [];
   const bestHotel = hotelOptions[0] ?? null;
@@ -384,7 +393,7 @@ export function Plan() {
       {cities.length > 0 && (
         <>
           <div style={{ padding: '16px 20px 0' }}>
-            {uniqueCountries.length > 1 && (
+            {cities.length > 1 && (
               <div className="catchip" style={{ margin: '0 0 10px' }}>
                 <button className={mapFocus === null ? 'won' : ''} onClick={() => setMapFocus(null)}>
                   All
@@ -397,7 +406,21 @@ export function Plan() {
               </div>
             )}
             <Suspense fallback={<div style={{ height: 220, background: '#DCE7F5', borderRadius: 16 }} />}>
-              <PlanMap home={mapHome} cities={mapCities} />
+              <PlanMap
+                home={mapHome}
+                cities={mapCities}
+                domesticLegs={mapLegs.map((l) => ({ mode: l.recommendedMode, distanceKm: l.distanceKm, hours: l.estimatedTravelHours }))}
+                internationalLeg={
+                  !mapFocus && home && cities.length > 0
+                    ? { mode: 'flight', distanceKm: outboundKm, hours: estimateTravelHours(outboundKm, 'flight') }
+                    : null
+                }
+                onCityTap={(i) => {
+                  const cityName = mapCities[i]?.city;
+                  const realIndex = cities.findIndex((c) => c.city === cityName);
+                  if (realIndex >= 0) rowRefs.current[realIndex]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }}
+              />
             </Suspense>
           </div>
 
