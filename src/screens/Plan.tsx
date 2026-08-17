@@ -27,6 +27,11 @@ interface SuggestedCity {
   nearestAirport: string | null;
 }
 
+interface SeasonalGuidance {
+  months: { month: string; priceLevel: 'low' | 'medium' | 'high'; note: string }[];
+  summary: string;
+}
+
 interface Destination {
   id: string;
   country: string;
@@ -63,6 +68,8 @@ export function Plan() {
   const [saveError, setSaveError] = useState('');
   const [allCountries, setAllCountries] = useState<string[]>(planningCountries());
   const [cityAirports, setCityAirports] = useState<Record<string, NearestAirportResult>>({});
+  const [seasonalGuidance, setSeasonalGuidance] = useState<Record<string, SeasonalGuidance>>({});
+  const [loadingSeasonal, setLoadingSeasonal] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [mapFocus, setMapFocus] = useState<string | null>(null);
@@ -170,6 +177,29 @@ export function Plan() {
         }
       }
       setCities(results);
+
+      // Seasonal guidance fetched independently per country -- a failure
+      // here shouldn't block the trip planning that already succeeded.
+      setLoadingSeasonal(true);
+      Promise.all(
+        destinations.map(async (dest) => {
+          try {
+            const res = await fetch('/.netlify/functions/seasonal-guidance', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ country: dest.country }),
+            });
+            const data = await res.json();
+            return res.ok ? ([dest.country, data] as const) : null;
+          } catch {
+            return null;
+          }
+        })
+      ).then((results) => {
+        const entries = results.filter((r): r is [string, SeasonalGuidance] => r !== null);
+        setSeasonalGuidance(Object.fromEntries(entries));
+        setLoadingSeasonal(false);
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -554,6 +584,49 @@ export function Plan() {
               </div>
             )}
           </div>
+
+          {(loadingSeasonal || Object.keys(seasonalGuidance).length > 0) && (
+            <>
+              <div className="sect"><h2>Best time to go</h2></div>
+              <div className="stack" style={{ display: 'grid', gap: 12 }}>
+                {loadingSeasonal && Object.keys(seasonalGuidance).length === 0 && (
+                  <div style={{ fontSize: 12.5, color: 'var(--ink3)' }}>Checking seasonal patterns…</div>
+                )}
+                {destinations.map((dest) => {
+                  const g = seasonalGuidance[dest.country];
+                  if (!g) return null;
+                  return (
+                    <div key={dest.country} className="card">
+                      <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 8 }}>{dest.country}</div>
+                      <div style={{ display: 'flex', gap: 3 }}>
+                        {g.months.map((m) => (
+                          <div key={m.month} style={{ flex: 1, textAlign: 'center' }} title={m.note}>
+                            <div
+                              style={{
+                                height: 28, borderRadius: 5,
+                                background: m.priceLevel === 'high' ? 'var(--red)' : m.priceLevel === 'medium' ? 'var(--amber)' : 'var(--green)',
+                                opacity: m.priceLevel === 'high' ? 0.85 : m.priceLevel === 'medium' ? 0.6 : 0.5,
+                              }}
+                            />
+                            <div style={{ fontSize: 8.5, color: 'var(--ink3)', marginTop: 3, fontWeight: 700 }}>{m.month}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', gap: 12, marginTop: 8, fontSize: 10, color: 'var(--ink3)' }}>
+                        <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: 'var(--green)', opacity: 0.5, marginRight: 4 }} />Lower</span>
+                        <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: 'var(--amber)', opacity: 0.6, marginRight: 4 }} />Medium</span>
+                        <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: 'var(--red)', opacity: 0.85, marginRight: 4 }} />Higher</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 10, lineHeight: 1.5 }}>{g.summary}</div>
+                      <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 8, fontStyle: 'italic' }}>
+                        General seasonal guidance, not live pricing -- real fares vary by route and booking time.
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
 
           {hotelOptions.length > 0 && (
             <>
