@@ -447,11 +447,6 @@ export function Plan() {
                     ? { mode: 'flight', distanceKm: outboundKm, hours: estimateTravelHours(outboundKm, 'flight') }
                     : null
                 }
-                onCityTap={(i) => {
-                  const cityName = mapCities[i]?.city;
-                  const realIndex = cities.findIndex((c) => c.city === cityName);
-                  if (realIndex >= 0) rowRefs.current[realIndex]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }}
               />
             </Suspense>
           </div>
