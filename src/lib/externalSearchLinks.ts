@@ -5,13 +5,23 @@
 // since neither service offers one -- worth a quick confirm that these
 // still open correctly, as Google doesn't guarantee the format long-term.
 
+export type StopsFilter = 'any' | 'nonstop' | 'one-stop';
+
+export interface FlightSearchFilters {
+  stops?: StopsFilter;
+  airline?: string; // free text, e.g. "British Airways" -- reasonably well parsed by Google's natural-language search, but less firmly confirmed than the "nonstop" keyword
+}
+
 export function googleFlightsSearchUrl(
-  fromCity: string, toCity: string, departDateISO: string | null, returnDateISO?: string | null
+  fromCity: string, toCity: string, departDateISO: string | null, returnDateISO?: string | null,
+  filters?: FlightSearchFilters
 ): string {
   const departText = departDateISO ? ` on ${departDateISO}` : '';
+  const stopsText = filters?.stops === 'nonstop' ? 'nonstop ' : filters?.stops === 'one-stop' ? '1 stop or fewer ' : '';
+  const airlineText = filters?.airline ? ` on ${filters.airline}` : '';
   const query = returnDateISO
-    ? `Return flights from ${fromCity} to ${toCity}${departText} returning ${returnDateISO}`
-    : `One-way flights from ${fromCity} to ${toCity}${departText}`;
+    ? `Return ${stopsText}flights from ${fromCity} to ${toCity}${airlineText}${departText} returning ${returnDateISO}`
+    : `One-way ${stopsText}flights from ${fromCity} to ${toCity}${airlineText}${departText}`;
   return `https://www.google.com/travel/flights?q=${encodeURIComponent(query)}`;
 }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BackIcon, PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon } from '../components/Icons';
-import { googleFlightsSearchUrl, googleHotelsSearchUrl } from '../lib/externalSearchLinks';
+import { googleFlightsSearchUrl, googleHotelsSearchUrl, type StopsFilter } from '../lib/externalSearchLinks';
 import { planningCountries, PLANNING_AIRPORTS_BY_IATA } from '../data/planningAirports';
 import { allPlanningCountries } from '../data/globalAirportsLoader';
 import { planLeg, STRONG_RAIL_COUNTRIES, estimateTravelHours, estimateOverheadHours, type LegPlan } from '../lib/tripPlanner';
@@ -70,6 +70,8 @@ export function Plan() {
   const [cityAirports, setCityAirports] = useState<Record<string, NearestAirportResult>>({});
   const [seasonalGuidance, setSeasonalGuidance] = useState<Record<string, SeasonalGuidance>>({});
   const [loadingSeasonal, setLoadingSeasonal] = useState(false);
+  const [stopsFilter, setStopsFilter] = useState<StopsFilter>('any');
+  const [airlineFilter, setAirlineFilter] = useState('');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [mapFocus, setMapFocus] = useState<string | null>(null);
@@ -460,6 +462,32 @@ export function Plan() {
               Drag the grip to reorder stops
             </div>
           )}
+
+          <div style={{ padding: '0 20px 12px', display: 'grid', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {(['any', 'nonstop', 'one-stop'] as StopsFilter[]).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setStopsFilter(s)}
+                  style={{
+                    padding: '5px 12px', borderRadius: 99, fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
+                    border: stopsFilter === s ? '1px solid var(--brand)' : '1px solid var(--line)',
+                    background: stopsFilter === s ? 'rgba(91,63,166,.08)' : 'var(--card)',
+                    color: stopsFilter === s ? 'var(--brand)' : 'var(--ink2)',
+                  }}
+                >
+                  {s === 'any' ? 'Any stops' : s === 'nonstop' ? 'Nonstop' : '1 stop or fewer'}
+                </button>
+              ))}
+            </div>
+            <input
+              value={airlineFilter}
+              onChange={(e) => setAirlineFilter(e.target.value)}
+              placeholder="Preferred airline (optional)"
+              style={{ ...inputStyle, fontSize: 12.5, padding: '8px 11px' }}
+            />
+          </div>
+
           <div className="stack" style={{ display: 'grid', gap: 10 }}>
             {home && cities.length > 0 && (
               <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)' }}>
@@ -468,7 +496,8 @@ export function Plan() {
                   <a
                     href={googleFlightsSearchUrl(
                       home?.city ?? 'London', cities[0].city, startDate || null,
-                      uniqueCountries.length === 1 ? tripEndDate : null
+                      uniqueCountries.length === 1 ? tripEndDate : null,
+                      { stops: stopsFilter, airline: airlineFilter || undefined }
                     )}
                     target="_blank" rel="noopener noreferrer"
                     style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
@@ -553,7 +582,10 @@ export function Plan() {
                       </div>
                       {leg.recommendedMode === 'flight' && (
                         <a
-                          href={googleFlightsSearchUrl(cities[i].city, cities[i + 1].city, cityDates[i + 1]?.checkIn ?? null)}
+                          href={googleFlightsSearchUrl(
+                            cities[i].city, cities[i + 1].city, cityDates[i + 1]?.checkIn ?? null, null,
+                            { stops: stopsFilter, airline: airlineFilter || undefined }
+                          )}
                           target="_blank" rel="noopener noreferrer"
                           style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'var(--brand)', fontSize: 11, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
                         >
@@ -571,7 +603,10 @@ export function Plan() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700 }}>{cities[cities.length - 1].city} → {home.city}</div>
                   <a
-                    href={googleFlightsSearchUrl(cities[cities.length - 1].city, home.city, tripEndDate)}
+                    href={googleFlightsSearchUrl(
+                      cities[cities.length - 1].city, home.city, tripEndDate, null,
+                      { stops: stopsFilter, airline: airlineFilter || undefined }
+                    )}
                     target="_blank" rel="noopener noreferrer"
                     style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
                   >
