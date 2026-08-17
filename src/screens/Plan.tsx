@@ -436,7 +436,10 @@ export function Plan() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700 }}>{home.city} → {cities[0].city}</div>
                   <a
-                    href={googleFlightsSearchUrl(home?.city ?? 'London', cities[0].city, startDate || null)}
+                    href={googleFlightsSearchUrl(
+                      home?.city ?? 'London', cities[0].city, startDate || null,
+                      uniqueCountries.length === 1 ? tripEndDate : null
+                    )}
                     target="_blank" rel="noopener noreferrer"
                     style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
                   >
@@ -532,6 +535,24 @@ export function Plan() {
                 </div>
               );
             })}
+
+            {home && cities.length > 0 && uniqueCountries.length > 1 && (
+              <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>{cities[cities.length - 1].city} → {home.city}</div>
+                  <a
+                    href={googleFlightsSearchUrl(cities[cities.length - 1].city, home.city, tripEndDate)}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
+                  >
+                    Search <ExternalLinkIcon size={12} color="var(--brand)" />
+                  </a>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 3 }}>
+                  {Math.round(returnKm).toLocaleString()} km · flight · est. {formatHours(estimateTravelHours(returnKm, 'flight'))} flying + ~{formatHours(estimateOverheadHours('flight'))} airports
+                </div>
+              </div>
+            )}
           </div>
 
           {hotelOptions.length > 0 && (
