@@ -6,10 +6,21 @@
 // still open correctly, as Google doesn't guarantee the format long-term.
 
 export type StopsFilter = 'any' | 'nonstop' | 'one-stop';
+export type CabinFilter = 'any' | 'economy' | 'premium-economy' | 'business' | 'first';
+export type AllianceFilter = 'any' | 'star-alliance' | 'oneworld' | 'skyteam';
+
+const CABIN_LABELS: Record<CabinFilter, string> = {
+  any: '', economy: 'economy', 'premium-economy': 'premium economy', business: 'business class', first: 'first class',
+};
+const ALLIANCE_LABELS: Record<AllianceFilter, string> = {
+  any: '', 'star-alliance': 'Star Alliance', oneworld: 'Oneworld', skyteam: 'SkyTeam',
+};
 
 export interface FlightSearchFilters {
   stops?: StopsFilter;
-  airline?: string; // free text, e.g. "British Airways" -- reasonably well parsed by Google's natural-language search, but less firmly confirmed than the "nonstop" keyword
+  cabin?: CabinFilter;
+  alliance?: AllianceFilter;
+  airline?: string; // free text, e.g. "British Airways" -- reasonably well parsed by Google's natural-language search, but less firmly confirmed than the "nonstop" keyword. Same caveat applies to alliance names.
 }
 
 export function googleFlightsSearchUrl(
@@ -18,10 +29,12 @@ export function googleFlightsSearchUrl(
 ): string {
   const departText = departDateISO ? ` on ${departDateISO}` : '';
   const stopsText = filters?.stops === 'nonstop' ? 'nonstop ' : filters?.stops === 'one-stop' ? '1 stop or fewer ' : '';
+  const cabinText = filters?.cabin && filters.cabin !== 'any' ? `${CABIN_LABELS[filters.cabin]} ` : '';
+  const allianceText = filters?.alliance && filters.alliance !== 'any' ? ` on ${ALLIANCE_LABELS[filters.alliance]}` : '';
   const airlineText = filters?.airline ? ` on ${filters.airline}` : '';
   const query = returnDateISO
-    ? `Return ${stopsText}flights from ${fromCity} to ${toCity}${airlineText}${departText} returning ${returnDateISO}`
-    : `One-way ${stopsText}flights from ${fromCity} to ${toCity}${airlineText}${departText}`;
+    ? `Return ${cabinText}${stopsText}flights from ${fromCity} to ${toCity}${allianceText}${airlineText}${departText} returning ${returnDateISO}`
+    : `One-way ${cabinText}${stopsText}flights from ${fromCity} to ${toCity}${allianceText}${airlineText}${departText}`;
   return `https://www.google.com/travel/flights?q=${encodeURIComponent(query)}`;
 }
 
