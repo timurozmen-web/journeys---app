@@ -74,6 +74,57 @@ export function Plan() {
   const [cabinFilter, setCabinFilter] = useState<CabinFilter>('any');
   const [allianceFilter, setAllianceFilter] = useState<AllianceFilter>('any');
   const [hotelBrandFilter, setHotelBrandFilter] = useState<string>('any');
+  const [smartQueries, setSmartQueries] = useState<Record<string, string>>({});
+
+  // Fetches an AI-constructed search query and caches it by key, used only
+  // where the plain client-side query text is known to be unreliable --
+  // an alliance name isn't a single searchable entity, so it needs a real
+  // member airline substituted in; hotel programme names often don't match
+  // how people actually search for the brand.
+  function smartFlightUrl(
+    fromCity: string, toCity: string, departDate: string | null, returnDate: string | null | undefined
+  ): string {
+    const plainUrl = googleFlightsSearchUrl(fromCity, toCity, departDate, returnDate, {
+      stops: stopsFilter, cabin: cabinFilter, alliance: allianceFilter, airline: airlineFilter || undefined,
+    });
+    if (allianceFilter === 'any') return plainUrl; // no ambiguous alliance term -- plain query is already reliable
+    const key = `flight:${fromCity}|${toCity}|${departDate}|${returnDate}|${stopsFilter}|${cabinFilter}|${allianceFilter}|${airlineFilter}`;
+    const cached = smartQueries[key];
+    if (cached) return `https://www.google.com/travel/flights?q=${encodeURIComponent(cached)}`;
+    fetchSmartQuery(key, 'flight', {
+      fromCity, toCity, departDate, returnDate,
+      stops: stopsFilter, cabin: cabinFilter, alliance: allianceFilter, airline: airlineFilter || undefined,
+    });
+    return plainUrl; // shown instantly while the smarter version loads in the background
+  }
+
+  function smartHotelUrl(city: string, country: string, checkIn: string | null, nights: number | null): string {
+    if (hotelBrandFilter === 'any') return googleHotelsSearchUrl(city, country, checkIn, nights);
+    if (hotelBrandFilter === 'Marriott Bonvoy') return brandHotelSearchUrl(hotelBrandFilter, city, country); // verified direct link, no AI needed
+    const key = `hotel:${hotelBrandFilter}|${city}|${country}`;
+    const cached = smartQueries[key];
+    if (cached) return `https://www.google.com/travel/hotels?q=${encodeURIComponent(cached)}`;
+    fetchSmartQuery(key, 'hotel', { brand: hotelBrandFilter, city, country });
+    return brandHotelSearchUrl(hotelBrandFilter, city, country); // plain fallback shown while the smarter version loads
+  }
+
+  function fetchSmartQuery(key: string, type: 'flight' | 'hotel', params: Record<string, unknown>) {
+    if (smartQueries[key] !== undefined) return; // already fetched or in flight
+    setSmartQueries((prev) => ({ ...prev, [key]: '' })); // mark in-flight so we don't refetch
+    fetch('/.netlify/functions/smart-search-query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, params }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.query) setSmartQueries((prev) => ({ ...prev, [key]: data.query }));
+      })
+      .catch(() => {
+        // Leave the cache entry empty -- caller falls back to the plain
+        // client-side query rather than showing a broken link.
+      });
+  }
   const [airlineFilter, setAirlineFilter] = useState('');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -231,7 +282,6 @@ export function Plan() {
   const domesticCost = legs.reduce((s, l) => s + l.estimatedCostGBP, 0);
   const totalNights = cities.reduce((s, c) => s + c.nights, 0);
   const uniqueCountries = [...new Set(cities.map((c) => c.country))];
-  const flightFilters = { stops: stopsFilter, cabin: cabinFilter, alliance: allianceFilter, airline: airlineFilter || undefined };
   useEffect(() => {
     if (mapFocus && !uniqueCountries.includes(mapFocus)) setMapFocus(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -528,10 +578,9 @@ export function Plan() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700 }}>{home.city} → {cities[0].city}</div>
                   <a
-                    href={googleFlightsSearchUrl(
+                    href={smartFlightUrl(
                       home?.city ?? 'London', cities[0].city, startDate || null,
-                      uniqueCountries.length === 1 ? tripEndDate : null,
-                      flightFilters
+                      uniqueCountries.length === 1 ? tripEndDate : null
                     )}
                     target="_blank" rel="noopener noreferrer"
                     style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
@@ -591,11 +640,7 @@ export function Plan() {
                         </div>
                       )}
                       <a
-                        href={
-                          hotelBrandFilter !== 'any'
-                            ? brandHotelSearchUrl(hotelBrandFilter, c.city, c.country)
-                            : googleHotelsSearchUrl(c.city, c.country, cityDates[i]?.checkIn ?? null, c.nights)
-                        }
+                        href={smartHotelUrl(c.city, c.country, cityDates[i]?.checkIn ?? null, c.nights)}
                         target="_blank" rel="noopener noreferrer"
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', marginTop: 8 }}
                       >
@@ -620,10 +665,7 @@ export function Plan() {
                       </div>
                       {leg.recommendedMode === 'flight' && (
                         <a
-                          href={googleFlightsSearchUrl(
-                            cities[i].city, cities[i + 1].city, cityDates[i + 1]?.checkIn ?? null, null,
-                            flightFilters
-                          )}
+                          href={smartFlightUrl(cities[i].city, cities[i + 1].city, cityDates[i + 1]?.checkIn ?? null, null)}
                           target="_blank" rel="noopener noreferrer"
                           style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'var(--brand)', fontSize: 11, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
                         >
@@ -641,10 +683,7 @@ export function Plan() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700 }}>{cities[cities.length - 1].city} → {home.city}</div>
                   <a
-                    href={googleFlightsSearchUrl(
-                      cities[cities.length - 1].city, home.city, tripEndDate, null,
-                      flightFilters
-                    )}
+                    href={smartFlightUrl(cities[cities.length - 1].city, home.city, tripEndDate, null)}
                     target="_blank" rel="noopener noreferrer"
                     style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
                   >
