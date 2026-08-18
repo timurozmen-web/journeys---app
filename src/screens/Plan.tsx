@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BackIcon, PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon } from '../components/Icons';
-import { googleFlightsSearchUrl, googleHotelsSearchUrl, type StopsFilter, type CabinFilter, type AllianceFilter } from '../lib/externalSearchLinks';
+import { googleFlightsSearchUrl, googleHotelsSearchUrl, brandHotelSearchUrl, type StopsFilter, type CabinFilter, type AllianceFilter } from '../lib/externalSearchLinks';
 import { planningCountries, PLANNING_AIRPORTS_BY_IATA } from '../data/planningAirports';
 import { allPlanningCountries } from '../data/globalAirportsLoader';
 import { planLeg, STRONG_RAIL_COUNTRIES, estimateTravelHours, estimateOverheadHours, type LegPlan } from '../lib/tripPlanner';
@@ -73,6 +73,7 @@ export function Plan() {
   const [stopsFilter, setStopsFilter] = useState<StopsFilter>('any');
   const [cabinFilter, setCabinFilter] = useState<CabinFilter>('any');
   const [allianceFilter, setAllianceFilter] = useState<AllianceFilter>('any');
+  const [hotelBrandFilter, setHotelBrandFilter] = useState<string>('any');
   const [airlineFilter, setAirlineFilter] = useState('');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -507,6 +508,18 @@ export function Plan() {
                 <option value="skyteam">SkyTeam</option>
               </select>
             </div>
+            {loyaltyProgrammes.filter((p) => p.category === 'hotel').length > 0 && (
+              <select
+                value={hotelBrandFilter}
+                onChange={(e) => setHotelBrandFilter(e.target.value)}
+                style={{ ...inputStyle, fontSize: 12.5, padding: '8px 9px' }}
+              >
+                <option value="any">Search hotels generally</option>
+                {loyaltyProgrammes.filter((p) => p.category === 'hotel').map((p) => (
+                  <option key={p.name} value={p.name}>Search on {p.name}</option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="stack" style={{ display: 'grid', gap: 10 }}>
@@ -578,11 +591,15 @@ export function Plan() {
                         </div>
                       )}
                       <a
-                        href={googleHotelsSearchUrl(c.city, c.country, cityDates[i]?.checkIn ?? null, c.nights)}
+                        href={
+                          hotelBrandFilter !== 'any'
+                            ? brandHotelSearchUrl(hotelBrandFilter, c.city, c.country)
+                            : googleHotelsSearchUrl(c.city, c.country, cityDates[i]?.checkIn ?? null, c.nights)
+                        }
                         target="_blank" rel="noopener noreferrer"
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', marginTop: 8 }}
                       >
-                        Search hotels <ExternalLinkIcon size={11} color="var(--brand)" />
+                        Search {hotelBrandFilter !== 'any' ? hotelBrandFilter : 'hotels'} <ExternalLinkIcon size={11} color="var(--brand)" />
                       </a>
                     </div>
                   </div>

@@ -46,6 +46,32 @@ export function googleFlightsSearchUrl(
   return `https://www.google.com/travel/flights?q=${encodeURIComponent(query)}`;
 }
 
+function slugify(s: string): string {
+  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+/**
+ * Search directly on a hotel programme's own site where the URL pattern is
+ * confidently verified, falling back to a brand-qualified Google Hotels
+ * search otherwise. Only Marriott's pattern (marriott.com/en-us/destinations/
+ * {country}/{city}.mi) was confirmed against multiple real international
+ * examples (Japan, France, UK, Italy, Netherlands all verified working).
+ * Other brands' patterns either weren't confirmed at all, or (Hilton) were
+ * only confirmed for US cities -- rather than guess at a URL that might
+ * 404 for a real trip, those fall back to the safer brand-qualified search.
+ */
+export function brandHotelSearchUrl(programmeName: string, city: string, country: string): string {
+  if (programmeName === 'Marriott Bonvoy') {
+    return `https://www.marriott.com/en-us/destinations/${slugify(country)}/${slugify(city)}.mi`;
+  }
+  return googleHotelsSearchUrlBranded(programmeName, city, country);
+}
+
+function googleHotelsSearchUrlBranded(brand: string, city: string, country: string): string {
+  const query = `${brand} hotels in ${city}, ${country}`;
+  return `https://www.google.com/travel/hotels?q=${encodeURIComponent(query)}`;
+}
+
 export function googleHotelsSearchUrl(city: string, country: string, checkIn: string | null, nights: number | null): string {
   let query = `Hotels in ${city}, ${country}`;
   if (checkIn && nights) {
