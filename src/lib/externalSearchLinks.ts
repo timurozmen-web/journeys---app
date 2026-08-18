@@ -27,14 +27,22 @@ export function googleFlightsSearchUrl(
   fromCity: string, toCity: string, departDateISO: string | null, returnDateISO?: string | null,
   filters?: FlightSearchFilters
 ): string {
-  const departText = departDateISO ? ` on ${departDateISO}` : '';
   const stopsText = filters?.stops === 'nonstop' ? 'nonstop ' : filters?.stops === 'one-stop' ? '1 stop or fewer ' : '';
   const cabinText = filters?.cabin && filters.cabin !== 'any' ? `${CABIN_LABELS[filters.cabin]} ` : '';
-  const allianceText = filters?.alliance && filters.alliance !== 'any' ? ` on ${ALLIANCE_LABELS[filters.alliance]}` : '';
-  const airlineText = filters?.airline ? ` on ${filters.airline}` : '';
-  const query = returnDateISO
-    ? `Return ${cabinText}${stopsText}flights from ${fromCity} to ${toCity}${allianceText}${airlineText}${departText} returning ${returnDateISO}`
-    : `One-way ${cabinText}${stopsText}flights from ${fromCity} to ${toCity}${allianceText}${airlineText}${departText}`;
+  const tripTypeText = returnDateISO ? 'Return' : 'One-way';
+
+  // Each clause is comma-separated and unambiguous on its own, rather than
+  // stacking multiple bare "on X" phrases back to back -- that collided
+  // directly when both an alliance/airline filter and a date were present
+  // (e.g. "...on Oneworld on 2027-03-10..."), which is very likely what
+  // broke Google's natural-language parsing when filters were combined.
+  const clauses: string[] = [`${tripTypeText} ${cabinText}${stopsText}flights from ${fromCity} to ${toCity}`];
+  if (departDateISO) clauses.push(`departing ${departDateISO}`);
+  if (returnDateISO) clauses.push(`returning ${returnDateISO}`);
+  if (filters?.alliance && filters.alliance !== 'any') clauses.push(`on ${ALLIANCE_LABELS[filters.alliance]}`);
+  if (filters?.airline) clauses.push(`on ${filters.airline}`);
+
+  const query = clauses.join(', ');
   return `https://www.google.com/travel/flights?q=${encodeURIComponent(query)}`;
 }
 
