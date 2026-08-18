@@ -1,17 +1,13 @@
-import { useMemo, useState, useEffect } from 'react';
-import { geoNaturalEarth1, geoPath } from 'd3-geo';
-import { worldGeo } from '../data/worldGeo';
+import { useEffect, useRef } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { getDestinationPhoto } from '../lib/unsplash';
 import type { PlanningAirport } from '../data/planningAirports';
 import type { TransportMode } from '../lib/tripPlanner';
 
-const WIDTH = 360;
-const HEIGHT = 320;
-const PAD = 34;
-const CARD_WIDTH = 168;
-const CARD_HEIGHT = 74;
-
 interface PlanCity {
   city: string;
+  country?: string;
   lat: number;
   lng: number;
   nights?: number;
@@ -23,13 +19,10 @@ interface MapLegInfo {
   hours: number;
 }
 
-// Small SVG-native icon paths, scaled to sit inside an 12x12 badge slot.
-// Kept as plain paths (not the app's icon components) since these render
-// inside an SVG document, not the HTML tree.
-const MODE_ICON_PATH: Record<TransportMode, string> = {
-  flight: 'M1 6h3l2-3.5 1 .5-1 3h2.5l1-1.5h1l-.75 2L11 8h-1l-1-1.5H6.5l1 3-1 .5-2-3.5H1z',
-  rail: 'M2.5 1.5h7v7a1.5 1.5 0 0 1-1.5 1.5h-4A1.5 1.5 0 0 1 2.5 8.5zM2.5 6.5h7M4 10l-1 2M8 10l1 2',
-  road: 'M2 9V6.5l1-2.5h6l1 2.5V9M2 9h8M2.7 9v1M9.3 9v1',
+const MODE_ICON_SVG: Record<TransportMode, string> = {
+  flight: '<path d="M2 12h6l4-7 2 1-2 6h5l2-3h2l-1.5 4L21 16h-2l-2-3h-5l2 6-2 1-4-7H2z"/>',
+  rail: '<rect x="5" y="3" width="14" height="14" rx="4"/><path d="M5 13h14M9 17l-2 4M15 17l2 4"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/>',
+  road: '<path d="M4 16V11l2-5h12l2 5v5"/><path d="M4 16h16M6 16v2M18 16v2"/><circle cx="7.5" cy="16" r="1.5"/><circle cx="16.5" cy="16" r="1.5"/>',
 };
 
 function formatHours(h: number): string {
@@ -38,61 +31,38 @@ function formatHours(h: number): string {
   return mins === 0 ? `${hours}h` : `${hours}h${mins}m`;
 }
 
-function LegBadge({ x, y, info }: { x: number; y: number; info: MapLegInfo }) {
+function midpoint(a: L.LatLngExpression, b: L.LatLngExpression): L.LatLng {
+  const la = L.latLng(a), lb = L.latLng(b);
+  return L.latLng((la.lat + lb.lat) / 2, (la.lng + lb.lng) / 2);
+}
+
+function legBadgeIcon(info: MapLegInfo): L.DivIcon {
   const label = `${Math.round(info.distanceKm)}km · ${formatHours(info.hours)}`;
-  const badgeWidth = 15 + label.length * 3.6;
-  return (
-    <g transform={`translate(${x - badgeWidth / 2}, ${y - 8})`}>
-      <rect width={badgeWidth} height={16} rx={8} fill="#fff" stroke="#5B3FA6" strokeWidth={1} />
-      <g transform="translate(4, 3)" fill="none" stroke="#5B3FA6" strokeWidth={0.9} strokeLinecap="round" strokeLinejoin="round">
-        <path d={MODE_ICON_PATH[info.mode]} />
-      </g>
-      <text x={16} y={11} fontSize={6.2} fontWeight={700} fill="#17171C">
-        {label}
-      </text>
-    </g>
-  );
+  return L.divIcon({
+    className: '',
+    html: `
+      <div style="display:flex;align-items:center;gap:4px;background:#fff;border:1.5px solid #5B3FA6;border-radius:99px;padding:4px 9px;box-shadow:0 3px 8px rgba(23,23,28,.18);white-space:nowrap;font-family:inherit;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5B3FA6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${MODE_ICON_SVG[info.mode]}</svg>
+        <span style="font-size:11.5px;font-weight:700;color:#17171C;">${label}</span>
+      </div>`,
+    iconSize: undefined,
+    iconAnchor: [30, 12],
+  });
 }
 
-// Info card shown when a city dot is tapped -- real HTML/CSS via
-// foreignObject for the content, so it stays in the same SVG coordinate
-// space as everything else rather than needing fragile pixel-to-viewBox
-// mapping for a separate HTML overlay. The close control itself is pure
-// SVG, rendered as a separate sibling rather than an HTML button inside
-// the foreignObject -- confirmed via testing that click events on HTML
-// controls nested in foreignObject don't reliably propagate through
-// React's synthetic event system in this setup.
-function cardPosition(x: number, y: number) {
-  const cardX = Math.max(4, Math.min(WIDTH - CARD_WIDTH - 4, x - CARD_WIDTH / 2));
-  const flipUp = y + 14 + CARD_HEIGHT > HEIGHT - 4;
-  const cardY = flipUp ? y - 14 - CARD_HEIGHT : y + 14;
-  return { cardX, cardY };
-}
-
-function CityInfoCard({ x, y, rank, city }: { x: number; y: number; rank: number; city: PlanCity }) {
-  const { cardX, cardY } = cardPosition(x, y);
-
-  return (
-    <foreignObject x={cardX} y={cardY} width={CARD_WIDTH} height={CARD_HEIGHT} style={{ overflow: 'visible', pointerEvents: 'none' }}>
-      <div
-        {...{ xmlns: 'http://www.w3.org/1999/xhtml' }}
-        style={{
-          background: '#fff', borderRadius: 10, border: '1.5px solid #5B3FA6', padding: '8px 26px 8px 10px',
-          boxShadow: '0 6px 16px rgba(23,23,28,.18)', fontFamily: 'inherit', boxSizing: 'border-box', height: '100%',
-        }}
-      >
-        <div style={{ fontSize: 12.5, fontWeight: 800, color: '#17171C', lineHeight: 1.2 }}>
-          {rank}. {city.city}
-        </div>
-        {city.nights != null && (
-          <div style={{ fontSize: 10.5, fontWeight: 700, color: '#5B3FA6', marginTop: 2 }}>{city.nights} nights</div>
-        )}
-        {city.why && (
-          <div style={{ fontSize: 10, color: '#5C5C6E', marginTop: 3, lineHeight: 1.35 }}>{city.why}</div>
-        )}
-      </div>
-    </foreignObject>
-  );
+function cityMarkerIcon(rank: number, active: boolean): L.DivIcon {
+  const size = active ? 30 : 26;
+  return L.divIcon({
+    className: '',
+    html: `
+      <div style="width:${size}px;height:${size}px;border-radius:50%;background:#5B3FA6;border:2.5px solid #fff;
+        box-shadow:0 2px 6px rgba(23,23,28,.3);display:flex;align-items:center;justify-content:center;
+        color:#fff;font-weight:800;font-size:${active ? 13 : 11.5}px;font-family:inherit;">
+        ${rank}
+      </div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
 }
 
 export function PlanMap({
@@ -100,131 +70,107 @@ export function PlanMap({
 }: {
   home: PlanningAirport | null;
   cities: PlanCity[];
-  domesticLegs: MapLegInfo[]; // one per consecutive city pair, same order as cities
-  internationalLeg: MapLegInfo | null; // home -> first city
+  domesticLegs: MapLegInfo[];
+  internationalLeg: MapLegInfo | null;
 }) {
-  const [selected, setSelected] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const layerGroupRef = useRef<L.LayerGroup | null>(null);
 
-  const { countryPaths, homePoint, cityPoints, internationalPath, domesticSegments } = useMemo(() => {
-    const points: [number, number][] = cities.map((c) => [c.lng, c.lat]);
-    if (home) points.push([home.lng, home.lat]);
-    if (points.length === 0) {
-      return { countryPaths: [], homePoint: null, cityPoints: [], internationalPath: '', domesticSegments: [] };
+  // Map instance created once and cleaned up on unmount -- Leaflet owns
+  // the DOM inside containerRef directly, so this stays outside React's
+  // normal render cycle rather than being recreated every render.
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
+    const map = L.map(containerRef.current, {
+      zoomControl: true, attributionControl: true, scrollWheelZoom: true,
+    }).setView([20, 0], 2);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    }).addTo(map);
+
+    mapRef.current = map;
+    layerGroupRef.current = L.layerGroup().addTo(map);
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      layerGroupRef.current = null;
+    };
+  }, []);
+
+  // Markers/routes rebuilt whenever the itinerary changes -- cheap
+  // relative to a full map teardown, and keeps zoom/pan state (the user's
+  // own exploration of the map) untouched across itinerary edits.
+  useEffect(() => {
+    const map = mapRef.current;
+    const layerGroup = layerGroupRef.current;
+    if (!map || !layerGroup) return;
+    layerGroup.clearLayers();
+
+    if (cities.length === 0) return;
+
+    const points: L.LatLngExpression[] = cities.map((c) => [c.lat, c.lng]);
+    const homePoint: L.LatLngExpression | null = home ? [home.lat, home.lng] : null;
+    const allPoints = homePoint ? [...points, homePoint] : points;
+
+    if (homePoint && cities.length > 0) {
+      const line = L.polyline([homePoint, points[0]], { color: '#5B3FA6', weight: 2.5, dashArray: '2 8', opacity: 0.75 });
+      layerGroup.addLayer(line);
+      L.circleMarker(homePoint, { radius: 6, color: '#5B3FA6', weight: 2, fillColor: '#fff', fillOpacity: 1 }).addTo(layerGroup);
+      if (internationalLeg) {
+        L.marker(midpoint(homePoint, points[0]), { icon: legBadgeIcon(internationalLeg), interactive: false }).addTo(layerGroup);
+      }
     }
 
-    const lngs = points.map((p) => p[0]);
-    const lats = points.map((p) => p[1]);
-    const degenerate = Math.max(...lngs) - Math.min(...lngs) < 0.05 && Math.max(...lats) - Math.min(...lats) < 0.05;
-
-    const projection = geoNaturalEarth1();
-    if (degenerate) {
-      projection.center([lngs[0], lats[0]]).scale(2400).translate([WIDTH / 2, HEIGHT / 2]);
-    } else {
-      projection.fitExtent([[PAD, PAD], [WIDTH - PAD, HEIGHT - PAD]], { type: 'MultiPoint', coordinates: points });
-    }
-    const pathGen = geoPath(projection);
-    const project = (lat: number, lng: number) => projection([lng, lat]) as [number, number] | null;
-
-    const countryPaths: { name: string; d: string }[] = worldGeo.features
-      .map((f: any) => ({ name: f.properties.name as string, d: pathGen(f) || '' }))
-      .filter((c: { d: string }) => c.d);
-
-    const projectedCities = cities
-      .map((c) => {
-        const p = project(c.lat, c.lng);
-        return p ? { city: c.city, x: p[0], y: p[1] } : null;
-      })
-      .filter((c): c is { city: string; x: number; y: number } => c !== null);
-
-    const homeProjected = home ? project(home.lat, home.lng) : null;
-
-    let internationalPath = '';
-    if (homeProjected && projectedCities.length > 0) {
-      const [x1, y1] = homeProjected;
-      const { x: x2, y: y2 } = projectedCities[0];
-      const mx = (x1 + x2) / 2;
-      const my = (y1 + y2) / 2 - Math.min(40, Math.hypot(x2 - x1, y2 - y1) * 0.2);
-      internationalPath = `M${x1},${y1} Q${mx},${my} ${x2},${y2}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const line = L.polyline([points[i], points[i + 1]], { color: '#5B3FA6', weight: 3, dashArray: '2 8', opacity: 0.85 });
+      layerGroup.addLayer(line);
+      if (domesticLegs[i]) {
+        L.marker(midpoint(points[i], points[i + 1]), { icon: legBadgeIcon(domesticLegs[i]), interactive: false }).addTo(layerGroup);
+      }
     }
 
-    const domesticSegments = projectedCities.slice(0, -1).map((c, i) => {
-      const next = projectedCities[i + 1];
-      return { d: `M${c.x},${c.y} L${next.x},${next.y}`, mid: { x: (c.x + next.x) / 2, y: (c.y + next.y) / 2 } };
+    cities.forEach((c, i) => {
+      const marker = L.marker([c.lat, c.lng], { icon: cityMarkerIcon(i + 1, false) });
+      const buildPopupHtml = (photoUrl?: string) => `
+        <div style="font-family:inherit;min-width:170px;">
+          ${photoUrl ? `<img src="${photoUrl}" alt="${c.city}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:6px;display:block;" />` : ''}
+          <div style="font-size:13px;font-weight:800;color:#17171C;">${i + 1}. ${c.city}</div>
+          ${c.nights != null ? `<div style="font-size:11px;font-weight:700;color:#5B3FA6;margin-top:2px;">${c.nights} nights</div>` : ''}
+          ${c.why ? `<div style="font-size:11px;color:#5C5C6E;margin-top:3px;line-height:1.4;">${c.why}</div>` : ''}
+        </div>`;
+      marker.bindPopup(buildPopupHtml(), { closeButton: true, className: 'planmap-popup', maxWidth: 200 });
+
+      // Fetch the photo only once the popup is actually opened, not
+      // upfront for every city -- most plans have cities the user never
+      // taps, so this avoids wasting Unsplash's rate-limited API calls.
+      let photoRequested = false;
+      marker.on('popupopen', () => {
+        if (photoRequested) return;
+        photoRequested = true;
+        getDestinationPhoto(`${c.city} ${c.country ?? ''}`.trim()).then((photo) => {
+          if (photo) marker.getPopup()?.setContent(buildPopupHtml(photo.url));
+        });
+      });
+      marker.addTo(layerGroup);
     });
 
-    return { countryPaths, homePoint: homeProjected ? { x: homeProjected[0], y: homeProjected[1] } : null, cityPoints: projectedCities, internationalPath, domesticSegments };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [home, cities]);
+    if (allPoints.length === 1) {
+      map.setView(allPoints[0], 11);
+    } else {
+      map.fitBounds(L.latLngBounds(allPoints), { padding: [36, 36] });
+    }
+  }, [home, cities, domesticLegs, internationalLeg]);
 
-  const citiesKey = cities.map((c) => c.city).join('|');
-  useEffect(() => {
-    setSelected(null); // city list genuinely changed (reorder/refresh/focus toggle) -- any open card is now stale
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [citiesKey]);
-
-  if (cityPoints.length === 0) return null;
+  if (cities.length === 0) return null;
 
   return (
-    <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block', background: '#DCE7F5', borderRadius: 16 }}>
-      <style>{`
-        @keyframes planmap-pulse { 0% { r: 4.2; opacity: .55; } 100% { r: 11; opacity: 0; } }
-        .planmap-pulse { animation: planmap-pulse 1.6s ease-out infinite; transform-origin: center; transform-box: fill-box; }
-      `}</style>
-      {countryPaths.map((c) => (
-        <path key={c.name} d={c.d} fill="#B9CEEC" stroke="#DCE7F5" strokeWidth={0.5} />
-      ))}
-      {internationalPath && (
-        <path d={internationalPath} fill="none" stroke="#5B3FA6" strokeWidth={1.2} strokeDasharray="3 2.2" opacity={0.8} />
-      )}
-      {domesticSegments.map((seg, i) => (
-        <path key={i} d={seg.d} fill="none" stroke="#5B3FA6" strokeWidth={1.4} strokeDasharray="3 2.2" opacity={0.85} />
-      ))}
-      {homePoint && (
-        <circle cx={homePoint.x} cy={homePoint.y} r={3.4} fill="#fff" stroke="#5B3FA6" strokeWidth={1.6} />
-      )}
-      {cityPoints.map((c, i) => (
-        <g key={c.city} onClick={() => setSelected(selected === i ? null : i)} style={{ cursor: 'pointer' }}>
-          {selected === i && <circle cx={c.x} cy={c.y} r={4.2} fill="#5B3FA6" className="planmap-pulse" />}
-          <circle cx={c.x} cy={c.y} r={9} fill="transparent" />
-          <circle
-            cx={c.x} cy={c.y} r={selected === i ? 5.2 : 4.2} fill="#5B3FA6" stroke="#fff"
-            strokeWidth={selected === i ? 1.8 : 1.3} style={{ transition: 'r .15s' }}
-          />
-          <text x={c.x} y={c.y + 1.5} fontSize={5.5} fontWeight={800} fill="#fff" textAnchor="middle">
-            {i + 1}
-          </text>
-        </g>
-      ))}
-      {internationalLeg && homePoint && cityPoints[0] && (
-        <LegBadge
-          x={(homePoint.x + cityPoints[0].x) / 2}
-          y={(homePoint.y + cityPoints[0].y) / 2 - Math.min(40, Math.hypot(cityPoints[0].x - homePoint.x, cityPoints[0].y - homePoint.y) * 0.2)}
-          info={internationalLeg}
-        />
-      )}
-      {domesticSegments.map((seg, i) =>
-        domesticLegs[i] ? <LegBadge key={`badge-${i}`} x={seg.mid.x} y={seg.mid.y} info={domesticLegs[i]} /> : null
-      )}
-      {selected != null && cityPoints[selected] && (
-        <>
-          <CityInfoCard
-            x={cityPoints[selected].x} y={cityPoints[selected].y} rank={selected + 1}
-            city={cities[selected]}
-          />
-          {(() => {
-            const { cardX, cardY } = cardPosition(cityPoints[selected].x, cityPoints[selected].y);
-            const cx = cardX + CARD_WIDTH - 12;
-            const cy = cardY + 12;
-            return (
-              <g onClick={() => setSelected(null)} style={{ cursor: 'pointer' }}>
-                <circle cx={cx} cy={cy} r={9} fill="transparent" />
-                <line x1={cx - 3} y1={cy - 3} x2={cx + 3} y2={cy + 3} stroke="#5C5C6E" strokeWidth={1.4} strokeLinecap="round" />
-                <line x1={cx - 3} y1={cy + 3} x2={cx + 3} y2={cy - 3} stroke="#5C5C6E" strokeWidth={1.4} strokeLinecap="round" />
-              </g>
-            );
-          })()}
-        </>
-      )}
-    </svg>
+    <div
+      ref={containerRef}
+      style={{ width: '100%', height: 320, borderRadius: 16, overflow: 'hidden', background: '#DCE7F5' }}
+    />
   );
 }
