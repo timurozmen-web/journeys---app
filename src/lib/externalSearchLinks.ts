@@ -12,15 +12,14 @@ export type AllianceFilter = 'any' | 'star-alliance' | 'oneworld' | 'skyteam';
 const CABIN_LABELS: Record<CabinFilter, string> = {
   any: '', economy: 'economy', 'premium-economy': 'premium economy', business: 'business class', first: 'first class',
 };
-const ALLIANCE_LABELS: Record<AllianceFilter, string> = {
+export const ALLIANCE_LABELS: Record<AllianceFilter, string> = {
   any: '', 'star-alliance': 'Star Alliance', oneworld: 'Oneworld', skyteam: 'SkyTeam',
 };
 
 export interface FlightSearchFilters {
   stops?: StopsFilter;
   cabin?: CabinFilter;
-  alliance?: AllianceFilter;
-  airline?: string; // free text, e.g. "British Airways" -- reasonably well parsed by Google's natural-language search, but less firmly confirmed than the "nonstop" keyword. Same caveat applies to alliance names.
+  airline?: string; // free text, e.g. "British Airways" -- reasonably well parsed by Google's natural-language search, but less firmly confirmed than the "nonstop" keyword
 }
 
 export function googleFlightsSearchUrl(
@@ -31,15 +30,16 @@ export function googleFlightsSearchUrl(
   const cabinText = filters?.cabin && filters.cabin !== 'any' ? `${CABIN_LABELS[filters.cabin]} ` : '';
   const tripTypeText = returnDateISO ? 'Return' : 'One-way';
 
-  // Each clause is comma-separated and unambiguous on its own, rather than
-  // stacking multiple bare "on X" phrases back to back -- that collided
-  // directly when both an alliance/airline filter and a date were present
-  // (e.g. "...on Oneworld on 2027-03-10..."), which is very likely what
-  // broke Google's natural-language parsing when filters were combined.
+  // Alliance is deliberately never included here. Google Flights' own
+  // results-page UI has a real, reliable alliance filter -- but that's a
+  // completely separate mechanism (a protobuf-encoded results-page
+  // parameter, not part of the natural-language search query at all), so
+  // narrowing this initial query to a single guessed airline would defeat
+  // the actual purpose of filtering by alliance (seeing every member
+  // carrier together, not one).
   const clauses: string[] = [`${tripTypeText} ${cabinText}${stopsText}flights from ${fromCity} to ${toCity}`];
   if (departDateISO) clauses.push(`departing ${departDateISO}`);
   if (returnDateISO) clauses.push(`returning ${returnDateISO}`);
-  if (filters?.alliance && filters.alliance !== 'any') clauses.push(`on ${ALLIANCE_LABELS[filters.alliance]}`);
   if (filters?.airline) clauses.push(`on ${filters.airline}`);
 
   const query = clauses.join(', ');

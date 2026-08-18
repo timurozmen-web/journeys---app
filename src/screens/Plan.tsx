@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BackIcon, PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon } from '../components/Icons';
-import { googleFlightsSearchUrl, googleHotelsSearchUrl, brandHotelSearchUrl, type StopsFilter, type CabinFilter, type AllianceFilter } from '../lib/externalSearchLinks';
+import { googleFlightsSearchUrl, googleHotelsSearchUrl, brandHotelSearchUrl, ALLIANCE_LABELS, type StopsFilter, type CabinFilter, type AllianceFilter } from '../lib/externalSearchLinks';
 import { planningCountries, PLANNING_AIRPORTS_BY_IATA } from '../data/planningAirports';
 import { allPlanningCountries } from '../data/globalAirportsLoader';
 import { planLeg, STRONG_RAIL_COUNTRIES, estimateTravelHours, estimateOverheadHours, type LegPlan } from '../lib/tripPlanner';
@@ -84,18 +84,9 @@ export function Plan() {
   function smartFlightUrl(
     fromCity: string, toCity: string, departDate: string | null, returnDate: string | null | undefined
   ): string {
-    const plainUrl = googleFlightsSearchUrl(fromCity, toCity, departDate, returnDate, {
-      stops: stopsFilter, cabin: cabinFilter, alliance: allianceFilter, airline: airlineFilter || undefined,
+    return googleFlightsSearchUrl(fromCity, toCity, departDate, returnDate, {
+      stops: stopsFilter, cabin: cabinFilter, airline: airlineFilter || undefined,
     });
-    if (allianceFilter === 'any') return plainUrl; // no ambiguous alliance term -- plain query is already reliable
-    const key = `flight:${fromCity}|${toCity}|${departDate}|${returnDate}|${stopsFilter}|${cabinFilter}|${allianceFilter}|${airlineFilter}`;
-    const cached = smartQueries[key];
-    if (cached) return `https://www.google.com/travel/flights?q=${encodeURIComponent(cached)}`;
-    fetchSmartQuery(key, 'flight', {
-      fromCity, toCity, departDate, returnDate,
-      stops: stopsFilter, cabin: cabinFilter, alliance: allianceFilter, airline: airlineFilter || undefined,
-    });
-    return plainUrl; // shown instantly while the smarter version loads in the background
   }
 
   function smartHotelUrl(city: string, country: string, checkIn: string | null, nights: number | null): string {
@@ -558,6 +549,11 @@ export function Plan() {
                 <option value="skyteam">SkyTeam</option>
               </select>
             </div>
+            {allianceFilter !== 'any' && (
+              <div style={{ fontSize: 10.5, color: 'var(--ink3)', lineHeight: 1.4 }}>
+                Google Flights doesn't support pre-selecting an alliance via a link -- once the search opens, use its own "Airlines" filter and choose {ALLIANCE_LABELS[allianceFilter]} there to see every carrier in the alliance together.
+              </div>
+            )}
             {loyaltyProgrammes.filter((p) => p.category === 'hotel').length > 0 && (
               <select
                 value={hotelBrandFilter}
