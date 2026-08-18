@@ -86,9 +86,18 @@ export function PlanMap({
       zoomControl: true, attributionControl: true, scrollWheelZoom: true,
     }).setView([20, 0], 2);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    // Carto Voyager: real OSM road/city data underneath, but with a
+    // clearer road hierarchy and much less visual clutter than raw OSM's
+    // default style -- closer to the requested Apple Maps middle ground.
+    // Free, no API key required. Labels are still in each place's local
+    // language, same as raw OSM -- that's a genuine limitation of free
+    // pre-rendered raster tiles generally (the label language is baked in
+    // by whoever renders the tile), not something fixable by picking a
+    // different free style.
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       maxZoom: 19,
+      subdomains: 'abcd',
     }).addTo(map);
 
     mapRef.current = map;
