@@ -100,7 +100,7 @@ export function Wallet() {
       )}
 
       {seg === 'loyalty' && (
-        <LoyaltyTab programmes={loyaltyProgrammes} hotels={hotels} promotions={promotions} paymentCards={paymentCards} />
+        <LoyaltyTab programmes={loyaltyProgrammes} hotels={hotels} promotions={promotions} paymentCards={paymentCards} cardResults={cardResults} />
       )}
 
       {seg === 'payment' && (

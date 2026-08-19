@@ -78,3 +78,24 @@ export function normalizeBrand(raw: string): string {
   }
   return raw;
 }
+
+/**
+ * Given a raw hotel name, returns the specific sub-brand matched (e.g.
+ * "Park Hyatt" rather than the parent "World of Hyatt"), or null if none
+ * is recognised. Used for challenges that count distinct sub-brands, like
+ * Hyatt's Brand Explorer, where "Park Hyatt" and "Andaz" are separate
+ * brands even though both roll up to World of Hyatt.
+ */
+export function detectSubBrand(raw: string, programme?: string): string | null {
+  const text = raw.toLowerCase();
+  const pool = programme ? LOOKUP.filter((l) => l.programme === programme) : LOOKUP;
+  for (const { needle, programme: prog } of pool) {
+    if (text.includes(needle)) {
+      const group = BRAND_GROUPS.find((g) => g.programme === prog);
+      const canonical = group?.subBrands.find((s) => s.toLowerCase() === needle);
+      return canonical ?? needle;
+    }
+  }
+  return null;
+}
+

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes, usePromotions } from '../lib/useLiveData';
+import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes, usePromotions, usePaymentCards } from '../lib/useLiveData';
 import { computeStatusProgress } from '../lib/statusProgress';
+import { computeCardResults } from '../lib/cardMath';
 import { BedIcon, HotelIcon, PlaneIcon } from '../components/Icons';
 import { TripCard } from '../components/TripCard';
 
@@ -30,6 +31,8 @@ export function Home() {
   const { data: promotions } = usePromotions();
   const { data: flights } = useAllFlights();
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
+  const { data: paymentCards } = usePaymentCards();
+  const cardResults = computeCardResults(hotels, flights, paymentCards, loyaltyProgrammes, TODAY);
 
   const currentTrip = trips.find((t) => t.section === 'current');
   const upcomingTrips = trips.filter((t) => t.section === 'upcoming').sort((a, b) => a.start.localeCompare(b.start));
@@ -64,8 +67,8 @@ export function Home() {
   }
 
   const topProgress = loyaltyProgrammes
-    .filter((p) => p.nextTier && p.nights != null && p.nightsNeeded != null && p.nightsNeeded > 0)
-    .map((p) => ({ ...p, progress: computeStatusProgress(p, hotels, promotions) }))
+    .filter((p) => p.nextTier && p.nights != null && p.nightsNeeded != null)
+    .map((p) => ({ ...p, progress: computeStatusProgress(p, hotels, promotions, cardResults) }))
     .sort((a, b) => (b.progress.pct ?? 0) - (a.progress.pct ?? 0))
     .slice(0, 3);
   const [progressIndex, setProgressIndex] = useState(0);

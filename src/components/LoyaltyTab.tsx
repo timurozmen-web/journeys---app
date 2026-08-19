@@ -14,9 +14,10 @@ function moneyPrecise(n: number): string {
 }
 
 export function LoyaltyTab({
-  programmes, hotels, promotions, paymentCards,
+  programmes, hotels, promotions, paymentCards, cardResults,
 }: {
   programmes: LoyaltyProgramme[]; hotels: Hotel[]; promotions: Promotion[]; paymentCards: PaymentCard[];
+  cardResults?: Parameters<typeof computeStatusProgress>[3];
 }) {
   const { data: vouchers, refetch: refetchVouchers } = useVouchers();
   const [category, setCategory] = useState<Category>('hotel');
@@ -44,7 +45,7 @@ export function LoyaltyTab({
         const isOpen = open === p.name;
         const value = (p.points * p.ptValue) / 100;
         const hasStatus = !!p.nextTier && p.nights != null && p.nightsNeeded != null;
-        const progress = hasStatus ? computeStatusProgress(p, hotels, promotions) : null;
+        const progress = hasStatus ? computeStatusProgress(p, hotels, promotions, cardResults) : null;
 
         // Vouchers relevant to this programme: match by the issuing
         // card's own programme brand where possible (auto-synced
@@ -142,6 +143,58 @@ export function LoyaltyTab({
                         </div>
                       </>
                     )}
+                  </div>
+                )}
+
+                {progress && progress.cardEliteNights.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>
+                      Elite nights from cards
+                    </div>
+                    <div style={{ display: 'grid', gap: 4 }}>
+                      {progress.cardEliteNights.map((c, idx) => (
+                        <div key={`${c.cardId}-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 12 }}>
+                          <span style={{ color: c.earned ? 'var(--ink2)' : 'var(--amber)' }}>
+                            {c.earned ? '✓' : '○'} {c.note}
+                          </span>
+                          <span style={{ fontWeight: 700, color: c.earned ? 'var(--ink)' : 'var(--amber)', flexShrink: 0 }}>
+                            +{c.nights}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {progress?.brandExplorer && (
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>
+                      Brand Explorer
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--ink2)', marginBottom: 6 }}>
+                      {progress.brandExplorer.completedCount} distinct brand{progress.brandExplorer.completedCount === 1 ? '' : 's'} stayed
+                      {progress.brandExplorer.pendingCount > 0 && (
+                        <span style={{ color: 'var(--amber)', fontWeight: 700 }}> (+{progress.brandExplorer.pendingCount} pending)</span>
+                      )}
+                      {' · '}{progress.brandExplorer.brandsToNextVoucher} more to a free night
+                    </div>
+                    {progress.brandExplorer.vouchersEarned > 0 && (
+                      <div style={{ fontSize: 12, color: 'var(--green)', fontWeight: 700, marginBottom: 6 }}>
+                        {progress.brandExplorer.vouchersEarned} free night award{progress.brandExplorer.vouchersEarned === 1 ? '' : 's'} earned (Category 1–5, valid 12 months)
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {progress.brandExplorer.brandsStayed.map((b) => (
+                        <span key={b} style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 99, background: 'rgba(91,63,166,.1)', color: 'var(--brand)' }}>
+                          {b}
+                        </span>
+                      ))}
+                      {progress.brandExplorer.brandsPending.map((b) => (
+                        <span key={b} style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 99, background: 'rgba(156,95,8,.12)', color: 'var(--amber)' }}>
+                          {b} (booked)
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
 

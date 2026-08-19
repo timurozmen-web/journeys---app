@@ -1,4 +1,5 @@
 import type { Hotel, LoyaltyProgramme, Promotion } from '../types';
+import { detectSubBrand } from '../data/brandMap';
 
 // Per-brand spend/status-points requirements, verified against each
 // programme's real published terms rather than assumed to all work like
@@ -37,6 +38,22 @@ export interface SpendProgress {
   pendingPct: number | null; // completed + pending combined, when pending > 0
 }
 
+export interface CardEliteNights {
+  cardId: string;
+  nights: number;
+  earned: boolean; // already banked vs still pending a spend threshold
+  note: string;
+}
+
+export interface BrandExplorerProgress {
+  brandsStayed: string[]; // distinct sub-brands from completed stays
+  brandsPending: string[]; // distinct sub-brands from booked (not yet completed) stays
+  completedCount: number;
+  pendingCount: number;
+  vouchersEarned: number; // one per 5 distinct brands
+  brandsToNextVoucher: number;
+}
+
 export interface StatusProgress {
   total: number;
   currentNights: number; // static baseline + newly-completed stays since the baseline date
@@ -47,17 +64,20 @@ export interface StatusProgress {
   bookedNights: number;
   pendingPromo: Promotion | null;
   pendingNights: number;
+  cardEliteNights: CardEliteNights[];
   spendProgress: SpendProgress | null;
+  brandExplorer: BrandExplorerProgress | null;
 }
 
-export function computeStatusProgress(p: LoyaltyProgramme, hotels: Hotel[], promotions: Promotion[]): StatusProgress {
+export function computeStatusProgress(
+  p: LoyaltyProgramme,
+  hotels: Hotel[],
+  promotions: Promotion[],
+  cardResults: { card: { id: string; programmeBrand: string; eliteNights: { auto: number; perSpendAmount: number | null; perSpendCap: number | null } }; autoSpend: number; cardRow?: { closedDate?: string | null } | null }[] = []
+): StatusProgress {
   const currentYear = new Date().getFullYear();
   const today = new Date().toISOString().slice(0, 10);
 
-  // Current nights = the static baseline (accurate as of nightsBaselineDate)
-  // plus any stays for this brand completed *after* that date -- avoids
-  // double-counting nights already folded into the baseline, while still
-  // growing live as new stays actually complete.
   const newlyCompletedNights = p.nightsBaselineDate
     ? hotels
         .filter((h) => h.brand === p.name && h.status === 'Completed' && h.date > p.nightsBaselineDate!)
@@ -65,18 +85,10 @@ export function computeStatusProgress(p: LoyaltyProgramme, hotels: Hotel[], prom
     : 0;
   const currentNights = (p.nights ?? 0) + newlyCompletedNights;
 
-  // Only stays booked within the current qualification year count as
-  // pending progress toward it -- a stay booked for next year belongs to
-  // a separate, future qualification period and shouldn't inflate this
-  // year's bar.
   const bookedNights = hotels
     .filter((h) => h.brand === p.name && h.status === 'Booked' && Number(h.date.slice(0, 4)) === currentYear)
     .reduce((s, h) => s + h.nights, 0);
 
-  // A status_boost promotion for this brand, active now, not yet applied
-  // -- its bonus nights land all at once on the next qualifying stay, so
-  // shown as a separate "pending" projection rather than folded into
-  // booked nights.
   const pendingPromo =
     promotions.find(
       (promo) =>
@@ -87,23 +99,59 @@ export function computeStatusProgress(p: LoyaltyProgramme, hotels: Hotel[], prom
         (!promo.startDate || promo.startDate <= today) &&
         (!promo.endDate || promo.endDate >= today)
     ) ?? null;
-  // The promo's bonus nights land alongside the 1 real night of whatever
-  // stay triggers it. If a booked stay already exists, that's presumably
-  // the trigger and its night is already counted via bookedNights -- add
-  // just the bonus on top. If there's no booked stay yet, this is a pure
-  // projection of "your next stay, whenever it happens" -- so the +1
-  // triggering night needs to be added explicitly, or a 15-night bonus
-  // would incorrectly show as only +15 instead of the real +16.
-  const pendingNights = pendingPromo ? pendingPromo.statusNightsBonus! + (bookedNights > 0 ? 0 : 1) : 0;
+  const promoNights = pendingPromo ? pendingPromo.statusNightsBonus! + (bookedNights > 0 ? 0 : 1) : 0;
+
+  // Elite nights granted by holding a card for this programme. These are
+  // real, ongoing status progress -- an IHG card's 15 elite nights apply
+  // every year the card stays open, and spend-earned nights accrue on top.
+  // Only open (non-closed) cards count, since the benefit stops when the
+  // card is closed.
+  const cardEliteNights: CardEliteNights[] = [];
+  for (const r of cardResults) {
+    if (r.card.programmeBrand !== p.name) continue;
+    if (r.cardRow?.closedDate) continue; // benefit ends with the card
+    const en = r.card.eliteNights;
+    if (en.auto > 0) {
+      cardEliteNights.push({
+        cardId: r.card.id, nights: en.auto, earned: true,
+        note: `${en.auto} elite nights for holding ${r.card.id}`,
+      });
+    }
+    if (en.perSpendAmount) {
+      let earnedFromSpend = Math.floor(r.autoSpend / en.perSpendAmount);
+      if (en.perSpendCap != null) earnedFromSpend = Math.min(earnedFromSpend, en.perSpendCap);
+      if (earnedFromSpend > 0) {
+        cardEliteNights.push({
+          cardId: r.card.id, nights: earnedFromSpend, earned: true,
+          note: `${earnedFromSpend} elite nights from £${Math.round(r.autoSpend).toLocaleString()} card spend`,
+        });
+      }
+      // Show the next threshold as genuinely pending, so the user can see
+      // what's within reach rather than only what's already banked.
+      const atCap = en.perSpendCap != null && earnedFromSpend >= en.perSpendCap;
+      if (!atCap) {
+        const spendToNext = en.perSpendAmount - (r.autoSpend % en.perSpendAmount);
+        cardEliteNights.push({
+          cardId: r.card.id, nights: 1, earned: false,
+          note: `+1 elite night at £${Math.round(spendToNext).toLocaleString()} more spend`,
+        });
+      }
+    }
+  }
+  const earnedCardNights = cardEliteNights.filter((c) => c.earned).reduce((s, c) => s + c.nights, 0);
+  const pendingCardNights = cardEliteNights.filter((c) => !c.earned).reduce((s, c) => s + c.nights, 0);
+
+  // Everything not yet banked, combined: booked stays, promo bonuses, and
+  // card nights still short of their spend threshold.
+  const pendingNights = promoNights + pendingCardNights;
 
   const total = (p.nights ?? 0) + (p.nightsNeeded ?? 0);
-  const projectedBooked = Math.min(total, currentNights + bookedNights);
+  // Card elite nights that are already earned count as real, current
+  // progress -- not pending -- since they've genuinely been credited.
+  const effectiveCurrentNights = currentNights + earnedCardNights;
+  const projectedBooked = Math.min(total, effectiveCurrentNights + bookedNights);
   const projectedWithPromo = Math.min(total, projectedBooked + pendingNights);
 
-  // Any brand with a configured spend/status-points requirement for the
-  // tier being pursued gets a second bar, alongside nights -- not just
-  // Marriott. Completed spend is the solid segment; booked-but-not-yet-
-  // completed spend this year shows as pending, same as nights.
   let spendProgress: SpendProgress | null = null;
   const config = SPEND_CONFIGS[p.name];
   const requiredAmount = config && p.nextTier ? config.requiredByTier[p.nextTier] : undefined;
@@ -115,6 +163,9 @@ export function computeStatusProgress(p: LoyaltyProgramme, hotels: Hotel[], prom
 
     const rate = config.unit === 'points' ? config.pointsPerGBP! : config.fxRateFromGBP;
     const currentAmount = spendGBP('Completed') * rate;
+    // Booked-but-not-completed stays count as pending qualifying spend --
+    // converted at the same static rate as completed spend, so an upcoming
+    // stay's contribution is visible before it happens.
     const pendingSpend = spendGBP('Booked') * rate;
 
     spendProgress = {
@@ -125,16 +176,47 @@ export function computeStatusProgress(p: LoyaltyProgramme, hotels: Hotel[], prom
     };
   }
 
+  // Hyatt's Brand Explorer: 5 distinct sub-brands earns a free-night award
+  // at a Category 1-5 property. Sub-brands are deduced from the logged
+  // hotel names, so no manual tracking is needed.
+  let brandExplorer: BrandExplorerProgress | null = null;
+  if (p.name === 'World of Hyatt') {
+    const subBrandsFor = (status: Hotel['status']) => {
+      const found = new Set<string>();
+      for (const h of hotels) {
+        if (h.brand !== p.name || h.status !== status) continue;
+        const sub = detectSubBrand(h.name, p.name);
+        if (sub) found.add(sub);
+      }
+      return found;
+    };
+    const completed = subBrandsFor('Completed');
+    const bookedSet = subBrandsFor('Booked');
+    // Only count a booked brand as pending if it isn't already completed.
+    const pendingOnly = [...bookedSet].filter((b) => !completed.has(b));
+    const completedCount = completed.size;
+    brandExplorer = {
+      brandsStayed: [...completed].sort(),
+      brandsPending: pendingOnly.sort(),
+      completedCount,
+      pendingCount: pendingOnly.length,
+      vouchersEarned: Math.floor(completedCount / 5),
+      brandsToNextVoucher: (5 - (completedCount % 5)) % 5 || 5,
+    };
+  }
+
   return {
     total,
-    currentNights,
-    pct: p.nights != null && p.nightsNeeded != null ? (currentNights / total) * 100 : null,
+    currentNights: effectiveCurrentNights,
+    pct: p.nights != null && p.nightsNeeded != null ? (effectiveCurrentNights / total) * 100 : null,
     pct2: bookedNights > 0 ? (projectedBooked / total) * 100 : null,
     pct3: pendingNights > 0 ? (projectedWithPromo / total) * 100 : null,
     pendingPct: bookedNights + pendingNights > 0 ? (projectedWithPromo / total) * 100 : null,
     bookedNights,
     pendingPromo,
     pendingNights,
+    cardEliteNights,
     spendProgress,
+    brandExplorer,
   };
 }
