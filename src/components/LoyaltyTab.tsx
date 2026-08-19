@@ -68,7 +68,9 @@ export function LoyaltyTab({
               <BrandLogo name={p.name} shape={p.shape} color={p.color} accent={p.accent} size={38} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 {!hasWordmarkLogo(p.name) && <div style={{ fontSize: 14, fontWeight: 700 }}>{p.name}</div>}
-                <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 1 }}>{p.tier ?? '—'}</div>
+                <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 1 }}>
+                  {progress?.effectiveTier ?? p.tier ?? '—'}
+                </div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>{p.points.toLocaleString()} pts</div>

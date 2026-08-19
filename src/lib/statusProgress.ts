@@ -63,6 +63,23 @@ const TIER_NIGHT_REQUIREMENTS: Record<string, Record<string, number>> = {
  * grants Platinum would still show progress toward Silver, which is
  * meaningless -- the real target is the next tier above what's held.
  */
+// Tier names vary in the wild ("Silver" vs "Silver Elite" vs "Platinum
+// Elite"), so match on the distinctive word rather than requiring an
+// exact string -- an exact indexOf silently returned -1 and broke tier
+// resolution entirely.
+function tierIndex(ladder: string[], tier: string | null | undefined): number {
+  if (!tier) return -1;
+  const t = tier.toLowerCase();
+  let best = -1;
+  for (let i = 0; i < ladder.length; i++) {
+    const l = ladder[i].toLowerCase();
+    if (t === l || t.includes(l) || l.includes(t)) {
+      if (best === -1 || ladder[i].length > ladder[best].length) best = i;
+    }
+  }
+  return best;
+}
+
 function resolveTargetTier(
   programmeName: string,
   storedNextTier: string | null | undefined,
@@ -72,10 +89,8 @@ function resolveTargetTier(
   if (!ladder || !cardGrantedTier) {
     return { targetTier: storedNextTier ?? null, nightsNeeded: null };
   }
-  const grantedIdx = ladder.indexOf(cardGrantedTier);
-  const storedIdx = storedNextTier ? ladder.indexOf(storedNextTier) : -1;
-  // If the card already grants at or above the stored target, the real
-  // target is whatever sits above the granted tier.
+  const grantedIdx = tierIndex(ladder, cardGrantedTier);
+  const storedIdx = tierIndex(ladder, storedNextTier);
   if (grantedIdx >= 0 && grantedIdx >= storedIdx) {
     const nextUp = ladder[grantedIdx + 1] ?? null;
     const needed = nextUp ? TIER_NIGHT_REQUIREMENTS[programmeName]?.[nextUp] ?? null : null;
@@ -112,6 +127,7 @@ export interface StatusProgress {
   pendingNights: number;
   cardEliteNights: CardEliteNights[];
   cardGrantedTier: string | null; // status held outright via a card, if any
+  effectiveTier: string | null; // the tier actually held, card grant included
   targetTier: string | null; // the tier genuinely being worked toward
   uniqueBrandNights: number; // elite nights from a per-unique-brand promotion
   uniqueBrandCount: number;
@@ -123,7 +139,7 @@ export function computeStatusProgress(
   p: LoyaltyProgramme,
   hotels: Hotel[],
   promotions: Promotion[],
-  cardResults: { card: { id: string; programmeBrand: string; perks?: { id: string; label: string }[]; eliteNights: { auto: number; perSpendAmount: number | null; perSpendCap: number | null } }; autoSpend: number; cardRow?: { closedDate?: string | null } | null }[] = []
+  cardResults: { card: { id: string; programmeBrand: string; perks?: { id: string; label: string }[]; eliteNights: { auto: number; perSpendAmount: number | null; perSpendCap: number | null } }; autoSpend: number; cardRow?: { closedDate?: string | null } | null; milestoneResults?: { m: { id: string }; hit: boolean }[] }[] = []
 ): StatusProgress {
   const currentYear = new Date().getFullYear();
   const today = new Date().toISOString().slice(0, 10);
@@ -152,9 +168,18 @@ export function computeStatusProgress(
     }
   }
   const { targetTier, nightsNeeded: resolvedNightsNeeded } = resolveTargetTier(p.name, p.nextTier, cardGrantedTier);
+  // The tier genuinely held right now: the stored tier, unless a card
+  // grants something higher outright.
+  const effectiveTier =
+    cardGrantedTier && tierIndex(ladder, cardGrantedTier) > tierIndex(ladder, p.tier)
+      ? cardGrantedTier
+      : p.tier ?? null;
 
+  // Any stay for this brand this year that hasn't completed yet counts as
+  // pending nights -- including in-progress and needs-confirm stays, not
+  // only those explicitly marked Booked.
   const bookedNights = hotels
-    .filter((h) => h.brand === p.name && h.status === 'Booked' && Number(h.date.slice(0, 4)) === currentYear)
+    .filter((h) => h.brand === p.name && h.status !== 'Completed' && Number(h.date.slice(0, 4)) === currentYear)
     .reduce((s, h) => s + h.nights, 0);
 
   const pendingPromo =
@@ -179,12 +204,22 @@ export function computeStatusProgress(
     if (r.card.programmeBrand !== p.name) continue;
     if (r.cardRow?.closedDate) continue; // benefit ends with the card
     const en = r.card.eliteNights;
+
+    // Auto nights are granted for holding the card, but only actually
+    // credit once the card's welcome requirement has been met. Until then
+    // they're genuinely pending, not banked -- and they stay credited
+    // afterwards for as long as the card remains open.
     if (en.auto > 0) {
+      const welcomeMilestone = r.milestoneResults?.find((m) => m.m.id.startsWith('welcome'));
+      const welcomeMet = welcomeMilestone ? welcomeMilestone.hit : true;
       cardEliteNights.push({
-        cardId: r.card.id, nights: en.auto, earned: true,
-        note: `${en.auto} elite nights for holding ${r.card.id}`,
+        cardId: r.card.id, nights: en.auto, earned: welcomeMet,
+        note: welcomeMet
+          ? `${en.auto} elite nights for holding ${r.card.id}`
+          : `${en.auto} elite nights once the ${r.card.id} welcome bonus is met`,
       });
     }
+
     if (en.perSpendAmount) {
       let earnedFromSpend = Math.floor(r.autoSpend / en.perSpendAmount);
       if (en.perSpendCap != null) earnedFromSpend = Math.min(earnedFromSpend, en.perSpendCap);
@@ -194,10 +229,10 @@ export function computeStatusProgress(
           note: `${earnedFromSpend} elite nights from £${Math.round(r.autoSpend).toLocaleString()} card spend`,
         });
       }
-      // Show the next threshold as genuinely pending, so the user can see
-      // what's within reach rather than only what's already banked.
+      // Only surface the next spend threshold once there's real spend on
+      // the card -- otherwise it's noise on a card that hasn't been used.
       const atCap = en.perSpendCap != null && earnedFromSpend >= en.perSpendCap;
-      if (!atCap) {
+      if (!atCap && r.autoSpend > 0) {
         const spendToNext = en.perSpendAmount - (r.autoSpend % en.perSpendAmount);
         cardEliteNights.push({
           cardId: r.card.id, nights: 1, earned: false,
@@ -232,7 +267,6 @@ export function computeStatusProgress(
     uniqueBrandNights = uniqueBrandCount;
   }
 
-  const earnedCardNights = cardEliteNights.filter((c) => c.earned).reduce((s, c) => s + c.nights, 0);
   const pendingCardNights = cardEliteNights.filter((c) => !c.earned).reduce((s, c) => s + c.nights, 0);
 
   const pendingNights = promoNights + pendingCardNights;
@@ -241,9 +275,12 @@ export function computeStatusProgress(
   // resolved requirement when a card grants status outright, since the
   // stored nightsNeeded refers to a tier that may already be held.
   const total = resolvedNightsNeeded ?? ((p.nights ?? 0) + (p.nightsNeeded ?? 0));
-  // Card elite nights and unique-brand promo nights are genuinely credited
-  // progress, not pending.
-  const effectiveCurrentNights = currentNights + earnedCardNights + uniqueBrandNights;
+  // The stored nights baseline is the real account balance, which already
+  // reflects everything the programme has actually credited -- including
+  // card elite nights and any promo nights already applied. Adding those
+  // again here would double-count them (e.g. a real 81 showing as 111).
+  // Card nights are surfaced separately as a breakdown, not re-added.
+  const effectiveCurrentNights = currentNights;
   const projectedBooked = Math.min(total, effectiveCurrentNights + bookedNights);
   const projectedWithPromo = Math.min(total, projectedBooked + pendingNights);
 
@@ -251,17 +288,20 @@ export function computeStatusProgress(
   const config = SPEND_CONFIGS[p.name];
   const requiredAmount = config && p.nextTier ? config.requiredByTier[p.nextTier] : undefined;
   if (config && requiredAmount != null) {
-    const spendGBP = (status: Hotel['status']) =>
-      hotels
-        .filter((h) => h.brand === p.name && h.status === status && Number(h.date.slice(0, 4)) === currentYear)
-        .reduce((s, h) => s + (h.total ?? 0), 0);
+    const completedSpendGBP = hotels
+      .filter((h) => h.brand === p.name && h.status === 'Completed' && Number(h.date.slice(0, 4)) === currentYear)
+      .reduce((s, h) => s + (h.total ?? 0), 0);
+    // Anything for this brand this year that hasn't completed yet counts
+    // as pending spend -- including in-progress and needs-confirm stays,
+    // not only those explicitly marked Booked, which was silently
+    // excluding real upcoming spend.
+    const pendingSpendGBP = hotels
+      .filter((h) => h.brand === p.name && h.status !== 'Completed' && Number(h.date.slice(0, 4)) === currentYear)
+      .reduce((s, h) => s + (h.total ?? 0), 0);
 
     const rate = config.unit === 'points' ? config.pointsPerGBP! : config.fxRateFromGBP;
-    const currentAmount = spendGBP('Completed') * rate;
-    // Booked-but-not-completed stays count as pending qualifying spend --
-    // converted at the same static rate as completed spend, so an upcoming
-    // stay's contribution is visible before it happens.
-    const pendingSpend = spendGBP('Booked') * rate;
+    const currentAmount = completedSpendGBP * rate;
+    const pendingSpend = pendingSpendGBP * rate;
 
     spendProgress = {
       label: config.label, currentAmount, pendingAmount: pendingSpend, requiredAmount,
@@ -312,6 +352,7 @@ export function computeStatusProgress(
     pendingNights,
     cardEliteNights,
     cardGrantedTier,
+    effectiveTier,
     targetTier,
     uniqueBrandNights,
     uniqueBrandCount,
