@@ -92,8 +92,20 @@ export function LoyaltyTab({
                           <span style={{ color: 'var(--amber)', fontWeight: 700 }}> (+{progress.bookedNights + progress.pendingNights} pending)</span>
                         )}
                       </span>
-                      <span style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 600 }}>{p.nextTier}</span>
+                      <span style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 600 }}>
+                        {progress.targetTier ?? p.nextTier}
+                      </span>
                     </div>
+                    {progress.cardGrantedTier && (
+                      <div style={{ fontSize: 11, color: 'var(--ink3)', marginBottom: 6 }}>
+                        {progress.cardGrantedTier} held via card — working toward {progress.targetTier ?? 'the next tier'}
+                      </div>
+                    )}
+                    {progress.uniqueBrandNights > 0 && (
+                      <div style={{ fontSize: 11, color: 'var(--ink3)', marginBottom: 6 }}>
+                        +{progress.uniqueBrandNights} elite nights from {progress.uniqueBrandCount} unique brands (promotion)
+                      </div>
+                    )}
                     <div
                       className="hbar"
                       style={{

@@ -38,6 +38,52 @@ export interface SpendProgress {
   pendingPct: number | null; // completed + pending combined, when pending > 0
 }
 
+// Real tier ladders per programme, lowest to highest. Used to work out
+// which tier is genuinely still ahead -- a card that grants Platinum
+// outright means Silver/Gold aren't meaningful targets any more.
+const TIER_LADDERS: Record<string, string[]> = {
+  'Marriott Bonvoy': ['Member', 'Silver', 'Gold', 'Platinum', 'Titanium Elite', 'Ambassador'],
+  'IHG One Rewards': ['Club', 'Silver', 'Gold', 'Platinum', 'Diamond'],
+  'Hilton Honors': ['Member', 'Silver', 'Gold', 'Diamond'],
+  'World of Hyatt': ['Member', 'Discoverist', 'Explorist', 'Globalist'],
+  'Accor ALL': ['Classic', 'Silver', 'Gold', 'Platinum', 'Diamond'],
+};
+
+// Nights required to reach each tier, from the programmes' real published
+// requirements. Only needed where a card grants status outright and the
+// app therefore has to work out the *next* real target itself.
+const TIER_NIGHT_REQUIREMENTS: Record<string, Record<string, number>> = {
+  'IHG One Rewards': { Silver: 10, Gold: 20, Platinum: 40, Diamond: 70 },
+  'Marriott Bonvoy': { Silver: 10, Gold: 25, Platinum: 50, 'Titanium Elite': 75, Ambassador: 100 },
+};
+
+/**
+ * Works out the tier a member is genuinely working toward, accounting for
+ * status granted outright by a card. Without this, holding a card that
+ * grants Platinum would still show progress toward Silver, which is
+ * meaningless -- the real target is the next tier above what's held.
+ */
+function resolveTargetTier(
+  programmeName: string,
+  storedNextTier: string | null | undefined,
+  cardGrantedTier: string | null
+): { targetTier: string | null; nightsNeeded: number | null } {
+  const ladder = TIER_LADDERS[programmeName];
+  if (!ladder || !cardGrantedTier) {
+    return { targetTier: storedNextTier ?? null, nightsNeeded: null };
+  }
+  const grantedIdx = ladder.indexOf(cardGrantedTier);
+  const storedIdx = storedNextTier ? ladder.indexOf(storedNextTier) : -1;
+  // If the card already grants at or above the stored target, the real
+  // target is whatever sits above the granted tier.
+  if (grantedIdx >= 0 && grantedIdx >= storedIdx) {
+    const nextUp = ladder[grantedIdx + 1] ?? null;
+    const needed = nextUp ? TIER_NIGHT_REQUIREMENTS[programmeName]?.[nextUp] ?? null : null;
+    return { targetTier: nextUp, nightsNeeded: needed };
+  }
+  return { targetTier: storedNextTier ?? null, nightsNeeded: null };
+}
+
 export interface CardEliteNights {
   cardId: string;
   nights: number;
@@ -65,6 +111,10 @@ export interface StatusProgress {
   pendingPromo: Promotion | null;
   pendingNights: number;
   cardEliteNights: CardEliteNights[];
+  cardGrantedTier: string | null; // status held outright via a card, if any
+  targetTier: string | null; // the tier genuinely being worked toward
+  uniqueBrandNights: number; // elite nights from a per-unique-brand promotion
+  uniqueBrandCount: number;
   spendProgress: SpendProgress | null;
   brandExplorer: BrandExplorerProgress | null;
 }
@@ -73,7 +123,7 @@ export function computeStatusProgress(
   p: LoyaltyProgramme,
   hotels: Hotel[],
   promotions: Promotion[],
-  cardResults: { card: { id: string; programmeBrand: string; eliteNights: { auto: number; perSpendAmount: number | null; perSpendCap: number | null } }; autoSpend: number; cardRow?: { closedDate?: string | null } | null }[] = []
+  cardResults: { card: { id: string; programmeBrand: string; perks?: { id: string; label: string }[]; eliteNights: { auto: number; perSpendAmount: number | null; perSpendCap: number | null } }; autoSpend: number; cardRow?: { closedDate?: string | null } | null }[] = []
 ): StatusProgress {
   const currentYear = new Date().getFullYear();
   const today = new Date().toISOString().slice(0, 10);
@@ -84,6 +134,24 @@ export function computeStatusProgress(
         .reduce((s, h) => s + h.nights, 0)
     : 0;
   const currentNights = (p.nights ?? 0) + newlyCompletedNights;
+
+  // A card may grant status outright (the IHG card gives Platinum, the
+  // Marriott Debit gives Gold). Take the highest such grant from any open
+  // card for this programme, so progress targets the next tier genuinely
+  // still ahead rather than one already held.
+  const ladder = TIER_LADDERS[p.name] ?? [];
+  let cardGrantedTier: string | null = null;
+  for (const r of cardResults) {
+    if (r.card.programmeBrand !== p.name) continue;
+    if (r.cardRow?.closedDate) continue;
+    for (const perk of r.card.perks ?? []) {
+      const match = ladder.find((t) => perk.label.toLowerCase().includes(t.toLowerCase()));
+      if (match && (!cardGrantedTier || ladder.indexOf(match) > ladder.indexOf(cardGrantedTier))) {
+        cardGrantedTier = match;
+      }
+    }
+  }
+  const { targetTier, nightsNeeded: resolvedNightsNeeded } = resolveTargetTier(p.name, p.nextTier, cardGrantedTier);
 
   const bookedNights = hotels
     .filter((h) => h.brand === p.name && h.status === 'Booked' && Number(h.date.slice(0, 4)) === currentYear)
@@ -138,17 +206,44 @@ export function computeStatusProgress(
       }
     }
   }
+  // Some promotions award a bonus elite night per *unique brand* stayed
+  // within a window (Marriott ran exactly this). Counted from real logged
+  // stays by deducing each stay's distinct sub-brand, so it reflects what
+  // actually happened rather than needing manual entry.
+  let uniqueBrandNights = 0;
+  let uniqueBrandCount = 0;
+  const uniqueBrandPromo =
+    promotions.find(
+      (promo) =>
+        promo.promoType === 'status_boost' &&
+        (promo.brand === p.name || !promo.brand) &&
+        /unique brand|per brand|brand bonus/i.test(`${promo.title} ${promo.description ?? ''}`)
+    ) ?? null;
+  if (uniqueBrandPromo) {
+    const brandsInWindow = new Set<string>();
+    for (const h of hotels) {
+      if (h.brand !== p.name || h.status !== 'Completed') continue;
+      if (uniqueBrandPromo.startDate && h.date < uniqueBrandPromo.startDate) continue;
+      if (uniqueBrandPromo.endDate && h.date > uniqueBrandPromo.endDate) continue;
+      const sub = detectSubBrand(h.name, p.name);
+      if (sub) brandsInWindow.add(sub);
+    }
+    uniqueBrandCount = brandsInWindow.size;
+    uniqueBrandNights = uniqueBrandCount;
+  }
+
   const earnedCardNights = cardEliteNights.filter((c) => c.earned).reduce((s, c) => s + c.nights, 0);
   const pendingCardNights = cardEliteNights.filter((c) => !c.earned).reduce((s, c) => s + c.nights, 0);
 
-  // Everything not yet banked, combined: booked stays, promo bonuses, and
-  // card nights still short of their spend threshold.
   const pendingNights = promoNights + pendingCardNights;
 
-  const total = (p.nights ?? 0) + (p.nightsNeeded ?? 0);
-  // Card elite nights that are already earned count as real, current
-  // progress -- not pending -- since they've genuinely been credited.
-  const effectiveCurrentNights = currentNights + earnedCardNights;
+  // Total nights needed for the tier genuinely being targeted -- uses the
+  // resolved requirement when a card grants status outright, since the
+  // stored nightsNeeded refers to a tier that may already be held.
+  const total = resolvedNightsNeeded ?? ((p.nights ?? 0) + (p.nightsNeeded ?? 0));
+  // Card elite nights and unique-brand promo nights are genuinely credited
+  // progress, not pending.
+  const effectiveCurrentNights = currentNights + earnedCardNights + uniqueBrandNights;
   const projectedBooked = Math.min(total, effectiveCurrentNights + bookedNights);
   const projectedWithPromo = Math.min(total, projectedBooked + pendingNights);
 
@@ -216,6 +311,10 @@ export function computeStatusProgress(
     pendingPromo,
     pendingNights,
     cardEliteNights,
+    cardGrantedTier,
+    targetTier,
+    uniqueBrandNights,
+    uniqueBrandCount,
     spendProgress,
     brandExplorer,
   };
