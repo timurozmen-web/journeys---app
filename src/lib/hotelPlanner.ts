@@ -3,7 +3,7 @@ import type { Hotel, LoyaltyProgramme } from '../types';
 // Real base earning rates per programme, per £1 spent on qualifying stays.
 // These are the published base rates -- the elite bonus is applied on top
 // separately, based on the user's actual current tier.
-const BASE_POINTS_PER_GBP: Record<string, number> = {
+export const BASE_POINTS_PER_GBP: Record<string, number> = {
   'Marriott Bonvoy': 12.7, // 10 pts per USD, converted at ~1.27
   'Hilton Honors': 12.7, // 10 pts per USD
   'IHG One Rewards': 12.7, // 10 pts per USD
@@ -13,7 +13,7 @@ const BASE_POINTS_PER_GBP: Record<string, number> = {
 
 // Real elite earning bonuses by programme and tier, as a multiplier on the
 // base rate. Only tiers the user actually holds need to be accurate here.
-const TIER_BONUS: Record<string, Record<string, number>> = {
+export const TIER_BONUS: Record<string, Record<string, number>> = {
   'Marriott Bonvoy': { Silver: 1.1, Gold: 1.25, Platinum: 1.5, 'Titanium Elite': 1.75, Titanium: 1.75, Ambassador: 1.75 },
   'Hilton Honors': { Silver: 1.2, Gold: 1.8, Diamond: 2.0 },
   'IHG One Rewards': { Silver: 1.2, Gold: 1.4, Platinum: 1.6, Diamond: 2.0 },

@@ -275,3 +275,5 @@ insert into landmarks (name, country, lat, lng, category, description, nearest_c
   ('Chocolate Hills', 'Philippines', 9.8264, 124.1608, 'natural', 'Over a thousand cone-shaped grass-covered hills on Bohol island.', 'Tagbilaran');
 
 alter table hotels add column if not exists award boolean not null default false;
+
+alter table hotels add column if not exists benefit_type text check (benefit_type in ('breakfast', 'upgrade', 'lounge', 'late-checkout', 'other'));

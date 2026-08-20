@@ -112,7 +112,7 @@ function mapHotel(h: any): Hotel {
     nights: h.nights, date: h.date, status: h.status, total: h.total,
     nightlyRate: h.nightly_rate, avgRate: h.avg_rate, sqm: h.sqm, card: h.card,
     category: h.category, lat: h.lat, lng: h.lng,
-    benefitValue: h.benefit_value ?? null, benefitNote: h.benefit_note ?? null,
+    benefitValue: h.benefit_value ?? null, benefitNote: h.benefit_note ?? null, benefitType: h.benefit_type ?? null,
     bookingChannel: h.booking_channel ?? null,
     roomType: h.room_type ?? null, rateType: h.rate_type ?? null, award: h.award ?? false,
   };
@@ -231,7 +231,7 @@ export interface NewHotelInput {
   name: string; country: string; city: string | null; brand: string; tier?: string;
   nights: number; date: string; status: 'Completed' | 'Booked' | 'needs-confirm';
   total: number | null; card: string | null; category: 'Luxury' | 'Premium' | 'Midscale' | 'Budget';
-  tripId: string | null; benefitValue: number | null; benefitNote: string | null;
+  tripId: string | null; benefitValue: number | null; benefitNote: string | null; benefitType: string | null;
   bookingChannel: string | null; roomType: string | null; rateType: string | null;
   nightlyRate: number | null; avgRate: number | null; award: boolean;
 }
@@ -240,7 +240,7 @@ export async function addHotel(input: NewHotelInput) {
     name: input.name, country: input.country, city: input.city, brand: input.brand, tier: input.tier || null,
     nights: input.nights, date: input.date, status: input.status, total: input.total,
     card: input.card, category: input.category, trip_id: input.tripId,
-    benefit_value: input.benefitValue, benefit_note: input.benefitNote, booking_channel: input.bookingChannel,
+    benefit_value: input.benefitValue, benefit_note: input.benefitNote, benefit_type: input.benefitType, booking_channel: input.bookingChannel,
     room_type: input.roomType, rate_type: input.rateType, nightly_rate: input.nightlyRate, avg_rate: input.avgRate, award: input.award,
   });
   if (error) throw error;
@@ -251,7 +251,7 @@ export async function updateHotel(id: string, input: NewHotelInput) {
     name: input.name, country: input.country, city: input.city, brand: input.brand, tier: input.tier || null,
     nights: input.nights, date: input.date, status: input.status, total: input.total,
     card: input.card, category: input.category, trip_id: input.tripId,
-    benefit_value: input.benefitValue, benefit_note: input.benefitNote, booking_channel: input.bookingChannel,
+    benefit_value: input.benefitValue, benefit_note: input.benefitNote, benefit_type: input.benefitType, booking_channel: input.bookingChannel,
     room_type: input.roomType, rate_type: input.rateType, nightly_rate: input.nightlyRate, avg_rate: input.avgRate, award: input.award,
   }).eq('id', id);
   if (error) throw error;

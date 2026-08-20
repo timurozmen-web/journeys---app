@@ -330,7 +330,7 @@ export function Plan() {
           total: bestHotel ? Math.round(bestHotel.estimatedNightlyGBP * city.nights) : null,
           card: null, category: 'Premium', tripId,
           benefitValue: null, benefitNote: null, bookingChannel: null, roomType: null, rateType: null,
-          nightlyRate: bestHotel ? Math.round(bestHotel.estimatedNightlyGBP) : null, avgRate: null, award: false,
+          nightlyRate: bestHotel ? Math.round(bestHotel.estimatedNightlyGBP) : null, avgRate: null, award: false, benefitType: null,
         });
       }
 

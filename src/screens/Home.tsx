@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes, usePromotions, usePaymentCards } from '../lib/useLiveData';
 import { computeStatusProgress } from '../lib/statusProgress';
 import { computeCardResults } from '../lib/cardMath';
+import { computeLoyaltyInsights } from '../lib/loyaltyInsights';
 import { BedIcon, HotelIcon, PlaneIcon } from '../components/Icons';
 import { TripCard } from '../components/TripCard';
 
@@ -33,6 +34,8 @@ export function Home() {
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
   const { data: paymentCards } = usePaymentCards();
   const cardResults = computeCardResults(hotels, flights, paymentCards, loyaltyProgrammes, TODAY);
+  const insights = computeLoyaltyInsights(hotels, loyaltyProgrammes, THIS_YEAR);
+  const [expandedBrand, setExpandedBrand] = useState<string | null>(null);
 
   const currentTrip = trips.find((t) => t.section === 'current');
   const upcomingTrips = trips.filter((t) => t.section === 'upcoming').sort((a, b) => a.start.localeCompare(b.start));
@@ -51,20 +54,6 @@ export function Home() {
   const staysLastYear = completedHotels.filter((h) => yearOf(h.date) === LAST_YEAR).length;
   const flightsThisYear = completedFlights.filter((f) => yearOf(f.date) === THIS_YEAR).length;
   const flightsLastYear = completedFlights.filter((f) => yearOf(f.date) === LAST_YEAR).length;
-
-  // Real hotel savings: (market rate − what was actually paid) × nights,
-  // only where both rates are recorded. Flights have no equivalent
-  // "standard fare" baseline tracked, so they're deliberately left out
-  // rather than estimated.
-  let hotelSavings = 0;
-  let hotelSpend = 0;
-  let benefitsValue = 0;
-  for (const h of completedHotels) {
-    if (yearOf(h.date) !== THIS_YEAR) continue;
-    if (h.total) hotelSpend += h.total;
-    if (h.avgRate != null && h.nightlyRate != null) hotelSavings += (h.avgRate - h.nightlyRate) * h.nights;
-    if (h.benefitValue) benefitsValue += h.benefitValue;
-  }
 
   const topProgress = loyaltyProgrammes
     .filter((p) => p.nextTier && p.nights != null && p.nightsNeeded != null && p.name !== 'Hilton Honors')
@@ -195,33 +184,65 @@ export function Home() {
         </div>
       )}
 
-      {(hotelSavings > 0 || benefitsValue > 0) && (
+      {(insights.overall.totalValueReceived > 0 || insights.overall.totalSpend > 0) && (
         <>
           <div className="sect">
-            <h2>This year you've saved</h2>
+            <h2>Loyalty value this year</h2>
           </div>
-          <div className="stack">
+          <div className="stack" style={{ display: 'grid', gap: 10 }}>
             <div className="chartwrap">
-              <div className="big">£{Math.round(hotelSavings + benefitsValue).toLocaleString()}</div>
-              <div className="lab">vs standard rates, plus upgrades & benefits</div>
+              <div className="big">£{Math.round(insights.overall.totalValueReceived).toLocaleString()}</div>
+              <div className="lab">
+                total value received
+                {insights.overall.roiPercent != null && ` · ${insights.overall.roiPercent.toFixed(0)}% return on spend`}
+              </div>
               <div style={{ marginTop: 12, display: 'grid', gap: 6 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}>
-                  <span style={{ color: 'var(--ink2)' }}>Rate savings</span>
-                  <span style={{ fontWeight: 700 }}>£{Math.round(hotelSavings).toLocaleString()}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}>
-                  <span style={{ color: 'var(--ink2)' }}>Upgrades & benefits</span>
-                  <span style={{ fontWeight: 700 }}>£{Math.round(benefitsValue).toLocaleString()}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}>
-                  <span style={{ color: 'var(--ink2)' }}>Hotel spend this year</span>
-                  <span style={{ fontWeight: 700 }}>£{Math.round(hotelSpend).toLocaleString()}</span>
-                </div>
+                <Row label="Rate savings" value={insights.overall.rateSavings} />
+                {insights.overall.benefitsByType.breakfast > 0 && <Row label="Free breakfast" value={insights.overall.benefitsByType.breakfast} />}
+                {insights.overall.benefitsByType.upgrade > 0 && <Row label="Room upgrades" value={insights.overall.benefitsByType.upgrade} />}
+                {insights.overall.benefitsByType.lounge > 0 && <Row label="Lounge access" value={insights.overall.benefitsByType.lounge} />}
+                {insights.overall.benefitsByType.lateCheckout > 0 && <Row label="Late checkout" value={insights.overall.benefitsByType.lateCheckout} />}
+                {insights.overall.benefitsByType.other > 0 && <Row label="Other benefits" value={insights.overall.benefitsByType.other} />}
+                <Row label="Points earned (value)" value={insights.overall.pointsValue} />
+                <div style={{ borderTop: '1px solid rgba(255,255,255,.15)', margin: '4px 0' }} />
+                <Row label="Hotel spend this year" value={insights.overall.totalSpend} />
                 <div style={{ fontSize: 12, color: 'var(--ink3)', marginTop: 4 }}>
-                  Flight savings aren't tracked yet — this is hotels only. Log benefits like free breakfast or a room upgrade when adding or editing a stay.
+                  Flight savings aren't tracked yet — this is hotels only. Log the benefit type when adding or editing a stay to build this out.
                 </div>
               </div>
             </div>
+
+            {insights.byBrand.length > 1 && (
+              <div style={{ display: 'grid', gap: 8 }}>
+                {insights.byBrand.map((b) => {
+                  const open = expandedBrand === b.brand;
+                  return (
+                    <div key={b.brand} style={{ borderRadius: 14, background: 'var(--card)', border: '1px solid var(--line)', overflow: 'hidden' }}>
+                      <button
+                        onClick={() => setExpandedBrand(open ? null : b.brand)}
+                        style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'var(--ink)' }}
+                      >
+                        <div>
+                          <div style={{ fontSize: 13.5, fontWeight: 700 }}>{b.brand}</div>
+                          <div style={{ fontSize: 11.5, color: 'var(--ink2)', marginTop: 1 }}>
+                            {b.nights} nights · {b.roiPercent != null ? `${b.roiPercent.toFixed(0)}% return` : 'no spend logged'}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--brand)' }}>£{Math.round(b.totalValueReceived).toLocaleString()}</div>
+                      </button>
+                      {open && (
+                        <div style={{ padding: '0 14px 14px', display: 'grid', gap: 5 }}>
+                          <DarkRow label="Spend" value={b.totalSpend} ink />
+                          <DarkRow label="Rate savings" value={b.rateSavings} ink />
+                          {b.totalBenefitsValue > 0 && <DarkRow label="Benefits" value={b.totalBenefitsValue} ink />}
+                          <DarkRow label="Points value" value={b.pointsValue} ink />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </>
       )}
@@ -267,6 +288,24 @@ export function Home() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: number }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}>
+      <span style={{ color: 'var(--ink2)' }}>{label}</span>
+      <span style={{ fontWeight: 700 }}>£{Math.round(value).toLocaleString()}</span>
+    </div>
+  );
+}
+
+function DarkRow({ label, value }: { label: string; value: number; ink?: boolean }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+      <span style={{ color: 'var(--ink2)' }}>{label}</span>
+      <span style={{ fontWeight: 700, color: 'var(--ink)' }}>£{Math.round(value).toLocaleString()}</span>
     </div>
   );
 }

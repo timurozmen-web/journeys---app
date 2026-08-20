@@ -21,6 +21,7 @@ export interface Hotel {
   lat: number;
   lng: number;
   benefitValue: number | null; // £ value of upgrades/perks received, e.g. free breakfast, suite upgrade
+  benefitType: 'breakfast' | 'upgrade' | 'lounge' | 'late-checkout' | 'other' | null;
   benefitNote: string | null; // what the benefit actually was
   bookingChannel: string | null; // e.g. 'Expedia' — which OTA/channel this was booked through, if not direct
   roomType: string | null;

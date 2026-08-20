@@ -50,6 +50,7 @@ export function LogHotel() {
     tripId: presetTripId ?? '',
     benefitValue: src?.benefitValue != null ? String(src.benefitValue) : '',
     benefitNote: src?.benefitNote ?? '',
+    benefitType: src?.benefitType ?? '',
     bookingChannel: src?.bookingChannel ?? '',
     roomType: src?.roomType ?? '',
     award: src?.award ?? false,
@@ -138,6 +139,7 @@ export function LogHotel() {
         tripId: resolvedTripId,
         benefitValue: form.benefitValue ? parseFloat(form.benefitValue) : null,
         benefitNote: form.benefitNote || null,
+        benefitType: form.benefitType || null,
         bookingChannel: form.bookingChannel || null,
         roomType: form.roomType || null,
         award: form.award,
@@ -304,6 +306,17 @@ export function LogHotel() {
           <div>
             <label style={labelStyle}>Benefit value (£)</label>
             <input style={inputStyle} type="number" step="0.01" value={form.benefitValue} onChange={(e) => set('benefitValue', e.target.value)} placeholder="e.g. upgrade, breakfast" />
+          </div>
+          <div>
+            <label style={labelStyle}>Benefit type</label>
+            <select style={inputStyle} value={form.benefitType} onChange={(e) => set('benefitType', e.target.value)}>
+              <option value="">Not set</option>
+              <option value="breakfast">Free breakfast</option>
+              <option value="upgrade">Room/suite upgrade</option>
+              <option value="lounge">Lounge access</option>
+              <option value="late-checkout">Late checkout</option>
+              <option value="other">Other</option>
+            </select>
           </div>
           <div>
             <label style={labelStyle}>What was it</label>
