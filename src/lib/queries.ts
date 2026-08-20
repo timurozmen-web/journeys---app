@@ -8,13 +8,20 @@ export async function fetchTrips(): Promise<Trip[]> {
   if (error) throw error;
   const { data: hotels } = await supabase.from('hotels').select('*');
   const { data: flights } = await supabase.from('flights').select('*');
+  const today = new Date().toISOString().slice(0, 10);
 
   return (trips ?? []).map((t): Trip => ({
     id: t.id,
     title: t.title,
     start: t.start_date,
     end: t.end_date,
-    section: t.section,
+    // Computed live from the real current date on every fetch, not
+    // trusted from the stored column -- a trip's status should always
+    // reflect today, not whatever it happened to be the last time the
+    // trip was saved. Without this, a trip that's genuinely ended stays
+    // stuck showing as "under way" indefinitely until someone happens to
+    // re-edit it.
+    section: computeSection(t.start_date, t.end_date, today),
     tripType: (t.trip_type as 'work' | 'leisure') ?? 'leisure',
     notes: t.notes ?? '',
     heroImageUrl: t.hero_image_url,
