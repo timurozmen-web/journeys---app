@@ -26,20 +26,23 @@ export function LogFlight() {
   const src = editing ?? prefill;
   const extractNote = state?.extractNote as string | undefined;
   const { data: trips } = useTrips();
+  const TODAY = new Date().toISOString().slice(0, 10);
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
+  const [statusTouched, setStatusTouched] = useState(!!src?.status);
   const [form, setForm] = useState({
     date: src?.date ?? '', from: src?.from ?? '', to: src?.to ?? '',
     airline: src?.airline ?? '', flightNo: src?.flightNo ?? '',
     cabin: (src?.cabin ?? 'Economy') as (typeof CABINS)[number],
-    status: (src?.status ?? 'Completed') as (typeof STATUSES)[number],
+    status: (src?.status ?? (src?.date && src.date > TODAY ? 'Booked' : 'Completed')) as (typeof STATUSES)[number],
     cost: src?.cost != null ? String(src.cost) : '',
     award: src?.award ?? false, overnight: src?.overnight ?? false, tripId: presetTripId ?? '',
   });
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
+    if (key === 'status') setStatusTouched(true);
     setForm((f) => ({ ...f, [key]: value }));
   }
 
@@ -89,7 +92,13 @@ export function LogFlight() {
       <form onSubmit={handleSubmit} style={{ padding: '0 20px', display: 'grid', gap: 14 }}>
         <div>
           <label style={labelStyle}>Date *</label>
-          <input style={inputStyle} type="date" value={form.date} onChange={(e) => set('date', e.target.value)} />
+          <input
+            style={inputStyle} type="date" value={form.date}
+            onChange={(e) => {
+              const date = e.target.value;
+              setForm((f) => ({ ...f, date, status: statusTouched ? f.status : date > TODAY ? 'Booked' : 'Completed' }));
+            }}
+          />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
