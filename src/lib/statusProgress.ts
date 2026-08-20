@@ -252,6 +252,7 @@ export function computeStatusProgress(
       (promo) =>
         promo.promoType === 'status_boost' &&
         (promo.brand === p.name || !promo.brand) &&
+        (!promo.endDate || promo.endDate >= today) && // only currently-active, not an already-expired past promotion
         /unique brand|per brand|brand bonus/i.test(`${promo.title} ${promo.description ?? ''}`)
     ) ?? null;
   if (uniqueBrandPromo) {
@@ -275,13 +276,13 @@ export function computeStatusProgress(
   // resolved requirement when a card grants status outright, since the
   // stored nightsNeeded refers to a tier that may already be held.
   const total = resolvedNightsNeeded ?? ((p.nights ?? 0) + (p.nightsNeeded ?? 0));
-  // Real, completed nights from actual stays, plus elite nights genuinely
-  // credited from cards and promotions -- these are separate, additive
-  // sources of real progress, not double-counting. The stored nights
-  // baseline should represent only real stay nights; card/promo credit is
-  // added on top here.
-  const earnedCardNights = cardEliteNights.filter((c) => c.earned).reduce((s, c) => s + c.nights, 0);
-  const effectiveCurrentNights = currentNights + earnedCardNights + uniqueBrandNights;
+  // The stored nights value is the complete, real current total -- it
+  // already reflects everything genuinely credited so far, including
+  // card elite nights already earned and any past promotion bonus that's
+  // already happened. Re-adding earned card nights on top double-counts
+  // them (this was the exact cause of a real 81 showing as 111). Only
+  // card nights genuinely not yet earned count separately, as pending.
+  const effectiveCurrentNights = currentNights + uniqueBrandNights;
   const projectedBooked = Math.min(total, effectiveCurrentNights + bookedNights);
   const projectedWithPromo = Math.min(total, projectedBooked + pendingNights);
 
