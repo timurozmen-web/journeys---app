@@ -8,9 +8,9 @@ export const trips: Trip[] = [
     id: 'tr1', title: 'Türkiye', start: '2026-07-25', end: '2026-08-15', section: 'current', tripType: 'leisure',
     notes: 'Kemer check-in from 3pm — flag Titanium status on arrival.', heroImageUrl: null,
     hotels: [
-      { id: 'h1', name: 'Hilton Dalaman', country: 'Türkiye', city: 'Dalaman', brand: 'Hilton Honors', nights: 3, date: '2026-07-25', status: 'Completed', total: 480, nightlyRate: 160, avgRate: 190, sqm: null, card: 'Hilton Debit', category: 'Premium', lat: 36.7, lng: 28.8, benefitValue: null, benefitNote: null, bookingChannel: null, roomType: null, rateType: 'Standard' },
-      { id: 'h2', name: 'Maxx Royal Kemer', country: 'Türkiye', city: 'Kemer', brand: 'Independent', nights: 3, date: '2026-08-04', status: 'Booked', total: 890, nightlyRate: 296, avgRate: 340, sqm: null, card: null, category: 'Luxury', lat: 36.5, lng: 30.5, benefitValue: null, benefitNote: null, bookingChannel: null, roomType: null, rateType: 'Standard' },
-      { id: 'h3', name: 'Maxx Royal Bodrum', country: 'Türkiye', city: 'Bodrum', brand: 'Independent', nights: 2, date: '2026-08-13', status: 'Booked', total: 620, nightlyRate: 310, avgRate: 350, sqm: null, card: null, category: 'Luxury', lat: 37.0, lng: 27.4, benefitValue: null, benefitNote: null, bookingChannel: null, roomType: null, rateType: 'Standard' },
+      { id: 'h1', name: 'Hilton Dalaman', country: 'Türkiye', city: 'Dalaman', brand: 'Hilton Honors', nights: 3, date: '2026-07-25', status: 'Completed', total: 480, nightlyRate: 160, avgRate: 190, sqm: null, card: 'Hilton Debit', category: 'Premium', lat: 36.7, lng: 28.8, benefitValue: null, benefitNote: null, bookingChannel: null, roomType: null, rateType: 'Standard', award: false },
+      { id: 'h2', name: 'Maxx Royal Kemer', country: 'Türkiye', city: 'Kemer', brand: 'Independent', nights: 3, date: '2026-08-04', status: 'Booked', total: 890, nightlyRate: 296, avgRate: 340, sqm: null, card: null, category: 'Luxury', lat: 36.5, lng: 30.5, benefitValue: null, benefitNote: null, bookingChannel: null, roomType: null, rateType: 'Standard', award: false },
+      { id: 'h3', name: 'Maxx Royal Bodrum', country: 'Türkiye', city: 'Bodrum', brand: 'Independent', nights: 2, date: '2026-08-13', status: 'Booked', total: 620, nightlyRate: 310, avgRate: 350, sqm: null, card: null, category: 'Luxury', lat: 37.0, lng: 27.4, benefitValue: null, benefitNote: null, bookingChannel: null, roomType: null, rateType: 'Standard', award: false },
     ],
     flights: [
       { id: 'f1', date: '2026-07-25', from: 'LGW', via: [], to: 'DLM', airline: 'easyJet', flightNo: 'U2 8565', cabin: 'Economy', status: 'Completed', cost: 180, award: false, overnight: false },
@@ -32,7 +32,7 @@ export const trips: Trip[] = [
 ];
 
 export const loyaltyProgrammes: LoyaltyProgramme[] = [
-  { name: 'Marriott Bonvoy', abbr: 'MA', points: 415343, ptValue: 0.5, color: '#1C1C1C', accent: '#FF9962', font: "'Playfair Display', serif", shape: 'crown', tier: 'Titanium Elite', nextTier: 'Ambassador', nights: 77, nightsNeeded: 23 , category: 'hotel' },
+  { name: 'Marriott Bonvoy', abbr: 'MA', points: 415343, ptValue: 0.5, color: '#1C1C1C', accent: '#FF9962', font: "'Playfair Display', serif", shape: 'crown', tier: 'Titanium Elite', nextTier: 'Ambassador', nights: 40, nightsNeeded: 60 , category: 'hotel' },
   { name: 'Avios', abbr: 'AV', points: 67309, ptValue: 1, color: '#2D5495', accent: '#FFFFFF', font: "'DM Sans', sans-serif", shape: 'wing' , category: 'airline' },
   { name: 'Hilton Honors', abbr: 'HI', points: 63963, ptValue: 0.4, color: '#012F60', accent: '#FFFFFF', font: "'Poppins', sans-serif", shape: 'shield', tier: 'Gold', nextTier: 'Diamond', nights: 0, nightsNeeded: 30 , category: 'hotel' },
   { name: 'Virgin Points', abbr: 'VI', points: 24005, ptValue: 1, color: '#DA0630', accent: '#FFFFFF', font: "'Yellowtail', cursive", shape: 'arrowUp' , category: 'airline' },

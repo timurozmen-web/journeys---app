@@ -52,6 +52,7 @@ export function LogHotel() {
     benefitNote: src?.benefitNote ?? '',
     bookingChannel: src?.bookingChannel ?? '',
     roomType: src?.roomType ?? '',
+    award: src?.award ?? false,
     rateType: (src?.rateType ?? 'Standard') as (typeof RATE_TYPES)[number],
     avgRate: src?.avgRate != null ? String(src.avgRate) : '',
   });
@@ -139,6 +140,7 @@ export function LogHotel() {
         benefitNote: form.benefitNote || null,
         bookingChannel: form.bookingChannel || null,
         roomType: form.roomType || null,
+        award: form.award,
         rateType: form.rateType,
         nightlyRate: total != null ? total / nights : null,
         avgRate,
@@ -260,6 +262,10 @@ export function LogHotel() {
             <input style={inputStyle} value={form.card} onChange={(e) => set('card', e.target.value)} placeholder="Optional" />
           </div>
         </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--ink)', cursor: 'pointer' }}>
+          <input type="checkbox" checked={form.award} onChange={(e) => set('award', e.target.checked)} />
+          Booked with points/certificate (award stay -- doesn't earn elite night credit)
+        </label>
         <div>
           <label style={labelStyle}>Room type</label>
           <input style={inputStyle} value={form.roomType} onChange={(e) => set('roomType', e.target.value)} placeholder="e.g. Deluxe King, City View" />

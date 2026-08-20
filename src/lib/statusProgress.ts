@@ -146,7 +146,7 @@ export function computeStatusProgress(
 
   const newlyCompletedNights = p.nightsBaselineDate
     ? hotels
-        .filter((h) => h.brand === p.name && h.status === 'Completed' && h.date > p.nightsBaselineDate!)
+        .filter((h) => h.brand === p.name && h.status === 'Completed' && h.date > p.nightsBaselineDate! && !h.award)
         .reduce((s, h) => s + h.nights, 0)
     : 0;
   const currentNights = (p.nights ?? 0) + newlyCompletedNights;
@@ -179,7 +179,7 @@ export function computeStatusProgress(
   // pending nights -- including in-progress and needs-confirm stays, not
   // only those explicitly marked Booked.
   const bookedNights = hotels
-    .filter((h) => h.brand === p.name && h.status !== 'Completed' && Number(h.date.slice(0, 4)) === currentYear)
+    .filter((h) => h.brand === p.name && h.status !== 'Completed' && !h.award && Number(h.date.slice(0, 4)) === currentYear)
     .reduce((s, h) => s + h.nights, 0);
 
   const pendingPromo =
@@ -275,28 +275,35 @@ export function computeStatusProgress(
   // resolved requirement when a card grants status outright, since the
   // stored nightsNeeded refers to a tier that may already be held.
   const total = resolvedNightsNeeded ?? ((p.nights ?? 0) + (p.nightsNeeded ?? 0));
-  // The stored nights baseline is the real account balance, which already
-  // reflects everything the programme has actually credited -- including
-  // card elite nights and any promo nights already applied. Adding those
-  // again here would double-count them (e.g. a real 81 showing as 111).
-  // Card nights are surfaced separately as a breakdown, not re-added.
-  const effectiveCurrentNights = currentNights;
+  // Real, completed nights from actual stays, plus elite nights genuinely
+  // credited from cards and promotions -- these are separate, additive
+  // sources of real progress, not double-counting. The stored nights
+  // baseline should represent only real stay nights; card/promo credit is
+  // added on top here.
+  const earnedCardNights = cardEliteNights.filter((c) => c.earned).reduce((s, c) => s + c.nights, 0);
+  const effectiveCurrentNights = currentNights + earnedCardNights + uniqueBrandNights;
   const projectedBooked = Math.min(total, effectiveCurrentNights + bookedNights);
   const projectedWithPromo = Math.min(total, projectedBooked + pendingNights);
 
   let spendProgress: SpendProgress | null = null;
   const config = SPEND_CONFIGS[p.name];
-  const requiredAmount = config && p.nextTier ? config.requiredByTier[p.nextTier] : undefined;
+  let requiredAmount: number | undefined;
+  if (config && p.nextTier) {
+    const tierKey = Object.keys(config.requiredByTier).find(
+      (k) => k.toLowerCase() === p.nextTier!.toLowerCase() || p.nextTier!.toLowerCase().includes(k.toLowerCase())
+    );
+    requiredAmount = tierKey ? config.requiredByTier[tierKey] : undefined;
+  }
   if (config && requiredAmount != null) {
     const completedSpendGBP = hotels
-      .filter((h) => h.brand === p.name && h.status === 'Completed' && Number(h.date.slice(0, 4)) === currentYear)
+      .filter((h) => h.brand === p.name && h.status === 'Completed' && !h.award && Number(h.date.slice(0, 4)) === currentYear)
       .reduce((s, h) => s + (h.total ?? 0), 0);
     // Anything for this brand this year that hasn't completed yet counts
     // as pending spend -- including in-progress and needs-confirm stays,
     // not only those explicitly marked Booked, which was silently
     // excluding real upcoming spend.
     const pendingSpendGBP = hotels
-      .filter((h) => h.brand === p.name && h.status !== 'Completed' && Number(h.date.slice(0, 4)) === currentYear)
+      .filter((h) => h.brand === p.name && h.status !== 'Completed' && !h.award && Number(h.date.slice(0, 4)) === currentYear)
       .reduce((s, h) => s + (h.total ?? 0), 0);
 
     const rate = config.unit === 'points' ? config.pointsPerGBP! : config.fxRateFromGBP;

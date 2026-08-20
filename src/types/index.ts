@@ -25,6 +25,7 @@ export interface Hotel {
   bookingChannel: string | null; // e.g. 'Expedia' — which OTA/channel this was booked through, if not direct
   roomType: string | null;
   rateType: string | null; // 'Standard' | 'Member' | 'Promotional' | 'Non-refundable' | 'Other'
+  award: boolean; // booked with points/certificate rather than paid -- never earns elite night credit
 }
 
 export interface Flight {

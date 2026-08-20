@@ -273,3 +273,5 @@ insert into landmarks (name, country, lat, lng, category, description, nearest_c
 
   ('Palawan (El Nido)', 'Philippines', 11.1949, 119.4085, 'island', 'Limestone karst lagoons and beaches on Palawan''s northern tip.', 'Puerto Princesa'),
   ('Chocolate Hills', 'Philippines', 9.8264, 124.1608, 'natural', 'Over a thousand cone-shaped grass-covered hills on Bohol island.', 'Tagbilaran');
+
+alter table hotels add column if not exists award boolean not null default false;

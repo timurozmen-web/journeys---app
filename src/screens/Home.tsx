@@ -67,7 +67,7 @@ export function Home() {
   }
 
   const topProgress = loyaltyProgrammes
-    .filter((p) => p.nextTier && p.nights != null && p.nightsNeeded != null)
+    .filter((p) => p.nextTier && p.nights != null && p.nightsNeeded != null && p.name !== 'Hilton Honors')
     .map((p) => ({ ...p, progress: computeStatusProgress(p, hotels, promotions, cardResults) }))
     .sort((a, b) => (b.progress.pct ?? 0) - (a.progress.pct ?? 0))
     .slice(0, 3);
@@ -148,11 +148,8 @@ export function Home() {
                     </div>
                   </div>
                   <div className="hbar" style={{ marginTop: 12, position: 'relative' }}>
-                    {p.progress.pct3 != null && (
-                      <i style={{ width: `${Math.max(0, Math.min(100, p.progress.pct3))}%`, background: 'rgba(255,193,90,.6)', position: 'absolute', left: 0, top: 0, bottom: 0 }} />
-                    )}
-                    {p.progress.pct2 != null && (
-                      <i style={{ width: `${Math.max(0, Math.min(100, p.progress.pct2))}%`, background: 'rgba(255,255,255,.55)', position: 'absolute', left: 0, top: 0, bottom: 0 }} />
+                    {p.progress.pendingPct != null && (
+                      <i style={{ width: `${Math.max(0, Math.min(100, p.progress.pendingPct))}%`, background: 'rgba(255,193,90,.6)', position: 'absolute', left: 0, top: 0, bottom: 0 }} />
                     )}
                     <i style={{ width: `${p.progress.pct ?? 0}%`, position: 'relative' }} />
                   </div>
