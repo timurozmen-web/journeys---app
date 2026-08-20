@@ -275,7 +275,16 @@ export function computeStatusProgress(
   // Total nights needed for the tier genuinely being targeted -- uses the
   // resolved requirement when a card grants status outright, since the
   // stored nightsNeeded refers to a tier that may already be held.
-  const total = resolvedNightsNeeded ?? ((p.nights ?? 0) + (p.nightsNeeded ?? 0));
+  // Prefer the authoritative published requirement for whichever tier is
+  // actually being targeted, whenever one is known -- not only when a
+  // card-grant override triggered. Falling back to the stored nights +
+  // nightsNeeded sum is risky: those two fields can drift out of
+  // consistency with each other (exactly this happened for real -- nights
+  // was corrected to 81 without also correcting nightsNeeded, silently
+  // producing 81+23=104 instead of the real Ambassador requirement of 100).
+  const effectiveTargetTier = targetTier ?? p.nextTier;
+  const authoritativeTotal = effectiveTargetTier ? TIER_NIGHT_REQUIREMENTS[p.name]?.[effectiveTargetTier] : undefined;
+  const total = authoritativeTotal ?? resolvedNightsNeeded ?? ((p.nights ?? 0) + (p.nightsNeeded ?? 0));
   // The stored nights value is the complete, real current total -- it
   // already reflects everything genuinely credited so far, including
   // card elite nights already earned and any past promotion bonus that's
