@@ -232,31 +232,53 @@ export function Home() {
             )}
 
             {insights.byBrand.length > 1 && (
-              <div style={{ display: 'grid', gap: 8 }}>
+              <div style={{ display: 'grid', gap: 10 }}>
                 {insights.byBrand.map((b) => {
-                  const open = expandedBrand === b.brand;
+                  const flipped = expandedBrand === b.brand;
                   return (
-                    <div key={b.brand} style={{ borderRadius: 14, background: 'var(--card)', border: '1px solid var(--line)', overflow: 'hidden' }}>
-                      <button
-                        onClick={() => setExpandedBrand(open ? null : b.brand)}
-                        style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'var(--ink)' }}
+                    <div
+                      key={b.brand}
+                      onClick={() => setExpandedBrand(flipped ? null : b.brand)}
+                      style={{ height: 88, perspective: 1000, cursor: 'pointer' }}
+                    >
+                      <div
+                        style={{
+                          position: 'relative', width: '100%', height: '100%',
+                          transformStyle: 'preserve-3d', transition: 'transform .5s cubic-bezier(.4,.2,.2,1)',
+                          transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                        }}
                       >
-                        <div>
-                          <div style={{ fontSize: 13.5, fontWeight: 700 }}>{b.brand}</div>
-                          <div style={{ fontSize: 11.5, color: 'var(--ink2)', marginTop: 1 }}>
+                        {/* Front */}
+                        <div
+                          style={{
+                            position: 'absolute', inset: 0, backfaceVisibility: 'hidden',
+                            borderRadius: 14, background: 'var(--card)', border: '1px solid var(--line)',
+                            padding: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ fontSize: 13.5, fontWeight: 700 }}>{b.brand}</div>
+                            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--brand)' }}>£{Math.round(b.loyaltyValue).toLocaleString()}</div>
+                          </div>
+                          <div style={{ fontSize: 11.5, color: 'var(--ink2)' }}>
                             {b.nights} nights · {b.roiPercent != null ? `${b.roiPercent.toFixed(0)}% return` : 'no spend logged'}
                           </div>
+                          <div style={{ fontSize: 10, color: 'var(--ink3)', textAlign: 'right' }}>Tap for detail →</div>
                         </div>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--brand)' }}>£{Math.round(b.loyaltyValue).toLocaleString()}</div>
-                      </button>
-                      {open && (
-                        <div style={{ padding: '0 14px 14px', display: 'grid', gap: 5 }}>
-                          <DarkRow label="Spend" value={b.totalSpend} ink />
-                          {b.rateSavings > 0 && <DarkRow label="Rate savings (not loyalty)" value={b.rateSavings} ink />}
-                          {b.totalBenefitsValue > 0 && <DarkRow label="Benefits" value={b.totalBenefitsValue} ink />}
-                          <DarkRow label="Points value" value={b.pointsValue} ink />
+                        {/* Back */}
+                        <div
+                          style={{
+                            position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)',
+                            borderRadius: 14, background: 'var(--brand)', color: '#fff',
+                            padding: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4,
+                          }}
+                        >
+                          <FlipRow label="Spend" value={b.totalSpend} />
+                          {b.rateSavings > 0 && <FlipRow label="Rate savings (not loyalty)" value={b.rateSavings} />}
+                          {b.totalBenefitsValue > 0 && <FlipRow label="Benefits" value={b.totalBenefitsValue} />}
+                          <FlipRow label="Points value" value={b.pointsValue} />
                         </div>
-                      )}
+                      </div>
                     </div>
                   );
                 })}
@@ -320,11 +342,11 @@ function Row({ label, value }: { label: string; value: number }) {
   );
 }
 
-function DarkRow({ label, value }: { label: string; value: number; ink?: boolean }) {
+function FlipRow({ label, value }: { label: string; value: number }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-      <span style={{ color: 'var(--ink2)' }}>{label}</span>
-      <span style={{ fontWeight: 700, color: 'var(--ink)' }}>£{Math.round(value).toLocaleString()}</span>
+      <span style={{ opacity: 0.85 }}>{label}</span>
+      <span style={{ fontWeight: 700 }}>£{Math.round(value).toLocaleString()}</span>
     </div>
   );
 }
