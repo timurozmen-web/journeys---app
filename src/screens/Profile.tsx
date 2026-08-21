@@ -33,6 +33,7 @@ export function Profile() {
   const navigate = useNavigate();
   const [cat, setCat] = useState('overall');
   const [sortMode, setSortMode] = useState<SortMode>('score');
+  const [regionFilter, setRegionFilter] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [year, setYear] = useState<'all' | number>('all');
 
@@ -90,7 +91,9 @@ export function Profile() {
   }, [filteredHotels]);
   const maxRegion = Math.max(1, ...regionTotals.map((r) => r.nights));
 
-  const categoryReviews = filteredReviews.filter((r) => r.category === cat);
+  const categoryReviews = filteredReviews
+    .filter((r) => r.category === cat)
+    .filter((r) => !regionFilter || regionFor(r.country) === regionFilter);
   const sorted = useMemo(() => {
     const arr = [...categoryReviews];
     if (sortMode === 'score') arr.sort((a, b) => b.score - a.score);
@@ -191,33 +194,58 @@ export function Profile() {
             <div style={{ fontSize: 26, fontWeight: 800 }}>{visitedCountries.size}</div>
           </div>
           <Suspense fallback={<div style={{ height: 200, background: '#DCE7F5' }} />}>
-            <WorldMap hotels={filteredHotels} flights={filteredFlights} />
+            <WorldMap hotels={filteredHotels} flights={filteredFlights} reviews={filteredReviews} />
           </Suspense>
         </div>
       </div>
 
       {regionTotals.length > 0 && (
         <>
-          <div className="sect"><h2>Time by region</h2></div>
+          <div className="sect" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <h2>Time by region</h2>
+            {regionFilter && (
+              <button
+                onClick={() => setRegionFilter(null)}
+                style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0 }}
+              >
+                Clear filter
+              </button>
+            )}
+          </div>
           <div className="stack">
             <div className="card">
-              {regionTotals.map((r, i) => (
-                <div key={r.n} style={{ marginBottom: i === regionTotals.length - 1 ? 0 : 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, fontWeight: 700 }}>
-                    <span>{r.n}</span>
-                    <span style={{ color: 'var(--ink2)' }}>{r.nights}n</span>
-                  </div>
-                  <div className="hbar" style={{ background: 'var(--card2)' }}>
-                    <i style={{ width: `${(r.nights / maxRegion) * 100}%`, background: 'var(--brand)' }} />
-                  </div>
-                </div>
-              ))}
+              {regionTotals.map((r, i) => {
+                const active = regionFilter === r.n;
+                return (
+                  <button
+                    key={r.n}
+                    onClick={() => setRegionFilter(active ? null : r.n)}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                      marginBottom: i === regionTotals.length - 1 ? 0 : 10,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, fontWeight: 700 }}>
+                      <span style={{ color: active ? 'var(--brand)' : 'var(--ink)' }}>{r.n}</span>
+                      <span style={{ color: 'var(--ink2)' }}>{r.nights}n</span>
+                    </div>
+                    <div className="hbar" style={{ background: 'var(--card2)' }}>
+                      <i style={{ width: `${(r.nights / maxRegion) * 100}%`, background: active ? 'var(--brand)' : 'rgba(91,63,166,.45)' }} />
+                    </div>
+                  </button>
+                );
+              })}
             </div>
+            {regionFilter && (
+              <div style={{ fontSize: 11.5, color: 'var(--ink3)', padding: '0 4px' }}>
+                Showing reviews from {regionFilter} only — tap the region again, or "Clear filter" above, to see everything.
+              </div>
+            )}
           </div>
         </>
       )}
 
-      <div className="sect"><h2>Reviews</h2></div>
+      <div className="sect"><h2>Reviews{regionFilter ? ` · ${regionFilter}` : ''}</h2></div>
       <div className="catchip">
         {CATEGORIES.map((c) => (
           <button key={c.key} className={cat === c.key ? 'won' : ''} onClick={() => { setCat(c.key); setShowAll(false); }}>

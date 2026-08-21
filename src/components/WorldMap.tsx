@@ -2,18 +2,18 @@ import { useMemo, useState } from 'react';
 import { geoNaturalEarth1, geoPath } from 'd3-geo';
 import { worldGeo } from '../data/worldGeo';
 import { AIRPORTS, COUNTRY_NAME_MAP } from '../data/airports';
-import type { Hotel, Flight } from '../types';
+import type { Hotel, Flight, Review } from '../types';
 
 const WIDTH = 360;
 const HEIGHT = 200;
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 6;
 
-// Real country boundaries + projection math, computed once (doesn't depend
-// on live data, so no reason to recompute on every render).
 const geo = worldGeo;
 const projection = geoNaturalEarth1().fitSize([WIDTH, HEIGHT], geo);
 const pathGen = geoPath(projection);
-const countryPaths: { name: string; d: string }[] = geo.features
-  .map((f: any) => ({ name: f.properties.name as string, d: pathGen(f) || '' }))
+const countryPaths: { name: string; d: string; centroid: [number, number] }[] = geo.features
+  .map((f: any) => ({ name: f.properties.name as string, d: pathGen(f) || '', centroid: pathGen.centroid(f) as [number, number] }))
   .filter((c: { d: string }) => c.d);
 
 function normalizeCountry(c: string) {
@@ -24,9 +24,12 @@ function project(lat: number, lng: number): [number, number] | null {
   return p as [number, number] | null;
 }
 
-export function WorldMap({ hotels, flights }: { hotels: Hotel[]; flights: Flight[] }) {
+export function WorldMap({ hotels, flights, reviews }: { hotels: Hotel[]; flights: Flight[]; reviews: Review[] }) {
   const [showRoutes, setShowRoutes] = useState(false);
   const [year, setYear] = useState<'all' | number>('all');
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [selected, setSelected] = useState<string | null>(null);
 
   const years = useMemo(() => {
     const set = new Set<number>();
@@ -84,6 +87,46 @@ export function WorldMap({ hotels, flights }: { hotels: Hotel[]; flights: Flight
     return dots;
   }, [flights, year]);
 
+  // Top-rated place logged in the selected country, from real review
+  // scores -- not a separate estimate, the same ranking already used on
+  // the Reviews list below.
+  const selectedDetail = useMemo(() => {
+    if (!selected) return null;
+    const nights = nightsByCountry.get(selected) ?? 0;
+    const inCountry = reviews.filter(
+      (r) => normalizeCountry(r.country.trim()) === selected && (year === 'all' || Number(r.date.slice(0, 4)) === year)
+    );
+    const stayCount = new Set(hotels.filter((h) => h.date && normalizeCountry(h.country.trim()) === selected && (year === 'all' || Number(h.date.slice(0, 4)) === year)).map((h) => h.id)).size;
+    const topPlaces = [...inCountry].sort((a, b) => b.score - a.score).slice(0, 3);
+    return { nights, stayCount, topPlaces };
+  }, [selected, nightsByCountry, reviews, hotels, year]);
+
+  function zoomBy(factor: number) {
+    setZoom((z) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z * factor)));
+  }
+  function resetView() {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    setSelected(null);
+  }
+
+  // Clicking a visited country zooms toward its centroid and opens the
+  // detail card -- makes "zoom in on where I went" feel like one motion
+  // rather than two separate steps.
+  function selectCountry(name: string) {
+    const nights = nightsByCountry.get(name);
+    if (!nights) return; // only countries actually visited are interactive
+    setSelected(name === selected ? null : name);
+    if (name !== selected) {
+      const country = countryPaths.find((c) => c.name === name);
+      if (country) {
+        const targetZoom = 2.5;
+        setZoom(targetZoom);
+        setPan({ x: WIDTH / 2 - country.centroid[0] * targetZoom, y: HEIGHT / 2 - country.centroid[1] * targetZoom });
+      }
+    }
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, padding: '0 16px 10px', alignItems: 'center' }}>
@@ -124,20 +167,82 @@ export function WorldMap({ hotels, flights }: { hotels: Hotel[]; flights: Flight
         </div>
       </div>
 
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block', background: '#DCE7F5' }}>
-        {countryPaths.map((c) => {
-          const nights = nightsByCountry.get(c.name);
-          const fill = nights ? shadeFor(nights, maxNights) : '#B9CEEC';
-          return <path key={c.name} d={c.d} fill={fill} stroke="#DCE7F5" strokeWidth={0.4} />;
-        })}
-        {showRoutes &&
-          routeLines.map((r) => (
-            <path key={r.key} d={r.d} fill="none" stroke="#5B3FA6" strokeWidth={0.7} strokeDasharray="2 1.5" opacity={0.75} />
-          ))}
-        {showRoutes &&
-          airportDots.map((a) => <circle key={a.code} cx={a.x} cy={a.y} r={1.6} fill="#5B3FA6" stroke="#fff" strokeWidth={0.5} />)}
-      </svg>
+      <div style={{ position: 'relative' }}>
+        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block', background: '#DCE7F5', borderRadius: 12, overflow: 'hidden' }}>
+          <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
+            {countryPaths.map((c) => {
+              const nights = nightsByCountry.get(c.name);
+              const fill = nights ? shadeFor(nights, maxNights) : '#B9CEEC';
+              const isSelected = selected === c.name;
+              return (
+                <path
+                  key={c.name} d={c.d} fill={fill}
+                  stroke={isSelected ? '#fff' : '#DCE7F5'} strokeWidth={isSelected ? 1.2 / zoom : 0.4 / zoom}
+                  onClick={() => selectCountry(c.name)}
+                  style={{ cursor: nights ? 'pointer' : 'default' }}
+                />
+              );
+            })}
+            {showRoutes &&
+              routeLines.map((r) => (
+                <path key={r.key} d={r.d} fill="none" stroke="#5B3FA6" strokeWidth={0.7 / zoom} strokeDasharray={`${2 / zoom} ${1.5 / zoom}`} opacity={0.75} />
+              ))}
+            {showRoutes &&
+              airportDots.map((a) => <circle key={a.code} cx={a.x} cy={a.y} r={1.6 / zoom} fill="#5B3FA6" stroke="#fff" strokeWidth={0.5 / zoom} />)}
+          </g>
+        </svg>
+
+        <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <ZoomBtn onClick={() => zoomBy(1.5)}>+</ZoomBtn>
+          <ZoomBtn onClick={() => zoomBy(1 / 1.5)}>−</ZoomBtn>
+          {(zoom !== 1 || selected) && <ZoomBtn onClick={resetView}>⟲</ZoomBtn>}
+        </div>
+
+        {selected && selectedDetail && (
+          <div
+            style={{
+              position: 'absolute', left: 10, right: 10, bottom: 10, background: '#fff', borderRadius: 12,
+              border: '1.5px solid var(--brand)', padding: '10px 12px', boxShadow: '0 6px 16px rgba(23,23,28,.18)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink)' }}>{selected}</div>
+              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--ink3)', cursor: 'pointer', fontSize: 13, padding: 0, lineHeight: 1 }}>✕</button>
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--brand)', fontWeight: 700, marginTop: 2 }}>
+              {selectedDetail.nights} nights · {selectedDetail.stayCount} stay{selectedDetail.stayCount === 1 ? '' : 's'}
+            </div>
+            {selectedDetail.topPlaces.length > 0 ? (
+              <div style={{ marginTop: 6, display: 'grid', gap: 3 }}>
+                {selectedDetail.topPlaces.map((r) => (
+                  <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5 }}>
+                    <span style={{ color: 'var(--ink)' }}>{r.hotelName}</span>
+                    <span style={{ fontWeight: 700, color: 'var(--ink2)' }}>{r.score.toFixed(1)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 4 }}>No reviews logged here yet.</div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
+  );
+}
+
+function ZoomBtn({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: 26, height: 26, borderRadius: 8, border: '1px solid var(--line)', background: '#fff',
+        color: 'var(--ink)', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'grid', placeItems: 'center',
+        boxShadow: '0 1px 4px rgba(23,23,28,.15)',
+      }}
+    >
+      {children}
+    </button>
   );
 }
 
