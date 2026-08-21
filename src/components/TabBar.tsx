@@ -4,8 +4,8 @@ import { HomeIcon, TripsIcon, WalletIcon, ProfileIcon, PlanIcon, CaptureIcon, Di
 
 const RADIAL = [
   { key: 'plan', label: 'Plan', Icon: PlanIcon, color: '#5B3FA6' },
-  { key: 'capture', label: 'Capture', Icon: CaptureIcon, color: '#0C7A42' },
-  { key: 'discover', label: 'Discover', Icon: DiscoverIcon, color: '#9C5F08' },
+  { key: 'capture', label: 'Capture', Icon: CaptureIcon, color: '#7B5FC7' },
+  { key: 'discover', label: 'Discover', Icon: DiscoverIcon, color: '#5B3FA6' },
 ] as const;
 
 export function TabBar() {
