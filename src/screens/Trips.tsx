@@ -25,33 +25,34 @@ export function Trips() {
           You're travelling for…
         </div>
         <div
-          onClick={() => setTripType((v) => (v === 'work' ? 'leisure' : 'work'))}
           style={{
-            display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
-            background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 12, padding: '10px 14px',
+            display: 'flex', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--line)',
           }}
         >
-          <span style={{ fontSize: 14, fontWeight: 700, color: tripType === 'leisure' ? 'var(--ink)' : 'var(--ink3)', flex: 1 }}>
-            Leisure
-          </span>
-          <span
+          <button
+            onClick={() => setTripType('leisure')}
             style={{
-              width: 46, height: 26, borderRadius: 99, position: 'relative', flexShrink: 0,
-              background: tripType === 'work' ? 'var(--brand)' : 'var(--line)',
-              transition: 'background .18s ease',
+              flex: 1, padding: '12px 0', border: 'none', cursor: 'pointer',
+              background: tripType === 'leisure' ? 'var(--brand)' : 'var(--card)',
+              color: tripType === 'leisure' ? '#fff' : 'var(--ink3)',
+              fontSize: 14, fontWeight: tripType === 'leisure' ? 800 : 600,
+              transition: 'background .15s ease, color .15s ease',
             }}
           >
-            <span
-              style={{
-                position: 'absolute', top: 3, left: tripType === 'work' ? 23 : 3,
-                width: 20, height: 20, borderRadius: '50%', background: '#fff',
-                boxShadow: '0 1px 3px rgba(0,0,0,.3)', transition: 'left .18s ease',
-              }}
-            />
-          </span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: tripType === 'work' ? 'var(--ink)' : 'var(--ink3)', flex: 1, textAlign: 'right' }}>
+            Leisure
+          </button>
+          <button
+            onClick={() => setTripType('work')}
+            style={{
+              flex: 1, padding: '12px 0', border: 'none', cursor: 'pointer',
+              background: tripType === 'work' ? 'var(--brand)' : 'var(--card)',
+              color: tripType === 'work' ? '#fff' : 'var(--ink3)',
+              fontSize: 14, fontWeight: tripType === 'work' ? 800 : 600,
+              transition: 'background .15s ease, color .15s ease',
+            }}
+          >
             Work
-          </span>
+          </button>
         </div>
       </div>
 
