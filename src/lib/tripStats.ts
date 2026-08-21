@@ -117,9 +117,15 @@ export function findGaps(trip: Trip): Gap[] {
   const hotelIntervals = trip.hotels
     .filter((h) => h.nights > 0)
     .map((h) => ({ start: h.date, end: addDays(h.date, h.nights) }));
+  // A genuinely long overnight flight (e.g. London-Australia) can span two
+  // calendar nights once duration and timezone crossing are accounted
+  // for, not just the single night of its logged date -- covering only
+  // one night left the earlier night still incorrectly flagged as a gap
+  // needing a hotel, even though the traveller was genuinely in transit
+  // for both.
   const overnightFlightIntervals = trip.flights
     .filter((f) => f.overnight && f.date)
-    .map((f) => ({ start: f.date as string, end: addDays(f.date as string, 1) }));
+    .map((f) => ({ start: addDays(f.date as string, -1), end: addDays(f.date as string, 1) }));
   const intervals = [...hotelIntervals, ...overnightFlightIntervals].sort((a, b) => a.start.localeCompare(b.start));
 
   // Merge overlapping/adjacent covered ranges.

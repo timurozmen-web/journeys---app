@@ -149,7 +149,7 @@ export function LogFlight() {
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--ink2)' }}>
             <input type="checkbox" checked={form.overnight} onChange={(e) => set('overnight', e.target.checked)} />
-            Overnight flight — no hotel needed that night
+            Overnight/long-haul flight — covers the night before and of this date, no hotel needed either night
           </label>
         </div>
         <div>
