@@ -277,3 +277,16 @@ insert into landmarks (name, country, lat, lng, category, description, nearest_c
 alter table hotels add column if not exists award boolean not null default false;
 
 alter table hotels add column if not exists benefit_type text check (benefit_type in ('breakfast', 'upgrade', 'lounge', 'late-checkout', 'other'));
+
+create table trip_photos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users not null default auth.uid(),
+  trip_id uuid references trips not null,
+  url text not null,
+  lat double precision,
+  lng double precision,
+  taken_at timestamptz,
+  created_at timestamptz default now()
+);
+alter table trip_photos enable row level security;
+create policy "own photos only" on trip_photos for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

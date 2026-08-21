@@ -482,3 +482,58 @@ export async function dismissBankTransaction(transactionId: string) {
   const { error } = await supabase.from('bank_transactions').update({ dismissed: true }).eq('id', transactionId);
   if (error) throw error;
 }
+
+export interface TripPhoto {
+  id: string;
+  tripId: string;
+  url: string;
+  lat: number | null;
+  lng: number | null;
+  takenAt: string | null; // ISO timestamp, from EXIF where available
+}
+
+export async function fetchTripPhotos(tripId: string): Promise<TripPhoto[]> {
+  const { data, error } = await supabase.from('trip_photos').select('*').eq('trip_id', tripId).order('taken_at');
+  if (error) throw error;
+  return (data ?? []).map((p) => ({
+    id: p.id, tripId: p.trip_id, url: p.url, lat: p.lat ?? null, lng: p.lng ?? null, takenAt: p.taken_at ?? null,
+  }));
+}
+
+/* Uploads a single trip photo to the same trip-photos bucket already used
+   for hero images, under a distinct path so it doesn't collide with or
+   overwrite the trip's hero image. Stores whatever EXIF location/timestamp
+   was extracted client-side alongside it -- both are optional, since not
+   every photo carries EXIF GPS data (many phones strip it, or the user
+   may have disabled location tagging). */
+export async function addTripPhoto(
+  tripId: string, file: File, lat: number | null, lng: number | null, takenAt: string | null
+): Promise<TripPhoto> {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) throw new Error('Not signed in');
+
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `${userData.user.id}/memories/${tripId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage.from('trip-photos').upload(path, file, {
+    cacheControl: '3600', upsert: false,
+  });
+  if (uploadError) throw uploadError;
+
+  const { data: urlData } = supabase.storage.from('trip-photos').getPublicUrl(path);
+  const url = urlData.publicUrl;
+
+  const { data, error } = await supabase
+    .from('trip_photos')
+    .insert({ trip_id: tripId, url, lat, lng, taken_at: takenAt })
+    .select('*')
+    .single();
+  if (error) throw error;
+
+  return { id: data.id, tripId: data.trip_id, url: data.url, lat: data.lat ?? null, lng: data.lng ?? null, takenAt: data.taken_at ?? null };
+}
+
+export async function deleteTripPhoto(id: string) {
+  const { error } = await supabase.from('trip_photos').delete().eq('id', id);
+  if (error) throw error;
+}

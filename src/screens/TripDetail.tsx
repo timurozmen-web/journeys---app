@@ -6,6 +6,7 @@ import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, PlaneIcon, EditIcon } f
 import { DestinationPhoto } from '../components/DestinationPhoto';
 const TripMap = lazy(() => import('../components/TripMap').then((m) => ({ default: m.TripMap })));
 import { destinationQuery } from '../components/TripCard';
+import { TripMemories } from '../components/TripMemories';
 import { formatDateRange, formatMoney } from '../lib/format';
 import { computeTripPoints, computeTripSavings, groupDestinations, findGaps } from '../lib/tripStats';
 
@@ -138,6 +139,9 @@ export function TripDetail() {
               <Suspense fallback={<div style={{ height: 220, background: '#DCE7F5', borderRadius: 16 }} />}>
                 <TripMap hotels={trip.hotels} flights={trip.flights} />
               </Suspense>
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <TripMemories tripId={trip.id} />
             </div>
             <div className="card">
             <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 12 }}>Trip summary</div>
