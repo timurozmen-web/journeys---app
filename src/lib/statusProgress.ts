@@ -124,6 +124,7 @@ export interface StatusProgress {
   pendingPct: number | null; // + booked and/or promo nights combined, whichever is present -- always populated when either exists
   bookedNights: number;
   pendingPromo: Promotion | null;
+  appliedPromoNights: number; // status-boost bonus nights confirmed applied -- not auto-added to the total, since the user's own nights baseline should already reflect it once genuinely credited by the programme; shown as a visible confirmation instead
   pendingNights: number;
   cardEliteNights: CardEliteNights[];
   cardGrantedTier: string | null; // status held outright via a card, if any
@@ -193,6 +194,21 @@ export function computeStatusProgress(
         (!promo.endDate || promo.endDate >= today)
     ) ?? null;
   const promoNights = pendingPromo ? pendingPromo.statusNightsBonus! + (bookedNights > 0 ? 0 : 1) : 0;
+
+  // Once a status-boost promotion is marked applied (the qualifying stay
+  // has genuinely happened and the programme has credited it), its bonus
+  // nights are real, banked progress -- not just "no longer pending".
+  // Previously nothing added them anywhere once applied, so the bonus
+  // silently vanished from the display entirely when ticked complete.
+  const appliedPromoNights = promotions
+    .filter(
+      (promo) =>
+        promo.promoType === 'status_boost' &&
+        promo.statusNightsBonus != null &&
+        promo.statusNightsApplied &&
+        (!promo.brand || promo.brand === p.name)
+    )
+    .reduce((s, promo) => s + promo.statusNightsBonus!, 0);
 
   // Elite nights granted by holding a card for this programme. These are
   // real, ongoing status progress -- an IHG card's 15 elite nights apply
@@ -366,6 +382,7 @@ export function computeStatusProgress(
     pendingPct: bookedNights + pendingNights > 0 ? (projectedWithPromo / total) * 100 : null,
     bookedNights,
     pendingPromo,
+    appliedPromoNights,
     pendingNights,
     cardEliteNights,
     cardGrantedTier,

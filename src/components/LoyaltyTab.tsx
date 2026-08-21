@@ -180,6 +180,17 @@ export function LoyaltyTab({
                   </div>
                 )}
 
+                {progress && progress.appliedPromoNights > 0 && (
+                  <div style={{ padding: '10px 12px', borderRadius: 10, background: 'rgba(58,168,94,.1)', border: '1px solid rgba(58,168,94,.25)' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--green)' }}>
+                      ✓ {progress.appliedPromoNights} promotion night{progress.appliedPromoNights === 1 ? '' : 's'} marked applied
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 2 }}>
+                      Make sure your nights total above already reflects this — {p.name} should have credited it directly to your account.
+                    </div>
+                  </div>
+                )}
+
                 {progress?.brandExplorer && (
                   <div>
                     <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>
