@@ -56,7 +56,7 @@ export function Home() {
   const flightsLastYear = completedFlights.filter((f) => yearOf(f.date) === LAST_YEAR).length;
 
   const topProgress = loyaltyProgrammes
-    .filter((p) => p.nextTier && p.nights != null && p.nightsNeeded != null && p.name !== 'Hilton Honors')
+    .filter((p) => p.nextTier && p.nights != null && p.name !== 'Hilton Honors')
     .map((p) => ({ ...p, progress: computeStatusProgress(p, hotels, promotions, cardResults) }))
     .sort((a, b) => (b.progress.pct ?? 0) - (a.progress.pct ?? 0))
     .slice(0, 3);
@@ -160,7 +160,7 @@ export function Home() {
                         {p.progress.spendProgress.unit === 'points' ? ' pts' : ''}
                         {p.progress.spendProgress.pendingAmount > 0 && (
                           <span style={{ color: '#FFC15A', fontWeight: 700 }}>
-                            {' '}(+{Math.round(p.progress.spendProgress.pendingAmount).toLocaleString()} pending)
+                            {' '}(+{p.progress.spendProgress.currencySymbol ?? ''}{Math.round(p.progress.spendProgress.pendingAmount).toLocaleString()} pending)
                           </span>
                         )}
                       </div>

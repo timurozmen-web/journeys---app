@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { geoNaturalEarth1, geoPath } from 'd3-geo';
 import { worldGeo } from '../data/worldGeo';
 import { AIRPORTS, COUNTRY_NAME_MAP } from '../data/airports';
@@ -12,8 +12,11 @@ const MAX_ZOOM = 6;
 const geo = worldGeo;
 const projection = geoNaturalEarth1().fitSize([WIDTH, HEIGHT], geo);
 const pathGen = geoPath(projection);
-const countryPaths: { name: string; d: string; centroid: [number, number] }[] = geo.features
-  .map((f: any) => ({ name: f.properties.name as string, d: pathGen(f) || '', centroid: pathGen.centroid(f) as [number, number] }))
+const countryPaths: { name: string; d: string; centroid: [number, number]; bounds: [[number, number], [number, number]] }[] = geo.features
+  .map((f: any) => ({
+    name: f.properties.name as string, d: pathGen(f) || '',
+    centroid: pathGen.centroid(f) as [number, number], bounds: pathGen.bounds(f) as [[number, number], [number, number]],
+  }))
   .filter((c: { d: string }) => c.d);
 
 function normalizeCountry(c: string) {
@@ -24,12 +27,47 @@ function project(lat: number, lng: number): [number, number] | null {
   return p as [number, number] | null;
 }
 
-export function WorldMap({ hotels, flights, reviews }: { hotels: Hotel[]; flights: Flight[]; reviews: Review[] }) {
+export function WorldMap({
+  hotels, flights, reviews, focusCountries,
+}: {
+  hotels: Hotel[]; flights: Flight[]; reviews: Review[]; focusCountries?: string[] | null;
+}) {
   const [showRoutes, setShowRoutes] = useState(false);
   const [year, setYear] = useState<'all' | number>('all');
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [selected, setSelected] = useState<string | null>(null);
+  const dragState = useRef<{ startX: number; startY: number; panStartX: number; panStartY: number } | null>(null);
+  const wasDragged = useRef(false);
+
+  function handlePointerDown(e: React.PointerEvent<SVGSVGElement>) {
+    (e.target as Element).setPointerCapture(e.pointerId);
+    dragState.current = { startX: e.clientX, startY: e.clientY, panStartX: pan.x, panStartY: pan.y };
+    wasDragged.current = false;
+  }
+  function handlePointerMove(e: React.PointerEvent<SVGSVGElement>) {
+    const ds = dragState.current;
+    if (!ds) return;
+    const dx = e.clientX - ds.startX;
+    const dy = e.clientY - ds.startY;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) wasDragged.current = true;
+    if (wasDragged.current) {
+      // Scale the screen-pixel delta into the SVG's own coordinate space
+      // (the viewBox is a fixed 360x200 regardless of rendered size), and
+      // divide by zoom so panning speed matches the current zoom level
+      // rather than dragging the whole map miles per pixel when zoomed in.
+      const svg = e.currentTarget;
+      const scale = WIDTH / svg.getBoundingClientRect().width;
+      setPan({ x: ds.panStartX + dx * scale / zoom, y: ds.panStartY + dy * scale / zoom });
+    }
+  }
+  function handlePointerUp() {
+    dragState.current = null;
+    // wasDragged.current is deliberately NOT reset here -- pointerup fires
+    // before the click event that follows it, so selectCountry (triggered
+    // by that click) still needs to see whether this gesture was a drag.
+    // It gets reset on the next pointerdown instead.
+  }
 
   const years = useMemo(() => {
     const set = new Set<number>();
@@ -113,7 +151,35 @@ export function WorldMap({ hotels, flights, reviews }: { hotels: Hotel[]; flight
   // Clicking a visited country zooms toward its centroid and opens the
   // detail card -- makes "zoom in on where I went" feel like one motion
   // rather than two separate steps.
+  const focusCountriesKey = focusCountries?.join('|') ?? '';
+  useEffect(() => {
+    if (!focusCountries || focusCountries.length === 0) return;
+    const normalizedFocus = focusCountries.map(normalizeCountry);
+    const matched = countryPaths.filter((c) => normalizedFocus.includes(c.name));
+    if (matched.length === 0) return;
+
+    const minX = Math.min(...matched.map((c) => c.bounds[0][0]));
+    const minY = Math.min(...matched.map((c) => c.bounds[0][1]));
+    const maxX = Math.max(...matched.map((c) => c.bounds[1][0]));
+    const maxY = Math.max(...matched.map((c) => c.bounds[1][1]));
+    const regionWidth = Math.max(1, maxX - minX);
+    const regionHeight = Math.max(1, maxY - minY);
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    // Fit the region's bounding box inside the viewBox with some margin,
+    // rather than a fixed zoom level -- a single small country and a
+    // sprawling multi-country region need very different amounts of zoom.
+    const margin = 1.4;
+    const targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.min(WIDTH / (regionWidth * margin), HEIGHT / (regionHeight * margin))));
+    setZoom(targetZoom);
+    setPan({ x: WIDTH / 2 - centerX * targetZoom, y: HEIGHT / 2 - centerY * targetZoom });
+    setSelected(null); // any previously-open country detail card no longer applies to this new view
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusCountriesKey]);
+
   function selectCountry(name: string) {
+    if (wasDragged.current) { wasDragged.current = false; return; } // a drag just ended here, not a tap
     const nights = nightsByCountry.get(name);
     if (!nights) return; // only countries actually visited are interactive
     setSelected(name === selected ? null : name);
@@ -168,7 +234,14 @@ export function WorldMap({ hotels, flights, reviews }: { hotels: Hotel[]; flight
       </div>
 
       <div style={{ position: 'relative' }}>
-        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block', background: '#DCE7F5', borderRadius: 12, overflow: 'hidden' }}>
+        <svg
+          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+          style={{ width: '100%', height: 'auto', display: 'block', background: '#DCE7F5', borderRadius: 12, overflow: 'hidden', touchAction: 'none', cursor: 'grab' }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+        >
           <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
             {countryPaths.map((c) => {
               const nights = nightsByCountry.get(c.name);

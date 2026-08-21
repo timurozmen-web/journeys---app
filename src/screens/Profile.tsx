@@ -90,6 +90,9 @@ export function Profile() {
     return [...m.entries()].map(([n, nights]) => ({ n, nights })).sort((a, b) => b.nights - a.nights);
   }, [filteredHotels]);
   const maxRegion = Math.max(1, ...regionTotals.map((r) => r.nights));
+  const focusCountries = regionFilter
+    ? [...new Set(filteredHotels.filter((h) => regionFor(h.country) === regionFilter).map((h) => h.country))]
+    : null;
 
   const categoryReviews = filteredReviews
     .filter((r) => r.category === cat)
@@ -194,7 +197,7 @@ export function Profile() {
             <div style={{ fontSize: 26, fontWeight: 800 }}>{visitedCountries.size}</div>
           </div>
           <Suspense fallback={<div style={{ height: 200, background: '#DCE7F5' }} />}>
-            <WorldMap hotels={filteredHotels} flights={filteredFlights} reviews={filteredReviews} />
+            <WorldMap hotels={filteredHotels} flights={filteredFlights} reviews={filteredReviews} focusCountries={focusCountries} />
           </Suspense>
         </div>
       </div>

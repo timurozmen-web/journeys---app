@@ -55,6 +55,9 @@ const TIER_LADDERS: Record<string, string[]> = {
 const TIER_NIGHT_REQUIREMENTS: Record<string, Record<string, number>> = {
   'IHG One Rewards': { Silver: 10, Gold: 20, Platinum: 40, Diamond: 70 },
   'Marriott Bonvoy': { Silver: 10, Gold: 25, Platinum: 50, 'Titanium Elite': 75, Ambassador: 100 },
+  // Diamond is points-only (26,000 status points), no night threshold --
+  // intentionally omitted rather than guessed at.
+  'Accor ALL': { Silver: 10, Gold: 30, Platinum: 60 },
 };
 
 /**
@@ -376,7 +379,7 @@ export function computeStatusProgress(
   return {
     total,
     currentNights: effectiveCurrentNights,
-    pct: p.nights != null && p.nightsNeeded != null ? (effectiveCurrentNights / total) * 100 : null,
+    pct: p.nights != null && total > 0 ? (effectiveCurrentNights / total) * 100 : null,
     pct2: bookedNights > 0 ? (projectedBooked / total) * 100 : null,
     pct3: pendingNights > 0 ? (projectedWithPromo / total) * 100 : null,
     pendingPct: bookedNights + pendingNights > 0 ? (projectedWithPromo / total) * 100 : null,

@@ -44,7 +44,7 @@ export function LoyaltyTab({
       {filtered.map((p) => {
         const isOpen = open === p.name;
         const value = (p.points * p.ptValue) / 100;
-        const hasStatus = !!p.nextTier && p.nights != null && p.nightsNeeded != null;
+        const hasStatus = !!p.nextTier && p.nights != null;
         const progress = hasStatus ? computeStatusProgress(p, hotels, promotions, cardResults) : null;
 
         // Vouchers relevant to this programme: match by the issuing
@@ -140,7 +140,7 @@ export function LoyaltyTab({
                           {progress.spendProgress.unit === 'points' ? ' pts' : ''}
                           {progress.spendProgress.pendingAmount > 0 && (
                             <span style={{ color: 'var(--amber)', fontWeight: 700 }}>
-                              {' '}(+{Math.round(progress.spendProgress.pendingAmount).toLocaleString()} pending)
+                              {' '}(+{progress.spendProgress.currencySymbol ?? ''}{Math.round(progress.spendProgress.pendingAmount).toLocaleString()} pending)
                             </span>
                           )}
                         </div>
