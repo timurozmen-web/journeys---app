@@ -1,7 +1,8 @@
-import { useState, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTrips, useLoyaltyProgrammes, usePromotions } from '../lib/useLiveData';
-import { uploadTripPhoto } from '../lib/queries';
+import { uploadTripPhoto, fetchTripPhotos } from '../lib/queries';
+import type { TripPhoto } from '../lib/queries';
 import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, PlaneIcon, EditIcon } from '../components/Icons';
 import { DestinationPhoto } from '../components/DestinationPhoto';
 const TripMap = lazy(() => import('../components/TripMap').then((m) => ({ default: m.TripMap })));
@@ -32,6 +33,12 @@ export function TripDetail() {
   const fileInput = useRef<HTMLInputElement>(null);
 
   const [expandedDest, setExpandedDest] = useState<number | null>(null);
+  const [tripPhotos, setTripPhotos] = useState<TripPhoto[]>([]);
+
+  useEffect(() => {
+    if (!id) return;
+    fetchTripPhotos(id).then(setTripPhotos).catch(() => setTripPhotos([]));
+  }, [id]);
 
   if (!trip) return <div className="head">Trip not found</div>;
 
@@ -137,7 +144,7 @@ export function TripDetail() {
           <>
             <div style={{ marginBottom: 14 }}>
               <Suspense fallback={<div style={{ height: 220, background: '#DCE7F5', borderRadius: 16 }} />}>
-                <TripMap hotels={trip.hotels} flights={trip.flights} />
+                <TripMap hotels={trip.hotels} flights={trip.flights} photos={tripPhotos} />
               </Suspense>
             </div>
             <div style={{ marginBottom: 14 }}>
