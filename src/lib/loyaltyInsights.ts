@@ -5,13 +5,13 @@ export interface BrandInsight {
   brand: string;
   totalSpend: number;
   nights: number;
-  rateSavings: number; // vs the standard/average rate paid elsewhere
+  rateSavings: number; // vs the standard/average rate paid elsewhere -- NOT a loyalty benefit, this is just rate-shopping/timing, shown separately rather than folded into loyalty value
   benefitsByType: { breakfast: number; upgrade: number; lounge: number; lateCheckout: number; other: number };
   totalBenefitsValue: number;
   pointsEarned: number;
   pointsValue: number; // points earned this year, valued at the programme's real £/point rate
-  totalValueReceived: number; // savings + benefits + points value
-  roiPercent: number | null; // totalValueReceived / totalSpend * 100 -- null if no spend to divide by
+  loyaltyValue: number; // benefits + points value -- genuinely attributable to loyalty membership, excludes rate savings
+  roiPercent: number | null; // loyaltyValue / totalSpend * 100 -- null if no spend to divide by
 }
 
 const BENEFIT_TYPE_LABELS: Record<string, keyof BrandInsight['benefitsByType']> = {
@@ -40,7 +40,7 @@ export function computeLoyaltyInsights(
       byBrandMap.set(brand, {
         brand, totalSpend: 0, nights: 0, rateSavings: 0,
         benefitsByType: { breakfast: 0, upgrade: 0, lounge: 0, lateCheckout: 0, other: 0 },
-        totalBenefitsValue: 0, pointsEarned: 0, pointsValue: 0, totalValueReceived: 0, roiPercent: null,
+        totalBenefitsValue: 0, pointsEarned: 0, pointsValue: 0, loyaltyValue: 0, roiPercent: null,
       });
     }
     const b = byBrandMap.get(brand)!;
@@ -69,12 +69,21 @@ export function computeLoyaltyInsights(
     }
   }
 
-  const byBrand = [...byBrandMap.values()].map((b) => {
-    b.totalValueReceived = b.rateSavings + b.totalBenefitsValue + b.pointsValue;
-    b.roiPercent = b.totalSpend > 0 ? (b.totalValueReceived / b.totalSpend) * 100 : null;
-    return b;
-  });
-  byBrand.sort((a, b) => b.totalValueReceived - a.totalValueReceived);
+  const byBrand = [...byBrandMap.values()]
+    // Only brands genuinely in the user's loyalty wallet -- a hotel's
+    // "brand" field can be a booking channel or something else entirely
+    // (e.g. "Expedia"), not necessarily a real loyalty programme, so this
+    // list shouldn't include anything the wallet doesn't actually track.
+    .filter((b) => programmes.some((p) => p.name === b.brand) && b.brand !== 'Expedia')
+    .map((b) => {
+      b.loyaltyValue = b.totalBenefitsValue + b.pointsValue;
+      b.roiPercent = b.totalSpend > 0 ? (b.loyaltyValue / b.totalSpend) * 100 : null;
+      return b;
+    })
+    // Hide a programme entirely rather than show an empty £0 row when
+    // there's genuinely nothing to report for the year.
+    .filter((b) => b.loyaltyValue > 0 || b.rateSavings > 0);
+  byBrand.sort((a, b) => b.loyaltyValue - a.loyaltyValue);
 
   const overall: Omit<BrandInsight, 'brand'> = {
     totalSpend: byBrand.reduce((s, b) => s + b.totalSpend, 0),
@@ -90,10 +99,10 @@ export function computeLoyaltyInsights(
     totalBenefitsValue: byBrand.reduce((s, b) => s + b.totalBenefitsValue, 0),
     pointsEarned: byBrand.reduce((s, b) => s + b.pointsEarned, 0),
     pointsValue: byBrand.reduce((s, b) => s + b.pointsValue, 0),
-    totalValueReceived: byBrand.reduce((s, b) => s + b.totalValueReceived, 0),
+    loyaltyValue: byBrand.reduce((s, b) => s + b.loyaltyValue, 0),
     roiPercent: null,
   };
-  overall.roiPercent = overall.totalSpend > 0 ? (overall.totalValueReceived / overall.totalSpend) * 100 : null;
+  overall.roiPercent = overall.totalSpend > 0 ? (overall.loyaltyValue / overall.totalSpend) * 100 : null;
 
   return { byBrand, overall };
 }

@@ -127,7 +127,7 @@ export function Home() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
                       <div className="brand">{p.name}</div>
-                      <div className="tier">{p.tier}</div>
+                      <div className="tier">{p.progress.effectiveTier ?? p.tier}</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: 22, fontWeight: 800 }}>{Math.max(0, p.progress.total - p.progress.currentNights)}</div>
@@ -158,9 +158,17 @@ export function Home() {
                         {p.progress.spendProgress.unit === 'points' ? ' pts' : ''}
                         {' / '}{p.progress.spendProgress.currencySymbol ?? ''}{Math.round(p.progress.spendProgress.requiredAmount).toLocaleString()}
                         {p.progress.spendProgress.unit === 'points' ? ' pts' : ''}
+                        {p.progress.spendProgress.pendingAmount > 0 && (
+                          <span style={{ color: '#FFC15A', fontWeight: 700 }}>
+                            {' '}(+{Math.round(p.progress.spendProgress.pendingAmount).toLocaleString()} pending)
+                          </span>
+                        )}
                       </div>
-                      <div className="hbar" style={{ marginTop: 4 }}>
-                        <i style={{ width: `${p.progress.spendProgress.pct}%` }} />
+                      <div className="hbar" style={{ marginTop: 4, position: 'relative' }}>
+                        {p.progress.spendProgress.pendingPct != null && (
+                          <i style={{ width: `${p.progress.spendProgress.pendingPct}%`, background: 'rgba(255,193,90,.6)', position: 'absolute', left: 0, top: 0, bottom: 0 }} />
+                        )}
+                        <i style={{ width: `${p.progress.spendProgress.pct}%`, position: 'relative' }} />
                       </div>
                     </>
                   )}
@@ -184,20 +192,19 @@ export function Home() {
         </div>
       )}
 
-      {(insights.overall.totalValueReceived > 0 || insights.overall.totalSpend > 0) && (
+      {(insights.overall.loyaltyValue > 0 || insights.overall.rateSavings > 0 || insights.overall.totalSpend > 0) && (
         <>
           <div className="sect">
             <h2>Loyalty value this year</h2>
           </div>
           <div className="stack" style={{ display: 'grid', gap: 10 }}>
             <div className="chartwrap">
-              <div className="big">£{Math.round(insights.overall.totalValueReceived).toLocaleString()}</div>
+              <div className="big">£{Math.round(insights.overall.loyaltyValue).toLocaleString()}</div>
               <div className="lab">
-                total value received
+                from benefits & points earned
                 {insights.overall.roiPercent != null && ` · ${insights.overall.roiPercent.toFixed(0)}% return on spend`}
               </div>
               <div style={{ marginTop: 12, display: 'grid', gap: 6 }}>
-                <Row label="Rate savings" value={insights.overall.rateSavings} />
                 {insights.overall.benefitsByType.breakfast > 0 && <Row label="Free breakfast" value={insights.overall.benefitsByType.breakfast} />}
                 {insights.overall.benefitsByType.upgrade > 0 && <Row label="Room upgrades" value={insights.overall.benefitsByType.upgrade} />}
                 {insights.overall.benefitsByType.lounge > 0 && <Row label="Lounge access" value={insights.overall.benefitsByType.lounge} />}
@@ -211,6 +218,18 @@ export function Home() {
                 </div>
               </div>
             </div>
+
+            {insights.overall.rateSavings > 0 && (
+              <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>Rate savings</div>
+                  <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 1 }}>
+                    vs standard rate — not a loyalty benefit, just good rate timing
+                  </div>
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>£{Math.round(insights.overall.rateSavings).toLocaleString()}</div>
+              </div>
+            )}
 
             {insights.byBrand.length > 1 && (
               <div style={{ display: 'grid', gap: 8 }}>
@@ -228,12 +247,12 @@ export function Home() {
                             {b.nights} nights · {b.roiPercent != null ? `${b.roiPercent.toFixed(0)}% return` : 'no spend logged'}
                           </div>
                         </div>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--brand)' }}>£{Math.round(b.totalValueReceived).toLocaleString()}</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--brand)' }}>£{Math.round(b.loyaltyValue).toLocaleString()}</div>
                       </button>
                       {open && (
                         <div style={{ padding: '0 14px 14px', display: 'grid', gap: 5 }}>
                           <DarkRow label="Spend" value={b.totalSpend} ink />
-                          <DarkRow label="Rate savings" value={b.rateSavings} ink />
+                          {b.rateSavings > 0 && <DarkRow label="Rate savings (not loyalty)" value={b.rateSavings} ink />}
                           {b.totalBenefitsValue > 0 && <DarkRow label="Benefits" value={b.totalBenefitsValue} ink />}
                           <DarkRow label="Points value" value={b.pointsValue} ink />
                         </div>
