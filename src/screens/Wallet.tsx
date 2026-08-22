@@ -59,33 +59,34 @@ export function Wallet() {
 
   return (
     <div>
-      <div className="head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <div className="h-sub" style={{ margin: '0 0 2px' }}>
-            My wallet {!isLive && <span style={{ opacity: 0.6 }}>· sample data</span>}
+      <div style={{ background: 'linear-gradient(165deg,#4A3189 0%,#5B3FA6 100%)', padding: 'max(24px, env(safe-area-inset-top, 24px)) 20px 22px', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, color: '#fff' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', opacity: 0.7 }}>Wallet value {!isLive && '· sample data'}</div>
+            <div style={{ fontSize: 38, fontWeight: 800, letterSpacing: '-1.8px', marginTop: 2, lineHeight: 1 }}>£{Math.round(totalValue).toLocaleString()}</div>
+            <div style={{ fontSize: 12, fontWeight: 600, opacity: 0.8, marginTop: 6 }}>
+              {loyaltyProgrammes.reduce((s, p) => s + p.points, 0).toLocaleString()} points across {loyaltyProgrammes.length} programmes
+            </div>
           </div>
-          <div className="wtotal" style={{ padding: 0 }}>
-            <div className="val">£{Math.round(totalValue).toLocaleString()}</div>
-          </div>
-        </div>
-        <button
-          onClick={() => navigate('/log-loyalty-programme')}
-          aria-label="Add a loyalty scheme"
-          style={{
-            width: 34, height: 34, borderRadius: '50%', border: 'none', background: 'var(--brand)', color: '#fff',
-            fontSize: 20, fontWeight: 700, display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0, marginTop: 2,
-          }}
-        >
-          +
-        </button>
-      </div>
-
-      <div className="catchip" style={{ margin: '8px 0 16px' }}>
-        {(['loyalty', 'payment', 'promotions'] as Seg[]).map((s) => (
-          <button key={s} className={seg === s ? 'won' : ''} onClick={() => setSeg(s)}>
-            {s.charAt(0).toUpperCase() + s.slice(1)}
+          <button
+            onClick={() => navigate('/log-loyalty-programme')}
+            aria-label="Add a loyalty scheme"
+            style={{ width: 34, height: 34, borderRadius: '50%', border: '1px solid rgba(255,255,255,.3)', background: 'rgba(255,255,255,.16)', color: '#fff', fontSize: 20, fontWeight: 600, display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0 }}
+          >
+            +
           </button>
-        ))}
+        </div>
+        <div style={{ display: 'flex', gap: 6, marginTop: 18 }}>
+          {(['loyalty', 'payment', 'promotions'] as Seg[]).map((s) => (
+            <button
+              key={s}
+              onClick={() => setSeg(s)}
+              style={{ flex: 1, padding: '9px 0', borderRadius: 99, border: 'none', cursor: 'pointer', background: seg === s ? '#fff' : 'rgba(255,255,255,.16)', color: seg === s ? '#4A3189' : '#fff', fontSize: 13, fontWeight: 800 }}
+            >
+              {s === 'loyalty' ? 'Points' : s === 'payment' ? 'Cards' : 'Promos'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {seg === 'payment' && (
