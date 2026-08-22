@@ -108,19 +108,37 @@ export function Profile() {
 
   return (
     <div>
-      <div className="head" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <div
-          style={{
-            width: 56, height: 56, borderRadius: 18, background: 'linear-gradient(140deg,#5B3FA6,#8560D6)',
-            display: 'grid', placeItems: 'center', fontSize: 20, fontWeight: 800, color: '#fff',
-          }}
-        >
-          T
+      <div style={{ background: 'linear-gradient(165deg,#4A3189 0%,#5B3FA6 100%)', padding: 'max(24px, env(safe-area-inset-top, 24px)) 20px 4px', color: '#fff', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 54, height: 54, borderRadius: 18, background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.28)', display: 'grid', placeItems: 'center', fontSize: 20, fontWeight: 800, flexShrink: 0 }}>T</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.6px' }}>Timur</div>
+            <div style={{ fontSize: 12, fontWeight: 600, opacity: 0.8, marginTop: 2 }}>
+              {firstYear ? `Travelling since ${firstYear}` : 'Traveller'} · {reviews.filter((r) => r.category === 'overall').length} reviews
+            </div>
+          </div>
         </div>
-        <div>
-          <div className="h1" style={{ fontSize: 21 }}>Timur</div>
-          <div className="h-sub">
-            {visitedCountries.size} {visitedCountries.size === 1 ? 'country' : 'countries'} · {totalNights} nights{firstYear ? ` · since ${firstYear}` : ''}
+        <div style={{ display: 'flex', marginTop: 20, paddingBottom: 16 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-.8px' }}>{visitedCountries.size}</div>
+            <div style={{ fontSize: 9.5, fontWeight: 700, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 1 }}>countries</div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-.8px' }}>{totalNights}</div>
+            <div style={{ fontSize: 9.5, fontWeight: 700, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 1 }}>nights</div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-.8px' }}>{totalDistanceKm >= 1000 ? `${Math.round(totalDistanceKm / 1000)}k` : totalDistanceKm}</div>
+            <div style={{ fontSize: 9.5, fontWeight: 700, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 1 }}>km flown</div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-.8px' }}>
+              {(() => {
+                const overall = reviews.filter((r) => r.category === 'overall');
+                return overall.length ? (overall.reduce((s, r) => s + r.score, 0) / overall.length).toFixed(1) : '—';
+              })()}
+            </div>
+            <div style={{ fontSize: 9.5, fontWeight: 700, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 1 }}>avg score</div>
           </div>
         </div>
       </div>
