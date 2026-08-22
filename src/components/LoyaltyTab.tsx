@@ -24,6 +24,9 @@ export function LoyaltyTab({
   const [open, setOpen] = useState<string | null>(null);
 
   const filtered = programmes.filter((p) => p.category === category);
+  const topByValue = new Set(
+    [...filtered].sort((a, b) => (b.points * b.ptValue) - (a.points * a.ptValue)).slice(0, 3).map((p) => p.name)
+  );
 
   return (
     <div style={{ display: 'grid', gap: 10 }}>
@@ -45,6 +48,7 @@ export function LoyaltyTab({
         const isOpen = open === p.name;
         const value = (p.points * p.ptValue) / 100;
         const hasStatus = !!p.nextTier && p.nights != null;
+        const isDeckCard = hasStatus && topByValue.has(p.name);
         const progress = hasStatus ? computeStatusProgress(p, hotels, promotions, cardResults) : null;
 
         // Vouchers relevant to this programme: match by the issuing
@@ -57,29 +61,57 @@ export function LoyaltyTab({
         );
 
         return (
-          <div key={p.name} style={{ borderRadius: 14, background: 'var(--card)', border: '1px solid var(--line)', overflow: 'hidden' }}>
+          <div key={p.name} style={{ borderRadius: 14, overflow: 'hidden', border: isDeckCard ? 'none' : '1px solid var(--line)', background: isDeckCard ? p.color : 'var(--card)' }}>
             <button
               onClick={() => setOpen(isOpen ? null : p.name)}
               style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px',
-                background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'var(--ink)',
+                width: '100%', display: 'block', padding: isDeckCard ? '16px' : '13px 14px',
+                background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: isDeckCard ? '#fff' : 'var(--ink)',
               }}
             >
-              <BrandLogo name={p.name} shape={p.shape} color={p.color} accent={p.accent} size={38} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                {!hasWordmarkLogo(p.name) && <div style={{ fontSize: 14, fontWeight: 700 }}>{p.name}</div>}
-                <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 1 }}>
-                  {progress?.effectiveTier ?? p.tier ?? '—'}
+              {isDeckCard ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0, flex: 1 }}>
+                      <span style={{ width: 74, height: 32, borderRadius: 8, background: '#fff', flexShrink: 0, overflow: 'hidden', display: 'block' }}>
+                        <BrandLogo name={p.name} shape={p.shape} color={p.color} accent={p.accent} size={32} />
+                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.85)' }}>{progress?.effectiveTier ?? p.tier ?? '—'}</span>
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.8)', flexShrink: 0 }}>{isOpen ? '⌃' : '⌄'}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 16, gap: 10 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.6px' }}>{p.points.toLocaleString()}</div>
+                      <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,.75)', marginTop: 1 }}>points · {p.ptValue}p each</div>
+                    </div>
+                    <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                      <div style={{ fontSize: 18, fontWeight: 800 }}>{moneyPrecise(value)}</div>
+                      {progress?.targetTier && progress.total > progress.currentNights && (
+                        <div style={{ fontSize: 9.5, color: 'rgba(255,255,255,.75)', marginTop: 1 }}>
+                          {progress.total - progress.currentNights} nights to {progress.targetTier}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <BrandLogo name={p.name} shape={p.shape} color={p.color} accent={p.accent} size={38} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {!hasWordmarkLogo(p.name) && <div style={{ fontSize: 14, fontWeight: 700 }}>{p.name}</div>}
+                    <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 1 }}>{progress?.effectiveTier ?? p.tier ?? '—'}</div>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700 }}>{p.points.toLocaleString()} pts</div>
+                    <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 1 }}>{moneyPrecise(value)}</div>
+                  </div>
                 </div>
-              </div>
-              <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700 }}>{p.points.toLocaleString()} pts</div>
-                <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 1 }}>{moneyPrecise(value)}</div>
-              </div>
+              )}
             </button>
 
             {isOpen && (
-              <div style={{ padding: '0 14px 16px', display: 'grid', gap: 14 }}>
+              <div style={{ padding: '0 14px 16px', background: isDeckCard ? '#fff' : 'none', display: 'grid', gap: 14 }}>
                 <div className="dd-row">
                   <span style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 600 }}>Rate</span>
                   <span style={{ fontSize: 12.5, fontWeight: 700 }}>{p.ptValue}p per point</span>

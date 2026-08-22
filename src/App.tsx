@@ -1,6 +1,5 @@
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { TabBar } from './components/TabBar';
-import { AuthGate } from './components/AuthGate';
 import { Home } from './screens/Home';
 import { Trips } from './screens/Trips';
 import { Wallet } from './screens/Wallet';
@@ -21,7 +20,7 @@ import { ReviewTrip } from './screens/ReviewTrip';
 export default function App() {
   return (
     <HashRouter>
-     <AuthGate>
+     <>
       <div className="screen on">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -43,7 +42,7 @@ export default function App() {
         </Routes>
       </div>
       <TabBar />
-     </AuthGate>
+     </>
     </HashRouter>
   );
 }
