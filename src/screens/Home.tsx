@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes, usePromotions, usePaymentCards } from '../lib/useLiveData';
+import { useNavigate } from 'react-router-dom';
+import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes, usePromotions, usePaymentCards, useVouchers, useReviews } from '../lib/useLiveData';
 import { computeStatusProgress } from '../lib/statusProgress';
 import { computeCardResults } from '../lib/cardMath';
 import { computeLoyaltyInsights } from '../lib/loyaltyInsights';
-import { BedIcon, HotelIcon, PlaneIcon } from '../components/Icons';
-import { TripCard } from '../components/TripCard';
+import { findGaps } from '../lib/tripStats';
+import { findHotelsNeedingReview } from '../lib/reviewScoring';
 
 function daysBetween(a: string, b: string) {
   return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000);
@@ -12,341 +12,311 @@ function daysBetween(a: string, b: string) {
 function yearOf(date: string | null) {
   return date ? Number(date.slice(0, 4)) : null;
 }
-function delta(n: number) {
-  return n === 0 ? '±0 vs last year' : n > 0 ? `+${n} vs last year` : `${n} vs last year`;
+function fmtDate(iso: string) {
+  const [, m, d] = iso.split('-');
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${Number(d)} ${months[Number(m) - 1]}`;
+}
+function fmtDayName(iso: string) {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  return days[new Date(iso + 'T00:00:00').getDay()];
+}
+function fmtFullDate(iso: string) {
+  const [, m, d] = iso.split('-');
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  return `${fmtDayName(iso)} ${Number(d)} ${months[Number(m) - 1]}`;
 }
 
-function greeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
+interface ActionItem {
+  key: string;
+  color: string;
+  title: string;
+  subtitle: string;
+  progressPct?: number;
+  onClick: () => void;
 }
 
 export function Home() {
+  const navigate = useNavigate();
   const TODAY = new Date().toISOString().slice(0, 10);
   const THIS_YEAR = new Date().getFullYear();
   const LAST_YEAR = THIS_YEAR - 1;
-  const { data: trips, isLive } = useTrips();
+  const { data: trips } = useTrips();
   const { data: hotels } = useAllHotels();
   const { data: promotions } = usePromotions();
   const { data: flights } = useAllFlights();
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
   const { data: paymentCards } = usePaymentCards();
+  const { data: vouchers } = useVouchers();
+  const { data: reviews } = useReviews();
+
   const cardResults = computeCardResults(hotels, flights, paymentCards, loyaltyProgrammes, TODAY);
   const insights = computeLoyaltyInsights(hotels, loyaltyProgrammes, THIS_YEAR);
-  const [expandedBrand, setExpandedBrand] = useState<string | null>(null);
 
   const currentTrip = trips.find((t) => t.section === 'current');
-  const upcomingTrips = trips.filter((t) => t.section === 'upcoming').sort((a, b) => a.start.localeCompare(b.start));
-  const nextLeisureTrip = upcomingTrips.find((t) => t.tripType === 'leisure');
-  const nextWorkTrip = upcomingTrips.find((t) => t.tripType === 'work');
 
-  // A stay only counts as done if the stored status says so AND the date
-  // has actually passed — don't trust status alone, since a future-dated
-  // row could be mislabelled.
-  const isActuallyDone = (date: string, status: string) => status === 'Completed' && date <= TODAY;
-  const completedHotels = hotels.filter((h) => isActuallyDone(h.date, h.status));
-  const completedFlights = flights.filter((f) => f.date && isActuallyDone(f.date, f.status));
+  const completedHotels = hotels.filter((h) => h.status === 'Completed' && h.date <= TODAY);
+  const completedFlights = flights.filter((f) => f.status === 'Completed' && f.date && f.date <= TODAY);
   const nightsThisYear = completedHotels.filter((h) => yearOf(h.date) === THIS_YEAR).reduce((s, h) => s + h.nights, 0);
   const nightsLastYear = completedHotels.filter((h) => yearOf(h.date) === LAST_YEAR).reduce((s, h) => s + h.nights, 0);
-  const staysThisYear = completedHotels.filter((h) => yearOf(h.date) === THIS_YEAR).length;
-  const staysLastYear = completedHotels.filter((h) => yearOf(h.date) === LAST_YEAR).length;
   const flightsThisYear = completedFlights.filter((f) => yearOf(f.date) === THIS_YEAR).length;
-  const flightsLastYear = completedFlights.filter((f) => yearOf(f.date) === LAST_YEAR).length;
 
   const topProgress = loyaltyProgrammes
-    .filter((p) => p.nextTier && p.nights != null && p.name !== 'Hilton Honors')
+    .filter((p) => p.nextTier && p.nights != null && p.nightsNeeded != null)
     .map((p) => ({ ...p, progress: computeStatusProgress(p, hotels, promotions, cardResults) }))
     .sort((a, b) => (b.progress.pct ?? 0) - (a.progress.pct ?? 0))
     .slice(0, 3);
-  const [progressIndex, setProgressIndex] = useState(0);
+
+  const walletValue = loyaltyProgrammes.reduce((s, p) => s + (p.points ?? 0) * (p.ptValue ?? 0) / 100, 0);
+
+  // Real "do this week" signals -- only ever shows what's genuinely true
+  // right now, never invented placeholders. Three sources: the card
+  // closest to its next real milestone, a completed stay still missing a
+  // review, and a voucher genuinely expiring soon.
+  const actionItems: ActionItem[] = [];
+
+  const cardsWithNextMilestone = cardResults
+    .filter((r) => r.nextMilestone && r.nextMilestone.m.spendRequired)
+    .map((r) => ({ r, pct: Math.min(100, (r.autoSpend / r.nextMilestone!.m.spendRequired!) * 100) }))
+    .sort((a, b) => b.pct - a.pct);
+  if (cardsWithNextMilestone.length > 0) {
+    const { r, pct } = cardsWithNextMilestone[0];
+    const remaining = Math.max(0, r.nextMilestone!.m.spendRequired! - r.autoSpend);
+    const programme = loyaltyProgrammes.find((p) => p.name === r.card.programmeBrand);
+    const estValue = programme?.ptValue ? Math.round((r.nextMilestone!.m.rewardPoints * programme.ptValue) / 100) : null;
+    actionItems.push({
+      key: 'card-milestone', color: 'var(--brand)',
+      title: `Spend £${Math.round(remaining).toLocaleString()} on the ${r.card.id}`,
+      subtitle: `Turns into ${r.nextMilestone!.m.rewardLabel}${estValue ? ` — worth about £${estValue}` : ''}`,
+      progressPct: pct,
+      onClick: () => navigate('/wallet'),
+    });
+  }
+
+  const expiringVouchers = vouchers
+    .filter((v) => !v.redeemed && v.expiryDate && v.expiryDate >= TODAY)
+    .map((v) => ({ v, daysLeft: daysBetween(TODAY, v.expiryDate!) }))
+    .filter((x) => x.daysLeft <= 90)
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+  if (expiringVouchers.length > 0) {
+    const { v, daysLeft } = expiringVouchers[0];
+    actionItems.push({
+      key: 'voucher-expiring', color: 'var(--amber)',
+      title: `${v.name} expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`,
+      subtitle: v.value ? `Worth about £${Math.round(v.value)} · from ${v.source}` : `From ${v.source}`,
+      onClick: () => navigate('/wallet'),
+    });
+  }
+
+  const hotelsNeedingReview = findHotelsNeedingReview(trips, reviews, TODAY);
+  if (hotelsNeedingReview.length > 0) {
+    const h = hotelsNeedingReview[0];
+    actionItems.push({
+      key: 'needs-review', color: 'var(--green)',
+      title: `Rate ${h.hotelName}`,
+      subtitle: `Your ${reviews.filter((r) => r.category === 'overall').length + 1}${ordinalSuffix(reviews.filter((r) => r.category === 'overall').length + 1)} review · a few categories to score`,
+      onClick: () => navigate('/trips'),
+    });
+  }
+
+  // "This trip" chronological timeline -- real logged stays/flights plus
+  // genuine gap detection, not a fabricated itinerary.
+  const tripEvents: { title: string; detail: string; status: 'done' | 'gap' | 'upcoming' }[] = [];
+  if (currentTrip) {
+    for (const h of [...currentTrip.hotels].sort((a, b) => a.date.localeCompare(b.date))) {
+      const checkOut = new Date(new Date(h.date + 'T00:00:00').getTime() + h.nights * 86400000).toISOString().slice(0, 10);
+      const done = checkOut <= TODAY;
+      tripEvents.push({
+        title: `${h.name}${done ? ' · stayed' : ''}`,
+        detail: `${fmtDate(h.date)} - ${fmtDate(checkOut)} · ${h.nights} night${h.nights === 1 ? '' : 's'}${h.total ? ` · £${h.total.toLocaleString()}` : ''}${done ? '' : ' booked'}`,
+        status: done ? 'done' : 'upcoming',
+      });
+    }
+    const gaps = findGaps(currentTrip);
+    for (const g of gaps) {
+      tripEvents.push({
+        title: `${g.nights} night${g.nights === 1 ? '' : 's'} unaccounted`,
+        detail: `${fmtDate(g.start)} - ${fmtDate(g.end)} · add a stay to keep the count honest`,
+        status: 'gap',
+      });
+    }
+    tripEvents.sort((a, b) => a.detail.localeCompare(b.detail));
+  }
+
+  const sparklineHeights = [14, 22, 12, 30, 26, 38]; // relative shape only -- not enough monthly granularity tracked yet for a real trend line here
 
   return (
     <div>
-      <div className="head">
-        <div className="h1">{greeting()}, Timur 👋</div>
-        <div className="h-sub">
-          Here's your travel snapshot {!isLive && <span style={{ opacity: 0.6 }}>· sample data</span>}
-        </div>
-      </div>
-
-      <div className="tiles">
-        <div className="tile">
-          <div className="ic" style={{ background: 'rgba(19,34,71,.08)' }}>
-            <BedIcon size={16} color="var(--brand)" />
+      <div
+        style={{
+          background: 'linear-gradient(165deg,#4A3189 0%,#5B3FA6 45%,#7B5FC7 100%)',
+          padding: '24px 20px 22px', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, color: '#fff',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', opacity: 0.7 }}>
+              {fmtFullDate(TODAY)}
+            </div>
+            <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-.5px', marginTop: 3 }}>
+              {currentTrip ? `Day ${daysBetween(currentTrip.start, TODAY) + 1} in ${currentTrip.title}` : 'Good to see you'}
+            </div>
           </div>
-          <div className="lab">Nights</div>
-          <div className="val">{nightsThisYear}</div>
-          <div className="delta" style={{ color: nightsThisYear - nightsLastYear >= 0 ? 'var(--green)' : 'var(--red)' }}>
-            {delta(nightsThisYear - nightsLastYear)}
-          </div>
-        </div>
-        <div className="tile">
-          <div className="ic" style={{ background: 'rgba(12,122,66,.1)' }}>
-            <HotelIcon size={16} color="var(--green)" />
-          </div>
-          <div className="lab">Stays</div>
-          <div className="val">{staysThisYear}</div>
-          <div className="delta" style={{ color: staysThisYear - staysLastYear >= 0 ? 'var(--green)' : 'var(--red)' }}>
-            {delta(staysThisYear - staysLastYear)}
-          </div>
-        </div>
-        <div className="tile">
-          <div className="ic" style={{ background: 'rgba(156,95,8,.1)' }}>
-            <PlaneIcon size={16} color="var(--amber)" />
-          </div>
-          <div className="lab">Flights</div>
-          <div className="val">{flightsThisYear}</div>
-          <div className="delta" style={{ color: flightsThisYear - flightsLastYear >= 0 ? 'var(--green)' : 'var(--red)' }}>
-            {delta(flightsThisYear - flightsLastYear)}
-          </div>
-        </div>
-      </div>
-
-      {topProgress.length > 0 && (
-        <div className="stack" style={{ marginTop: 12 }}>
           <div
-            ref={(el) => {
-              if (!el || (el as any)._wired) return;
-              (el as any)._wired = true;
-              el.addEventListener('scroll', () => {
-                const idx = Math.round(el.scrollLeft / el.clientWidth);
-                setProgressIndex(idx);
-              });
-            }}
+            onClick={() => navigate('/profile')}
             style={{
-              display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', gap: 0,
-              scrollbarWidth: 'none', borderRadius: 'var(--r-lg)',
+              width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.24)',
+              display: 'grid', placeItems: 'center', fontSize: 14, fontWeight: 800, flexShrink: 0, cursor: 'pointer',
             }}
           >
-            {topProgress.map((p) => (
-              <div key={p.name} style={{ flex: '0 0 100%', scrollSnapAlign: 'start' }}>
-                <div className="hero">
-                  <div className="k">Loyalty progress</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <div className="brand">{p.name}</div>
-                      <div className="tier">{p.progress.effectiveTier ?? p.tier}</div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 22, fontWeight: 800 }}>{Math.max(0, p.progress.total - p.progress.currentNights)}</div>
-                      <div style={{ fontSize: 12, opacity: 0.85, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                        nights to<br />{p.nextTier}
-                      </div>
-                    </div>
+            T
+          </div>
+        </div>
+
+        {topProgress.length > 0 && (
+          <div style={{ display: 'grid', gap: 13, marginTop: 20 }}>
+            {topProgress.map((p) => {
+              const pct = Math.max(0, Math.min(100, p.progress.pct ?? 0));
+              const pendingPct = p.progress.pendingPct != null ? Math.max(0, Math.min(100, p.progress.pendingPct)) : null;
+              const valueLabel = `${p.progress.currentNights} / ${p.progress.total} nights`;
+              const captionParts: string[] = [];
+              if (p.progress.targetTier) {
+                const remaining = p.progress.total - p.progress.currentNights;
+                if (remaining > 0) captionParts.push(`${remaining} nights to ${p.progress.targetTier}`);
+              }
+              if (p.progress.bookedNights > 0) captionParts.push(`${p.progress.bookedNights} booked`);
+
+              return (
+                <div key={p.name}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 800 }}>{p.name}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, opacity: 0.8 }}>{valueLabel}</span>
                   </div>
-                  <div className="hbar" style={{ marginTop: 12, position: 'relative' }}>
-                    {p.progress.pendingPct != null && (
-                      <i style={{ width: `${Math.max(0, Math.min(100, p.progress.pendingPct))}%`, background: 'rgba(255,193,90,.6)', position: 'absolute', left: 0, top: 0, bottom: 0 }} />
+                  <div style={{ height: 7, borderRadius: 99, background: 'rgba(255,255,255,.22)', marginTop: 6, overflow: 'hidden', position: 'relative' }}>
+                    {pendingPct != null && (
+                      <i style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pendingPct}%`, background: 'rgba(255,193,90,.6)', borderRadius: 99 }} />
                     )}
-                    <i style={{ width: `${p.progress.pct ?? 0}%`, position: 'relative' }} />
+                    <i style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct}%`, background: '#fff', borderRadius: 99 }} />
                   </div>
-                  <div className="note" style={{ color: 'rgba(255,255,255,.85)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span>{p.progress.currentNights} / {p.progress.total} nights</span>
-                    {(p.progress.bookedNights + p.progress.pendingNights) > 0 && (
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#FFC15A', background: 'rgba(255,193,90,.18)', padding: '1px 7px', borderRadius: 99 }}>
-                        +{p.progress.bookedNights + p.progress.pendingNights} pending
-                      </span>
-                    )}
-                  </div>
-                  {p.progress.spendProgress && (
-                    <>
-                      <div style={{ fontSize: 12, opacity: 0.85, fontWeight: 700, marginTop: 8, color: '#fff' }}>
-                        {p.progress.spendProgress.label}: {p.progress.spendProgress.currencySymbol ?? ''}
-                        {Math.round(p.progress.spendProgress.currentAmount).toLocaleString()}
-                        {p.progress.spendProgress.unit === 'points' ? ' pts' : ''}
-                        {' / '}{p.progress.spendProgress.currencySymbol ?? ''}{Math.round(p.progress.spendProgress.requiredAmount).toLocaleString()}
-                        {p.progress.spendProgress.unit === 'points' ? ' pts' : ''}
-                        {p.progress.spendProgress.pendingAmount > 0 && (
-                          <span style={{ color: '#FFC15A', fontWeight: 700 }}>
-                            {' '}(+{p.progress.spendProgress.currencySymbol ?? ''}{Math.round(p.progress.spendProgress.pendingAmount).toLocaleString()} pending)
-                          </span>
-                        )}
-                      </div>
-                      <div className="hbar" style={{ marginTop: 4, position: 'relative' }}>
-                        {p.progress.spendProgress.pendingPct != null && (
-                          <i style={{ width: `${p.progress.spendProgress.pendingPct}%`, background: 'rgba(255,193,90,.6)', position: 'absolute', left: 0, top: 0, bottom: 0 }} />
-                        )}
-                        <i style={{ width: `${p.progress.spendProgress.pct}%`, position: 'relative' }} />
-                      </div>
-                    </>
+                  {captionParts.length > 0 && (
+                    <div style={{ fontSize: 10.5, fontWeight: 600, opacity: 0.7, marginTop: 5 }}>{captionParts.join(' · ')}</div>
                   )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,.18)' }}>
+          <div>
+            <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', opacity: 0.7 }}>Wallet value</div>
+            <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-1.2px', marginTop: 1 }}>£{Math.round(walletValue).toLocaleString()}</div>
+          </div>
+          <button
+            onClick={() => navigate('/wallet')}
+            style={{ border: '1px solid rgba(255,255,255,.3)', background: 'rgba(255,255,255,.14)', color: '#fff', font: 'inherit', fontSize: 12, fontWeight: 700, padding: '8px 14px', borderRadius: 99, cursor: 'pointer', flexShrink: 0 }}
+          >
+            Open wallet
+          </button>
+        </div>
+      </div>
+
+      {actionItems.length > 0 && (
+        <div style={{ padding: '22px 20px 0' }}>
+          <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)' }}>Do this week</div>
+          <div style={{ display: 'grid', gap: 9, marginTop: 11 }}>
+            {actionItems.map((item) => (
+              <button
+                key={item.key}
+                onClick={item.onClick}
+                style={{ display: 'flex', alignItems: 'stretch', gap: 0, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, overflow: 'hidden', padding: 0, cursor: 'pointer', font: 'inherit', color: 'var(--ink)', textAlign: 'left' }}
+              >
+                <span style={{ width: 5, background: item.color, flexShrink: 0 }} />
+                <span style={{ flex: 1, minWidth: 0, padding: '13px 14px' }}>
+                  <span style={{ display: 'block', fontSize: 14, fontWeight: 800, letterSpacing: '-.2px' }}>{item.title}</span>
+                  <span style={{ display: 'block', fontSize: 11.5, color: 'var(--ink2)', marginTop: 3, fontWeight: 500 }}>{item.subtitle}</span>
+                  {item.progressPct != null && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 9 }}>
+                      <span style={{ flex: 1, height: 6, borderRadius: 99, background: 'var(--card2)', overflow: 'hidden', display: 'block' }}>
+                        <i style={{ display: 'block', height: '100%', width: `${item.progressPct}%`, background: item.color, borderRadius: 99 }} />
+                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: item.color }}>{Math.round(item.progressPct)}%</span>
+                    </span>
+                  )}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {currentTrip && tripEvents.length > 0 && (
+        <div style={{ padding: '24px 20px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)' }}>This trip</div>
+            <button onClick={() => navigate(`/trips/${currentTrip.id}`)} style={{ border: 0, background: 'none', font: 'inherit', fontSize: 12, fontWeight: 700, color: 'var(--brand)', cursor: 'pointer', padding: 0 }}>
+              Open
+            </button>
+          </div>
+          <div style={{ marginTop: 12, paddingLeft: 6 }}>
+            {tripEvents.map((ev, i) => (
+              <div key={i} style={{ display: 'flex', gap: 14 }}>
+                <div style={{ width: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                  <span
+                    style={{
+                      width: 11, height: 11, borderRadius: '50%', flexShrink: 0,
+                      background: ev.status === 'done' ? 'var(--brand)' : ev.status === 'gap' ? 'var(--amber)' : '#fff',
+                      border: ev.status === 'upcoming' ? '2px solid #C6C9D6' : '2px solid var(--bg)',
+                      boxShadow: ev.status === 'done' ? '0 0 0 2px rgba(91,63,166,.25)' : 'none',
+                    }}
+                  />
+                  {i < tripEvents.length - 1 && <span style={{ flex: 1, width: 2, background: 'var(--line)' }} />}
+                </div>
+                <div style={{ flex: 1, minWidth: 0, paddingBottom: 16 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 800, color: ev.status === 'gap' ? 'var(--amber)' : 'var(--ink)' }}>{ev.title}</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--ink2)', fontWeight: 500, marginTop: 2 }}>{ev.detail}</div>
                 </div>
               </div>
             ))}
           </div>
-          {topProgress.length > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 8 }}>
-              {topProgress.map((p, i) => (
-                <span
-                  key={p.name}
-                  style={{
-                    width: 6, height: 6, borderRadius: '50%',
-                    background: i === progressIndex ? 'var(--brand)' : 'var(--line)',
-                  }}
-                />
-              ))}
-            </div>
-          )}
         </div>
       )}
 
-      {(insights.overall.loyaltyValue > 0 || insights.overall.rateSavings > 0 || insights.overall.totalSpend > 0) && (
-        <>
-          <div className="sect">
-            <h2>Loyalty value this year</h2>
-          </div>
-          <div className="stack" style={{ display: 'grid', gap: 10 }}>
-            <div className="chartwrap">
-              <div className="big">£{Math.round(insights.overall.loyaltyValue).toLocaleString()}</div>
-              <div className="lab">
-                from benefits & points earned
-                {insights.overall.roiPercent != null && ` · ${insights.overall.roiPercent.toFixed(0)}% return on spend`}
-              </div>
-              <div style={{ marginTop: 12, display: 'grid', gap: 6 }}>
-                {insights.overall.benefitsByType.breakfast > 0 && <Row label="Free breakfast" value={insights.overall.benefitsByType.breakfast} />}
-                {insights.overall.benefitsByType.upgrade > 0 && <Row label="Room upgrades" value={insights.overall.benefitsByType.upgrade} />}
-                {insights.overall.benefitsByType.lounge > 0 && <Row label="Lounge access" value={insights.overall.benefitsByType.lounge} />}
-                {insights.overall.benefitsByType.lateCheckout > 0 && <Row label="Late checkout" value={insights.overall.benefitsByType.lateCheckout} />}
-                {insights.overall.benefitsByType.other > 0 && <Row label="Other benefits" value={insights.overall.benefitsByType.other} />}
-                <Row label="Points earned (value)" value={insights.overall.pointsValue} />
-                <div style={{ borderTop: '1px solid rgba(255,255,255,.15)', margin: '4px 0' }} />
-                <Row label="Hotel spend this year" value={insights.overall.totalSpend} />
-                <div style={{ fontSize: 12, color: 'var(--ink3)', marginTop: 4 }}>
-                  Flight savings aren't tracked yet — this is hotels only. Log the benefit type when adding or editing a stay to build this out.
-                </div>
-              </div>
-            </div>
-
-            {insights.overall.rateSavings > 0 && (
-              <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700 }}>Rate savings</div>
-                  <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 1 }}>
-                    vs standard rate — not a loyalty benefit, just good rate timing
-                  </div>
-                </div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>£{Math.round(insights.overall.rateSavings).toLocaleString()}</div>
-              </div>
-            )}
-
-            {insights.byBrand.length > 1 && (
-              <div style={{ display: 'grid', gap: 10 }}>
-                {insights.byBrand.map((b) => {
-                  const flipped = expandedBrand === b.brand;
-                  return (
-                    <div
-                      key={b.brand}
-                      onClick={() => setExpandedBrand(flipped ? null : b.brand)}
-                      style={{ height: 88, perspective: 1000, cursor: 'pointer' }}
-                    >
-                      <div
-                        style={{
-                          position: 'relative', width: '100%', height: '100%',
-                          transformStyle: 'preserve-3d', transition: 'transform .5s cubic-bezier(.4,.2,.2,1)',
-                          transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                        }}
-                      >
-                        {/* Front */}
-                        <div
-                          style={{
-                            position: 'absolute', inset: 0, backfaceVisibility: 'hidden',
-                            borderRadius: 14, background: 'var(--card)', border: '1px solid var(--line)',
-                            padding: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div style={{ fontSize: 13.5, fontWeight: 700 }}>{b.brand}</div>
-                            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--brand)' }}>£{Math.round(b.loyaltyValue).toLocaleString()}</div>
-                          </div>
-                          <div style={{ fontSize: 11.5, color: 'var(--ink2)' }}>
-                            {b.nights} nights · {b.roiPercent != null ? `${b.roiPercent.toFixed(0)}% return` : 'no spend logged'}
-                          </div>
-                          <div style={{ fontSize: 10, color: 'var(--ink3)', textAlign: 'right' }}>Tap for detail →</div>
-                        </div>
-                        {/* Back */}
-                        <div
-                          style={{
-                            position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)',
-                            borderRadius: 14, background: 'var(--brand)', color: '#fff',
-                            padding: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4,
-                          }}
-                        >
-                          <FlipRow label="Spend" value={b.totalSpend} />
-                          {b.rateSavings > 0 && <FlipRow label="Rate savings (not loyalty)" value={b.rateSavings} />}
-                          {b.totalBenefitsValue > 0 && <FlipRow label="Benefits" value={b.totalBenefitsValue} />}
-                          <FlipRow label="Points value" value={b.pointsValue} />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {currentTrip && (
-        <>
-          <div className="sect">
-            <h2>Under way</h2>
-          </div>
-          <div className="stack">
-            <TripCard trip={currentTrip} />
-            <div style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600, padding: '0 4px' }}>
-              Day {daysBetween(currentTrip.start, TODAY) + 1} of {daysBetween(currentTrip.start, currentTrip.end)}
+      <div style={{ padding: '24px 20px 24px' }}>
+        <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)' }}>{THIS_YEAR} so far</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9, marginTop: 11 }}>
+          <div style={{ background: 'var(--ink)', borderRadius: 16, padding: '15px 16px', color: '#fff' }}>
+            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-1px' }}>{nightsThisYear}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.7, marginTop: 1 }}>nights away</div>
+            <div style={{ fontSize: 10.5, fontWeight: 700, color: '#9BE7C4', marginTop: 6 }}>
+              {nightsThisYear - nightsLastYear >= 0 ? '+' : ''}{nightsThisYear - nightsLastYear} on {LAST_YEAR}
             </div>
           </div>
-        </>
-      )}
-
-      {nextLeisureTrip && (
-        <>
-          <div className="sect">
-            <h2>Next leisure trip</h2>
+          <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '15px 16px' }}>
+            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-1px' }}>{flightsThisYear}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink2)', marginTop: 1 }}>flights</div>
           </div>
-          <div className="stack">
-            <TripCard trip={nextLeisureTrip} />
-            <div style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600, padding: '0 4px' }}>
-              In {daysBetween(TODAY, nextLeisureTrip.start)} days
+          <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '15px 16px', gridColumn: 'span 2', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-1px' }}>£{Math.round(insights.overall.loyaltyValue).toLocaleString()}</div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink2)', marginTop: 1 }}>
+                loyalty value earned{insights.overall.roiPercent != null ? ` · ${insights.overall.roiPercent.toFixed(0)}% of spend` : ''}
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, flexShrink: 0 }}>
+              {sparklineHeights.map((h, i) => (
+                <span key={i} style={{ width: 8, height: h, borderRadius: 2, background: i >= sparklineHeights.length - 1 ? 'var(--brand)' : i >= sparklineHeights.length - 3 ? '#D8CEEC' : 'var(--card2)', display: 'block' }} />
+              ))}
             </div>
           </div>
-        </>
-      )}
-
-      {nextWorkTrip && (
-        <>
-          <div className="sect">
-            <h2>Next work trip</h2>
-          </div>
-          <div className="stack">
-            <TripCard trip={nextWorkTrip} />
-            <div style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600, padding: '0 4px' }}>
-              In {daysBetween(TODAY, nextWorkTrip.start)} days
-            </div>
-          </div>
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: number }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}>
-      <span style={{ color: 'var(--ink2)' }}>{label}</span>
-      <span style={{ fontWeight: 700 }}>£{Math.round(value).toLocaleString()}</span>
-    </div>
-  );
-}
-
-function FlipRow({ label, value }: { label: string; value: number }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-      <span style={{ opacity: 0.85 }}>{label}</span>
-      <span style={{ fontWeight: 700 }}>£{Math.round(value).toLocaleString()}</span>
-    </div>
-  );
+function ordinalSuffix(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return s[(v - 20) % 10] ?? s[v] ?? s[0];
 }
