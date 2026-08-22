@@ -11,6 +11,7 @@ const CATEGORIES = [
   { key: 'value', label: 'Value' },
   { key: 'facilities', label: 'Facilities' },
   { key: 'food', label: 'Food' },
+  { key: 'shower', label: 'Shower' },
 ];
 
 type SortMode = 'score' | 'recent' | 'az';

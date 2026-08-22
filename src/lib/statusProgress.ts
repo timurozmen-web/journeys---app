@@ -287,6 +287,7 @@ export function computeStatusProgress(
     uniqueBrandNights = uniqueBrandCount;
   }
 
+  const earnedCardNights = cardEliteNights.filter((c) => c.earned).reduce((s, c) => s + c.nights, 0);
   const pendingCardNights = cardEliteNights.filter((c) => !c.earned).reduce((s, c) => s + c.nights, 0);
 
   const pendingNights = promoNights + pendingCardNights;
@@ -310,7 +311,7 @@ export function computeStatusProgress(
   // already happened. Re-adding earned card nights on top double-counts
   // them (this was the exact cause of a real 81 showing as 111). Only
   // card nights genuinely not yet earned count separately, as pending.
-  const effectiveCurrentNights = currentNights + uniqueBrandNights;
+  const effectiveCurrentNights = currentNights + uniqueBrandNights + earnedCardNights;
   const projectedBooked = Math.min(total, effectiveCurrentNights + bookedNights);
   const projectedWithPromo = Math.min(total, projectedBooked + pendingNights);
 
@@ -336,7 +337,7 @@ export function computeStatusProgress(
       .reduce((s, h) => s + (h.total ?? 0), 0);
 
     const rate = config.unit === 'points' ? config.pointsPerGBP! : config.fxRateFromGBP;
-    const currentAmount = completedSpendGBP * rate;
+    const currentAmount = config.unit === 'points' && p.statusPointsOverride != null ? p.statusPointsOverride : completedSpendGBP * rate;
     const pendingSpend = pendingSpendGBP * rate;
 
     spendProgress = {

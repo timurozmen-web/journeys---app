@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTrips } from '../lib/useLiveData';
-import { TripCard } from '../components/TripCard';
+import { TripCard, destinationQuery } from '../components/TripCard';
+import { DestinationPhoto } from '../components/DestinationPhoto';
 import { findGaps } from '../lib/tripStats';
 
 export function Trips() {
@@ -18,6 +19,7 @@ export function Trips() {
   const yearNights = trips.reduce((s, t) => s + t.hotels.reduce((n, h) => n + h.nights, 0), 0);
   const yearSpend = trips.reduce((s, t) => s + t.hotels.reduce((n, h) => n + (h.total ?? 0), 0) + t.flights.reduce((n, f) => n + (f.cost ?? 0), 0), 0);
   const yearGaps = trips.reduce((s, t) => s + findGaps(t).length, 0);
+  const tripWithMostGaps = [...trips].sort((a, b) => findGaps(b).length - findGaps(a).length)[0];
   const continents = new Set(trips.flatMap((t) => t.hotels.map((h) => h.country))).size;
 
   return (
@@ -34,10 +36,13 @@ export function Trips() {
             <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-.4px' }}>£{yearSpend.toLocaleString()}</div>
             <div style={{ fontSize: 9, fontWeight: 700, opacity: 0.65, textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 1 }}>spent</div>
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-.4px', color: yearGaps > 0 ? '#FFC15A' : '#fff' }}>{yearGaps}</div>
-            <div style={{ fontSize: 9, fontWeight: 700, opacity: 0.65, textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 1 }}>gaps</div>
-          </div>
+          <button
+            onClick={() => yearGaps > 0 && tripWithMostGaps && navigate(`/trips/${tripWithMostGaps.id}`)}
+            style={{ flex: 1, background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: yearGaps > 0 ? 'pointer' : 'default', font: 'inherit', color: 'inherit' }}
+          >
+            <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-.4px', color: yearGaps > 0 ? '#FFC15A' : '#fff', textDecoration: yearGaps > 0 ? 'underline' : 'none' }}>{yearGaps}</div>
+            <div style={{ fontSize: 9, fontWeight: 700, opacity: 0.65, textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 1 }}>gaps{yearGaps > 0 ? ' · tap to fix' : ''}</div>
+          </button>
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 14 }}>
           <button
@@ -76,7 +81,11 @@ export function Trips() {
               </span>
             </div>
             <div onClick={() => navigate(`/trips/${t.id}`)} style={{ borderRadius: 20, overflow: 'hidden', background: 'var(--ink)', color: '#fff', boxShadow: '0 12px 30px rgba(23,23,28,.24)', cursor: 'pointer' }}>
-              <div style={{ position: 'relative', height: 150, background: 'linear-gradient(160deg,#5B3FA6,#2A1E52)' }}>
+              <div style={{ position: 'relative', height: 150, background: '#2A1E52' }}>
+                <div style={{ position: 'absolute', inset: 0 }}>
+                  <DestinationPhoto query={destinationQuery(t)} seed={t.id} height={150} />
+                </div>
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(23,23,28,.15) 0%,rgba(23,23,28,.1) 40%,rgba(74,49,137,.75) 85%,#4A3189 100%)' }} />
                 <div style={{ position: 'absolute', top: 14, left: 14, right: 14, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                   <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.06em', padding: '5px 10px', borderRadius: 99, background: 'rgba(255,255,255,.94)', color: isUnderway ? 'var(--green)' : 'var(--brand)' }}>
                     {isUnderway ? `DAY ${daysDone + 1} OF ${totalNights}` : `${daysOut} DAYS OUT`}

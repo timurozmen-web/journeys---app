@@ -6,6 +6,7 @@ export const REVIEW_CATEGORIES = [
   { key: 'value', label: 'Value' },
   { key: 'facilities', label: 'Facilities' },
   { key: 'food', label: 'Food' },
+  { key: 'shower', label: 'Shower' },
 ];
 
 // Liked -> top band (6-10), not liked -> bottom band (1-5). Intensity
