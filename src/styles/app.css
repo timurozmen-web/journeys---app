@@ -88,18 +88,18 @@
 
 .tdhero{position:relative;height:220px;overflow:hidden}
 .tdhero img{width:100%;height:100%;object-fit:cover;display:block}
-.tdhero .grad{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.1) 0%,rgba(0,0,0,0) 30%,rgba(19,34,71,.15) 70%,var(--bg) 100%)}
+.tdhero .grad{position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,23,28,.35) 0%,rgba(23,23,28,0) 40%,rgba(74,49,137,.55) 78%,#4A3189 100%)}
 .tdback{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:16px;z-index:5;
   width:36px;height:36px;border-radius:50%;background:rgba(19,34,71,.55);backdrop-filter:blur(8px);
   border:1px solid rgba(255,255,255,.18);display:grid;place-items:center;cursor:pointer;color:#fff}
 .tdtitle{position:absolute;left:20px;right:20px;bottom:16px;color:#fff}
 .tdtitle h1{font-size:25px;font-weight:800;letter-spacing:-.5px;text-shadow:0 2px 12px rgba(0,0,0,.4)}
 .tdtitle .s{font-size:13px;font-weight:600;opacity:.92;margin-top:3px;text-shadow:0 1px 8px rgba(0,0,0,.4)}
-.tdstats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+.tdstats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#4A3189;
   margin:-14px 20px 0;border-radius:14px;overflow:hidden;position:relative;z-index:2}
-.tdstat{background:var(--card);padding:12px 8px;text-align:center}
-.tdstat .v{font-size:15px;font-weight:800;letter-spacing:-.3px}
-.tdstat .k{font-size:9px;color:var(--ink3);font-weight:600;margin-top:2px;text-transform:uppercase;letter-spacing:.03em}
+.tdstat{background:#4A3189;padding:12px 8px;text-align:center}
+.tdstat .v{font-size:15px;font-weight:800;letter-spacing:-.3px;color:#fff}
+.tdstat .k{font-size:9px;color:rgba(255,255,255,.7);font-weight:600;margin-top:2px;text-transform:uppercase;letter-spacing:.03em}
 .tdseg{display:flex;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:12px;
   padding:3px;margin:20px 20px 0}
 .tdseg button{flex:1;padding:8px 0;border:0;border-radius:9px;background:none;color:var(--ink3);
