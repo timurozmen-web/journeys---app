@@ -15,32 +15,33 @@ export function TabBar() {
   return (
     <>
       <div className={`scrim ${open ? 'on' : ''}`} onClick={() => setOpen(false)} />
-      <div className="radial" aria-hidden={!open}>
-        <svg className="rtrack" viewBox="0 0 200 120" fill="none">
-          <path d="M13.4,70 A100,100 0 0,1 100,20 A100,100 0 0,1 186.6,70" stroke="var(--line)" strokeWidth="1.5" strokeDasharray="1 7" strokeLinecap="round" />
-          {[
-            [13.4, 70],
-            [100, 20],
-            [186.6, 70],
-          ].map(([cx, cy], i) => (
-            <circle key={i} cx={cx} cy={cy} r="2.5" fill="var(--line)" />
+      <div
+        style={{
+          position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 95, background: '#fff',
+          borderTopLeftRadius: 24, borderTopRightRadius: 24, boxShadow: '0 -8px 30px rgba(23,23,28,.18)',
+          padding: '10px 20px calc(20px + env(safe-area-inset-bottom, 0px))',
+          transform: open ? 'translateY(0)' : 'translateY(110%)', transition: 'transform .3s cubic-bezier(.2,1.1,.3,1)',
+        }}
+      >
+        <div style={{ width: 36, height: 4, borderRadius: 99, background: 'var(--line)', margin: '0 auto 14px' }} />
+        <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--ink)', marginBottom: 12 }}>What are we doing?</div>
+        <div style={{ display: 'grid', gap: 8 }}>
+          {RADIAL.map((r, i) => (
+            <button
+              key={r.key}
+              onClick={() => { setOpen(false); navigate(`/action/${r.key}`); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '14px', borderRadius: 16, border: i === 0 ? 'none' : '1px solid var(--line)',
+                background: i === 0 ? 'linear-gradient(135deg,#5B3FA6,#7B5FC7)' : '#fff', cursor: 'pointer', textAlign: 'left', font: 'inherit',
+              }}
+            >
+              <span style={{ width: 38, height: 38, borderRadius: 12, background: i === 0 ? 'rgba(255,255,255,.2)' : 'var(--card2)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                <r.Icon size={20} color={i === 0 ? '#fff' : r.color} />
+              </span>
+              <span style={{ fontSize: 14.5, fontWeight: 800, color: i === 0 ? '#fff' : 'var(--ink)' }}>{r.label}</span>
+            </button>
           ))}
-        </svg>
-        {RADIAL.map((r) => (
-          <button
-            key={r.key}
-            className="ract"
-            onClick={() => {
-              setOpen(false);
-              navigate(`/action/${r.key}`);
-            }}
-          >
-            <span className="rbtn" style={{ color: r.color }}>
-              <r.Icon size={22} color={r.color} />
-            </span>
-            <span className="rlab">{r.label}</span>
-          </button>
-        ))}
+        </div>
       </div>
 
       <nav className="tabs" role="tablist">
