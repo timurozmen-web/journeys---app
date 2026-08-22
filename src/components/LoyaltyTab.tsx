@@ -73,9 +73,7 @@ export function LoyaltyTab({
                 <>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0, flex: 1 }}>
-                      <span style={{ width: 74, height: 32, borderRadius: 8, background: '#fff', flexShrink: 0, overflow: 'hidden', display: 'block' }}>
-                        <BrandLogo name={p.name} shape={p.shape} color={p.color} accent={p.accent} size={32} />
-                      </span>
+                      <BrandLogo name={p.name} shape={p.shape} color={p.color} accent={p.accent} size={32} />
                       <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.85)' }}>{progress?.effectiveTier ?? p.tier ?? '—'}</span>
                     </div>
                     <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.8)', flexShrink: 0 }}>{isOpen ? '⌃' : '⌄'}</span>

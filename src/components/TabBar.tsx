@@ -26,19 +26,19 @@ export function TabBar() {
         <div style={{ width: 36, height: 4, borderRadius: 99, background: 'var(--line)', margin: '0 auto 14px' }} />
         <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--ink)', marginBottom: 12 }}>What are we doing?</div>
         <div style={{ display: 'grid', gap: 8 }}>
-          {RADIAL.map((r, i) => (
+          {RADIAL.map((r) => (
             <button
               key={r.key}
               onClick={() => { setOpen(false); navigate(`/action/${r.key}`); }}
               style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: '14px', borderRadius: 16, border: i === 0 ? 'none' : '1px solid var(--line)',
-                background: i === 0 ? 'linear-gradient(135deg,#5B3FA6,#7B5FC7)' : '#fff', cursor: 'pointer', textAlign: 'left', font: 'inherit',
+                display: 'flex', alignItems: 'center', gap: 12, padding: '14px', borderRadius: 16, border: '1px solid var(--line)',
+                background: '#fff', cursor: 'pointer', textAlign: 'left', font: 'inherit',
               }}
             >
-              <span style={{ width: 38, height: 38, borderRadius: 12, background: i === 0 ? 'rgba(255,255,255,.2)' : 'var(--card2)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                <r.Icon size={20} color={i === 0 ? '#fff' : r.color} />
+              <span style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--card2)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                <r.Icon size={20} color={r.color} />
               </span>
-              <span style={{ fontSize: 14.5, fontWeight: 800, color: i === 0 ? '#fff' : 'var(--ink)' }}>{r.label}</span>
+              <span style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' }}>{r.label}</span>
             </button>
           ))}
         </div>

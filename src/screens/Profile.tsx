@@ -143,7 +143,7 @@ export function Profile() {
         </div>
       </div>
 
-      <div style={{ padding: '0 20px 4px' }}>
+      <div style={{ padding: '18px 20px 4px' }}>
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto' }}>
           <button
             onClick={() => setYear('all')}

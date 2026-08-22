@@ -89,26 +89,28 @@ export function Wallet() {
         </div>
       </div>
 
-      {seg === 'payment' && (
-        <div style={{ padding: '0 20px 4px' }}>
-          <button
-            onClick={() => navigate('/bank-sync')}
-            style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', padding: 0 }}
-          >
-            🏦 Sync spend from your bank
-          </button>
-        </div>
-      )}
+      <div style={{ paddingTop: 18 }}>
+        {seg === 'payment' && (
+          <div style={{ padding: '0 20px 4px' }}>
+            <button
+              onClick={() => navigate('/bank-sync')}
+              style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', padding: 0 }}
+            >
+              🏦 Sync spend from your bank
+            </button>
+          </div>
+        )}
 
-      {seg === 'loyalty' && (
-        <LoyaltyTab programmes={loyaltyProgrammes} hotels={hotels} promotions={promotions} paymentCards={paymentCards} cardResults={cardResults} />
-      )}
+        {seg === 'loyalty' && (
+          <LoyaltyTab programmes={loyaltyProgrammes} hotels={hotels} promotions={promotions} paymentCards={paymentCards} cardResults={cardResults} />
+        )}
 
-      {seg === 'payment' && (
-        <PaymentTab cardResults={cardResults} loyaltyProgrammes={loyaltyProgrammes} refetchCards={refetchCards} />
-      )}
+        {seg === 'payment' && (
+          <PaymentTab cardResults={cardResults} loyaltyProgrammes={loyaltyProgrammes} refetchCards={refetchCards} />
+        )}
 
-      {seg === 'promotions' && <PromotionsTab />}
+        {seg === 'promotions' && <PromotionsTab />}
+      </div>
     </div>
   );
 }

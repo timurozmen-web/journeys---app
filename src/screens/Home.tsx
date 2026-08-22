@@ -285,10 +285,10 @@ export function Home() {
       <div style={{ padding: '24px 20px 24px' }}>
         <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)' }}>{THIS_YEAR} so far</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9, marginTop: 11 }}>
-          <div style={{ background: 'var(--ink)', borderRadius: 16, padding: '15px 16px', color: '#fff' }}>
-            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-1px', color: '#fff' }}>{nightsThisYear}</div>
-            <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.7, marginTop: 1, color: '#fff' }}>nights away</div>
-            <div style={{ fontSize: 10.5, fontWeight: 700, color: '#9BE7C4', marginTop: 6 }}>
+          <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '15px 16px' }}>
+            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-1px', color: 'var(--ink)' }}>{nightsThisYear}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink2)', marginTop: 1 }}>nights away</div>
+            <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--green)', marginTop: 6 }}>
               {nightsThisYear - nightsLastYear >= 0 ? '+' : ''}{nightsThisYear - nightsLastYear} on {LAST_YEAR}
             </div>
           </div>
