@@ -150,7 +150,7 @@ export function Home() {
       <div
         style={{
           background: 'linear-gradient(165deg,#4A3189 0%,#5B3FA6 45%,#7B5FC7 100%)',
-          padding: '24px 20px 22px', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, color: '#fff',
+          padding: 'max(24px, env(safe-area-inset-top, 24px)) 20px 22px', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, color: '#fff',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -286,8 +286,8 @@ export function Home() {
         <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)' }}>{THIS_YEAR} so far</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9, marginTop: 11 }}>
           <div style={{ background: 'var(--ink)', borderRadius: 16, padding: '15px 16px', color: '#fff' }}>
-            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-1px' }}>{nightsThisYear}</div>
-            <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.7, marginTop: 1 }}>nights away</div>
+            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-1px', color: '#fff' }}>{nightsThisYear}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.7, marginTop: 1, color: '#fff' }}>nights away</div>
             <div style={{ fontSize: 10.5, fontWeight: 700, color: '#9BE7C4', marginTop: 6 }}>
               {nightsThisYear - nightsLastYear >= 0 ? '+' : ''}{nightsThisYear - nightsLastYear} on {LAST_YEAR}
             </div>
