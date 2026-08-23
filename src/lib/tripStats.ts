@@ -113,6 +113,32 @@ export interface Gap {
 
 // Every night of a trip should be covered by some hotel. This finds the
 // stretches that aren't, so they can be filled in rather than left silent.
+export interface SplitSuggestion {
+  splitDate: string; // the new second trip would start here
+  beforeCountry: string;
+  afterCountry: string;
+}
+
+/**
+ * Detects when a trip's logged stays look like two genuinely separate
+ * trips rather than one continuous journey with a gap: a long break (6+
+ * nights) between stays where the country also changes. A short gap or a
+ * same-country gap is just a missing hotel to log, not a different trip.
+ */
+export function suggestTripSplit(trip: Trip): SplitSuggestion | null {
+  const sorted = [...trip.hotels].filter((h) => h.nights > 0).sort((a, b) => a.date.localeCompare(b.date));
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const a = sorted[i];
+    const b = sorted[i + 1];
+    const aEnd = addDays(a.date, a.nights);
+    const gapNights = nightsBetween(aEnd, b.date);
+    if (gapNights >= 6 && a.country.trim().toLowerCase() !== b.country.trim().toLowerCase()) {
+      return { splitDate: b.date, beforeCountry: a.country, afterCountry: b.country };
+    }
+  }
+  return null;
+}
+
 export function findGaps(trip: Trip): Gap[] {
   const hotelIntervals = trip.hotels
     .filter((h) => h.nights > 0)

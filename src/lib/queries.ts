@@ -106,6 +106,33 @@ export async function deleteTrip(id: string) {
   if (tripErr) throw tripErr;
 }
 
+/**
+ * Splits a trip in two at splitDate: everything on or after that date
+ * (hotels and flights) moves to a brand-new trip, and the original trip's
+ * end date is pulled back to just before the split. Used when a trip was
+ * logged as one continuous journey but was actually two separate ones.
+ */
+export async function splitTrip(tripId: string, splitDate: string, newTitle: string, originalEnd: string, tripType: 'work' | 'leisure'): Promise<string> {
+  const dayBefore = new Date(new Date(splitDate + 'T00:00:00').getTime() - 86400000).toISOString().slice(0, 10);
+
+  const { data: newTrip, error: createErr } = await supabase
+    .from('trips')
+    .insert({ title: newTitle, start_date: splitDate, end_date: originalEnd, section: computeSection(splitDate, originalEnd, new Date().toISOString().slice(0, 10)), trip_type: tripType, notes: 'Split from a longer trip' })
+    .select('id')
+    .single();
+  if (createErr) throw createErr;
+
+  const { error: hotelsErr } = await supabase.from('hotels').update({ trip_id: newTrip.id }).eq('trip_id', tripId).gte('date', splitDate);
+  if (hotelsErr) throw hotelsErr;
+  const { error: flightsErr } = await supabase.from('flights').update({ trip_id: newTrip.id }).eq('trip_id', tripId).gte('date', splitDate);
+  if (flightsErr) throw flightsErr;
+
+  const { error: updateErr } = await supabase.from('trips').update({ end_date: dayBefore }).eq('id', tripId);
+  if (updateErr) throw updateErr;
+
+  return newTrip.id;
+}
+
 function mapHotel(h: any): Hotel {
   return {
     id: h.id, name: h.name, country: h.country, city: h.city ?? null, brand: h.brand, tier: h.tier,

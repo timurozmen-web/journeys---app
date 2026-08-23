@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTrips, useLoyaltyProgrammes, usePromotions } from '../lib/useLiveData';
-import { uploadTripPhoto, fetchTripPhotos } from '../lib/queries';
+import { uploadTripPhoto, fetchTripPhotos, splitTrip } from '../lib/queries';
 import type { TripPhoto } from '../lib/queries';
 import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, PlaneIcon, EditIcon } from '../components/Icons';
 import { DestinationPhoto } from '../components/DestinationPhoto';
@@ -9,7 +9,7 @@ const TripMap = lazy(() => import('../components/TripMap').then((m) => ({ defaul
 import { destinationQuery } from '../components/TripCard';
 import { TripMemories } from '../components/TripMemories';
 import { formatDateRange, formatMoney } from '../lib/format';
-import { computeTripPoints, computeTripSavings, groupDestinations, findGaps } from '../lib/tripStats';
+import { computeTripPoints, computeTripSavings, groupDestinations, findGaps, suggestTripSplit } from '../lib/tripStats';
 
 type Seg = 'overview' | 'itinerary' | 'expenses' | 'notes';
 
@@ -39,6 +39,8 @@ export function TripDetail() {
     if (!id) return;
     fetchTripPhotos(id).then(setTripPhotos).catch(() => setTripPhotos([]));
   }, [id]);
+
+  const [splitting, setSplitting] = useState(false);
 
   if (!trip) return <div className="head">Trip not found</div>;
 
@@ -130,6 +132,34 @@ export function TripDetail() {
           <div className="k">nights</div>
         </div>
       </div>
+
+      {(() => {
+        const suggestion = suggestTripSplit(trip);
+        if (!suggestion) return null;
+        return (
+          <div style={{ margin: '14px 20px 0', padding: '12px 14px', borderRadius: 14, background: 'rgba(156,95,8,.08)', border: '1px solid rgba(156,95,8,.25)' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>This looks like two trips</div>
+            <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 3 }}>
+              A long gap and a country change between {suggestion.beforeCountry} and {suggestion.afterCountry} — want to split this into two separate trips?
+            </div>
+            <button
+              disabled={splitting}
+              onClick={async () => {
+                setSplitting(true);
+                try {
+                  const newId = await splitTrip(trip.id, suggestion.splitDate, suggestion.afterCountry, trip.end, trip.tripType);
+                  navigate(`/trips/${newId}`);
+                } catch {
+                  setSplitting(false);
+                }
+              }}
+              style={{ marginTop: 8, padding: '7px 14px', borderRadius: 99, border: 'none', background: 'var(--amber)', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+            >
+              {splitting ? 'Splitting…' : `Split at ${suggestion.splitDate}`}
+            </button>
+          </div>
+        );
+      })()}
 
       <div className="tdseg">
         {(['overview', 'itinerary', 'expenses', 'notes'] as Seg[]).map((k) => (
