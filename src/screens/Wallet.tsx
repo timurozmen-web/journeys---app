@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLoyaltyProgrammes, usePaymentCards, useAllHotels, useAllFlights, usePromotions } from '../lib/useLiveData';
+import { useLoyaltyProgrammes, usePaymentCards, useAllHotels, useAllFlights, usePromotions, useVouchers } from '../lib/useLiveData';
 import { computeCardResults, computeCardVoucherCandidates } from '../lib/cardMath';
+import { computeWalletValueChange } from '../lib/hotelPlanner';
 import { syncCardVouchers } from '../lib/queries';
 import { LoyaltyTab } from '../components/LoyaltyTab';
 import { PaymentTab } from '../components/PaymentTab';
@@ -56,6 +57,8 @@ export function Wallet() {
   );
 
   const totalValue = loyaltyProgrammes.reduce((s, p) => s + (p.points * p.ptValue) / 100, 0);
+  const { data: vouchers } = useVouchers();
+  const valueChange = computeWalletValueChange(hotels, loyaltyProgrammes, vouchers, new Date().toISOString().slice(0, 10));
 
   return (
     <div>
@@ -64,9 +67,18 @@ export function Wallet() {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', opacity: 0.7 }}>Wallet value {!isLive && '· sample data'}</div>
-            <div style={{ fontSize: 38, fontWeight: 800, letterSpacing: '-1.8px', marginTop: 2, lineHeight: 1 }}>£{Math.round(totalValue).toLocaleString()}</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <div style={{ fontSize: 38, fontWeight: 800, letterSpacing: '-1.8px', marginTop: 2, lineHeight: 1 }}>£{Math.round(totalValue).toLocaleString()}</div>
+              {valueChange.hasData && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 3, color: valueChange.deltaValue >= 0 ? '#9BE7C4' : '#FFB4B4', fontSize: 13, fontWeight: 800 }}>
+                  <span>{valueChange.deltaValue >= 0 ? '▲' : '▼'}</span>
+                  <span>£{Math.round(Math.abs(valueChange.deltaValue)).toLocaleString()}</span>
+                </div>
+              )}
+            </div>
             <div style={{ fontSize: 12, fontWeight: 600, opacity: 0.8, marginTop: 6 }}>
               {loyaltyProgrammes.reduce((s, p) => s + p.points, 0).toLocaleString()} points across {loyaltyProgrammes.length} programmes
+              {valueChange.hasData && <span style={{ opacity: 0.7 }}> · vs last 30 days from stays</span>}
             </div>
           </div>
           <button

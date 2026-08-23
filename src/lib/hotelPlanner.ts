@@ -56,6 +56,52 @@ const TIER_BENEFITS: Record<string, Record<string, string[]>> = {
   },
 };
 
+export interface WalletValueChange {
+  deltaValue: number; // can be negative if redemptions outweighed new points
+  hasData: boolean; // false if there's genuinely nothing to compare (no recent activity at all)
+}
+
+/**
+ * Real, dated value movement over the last 30 days: points earned from
+ * completed stays in that window (valued at each programme's real rate),
+ * minus the value of any vouchers actually redeemed in that window.
+ * Deliberately excludes manual card spend adjustments, since those are an
+ * undated running total, not attributable to a specific month -- faking
+ * that would be dishonest rather than just incomplete.
+ */
+export function computeWalletValueChange(
+  hotels: Hotel[],
+  programmes: LoyaltyProgramme[],
+  vouchers: { value: number | null; redeemed: boolean; redeemedDate: string | null }[],
+  today: string
+): WalletValueChange {
+  const windowStart = new Date(new Date(today).getTime() - 30 * 86400000).toISOString().slice(0, 10);
+  let pointsValueEarned = 0;
+  let sawActivity = false;
+
+  for (const h of hotels) {
+    if (h.status !== 'Completed' || h.award || !h.total) continue;
+    if (h.date < windowStart || h.date > today) continue;
+    if (BASE_POINTS_PER_GBP[h.brand] == null) continue;
+    sawActivity = true;
+    const programme = programmes.find((p) => p.name === h.brand);
+    const tier = programme?.tier ?? null;
+    const bonus = (tier && TIER_BONUS[h.brand]?.[tier]) || 1;
+    const pointsEarned = h.total * BASE_POINTS_PER_GBP[h.brand] * bonus;
+    if (programme?.ptValue) pointsValueEarned += (pointsEarned * programme.ptValue) / 100;
+  }
+
+  let redeemedValue = 0;
+  for (const v of vouchers) {
+    if (!v.redeemed || !v.redeemedDate || !v.value) continue;
+    if (v.redeemedDate < windowStart || v.redeemedDate > today) continue;
+    sawActivity = true;
+    redeemedValue += v.value;
+  }
+
+  return { deltaValue: pointsValueEarned - redeemedValue, hasData: sawActivity };
+}
+
 export interface HotelPlanOption {
   programme: string;
   tier: string | null;
