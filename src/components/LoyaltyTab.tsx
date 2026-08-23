@@ -3,6 +3,7 @@ import { BrandLogo, hasWordmarkLogo } from './BrandLogo';
 import { useVouchers } from '../lib/useLiveData';
 import { setVoucherRedeemed } from '../lib/queries';
 import { computeStatusProgress } from '../lib/statusProgress';
+import { computeLoyaltyInsights } from '../lib/loyaltyInsights';
 import type { LoyaltyProgramme, Hotel, Promotion, PaymentCard } from '../types';
 
 type Category = 'hotel' | 'airline';
@@ -27,6 +28,7 @@ export function LoyaltyTab({
   const topByValue = new Set(
     [...filtered].sort((a, b) => (b.points * b.ptValue) - (a.points * a.ptValue)).slice(0, 3).map((p) => p.name)
   );
+  const insights = computeLoyaltyInsights(hotels, programmes, new Date().getFullYear());
 
   return (
     <div style={{ display: 'grid', gap: 10 }}>
@@ -50,8 +52,8 @@ export function LoyaltyTab({
         const hasStatus = !!p.nextTier && p.nights != null;
         const isDeckCard = hasStatus && topByValue.has(p.name);
         const progress = hasStatus ? computeStatusProgress(p, hotels, promotions, cardResults) : null;
+        const brandInsight = insights.byBrand.find((b) => b.brand === p.name);
 
-        // Vouchers relevant to this programme: match by the issuing
         // card's own programme brand where possible (auto-synced
         // vouchers store the card id as source), falling back to a
         // fuzzy name match for manually-added ones.
@@ -271,6 +273,23 @@ export function LoyaltyTab({
                           {v.value != null && <div style={{ fontSize: 12.5, fontWeight: 700 }}>£{v.value.toFixed(2)}</div>}
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {brandInsight && (brandInsight.loyaltyValue > 0 || brandInsight.rateSavings > 0) && (
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>
+                      Value gained this year
+                    </div>
+                    <div style={{ display: 'grid', gap: 5 }}>
+                      {brandInsight.benefitsByType.breakfast > 0 && <div className="dd-row"><span style={{ fontSize: 12, color: 'var(--ink2)' }}>Free breakfast</span><span style={{ fontSize: 12.5, fontWeight: 700 }}>£{Math.round(brandInsight.benefitsByType.breakfast)}</span></div>}
+                      {brandInsight.benefitsByType.upgrade > 0 && <div className="dd-row"><span style={{ fontSize: 12, color: 'var(--ink2)' }}>Room upgrades</span><span style={{ fontSize: 12.5, fontWeight: 700 }}>£{Math.round(brandInsight.benefitsByType.upgrade)}</span></div>}
+                      {brandInsight.benefitsByType.lounge > 0 && <div className="dd-row"><span style={{ fontSize: 12, color: 'var(--ink2)' }}>Lounge access</span><span style={{ fontSize: 12.5, fontWeight: 700 }}>£{Math.round(brandInsight.benefitsByType.lounge)}</span></div>}
+                      {brandInsight.benefitsByType.lateCheckout > 0 && <div className="dd-row"><span style={{ fontSize: 12, color: 'var(--ink2)' }}>Late checkout</span><span style={{ fontSize: 12.5, fontWeight: 700 }}>£{Math.round(brandInsight.benefitsByType.lateCheckout)}</span></div>}
+                      {brandInsight.benefitsByType.other > 0 && <div className="dd-row"><span style={{ fontSize: 12, color: 'var(--ink2)' }}>Other perks</span><span style={{ fontSize: 12.5, fontWeight: 700 }}>£{Math.round(brandInsight.benefitsByType.other)}</span></div>}
+                      <div className="dd-row"><span style={{ fontSize: 12, color: 'var(--ink2)' }}>Points earned (value)</span><span style={{ fontSize: 12.5, fontWeight: 700 }}>£{Math.round(brandInsight.pointsValue)}</span></div>
+                      {brandInsight.rateSavings > 0 && <div className="dd-row"><span style={{ fontSize: 12, color: 'var(--ink3)' }}>Rate savings (not loyalty)</span><span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink3)' }}>£{Math.round(brandInsight.rateSavings)}</span></div>}
                     </div>
                   </div>
                 )}

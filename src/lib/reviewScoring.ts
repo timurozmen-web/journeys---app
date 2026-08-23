@@ -46,7 +46,7 @@ export interface HotelNeedingReview {
 // name -- the originally-imported reviews predate this app's own hotel
 // records and may not have a reliable hotel_id link.
 export function findHotelsNeedingReview(
-  trips: { id: string; title: string; end: string; hotels: { id: string; name: string; country: string; date: string; status: string }[] }[],
+  trips: { id: string; title: string; end: string; hotels: { id: string; name: string; country: string; date: string; nights: number; status: string }[] }[],
   reviews: { hotelId: string | null; hotelName: string; category: string }[],
   today: string
 ): HotelNeedingReview[] {
@@ -56,9 +56,12 @@ export function findHotelsNeedingReview(
 
   const result: HotelNeedingReview[] = [];
   for (const trip of trips) {
-    if (trip.end >= today) continue; // trip hasn't actually finished yet
     for (const h of trip.hotels) {
       if (h.status !== 'Completed') continue;
+      // The stay's own checkout must have passed -- not the whole trip's
+      // end date, since a stay can genuinely finish mid-trip.
+      const checkOut = new Date(new Date(h.date + 'T00:00:00').getTime() + h.nights * 86400000).toISOString().slice(0, 10);
+      if (checkOut > today) continue;
       if (reviewedHotelIds.has(h.id)) continue;
       if (reviewedHotelNames.has(h.name.trim().toLowerCase())) continue;
       result.push({ tripId: trip.id, tripTitle: trip.title, hotelId: h.id, hotelName: h.name, country: h.country, date: h.date });

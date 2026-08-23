@@ -109,7 +109,8 @@ export function Profile() {
 
   return (
     <div>
-      <div style={{ background: 'linear-gradient(165deg,#4A3189 0%,#5B3FA6 100%)', padding: 'max(24px, env(safe-area-inset-top, 24px)) 20px 4px', color: '#fff', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' }}>
+      <div style={{ background: '#fff', height: 'env(safe-area-inset-top, 0px)' }} />
+      <div style={{ background: 'linear-gradient(165deg,#4A3189 0%,#5B3FA6 100%)', padding: '24px 20px 4px', color: '#fff', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{ width: 54, height: 54, borderRadius: 18, background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.28)', display: 'grid', placeItems: 'center', fontSize: 20, fontWeight: 800, flexShrink: 0 }}>T</div>
           <div style={{ flex: 1, minWidth: 0 }}>

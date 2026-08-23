@@ -24,7 +24,8 @@ export function Trips() {
 
   return (
     <div>
-      <div style={{ background: 'linear-gradient(165deg,#4A3189 0%,#5B3FA6 100%)', padding: 'max(24px, env(safe-area-inset-top, 24px)) 20px 20px', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, color: '#fff' }}>
+      <div style={{ background: '#fff', height: 'env(safe-area-inset-top, 0px)' }} />
+      <div style={{ background: 'linear-gradient(165deg,#4A3189 0%,#5B3FA6 100%)', padding: '24px 20px 20px', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, color: '#fff' }}>
         <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', opacity: 0.7 }}>Your year</div>
         <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-.6px', marginTop: 3 }}>{trips.length} trips, {continents} {continents === 1 ? 'country' : 'countries'}</div>
         <div style={{ display: 'flex', marginTop: 16, padding: '12px 0', borderTop: '1px solid rgba(255,255,255,.18)', borderBottom: '1px solid rgba(255,255,255,.18)' }}>

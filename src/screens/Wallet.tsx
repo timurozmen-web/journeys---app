@@ -59,7 +59,8 @@ export function Wallet() {
 
   return (
     <div>
-      <div style={{ background: 'linear-gradient(165deg,#4A3189 0%,#5B3FA6 100%)', padding: 'max(24px, env(safe-area-inset-top, 24px)) 20px 22px', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, color: '#fff' }}>
+      <div style={{ background: '#fff', height: 'env(safe-area-inset-top, 0px)' }} />
+      <div style={{ background: 'linear-gradient(165deg,#4A3189 0%,#5B3FA6 100%)', padding: '24px 20px 22px', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, color: '#fff' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', opacity: 0.7 }}>Wallet value {!isLive && '· sample data'}</div>

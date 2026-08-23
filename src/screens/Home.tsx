@@ -147,10 +147,11 @@ export function Home() {
 
   return (
     <div>
+      <div style={{ background: '#fff', height: 'env(safe-area-inset-top, 0px)' }} />
       <div
         style={{
           background: 'linear-gradient(165deg,#4A3189 0%,#5B3FA6 45%,#7B5FC7 100%)',
-          padding: 'max(24px, env(safe-area-inset-top, 24px)) 20px 22px', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, color: '#fff',
+          padding: '24px 20px 22px', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, color: '#fff',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
