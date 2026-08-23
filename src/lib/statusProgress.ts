@@ -311,7 +311,7 @@ export function computeStatusProgress(
   // already happened. Re-adding earned card nights on top double-counts
   // them (this was the exact cause of a real 81 showing as 111). Only
   // card nights genuinely not yet earned count separately, as pending.
-  const effectiveCurrentNights = currentNights + uniqueBrandNights + earnedCardNights;
+  const effectiveCurrentNights = currentNights + uniqueBrandNights + earnedCardNights + appliedPromoNights;
   const projectedBooked = Math.min(total, effectiveCurrentNights + bookedNights);
   const projectedWithPromo = Math.min(total, projectedBooked + pendingNights);
 
