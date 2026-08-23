@@ -302,6 +302,13 @@ export function Profile() {
           {visible.map((r, i) => {
             const rank = sortMode === 'score' ? i + 1 : null;
             const badge = rank ? rankBadge(rank) : null;
+            const reviewCount = reviews.filter((rv) => rv.category === 'overall' && rv.hotelName.trim().toLowerCase() === r.hotelName.trim().toLowerCase()).length;
+            // Most recent completed stay at this hotel across every trip --
+            // a re-review reflects the latest real visit, not necessarily
+            // the specific stay that originally triggered the review.
+            const mostRecentStay = [...hotels]
+              .filter((h) => h.status === 'Completed' && h.name.trim().toLowerCase() === r.hotelName.trim().toLowerCase())
+              .sort((a, b) => b.date.localeCompare(a.date))[0];
             return (
               <div
                 key={r.id}
@@ -325,7 +332,17 @@ export function Profile() {
                   <div style={{ fontSize: 13.5, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {r.hotelName}
                   </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink2)', marginTop: 1 }}>{r.country} · {r.date}</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--ink2)', marginTop: 1 }}>
+                    {r.country} · {r.date}{reviewCount > 1 ? ` · reviewed ${reviewCount}x` : ''}
+                  </div>
+                  {mostRecentStay && (
+                    <button
+                      onClick={() => navigate('/review-trip', { state: { hotel: { tripId: '', tripTitle: '', hotelId: mostRecentStay.id, hotelName: mostRecentStay.name, country: mostRecentStay.country, date: mostRecentStay.date } } })}
+                      style={{ marginTop: 3, background: 'none', border: 'none', color: 'var(--brand)', fontSize: 11, fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                    >
+                      Review again
+                    </button>
+                  )}
                 </div>
                 <div
                   style={{
