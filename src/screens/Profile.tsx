@@ -211,7 +211,7 @@ export function Profile() {
       </div>
 
       <div className="stack">
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="card" style={{ padding: 0, overflow: 'hidden', position: 'sticky', top: 8, zIndex: 5, boxShadow: '0 6px 18px rgba(23,23,28,.12)' }}>
           <div style={{ padding: '16px 16px 4px' }}>
             <div style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 600 }}>Countries visited</div>
             <div style={{ fontSize: 26, fontWeight: 800 }}>{visitedCountries.size}</div>
