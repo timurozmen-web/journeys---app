@@ -1,3 +1,4 @@
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes, usePromotions, usePaymentCards, useVouchers, useReviews } from '../lib/useLiveData';
 import { computeStatusProgress } from '../lib/statusProgress';
@@ -38,6 +39,8 @@ interface ActionItem {
 
 export function Home() {
   const navigate = useNavigate();
+  const [activeAction, setActiveAction] = useState(0);
+  const actionScrollRef = useRef<HTMLDivElement>(null);
   const TODAY = new Date().toISOString().slice(0, 10);
   const THIS_YEAR = new Date().getFullYear();
   const LAST_YEAR = THIS_YEAR - 1;
@@ -79,13 +82,12 @@ export function Home() {
     .filter((r) => r.nextMilestone && r.nextMilestone.m.spendRequired)
     .map((r) => ({ r, pct: Math.min(100, (r.autoSpend / r.nextMilestone!.m.spendRequired!) * 100) }))
     .sort((a, b) => b.pct - a.pct);
-  if (cardsWithNextMilestone.length > 0) {
-    const { r, pct } = cardsWithNextMilestone[0];
+  for (const { r, pct } of cardsWithNextMilestone.slice(0, 2)) {
     const remaining = Math.max(0, r.nextMilestone!.m.spendRequired! - r.autoSpend);
     const programme = loyaltyProgrammes.find((p) => p.name === r.card.programmeBrand);
     const estValue = programme?.ptValue ? Math.round((r.nextMilestone!.m.rewardPoints * programme.ptValue) / 100) : null;
     actionItems.push({
-      key: 'card-milestone', color: 'var(--brand)',
+      key: `card-milestone-${r.card.id}`, color: 'var(--brand)',
       title: `Spend £${Math.round(remaining).toLocaleString()} on the ${r.card.id}`,
       subtitle: `Turns into ${r.nextMilestone!.m.rewardLabel}${estValue ? ` — worth about £${estValue}` : ''}`,
       progressPct: pct,
@@ -98,10 +100,9 @@ export function Home() {
     .map((v) => ({ v, daysLeft: daysBetween(TODAY, v.expiryDate!) }))
     .filter((x) => x.daysLeft <= 90)
     .sort((a, b) => a.daysLeft - b.daysLeft);
-  if (expiringVouchers.length > 0) {
-    const { v, daysLeft } = expiringVouchers[0];
+  for (const { v, daysLeft } of expiringVouchers.slice(0, 2)) {
     actionItems.push({
-      key: 'voucher-expiring', color: 'var(--amber)',
+      key: `voucher-expiring-${v.id}`, color: 'var(--amber)',
       title: `${v.name} expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`,
       subtitle: v.value ? `Worth about £${Math.round(v.value)} · from ${v.source}` : `From ${v.source}`,
       onClick: () => navigate('/wallet'),
@@ -109,13 +110,33 @@ export function Home() {
   }
 
   const hotelsNeedingReview = findHotelsNeedingReview(trips, reviews, TODAY);
-  if (hotelsNeedingReview.length > 0) {
-    const h = hotelsNeedingReview[0];
+  const overallReviewCount = reviews.filter((r) => r.category === 'overall').length;
+  hotelsNeedingReview.slice(0, 2).forEach((h, i) => {
+    const nth = overallReviewCount + i + 1;
     actionItems.push({
-      key: 'needs-review', color: 'var(--green)',
+      key: `needs-review-${h.hotelId}`, color: 'var(--green)',
       title: `Rate ${h.hotelName}`,
-      subtitle: `Your ${reviews.filter((r) => r.category === 'overall').length + 1}${ordinalSuffix(reviews.filter((r) => r.category === 'overall').length + 1)} review · a few categories to score`,
+      subtitle: `Your ${nth}${ordinalSuffix(nth)} review · a few categories to score`,
       onClick: () => navigate('/trips'),
+    });
+  });
+
+  // Card renewals coming up soon: real value-vs-fee assessment reused
+  // from the already-verified card math, not a fresh estimate -- if the
+  // card genuinely hasn't earned back its fee this card-year, say so
+  // plainly rather than just flagging the date.
+  for (const r of cardResults) {
+    if (!r.cardRow || r.cardRow.closedDate || !r.yearWindow || r.card.annualFee <= 0) continue;
+    const daysToRenewal = daysBetween(TODAY, r.yearWindow.end);
+    if (daysToRenewal < 0 || daysToRenewal > 45) continue;
+    const goodValue = r.net >= 0;
+    actionItems.push({
+      key: `renewal-${r.card.id}`, color: goodValue ? 'var(--green)' : 'var(--red)',
+      title: `${r.card.id} renews in ${daysToRenewal} day${daysToRenewal === 1 ? '' : 's'}`,
+      subtitle: goodValue
+        ? `Worth keeping — £${Math.round(r.net)} ahead of the £${r.card.annualFee} fee this year`
+        : `Consider cancelling — only £${Math.round(r.gross)} of value against a £${r.card.annualFee} fee this year`,
+      onClick: () => navigate('/wallet'),
     });
   }
 
@@ -223,14 +244,26 @@ export function Home() {
       </div>
 
       {actionItems.length > 0 && (
-        <div style={{ padding: '22px 20px 0' }}>
-          <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)' }}>Do this week</div>
-          <div style={{ display: 'grid', gap: 9, marginTop: 11 }}>
+        <div style={{ padding: '22px 0 0' }}>
+          <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)', padding: '0 20px' }}>Do this week</div>
+          <div
+            ref={actionScrollRef}
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              const cardWidth = el.scrollWidth / actionItems.length;
+              setActiveAction(Math.round(el.scrollLeft / cardWidth));
+            }}
+            style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '11px 20px 4px', scrollbarWidth: 'none' }}
+          >
             {actionItems.map((item) => (
               <button
                 key={item.key}
                 onClick={item.onClick}
-                style={{ display: 'flex', alignItems: 'stretch', gap: 0, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, overflow: 'hidden', padding: 0, cursor: 'pointer', font: 'inherit', color: 'var(--ink)', textAlign: 'left' }}
+                style={{
+                  display: 'flex', alignItems: 'stretch', gap: 0, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16,
+                  overflow: 'hidden', padding: 0, cursor: 'pointer', font: 'inherit', color: 'var(--ink)', textAlign: 'left',
+                  flex: '0 0 88%', scrollSnapAlign: 'start',
+                }}
               >
                 <span style={{ width: 5, background: item.color, flexShrink: 0 }} />
                 <span style={{ flex: 1, minWidth: 0, padding: '13px 14px' }}>
@@ -248,6 +281,19 @@ export function Home() {
               </button>
             ))}
           </div>
+          {actionItems.length > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 6 }}>
+              {actionItems.map((item, i) => (
+                <span
+                  key={item.key}
+                  style={{
+                    width: i === activeAction ? 16 : 6, height: 6, borderRadius: 99,
+                    background: i === activeAction ? 'var(--brand)' : 'var(--card2)', transition: 'width .2s ease, background .2s ease',
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
