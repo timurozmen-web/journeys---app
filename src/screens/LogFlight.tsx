@@ -19,7 +19,7 @@ const labelStyle: React.CSSProperties = {
 export function LogFlight() {
   const navigate = useNavigate();
   const location = useLocation();
-  const state = location.state as { flight?: Flight; tripId?: string; prefill?: Partial<Flight>; extractNote?: string } | null;
+  const state = location.state as { flight?: Flight; tripId?: string; prefill?: Partial<Flight>; extractNote?: string; returnTo?: { pathname: string; state?: unknown } } | null;
   const editing = state?.flight;
   const presetTripId = state?.tripId;
   const prefill = state?.prefill;
@@ -66,7 +66,8 @@ export function LogFlight() {
       } else {
         await addFlight(payload);
       }
-      navigate(form.tripId ? `/trips/${form.tripId}` : '/trips');
+      if (state?.returnTo) navigate(state.returnTo.pathname, { state: state.returnTo.state });
+      else navigate(form.tripId ? `/trips/${form.tripId}` : '/trips');
     } catch (err) {
       const message =
         err instanceof Error

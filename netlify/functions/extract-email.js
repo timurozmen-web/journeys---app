@@ -3,11 +3,11 @@
 // only this function, running on Netlify's servers, ever sees it.
 
 function buildSystemPrompt(today) {
-  return `You extract structured travel booking data from a hotel or flight confirmation, given either as plain text or as one or more screenshot images of the confirmation (read any text visible in the images).
+  return `You extract structured travel booking data from one or more hotel or flight confirmations, given either as plain text or as one or more screenshot images (read any text visible in the images). A single confirmation email or itinerary often contains MULTIPLE bookings together -- e.g. an outbound flight, a hotel stay, and a return flight all in one itinerary. Extract EVERY distinct booking you can find, not just the first one.
 
 Today's real date is ${today}.
 
-Determine if it's a HOTEL booking or a FLIGHT booking, then return ONLY a JSON object (no other text, no markdown fences) matching one of these shapes:
+Return ONLY a JSON array (no other text, no markdown fences), one entry per distinct booking, each matching one of these shapes:
 
 For a hotel:
 {"type":"hotel","name":string,"country":string|null,"city":string|null,"brand":string|null,"checkIn":"YYYY-MM-DD","nights":number|null,"total":number|null,"currency":string|null,"roomType":string|null,"rateType":"Standard"|"Member"|"Promotional"|"Non-refundable"|"Other"|null}
@@ -19,8 +19,10 @@ Rules:
 - "from"/"to" should be 3-letter IATA airport codes if you can determine them, otherwise null.
 - "total"/"cost" should be a plain number with no currency symbol or commas.
 - "currency" should be a 3-letter ISO code (GBP, USD, EUR, etc) if determinable, otherwise null.
-- If multiple images are provided, they may be different parts of the same scrolled confirmation -- combine what you learn from all of them into one result.
-- If you genuinely cannot tell whether it's a hotel or flight booking, or the content isn't a booking confirmation at all, return {"type":"unknown"}.
+- If multiple images are provided, they may be different parts of the same scrolled confirmation -- combine what you learn from all of them into one coherent set of bookings, don't treat each image as unrelated.
+- A round-trip is two separate flight bookings (outbound and return), each its own array entry -- never merge them into one.
+- If a total cost is given only once for a combined itinerary (e.g. one price covering a flight+hotel package) and can't be reliably split between the individual bookings, put the combined total on whichever single booking it most clearly belongs to and leave it null on the others -- never guess a split.
+- If you genuinely cannot find any real booking in the content at all, return an empty array [].
 - "rateType": use "Standard" if the confirmation gives no indication of a special rate; only use another value if the confirmation explicitly says so (e.g. "Member Rate", "Non-refundable", "Advance Purchase" -> "Promotional").
 - "roomType": keep this brief -- just the room category/tier as named by the property (e.g. "Studio Suite", "Deluxe Room", "Junior Suite"). Leave out bed configuration (e.g. "King Bed", "Twin"), view, floor, or any other descriptive extras that are sometimes appended to the room name.
 - Date year inference: if a date in the confirmation has no year printed on it, infer the year yourself using today's date (${today}) as the anchor -- if that month/day has already passed this year, it means next year; if it hasn't happened yet this year, use this year. Never default to some fixed or arbitrary year.
@@ -82,7 +84,7 @@ export default withLambda(async (event) => {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 500,
+        max_tokens: 1500,
         system: buildSystemPrompt(new Date().toISOString().slice(0, 10)),
         messages: [{ role: 'user', content }],
       }),
@@ -103,8 +105,11 @@ export default withLambda(async (event) => {
     } catch {
       return { statusCode: 502, body: JSON.stringify({ error: 'Could not parse a clean result -- try again or enter the details manually' }) };
     }
+    if (!Array.isArray(parsed)) {
+      return { statusCode: 502, body: JSON.stringify({ error: 'Unexpected result shape from extraction -- try again or enter the details manually' }) };
+    }
 
-    return { statusCode: 200, body: JSON.stringify(parsed) };
+    return { statusCode: 200, body: JSON.stringify({ bookings: parsed }) };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: err instanceof Error ? err.message : 'Unknown error' }) };
   }

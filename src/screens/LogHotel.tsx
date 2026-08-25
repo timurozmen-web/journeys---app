@@ -22,7 +22,7 @@ const labelStyle: React.CSSProperties = {
 export function LogHotel() {
   const navigate = useNavigate();
   const location = useLocation();
-  const state = location.state as { hotel?: Hotel; tripId?: string; prefill?: Partial<Hotel>; extractNote?: string } | null;
+  const state = location.state as { hotel?: Hotel; tripId?: string; prefill?: Partial<Hotel>; extractNote?: string; returnTo?: { pathname: string; state?: unknown } } | null;
   const editing = state?.hotel;
   const presetTripId = state?.tripId;
   const prefill = state?.prefill;
@@ -152,7 +152,8 @@ export function LogHotel() {
       } else {
         await addHotel(payload);
       }
-      navigate(resolvedTripId ? `/trips/${resolvedTripId}` : '/trips');
+      if (state?.returnTo) navigate(state.returnTo.pathname, { state: state.returnTo.state });
+      else navigate(resolvedTripId ? `/trips/${resolvedTripId}` : '/trips');
     } catch (err) {
       const message =
         err instanceof Error
