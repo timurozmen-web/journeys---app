@@ -4,10 +4,10 @@ import { BackIcon } from '../components/Icons';
 const CONTENT: Record<string, { title: string; body: string; actions?: { label: string; to: string }[] }> = {
   capture: {
     title: 'Capture',
-    body: 'Start a new trip, paste a confirmation email to pull the details automatically, or log a stay or flight by hand.',
+    body: 'Paste or screenshot a confirmation to pull the details automatically (and catch every booking in it), start a new trip, or log a stay or flight by hand.',
     actions: [
-      { label: '+ Start a new trip', to: '/log-trip' },
       { label: '✉️ Scan an email', to: '/scan-email' },
+      { label: '+ Start a new trip', to: '/log-trip' },
       { label: '+ Log a stay', to: '/log-hotel' },
       { label: '+ Log a flight', to: '/log-flight' },
     ],
