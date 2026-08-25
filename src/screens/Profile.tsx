@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense } from 'react';
+import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useReviews, useAllHotels, useAllFlights, useTrips } from '../lib/useLiveData';
 import { findHotelsNeedingReview } from '../lib/reviewScoring';
@@ -33,6 +33,40 @@ function rankBadge(rank: number) {
 export function Profile() {
   const navigate = useNavigate();
   const [cat, setCat] = useState('overall');
+  const mapAnchorRef = useRef<HTMLDivElement>(null);
+  const mapCardRef = useRef<HTMLDivElement>(null);
+  const [mapPinned, setMapPinned] = useState(false);
+  const [mapWidth, setMapWidth] = useState(0);
+  const [mapCardHeight, setMapCardHeight] = useState(0);
+
+  useEffect(() => {
+    function onScroll() {
+      const anchor = mapAnchorRef.current;
+      const card = mapCardRef.current;
+      if (!anchor || !card) return;
+      const anchorTop = anchor.getBoundingClientRect().top;
+      if (!mapPinned) {
+        // Not yet pinned: measure the card's natural size/position before switching.
+        const rect = card.getBoundingClientRect();
+        if (rect.top <= 8) {
+          setMapWidth(rect.width);
+          setMapCardHeight(rect.height);
+          setMapPinned(true);
+        }
+      } else if (anchorTop > 8) {
+        // Scrolled back up past the anchor's natural position: unpin.
+        setMapPinned(false);
+      }
+    }
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, [mapPinned]);
+
   const [sortMode, setSortMode] = useState<SortMode>('score');
   const [regionFilter, setRegionFilter] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -210,8 +244,16 @@ export function Profile() {
         </div>
       </div>
 
-      <div className="stack">
-        <div className="card" style={{ padding: 0, overflow: 'hidden', position: 'sticky', top: 8, zIndex: 5, boxShadow: '0 6px 18px rgba(23,23,28,.12)' }}>
+      <div className="stack" ref={mapAnchorRef}>
+        {mapPinned && <div style={{ height: mapCardHeight }} />}
+        <div
+          className="card"
+          ref={mapCardRef}
+          style={{
+            padding: 0, overflow: 'hidden', boxShadow: '0 6px 18px rgba(23,23,28,.12)',
+            ...(mapPinned ? { position: 'fixed', top: 8, left: 20, width: mapWidth, zIndex: 5 } : {}),
+          }}
+        >
           <div style={{ padding: '16px 16px 4px' }}>
             <div style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 600 }}>Countries visited</div>
             <div style={{ fontSize: 26, fontWeight: 800 }}>{visitedCountries.size}</div>
