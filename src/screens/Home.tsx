@@ -4,6 +4,7 @@ import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes, usePromoti
 import { computeStatusProgress } from '../lib/statusProgress';
 import { computeCardResults } from '../lib/cardMath';
 import { computeLoyaltyInsights } from '../lib/loyaltyInsights';
+import { BASE_POINTS_PER_GBP, TIER_BONUS } from '../lib/hotelPlanner';
 import { findGaps } from '../lib/tripStats';
 import { findHotelsNeedingReview } from '../lib/reviewScoring';
 
@@ -63,6 +64,7 @@ export function Home() {
   const nightsThisYear = completedHotels.filter((h) => yearOf(h.date) === THIS_YEAR).reduce((s, h) => s + h.nights, 0);
   const nightsLastYear = completedHotels.filter((h) => yearOf(h.date) === LAST_YEAR).reduce((s, h) => s + h.nights, 0);
   const flightsThisYear = completedFlights.filter((f) => yearOf(f.date) === THIS_YEAR).length;
+  const flightsLastYear = completedFlights.filter((f) => yearOf(f.date) === LAST_YEAR).length;
 
   const topProgress = loyaltyProgrammes
     .filter((p) => p.nextTier && p.nights != null && p.nightsNeeded != null)
@@ -164,7 +166,28 @@ export function Home() {
     tripEvents.sort((a, b) => a.detail.localeCompare(b.detail));
   }
 
-  const sparklineHeights = [14, 22, 12, 30, 26, 38]; // relative shape only -- not enough monthly granularity tracked yet for a real trend line here
+  // Real per-month loyalty value for the last 6 months, using the same
+  // earning-rate calculation as everywhere else -- replaces what was
+  // previously fake placeholder bar heights unrelated to any real data.
+  const monthlyLoyaltyValue: number[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - i);
+    const monthKey = d.toISOString().slice(0, 7);
+    let val = 0;
+    for (const h of hotels) {
+      if (h.status !== 'Completed' || h.award || !h.total || !h.date.startsWith(monthKey)) continue;
+      const rate = BASE_POINTS_PER_GBP[h.brand];
+      if (rate == null) continue;
+      const programme = loyaltyProgrammes.find((p) => p.name === h.brand);
+      const tier = programme?.tier ?? null;
+      const bonus = (tier && TIER_BONUS[h.brand]?.[tier]) || 1;
+      if (programme?.ptValue) val += (h.total * rate * bonus * programme.ptValue) / 100;
+    }
+    monthlyLoyaltyValue.push(val);
+  }
+  const maxMonthly = Math.max(1, ...monthlyLoyaltyValue);
 
   return (
     <div>
@@ -335,13 +358,16 @@ export function Home() {
           <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '15px 16px' }}>
             <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-1px', color: 'var(--ink)' }}>{nightsThisYear}</div>
             <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink2)', marginTop: 1 }}>nights away</div>
-            <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--green)', marginTop: 6 }}>
-              {nightsThisYear - nightsLastYear >= 0 ? '+' : ''}{nightsThisYear - nightsLastYear} on {LAST_YEAR}
+            <div style={{ fontSize: 10.5, fontWeight: 700, color: nightsThisYear - nightsLastYear >= 0 ? 'var(--green)' : 'var(--red)', marginTop: 6 }}>
+              {nightsThisYear - nightsLastYear >= 0 ? '▲' : '▼'} {Math.abs(nightsThisYear - nightsLastYear)} on {LAST_YEAR}
             </div>
           </div>
           <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '15px 16px' }}>
             <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-1px' }}>{flightsThisYear}</div>
             <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink2)', marginTop: 1 }}>flights</div>
+            <div style={{ fontSize: 10.5, fontWeight: 700, color: flightsThisYear - flightsLastYear >= 0 ? 'var(--green)' : 'var(--red)', marginTop: 6 }}>
+              {flightsThisYear - flightsLastYear >= 0 ? '▲' : '▼'} {Math.abs(flightsThisYear - flightsLastYear)} on {LAST_YEAR}
+            </div>
           </div>
           <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '15px 16px', gridColumn: 'span 2', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
             <div>
@@ -350,9 +376,15 @@ export function Home() {
                 loyalty value earned{insights.overall.roiPercent != null ? ` · ${insights.overall.roiPercent.toFixed(0)}% of spend` : ''}
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, flexShrink: 0 }}>
-              {sparklineHeights.map((h, i) => (
-                <span key={i} style={{ width: 8, height: h, borderRadius: 2, background: i >= sparklineHeights.length - 1 ? 'var(--brand)' : i >= sparklineHeights.length - 3 ? '#D8CEEC' : 'var(--card2)', display: 'block' }} />
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, flexShrink: 0 }} title="Loyalty value earned per month, last 6 months">
+              {monthlyLoyaltyValue.map((v, i) => (
+                <span
+                  key={i}
+                  style={{
+                    width: 8, height: Math.max(3, Math.round((v / maxMonthly) * 38)), borderRadius: 2, display: 'block',
+                    background: i === monthlyLoyaltyValue.length - 1 ? 'var(--brand)' : i >= monthlyLoyaltyValue.length - 3 ? '#D8CEEC' : 'var(--card2)',
+                  }}
+                />
               ))}
             </div>
           </div>

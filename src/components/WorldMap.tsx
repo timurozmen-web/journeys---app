@@ -58,7 +58,15 @@ export function WorldMap({
       // rather than dragging the whole map miles per pixel when zoomed in.
       const svg = e.currentTarget;
       const scale = WIDTH / svg.getBoundingClientRect().width;
-      setPan({ x: ds.panStartX + dx * scale / zoom, y: ds.panStartY + dy * scale / zoom });
+      const rawX = ds.panStartX + dx * scale / zoom;
+      const rawY = ds.panStartY + dy * scale / zoom;
+      // At the current zoom, the transformed content spans
+      // [pan, pan + SIZE*zoom]. Clamp so the fixed viewBox [0, SIZE]
+      // always stays inside that range -- never pan the content out from
+      // under the visible area.
+      const minX = WIDTH * (1 - zoom);
+      const minY = HEIGHT * (1 - zoom);
+      setPan({ x: Math.min(0, Math.max(minX, rawX)), y: Math.min(0, Math.max(minY, rawY)) });
     }
   }
   function handlePointerUp() {
@@ -188,7 +196,9 @@ export function WorldMap({
       if (country) {
         const targetZoom = 2.5;
         setZoom(targetZoom);
-        setPan({ x: WIDTH / 2 - country.centroid[0] * targetZoom, y: HEIGHT / 2 - country.centroid[1] * targetZoom });
+        const rawX = WIDTH / 2 - country.centroid[0] * targetZoom;
+        const rawY = HEIGHT / 2 - country.centroid[1] * targetZoom;
+        setPan({ x: Math.min(0, Math.max(WIDTH * (1 - targetZoom), rawX)), y: Math.min(0, Math.max(HEIGHT * (1 - targetZoom), rawY)) });
       }
     }
   }

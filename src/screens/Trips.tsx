@@ -16,8 +16,11 @@ export function Trips() {
   const upcoming = trips.filter((t) => t.section === 'upcoming').sort((a, b) => a.start.localeCompare(b.start));
   const past = trips.filter((t) => t.section === 'past').sort((a, b) => b.start.localeCompare(a.start));
 
-  const yearNights = trips.reduce((s, t) => s + t.hotels.reduce((n, h) => n + h.nights, 0), 0);
-  const yearSpend = trips.reduce((s, t) => s + t.hotels.reduce((n, h) => n + (h.total ?? 0), 0) + t.flights.reduce((n, f) => n + (f.cost ?? 0), 0), 0);
+  const CURRENT_YEAR = new Date().getFullYear();
+  const yearHotels = trips.flatMap((t) => t.hotels).filter((h) => h.status === 'Completed' && Number(h.date.slice(0, 4)) === CURRENT_YEAR);
+  const yearFlights = trips.flatMap((t) => t.flights).filter((f) => f.status === 'Completed' && f.date && Number(f.date.slice(0, 4)) === CURRENT_YEAR);
+  const yearNights = yearHotels.reduce((s, h) => s + h.nights, 0);
+  const yearSpend = yearHotels.reduce((s, h) => s + (h.total ?? 0), 0) + yearFlights.reduce((s, f) => s + (f.cost ?? 0), 0);
   const yearGaps = trips.reduce((s, t) => s + findGaps(t).length, 0);
   const tripWithMostGaps = [...trips].sort((a, b) => findGaps(b).length - findGaps(a).length)[0];
   const continents = new Set(trips.flatMap((t) => t.hotels.map((h) => h.country))).size;
@@ -111,10 +114,12 @@ export function Trips() {
                   <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-.3px' }}>{pts.toLocaleString()}</div>
                   <div style={{ fontSize: 9, opacity: 0.75, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 2 }}>points</div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-.3px', color: gaps > 0 ? '#FFC15A' : '#9BE7C4' }}>{gaps}</div>
-                  <div style={{ fontSize: 9, opacity: 0.75, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 2 }}>gap nights</div>
-                </div>
+                {gaps > 0 && (
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-.3px', color: '#FFC15A' }}>{gaps}</div>
+                    <div style={{ fontSize: 9, opacity: 0.75, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 2 }}>gap nights</div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
