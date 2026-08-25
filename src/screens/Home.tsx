@@ -250,10 +250,10 @@ export function Home() {
             ref={actionScrollRef}
             onScroll={(e) => {
               const el = e.currentTarget;
-              const cardWidth = el.scrollWidth / actionItems.length;
+              const cardWidth = el.children[0]?.getBoundingClientRect().width || 1;
               setActiveAction(Math.round(el.scrollLeft / cardWidth));
             }}
-            style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '11px 20px 4px', scrollbarWidth: 'none' }}
+            style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '11px 0 4px 20px', scrollbarWidth: 'none' }}
           >
             {actionItems.map((item) => (
               <button
@@ -262,7 +262,7 @@ export function Home() {
                 style={{
                   display: 'flex', alignItems: 'stretch', gap: 0, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16,
                   overflow: 'hidden', padding: 0, cursor: 'pointer', font: 'inherit', color: 'var(--ink)', textAlign: 'left',
-                  flex: '0 0 88%', scrollSnapAlign: 'start',
+                  flex: `0 0 calc(100vw - 40px)`, maxWidth: 480, scrollSnapAlign: 'start', marginRight: 20,
                 }}
               >
                 <span style={{ width: 5, background: item.color, flexShrink: 0 }} />
