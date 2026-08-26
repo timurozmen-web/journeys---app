@@ -5,6 +5,7 @@ import { suggestTripAssignment } from '../lib/autoTrip';
 import { normalizeBrand } from '../data/brandMap';
 import type { Hotel } from '../types';
 import { useTrips, useAllHotels, useAllFlights } from '../lib/useLiveData';
+import { findLikelyDuplicateHotel } from '../lib/duplicateDetection';
 import { BackIcon } from '../components/Icons';
 
 const CATEGORIES = ['Luxury', 'Premium', 'Midscale', 'Budget'] as const;
@@ -37,6 +38,8 @@ export function LogHotel() {
   const [error, setError] = useState('');
   const [overlapWarning, setOverlapWarning] = useState<string | null>(null);
   const [confirmedOverlap, setConfirmedOverlap] = useState(false);
+  const [dupWarning, setDupWarning] = useState<string | null>(null);
+  const [confirmedDup, setConfirmedDup] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [statusTouched, setStatusTouched] = useState(!!src?.status); // don't auto-override an explicit status from editing/extraction
@@ -95,6 +98,13 @@ export function LogHotel() {
       const overlap = findOverlap();
       if (overlap) {
         setOverlapWarning(overlap);
+        return;
+      }
+    }
+    if (!editing && !confirmedDup) {
+      const dup = findLikelyDuplicateHotel({ name: form.name, brand: form.brand || null, checkIn: form.date }, allHotels);
+      if (dup) {
+        setDupWarning(dup.name);
         return;
       }
     }
@@ -395,10 +405,35 @@ export function LogHotel() {
               </button>
               <button
                 type="button"
-                onClick={() => setOverlapWarning(null)}
-                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                onClick={() => setOverlapWarning(null)}                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
               >
                 Let me fix it
+              </button>
+            </div>
+          </div>
+        )}
+        {dupWarning && (
+          <div style={{ background: 'rgba(156,95,8,.1)', border: '1px solid rgba(156,95,8,.25)', borderRadius: 10, padding: '12px 14px' }}>
+            <div style={{ fontSize: 12.5, color: 'var(--amber)', fontWeight: 600, marginBottom: 8 }}>
+              This looks like it might already be logged as "{dupWarning}" — same brand, similar date. Save anyway?
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmedDup(true);
+                  setDupWarning(null);
+                }}
+                style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--amber)', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+              >
+                Save anyway
+              </button>
+              <button
+                type="button"
+                onClick={() => setDupWarning(null)}
+                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+              >
+                Let me check
               </button>
             </div>
           </div>

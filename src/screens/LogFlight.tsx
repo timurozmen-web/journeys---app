@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { addFlight, updateFlight, deleteFlight } from '../lib/queries';
 import type { Flight } from '../types';
-import { useTrips } from '../lib/useLiveData';
+import { useTrips, useAllFlights } from '../lib/useLiveData';
+import { findLikelyDuplicateFlight } from '../lib/duplicateDetection';
 import { BackIcon } from '../components/Icons';
 
 const CABINS = ['Economy', 'Premium Economy', 'Business', 'First'] as const;
@@ -26,6 +27,9 @@ export function LogFlight() {
   const src = editing ?? prefill;
   const extractNote = state?.extractNote as string | undefined;
   const { data: trips } = useTrips();
+  const { data: allFlights } = useAllFlights();
+  const [dupWarning, setDupWarning] = useState<string | null>(null);
+  const [confirmedDup, setConfirmedDup] = useState(false);
   const TODAY = new Date().toISOString().slice(0, 10);
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -51,6 +55,13 @@ export function LogFlight() {
     if (!form.date || !form.from || !form.to || !form.airline) {
       setError('Date, airports, and airline are required.');
       return;
+    }
+    if (!editing && !confirmedDup) {
+      const dup = findLikelyDuplicateFlight({ date: form.date, from: form.from, to: form.to }, allFlights);
+      if (dup) {
+        setDupWarning(`${dup.airline} ${dup.from} → ${dup.to} on ${dup.date}`);
+        return;
+      }
     }
     setSaving(true);
     setError('');
@@ -164,6 +175,32 @@ export function LogFlight() {
         {extractNote && (
           <div style={{ background: 'rgba(156,95,8,.1)', color: 'var(--amber)', fontSize: 12.5, padding: '10px 14px', borderRadius: 10, fontWeight: 600 }}>
             {extractNote}
+          </div>
+        )}
+        {dupWarning && (
+          <div style={{ background: 'rgba(156,95,8,.1)', border: '1px solid rgba(156,95,8,.25)', borderRadius: 10, padding: '12px 14px' }}>
+            <div style={{ fontSize: 12.5, color: 'var(--amber)', fontWeight: 600, marginBottom: 8 }}>
+              This looks like it might already be logged as {dupWarning} — same route and date. Save anyway?
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmedDup(true);
+                  setDupWarning(null);
+                }}
+                style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--amber)', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+              >
+                Save anyway
+              </button>
+              <button
+                type="button"
+                onClick={() => setDupWarning(null)}
+                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+              >
+                Let me check
+              </button>
+            </div>
           </div>
         )}
         {error && <div style={{ color: 'var(--red)', fontSize: 13 }}>{error}</div>}
