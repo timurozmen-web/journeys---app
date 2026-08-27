@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTrips, useLoyaltyProgrammes, usePromotions } from '../lib/useLiveData';
-import { uploadTripPhoto, fetchTripPhotos, splitTrip } from '../lib/queries';
+import { uploadTripPhoto, fetchTripPhotos, splitTrip, deleteHotel, deleteFlight } from '../lib/queries';
+import { SwipeToDelete } from '../components/SwipeToDelete';
 import type { TripPhoto } from '../lib/queries';
 import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, PlaneIcon, EditIcon } from '../components/Icons';
 import { DestinationPhoto } from '../components/DestinationPhoto';
@@ -23,7 +24,7 @@ export function TripDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [seg, setSeg] = useState<Seg>('overview');
-  const { data: trips } = useTrips();
+  const { data: trips, refetch: refetchTrips } = useTrips();
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
   const { data: promotions } = usePromotions();
   const trip = trips.find((t) => t.id === id);
@@ -204,30 +205,38 @@ export function TripDetail() {
               .map((leg, i) => {
                 const isHotel = 'name' in leg;
                 return (
-                  <div
-                    className="itin"
+                  <SwipeToDelete
                     key={i}
-                    style={{ cursor: 'pointer' }}
+                    wrapperStyle={{ borderRadius: 0, borderTop: i > 0 ? '1px solid var(--line)' : 'none' }}
                     onClick={() =>
                       isHotel
                         ? navigate('/log-hotel', { state: { hotel: leg, tripId: trip.id } })
                         : navigate('/log-flight', { state: { flight: leg, tripId: trip.id } })
                     }
+                    onDelete={async () => {
+                      const label = isHotel ? (leg as typeof trip.hotels[number]).name : `this flight`;
+                      if (!window.confirm(`Delete ${label}? This can't be undone.`)) return;
+                      if (isHotel) await deleteHotel(leg.id);
+                      else await deleteFlight(leg.id);
+                      refetchTrips();
+                    }}
                   >
-                    <span
-                      style={{
-                        width: 26, height: 26, borderRadius: 8, flexShrink: 0,
-                        background: isHotel ? 'rgba(12,122,66,.1)' : 'rgba(19,34,71,.08)',
-                        display: 'grid', placeItems: 'center',
-                      }}
-                    >
-                      {isHotel ? <BedIcon size={14} color="#0C7A42" /> : <PlaneIcon size={14} color="var(--brand)" />}
-                    </span>
-                    <div className="line">
-                      <div className="t">{isHotel ? leg.name : `${leg.from} → ${leg.to}`}</div>
-                      <div className="s">{fmt(leg.date)}</div>
+                    <div className="itin" style={{ cursor: 'pointer' }}>
+                      <span
+                        style={{
+                          width: 26, height: 26, borderRadius: 8, flexShrink: 0,
+                          background: isHotel ? 'rgba(12,122,66,.1)' : 'rgba(19,34,71,.08)',
+                          display: 'grid', placeItems: 'center',
+                        }}
+                      >
+                        {isHotel ? <BedIcon size={14} color="#0C7A42" /> : <PlaneIcon size={14} color="var(--brand)" />}
+                      </span>
+                      <div className="line">
+                        <div className="t">{isHotel ? leg.name : `${leg.from} → ${leg.to}`}</div>
+                        <div className="s">{fmt(leg.date)}</div>
+                      </div>
                     </div>
-                  </div>
+                  </SwipeToDelete>
                 );
               })}
             <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
