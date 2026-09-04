@@ -4,7 +4,7 @@ import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes, usePromoti
 import { computeCardResults } from '../lib/cardMath';
 import { computeStatusProgress } from '../lib/statusProgress';
 import { findHotelsNeedingReview } from '../lib/reviewScoring';
-import { ChevronDownIcon, HotelIcon } from '../components/Icons';
+import { ChevronDownIcon, HotelIcon, PlaneIcon } from '../components/Icons';
 import { getDestinationPhoto } from '../lib/unsplash';
 import { destinationQuery } from '../components/TripCard';
 import { HeroScene } from '../components/HeroScene';
@@ -172,6 +172,13 @@ export function Home() {
   const heroDayInfo = heroTrip && heroIsCurrent ? tripDayInfo(heroTrip, TODAY) : null;
   const heroDaysToGo = heroTrip && !heroIsCurrent ? Math.max(0, daysBetween(TODAY, heroTrip.start)) : 0;
 
+  // Next upcoming flight on the hero trip -- not yet departed. Shown as
+  // the "upcoming activity" tile right below the trip hero.
+  const nextFlight = heroTrip
+    ? [...heroTrip.flights].filter((f) => f.date && f.date >= TODAY).sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))[0] ?? null
+    : null;
+  const flightCode = (nextFlight?.flightNo?.trim().split(/\s+/)[0]?.slice(0, 2) ?? nextFlight?.airline?.slice(0, 2) ?? '').toUpperCase();
+
   const programmeCount = effectiveProgrammes.filter((p) => p.points > 0).length;
 
   // Hero photo: real uploaded photo if the trip has one, otherwise the
@@ -256,6 +263,52 @@ export function Home() {
         )}
       </div>
 
+      {/* Upcoming activity -- next flight on this trip, styled like an
+          iOS Liquid Glass departure card: frosted/translucent material,
+          big route codes, only real logged fields (no fabricated live
+          gate/status). */}
+      {nextFlight && (
+        <div style={{ padding: '14px 20px 0' }}>
+          <div
+            style={{
+              position: 'relative', borderRadius: 24, padding: '16px 18px', overflow: 'hidden',
+              background: 'linear-gradient(135deg, rgba(255,255,255,.75), rgba(255,255,255,.55))',
+              backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              border: '1px solid rgba(255,255,255,.6)', boxShadow: '0 8px 28px rgba(21,22,27,.1), inset 0 1px 0 rgba(255,255,255,.8)',
+            }}
+          >
+            <span style={{ position: 'absolute', top: -40, right: -30, width: 140, height: 140, borderRadius: '50%', background: 'radial-gradient(circle, rgba(30,58,143,.14), rgba(30,58,143,0) 70%)' }} />
+            <span style={{ position: 'absolute', bottom: -50, left: -20, width: 130, height: 130, borderRadius: '50%', background: 'radial-gradient(circle, rgba(156,111,40,.12), rgba(156,111,40,0) 70%)' }} />
+
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                <span style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--ink)', color: '#fff', fontSize: 10.5, fontWeight: 800, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                  {flightCode || '✈'}
+                </span>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink2)' }}>
+                  {nextFlight.airline}{nextFlight.flightNo ? ` · ${nextFlight.flightNo}` : ''}
+                </span>
+              </div>
+              <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: nextFlight.status === 'Booked' ? 'var(--brand)' : 'var(--ink2)', background: 'rgba(255,255,255,.7)', border: '1px solid rgba(255,255,255,.8)', borderRadius: 99, padding: '3px 9px' }}>
+                {nextFlight.status}
+              </span>
+            </div>
+
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 14, marginTop: 16 }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 600, letterSpacing: '-.5px', color: 'var(--ink)' }}>{nextFlight.from}</span>
+              <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, var(--ink2), transparent)', position: 'relative' }}>
+                <PlaneIcon size={15} color="var(--ink2)" style={{ position: 'absolute', right: -2, top: -8 }} />
+              </span>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 600, letterSpacing: '-.5px', color: 'var(--ink)' }}>{nextFlight.to}</span>
+            </div>
+
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 10 }}>
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ink2)' }}>{fmtDate(nextFlight.date!)} · {nextFlight.cabin}</span>
+              {nextFlight.cost != null && <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink)' }}>£{nextFlight.cost}</span>}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Wallet summary -- aggregate only; tap through for the per-programme breakdown */}
       <div style={{ padding: '16px 20px 0' }}>

@@ -159,8 +159,8 @@ export function TripDetail() {
             {legs.map((leg) =>
               leg.kind === 'hotel' ? (
                 <div key={`h-${leg.data.id}`} onClick={() => navigate('/log-hotel', { state: { hotel: leg.data, tripId: trip.id } })} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, background: 'var(--card)', border: '1px solid var(--line)', cursor: 'pointer' }}>
-                  <span style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(12,122,66,.1)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                    <BedIcon size={17} color="#0C7A42" />
+                  <span style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--card2)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                    <BedIcon size={17} color="var(--ink2)" />
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13.5, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{leg.data.name}</div>
@@ -170,8 +170,8 @@ export function TripDetail() {
                 </div>
               ) : (
                 <div key={`f-${leg.data.id}`} onClick={() => navigate('/log-flight', { state: { flight: leg.data, tripId: trip.id } })} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, background: 'var(--card)', border: '1px solid var(--line)', cursor: 'pointer' }}>
-                  <span style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(30,58,143,.08)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                    <PlaneIcon size={17} color="var(--brand)" />
+                  <span style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--card2)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                    <PlaneIcon size={17} color="var(--ink2)" />
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13.5, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -288,11 +288,11 @@ export function TripDetail() {
                       <span
                         style={{
                           width: 26, height: 26, borderRadius: 8, flexShrink: 0,
-                          background: isHotel ? 'rgba(12,122,66,.1)' : 'rgba(19,34,71,.08)',
+                          background: 'var(--card2)',
                           display: 'grid', placeItems: 'center',
                         }}
                       >
-                        {isHotel ? <BedIcon size={14} color="#0C7A42" /> : <PlaneIcon size={14} color="var(--brand)" />}
+                        {isHotel ? <BedIcon size={14} color="var(--ink2)" /> : <PlaneIcon size={14} color="var(--ink2)" />}
                       </span>
                       <div className="line">
                         <div className="t">{isHotel ? leg.name : `${leg.from} → ${leg.to}`}</div>
@@ -407,8 +407,8 @@ export function TripDetail() {
                     <div style={{ padding: '4px 14px 14px', borderTop: '1px solid var(--line)' }}>
                       {d.hotels.map((h) => (
                         <div key={h.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '9px 0' }}>
-                          <span style={{ width: 24, height: 24, borderRadius: 7, background: 'rgba(12,122,66,.1)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                            <BedIcon size={13} color="#0C7A42" />
+                          <span style={{ width: 24, height: 24, borderRadius: 7, background: 'var(--card2)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                            <BedIcon size={13} color="var(--ink2)" />
                           </span>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 12.5, fontWeight: 700 }}>{h.name}</div>
