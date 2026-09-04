@@ -11,6 +11,7 @@ import { destinationQuery } from '../components/TripCard';
 import { TripMemories } from '../components/TripMemories';
 import { formatDateRange, formatMoney } from '../lib/format';
 import { computeTripPoints, computeTripSavings, groupDestinations, findGaps, suggestTripSplit } from '../lib/tripStats';
+import { tripDayInfo } from '../lib/tripDay';
 
 type Seg = 'overview' | 'itinerary' | 'expenses' | 'notes';
 
@@ -76,6 +77,24 @@ export function TripDetail() {
   const destinations = groupDestinations(trip);
   const gaps = findGaps(trip);
 
+  const TODAY = new Date().toISOString().slice(0, 10);
+  const heroBadge =
+    trip.section === 'current'
+      ? (() => { const d = tripDayInfo(trip, TODAY); return `Current trip · Day ${d.dayIndex} of ${d.totalDays}`; })()
+      : trip.section === 'upcoming'
+      ? `Upcoming · ${Math.max(0, Math.round((new Date(trip.start).getTime() - Date.now()) / 86400000))} days to go`
+      : 'Completed';
+
+  // The hotel actually being stayed at right now, for a trip under way.
+  const stayingNow = trip.section === 'current'
+    ? trip.hotels.find((h) => {
+        const checkOut = new Date(new Date(h.date + 'T00:00:00').getTime() + h.nights * 86400000).toISOString().slice(0, 10);
+        return h.date <= TODAY && TODAY < checkOut;
+      }) ?? null
+    : null;
+  const sortedHotels = [...trip.hotels].sort((a, b) => a.date.localeCompare(b.date));
+  const sortedFlights = [...trip.flights].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''));
+
   return (
     <div>
       <div
@@ -108,8 +127,15 @@ export function TripDetail() {
         </button>
         <input ref={fileInput} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
         <div className="tdtitle">
+          <span className="tdbadge">{heroBadge}</span>
           <h1>{trip.title}</h1>
           <div className="s">{formatDateRange(trip.start, trip.end)}</div>
+          {stayingNow && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 10, fontSize: 12.5, fontWeight: 700, opacity: 0.95 }}>
+              <BedIcon size={14} color="#fff" />
+              {stayingNow.name}
+            </div>
+          )}
         </div>
       </div>
 
@@ -133,6 +159,49 @@ export function TripDetail() {
           <div className="k">nights</div>
         </div>
       </div>
+
+      {sortedHotels.length > 0 && (
+        <div style={{ padding: '18px 20px 0' }}>
+          <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)', marginBottom: 10 }}>Where you stay</div>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {sortedHotels.map((h) => (
+              <div key={h.id} onClick={() => navigate('/log-hotel', { state: { hotel: h, tripId: trip.id } })} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, background: 'var(--card)', border: '1px solid var(--line)', cursor: 'pointer' }}>
+                <span style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(12,122,66,.1)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                  <BedIcon size={17} color="#0C7A42" />
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.name}</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--ink2)', marginTop: 2, fontWeight: 500 }}>{fmt(h.date)} · {h.nights} night{h.nights === 1 ? '' : 's'}</div>
+                </div>
+                {h.total != null && <div style={{ fontSize: 13, fontWeight: 800, flexShrink: 0 }}>£{h.total}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {sortedFlights.length > 0 && (
+        <div style={{ padding: '18px 20px 0' }}>
+          <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)', marginBottom: 10 }}>Flights</div>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {sortedFlights.map((f) => (
+              <div key={f.id} onClick={() => navigate('/log-flight', { state: { flight: f, tripId: trip.id } })} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, background: 'var(--card)', border: '1px solid var(--line)', cursor: 'pointer' }}>
+                <span style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(30,58,143,.08)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                  <PlaneIcon size={17} color="var(--brand)" />
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 800 }}>{f.from} → {f.to}</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--ink2)', marginTop: 2, fontWeight: 500 }}>
+                    {fmt(f.date)}{f.airline ? ` · ${f.airline}` : ''}{f.flightNo ? ` ${f.flightNo}` : ''} · {f.cabin}
+                  </div>
+                </div>
+                {f.cost != null && <div style={{ fontSize: 13, fontWeight: 800, flexShrink: 0 }}>£{f.cost}</div>}
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 8 }}>Departure/arrival times aren't tracked yet — only the date.</div>
+        </div>
+      )}
 
       {(() => {
         const suggestion = suggestTripSplit(trip);

@@ -4,6 +4,7 @@ import { useTrips } from '../lib/useLiveData';
 import { TripCard, PastTripCard, destinationQuery } from '../components/TripCard';
 import { DestinationPhoto } from '../components/DestinationPhoto';
 import { findGaps } from '../lib/tripStats';
+import { tripDayInfo } from '../lib/tripDay';
 
 export function Trips() {
   const navigate = useNavigate();
@@ -72,10 +73,10 @@ export function Trips() {
         const spend = t.hotels.reduce((s, h) => s + (h.total ?? 0), 0) + t.flights.reduce((s, f) => s + (f.cost ?? 0), 0);
         const pts = t.hotels.reduce((s, h) => s + Math.round((h.total ?? 0) * 10), 0);
         const gaps = findGaps(t).reduce((s, g) => s + g.nights, 0);
-        const totalNights = t.hotels.reduce((s, h) => s + h.nights, 0) || 1;
-        const daysDone = Math.round((Date.now() - new Date(t.start).getTime()) / 86400000);
+        const TODAY = new Date().toISOString().slice(0, 10);
+        const { dayIndex: daysDone, totalDays: totalNights } = tripDayInfo(t, TODAY);
         const pct = Math.min(100, Math.max(0, (daysDone / totalNights) * 100));
-        const daysOut = Math.round((new Date(t.start).getTime() - Date.now()) / 86400000);
+        const daysOut = Math.max(0, Math.round((new Date(t.start).getTime() - Date.now()) / 86400000));
         return (
           <div style={{ padding: '20px 20px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
@@ -92,7 +93,7 @@ export function Trips() {
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(23,23,28,.15) 0%,rgba(23,23,28,.1) 40%,rgba(74,49,137,.75) 85%,#101B44 100%)' }} />
                 <div style={{ position: 'absolute', top: 14, left: 14, right: 14, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                   <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.06em', padding: '5px 10px', borderRadius: 99, background: 'rgba(255,255,255,.94)', color: isUnderway ? 'var(--green)' : 'var(--brand)' }}>
-                    {isUnderway ? `DAY ${daysDone + 1} OF ${totalNights}` : `${daysOut} DAYS OUT`}
+                    {isUnderway ? `DAY ${daysDone} OF ${totalNights}` : `${daysOut} DAYS OUT`}
                   </span>
                 </div>
                 <div style={{ position: 'absolute', left: 16, right: 16, bottom: 14 }}>

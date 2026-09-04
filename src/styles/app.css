@@ -86,15 +86,18 @@
 .chartwrap .big{font-size:27px;font-weight:800;letter-spacing:-1px;color:var(--ink)}
 .chartwrap .lab{font-size:12.5px;color:var(--ink3);font-weight:600}
 
-.tdhero{position:relative;height:220px;overflow:hidden}
+.tdhero{position:relative;height:340px;overflow:hidden}
 .tdhero img{width:100%;height:100%;object-fit:cover;display:block}
-.tdhero .grad{position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,23,28,.35) 0%,rgba(23,23,28,0) 40%,rgba(74,49,137,.55) 78%,#101B44 100%)}
+.tdhero .grad{position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,27,68,.5) 0%,rgba(16,27,68,.05) 30%,rgba(16,27,68,.05) 45%,rgba(16,27,68,.6) 70%,rgba(16,27,68,.94) 100%)}
 .tdback{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:16px;z-index:5;
   width:36px;height:36px;border-radius:50%;background:rgba(19,34,71,.55);backdrop-filter:blur(8px);
   border:1px solid rgba(255,255,255,.18);display:grid;place-items:center;cursor:pointer;color:#fff}
 .tdtitle{position:absolute;left:20px;right:20px;bottom:16px;color:#fff}
-.tdtitle h1{font-size:25px;font-weight:800;letter-spacing:-.5px;text-shadow:0 2px 12px rgba(0,0,0,.4)}
-.tdtitle .s{font-size:13px;font-weight:600;opacity:.92;margin-top:3px;text-shadow:0 1px 8px rgba(0,0,0,.4)}
+.tdtitle h1{font-size:30px;font-weight:800;letter-spacing:-.5px;text-shadow:0 2px 12px rgba(0,0,0,.4)}
+.tdtitle .s{font-size:13px;font-weight:600;opacity:.92;margin-top:6px;text-shadow:0 1px 8px rgba(0,0,0,.4)}
+.tdbadge{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.1em;
+  background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);border-radius:99px;padding:5px 11px;
+  backdrop-filter:blur(6px);margin-bottom:12px}
 .tdstats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#101B44;
   margin:-14px 20px 0;border-radius:14px;overflow:hidden;position:relative;z-index:2}
 .tdstat{background:#101B44;padding:12px 8px;text-align:center}
