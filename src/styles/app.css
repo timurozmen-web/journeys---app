@@ -4,11 +4,11 @@
 @keyframes in{from{opacity:0}to{opacity:1}}
 
 .head{padding:calc(env(safe-area-inset-top,0px) + var(--s5)) var(--s5) var(--s4)}
-.h1{font-family:var(--font-display);font-size:26px;font-weight:600;letter-spacing:-.3px;line-height:1.18}
+.h1{font-family:var(--font-display);font-size:25px;font-weight:800;letter-spacing:-.4px;line-height:1.2}
 .h-sub{font-size:14px;color:var(--ink3);margin-top:var(--s1)}
 .sect{display:flex;align-items:baseline;justify-content:space-between;margin:var(--s7) var(--s5) var(--s3);
   padding-top:var(--s5);border-top:1px solid var(--line)}
-.sect h2{font-family:var(--font-display);font-size:20px;font-weight:600;letter-spacing:-.2px}
+.sect h2{font-family:var(--font-display);font-size:19px;font-weight:800;letter-spacing:-.3px}
 .sect a{font-size:13px;font-weight:600;color:var(--brand);text-decoration:none}
 
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s4)}
@@ -169,13 +169,16 @@
   padding:var(--s2) var(--s2) calc(var(--s2) + env(safe-area-inset-bottom,0px));
   background:rgba(255,255,255,.88);backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--line)}
 .tab{flex:1;border:0;background:none;color:var(--ink3);font:inherit;cursor:pointer;text-decoration:none;
-  padding:4px 0 6px;display:flex;flex-direction:column;align-items:center;gap:3px}
-.tab svg{width:20px;height:20px;display:block}
-.tab span{font-size:10px;font-weight:700}
-.tab-ic{width:40px;height:26px;border-radius:13px;display:grid;place-items:center;
-  transition:background .2s ease,color .2s ease}
+  padding:5px 0 6px;display:flex;flex-direction:column;align-items:center;gap:4px;transition:color .18s ease}
+.tab svg{width:21px;height:21px;display:block}
+.tab span{font-size:10px;font-weight:700;transition:font-weight .18s ease}
+.tab-ic{width:32px;height:26px;display:grid;place-items:center}
 .tab.active{color:var(--brand)}
-.tab.active .tab-ic{background:var(--brand);color:#fff;box-shadow:0 4px 10px rgba(30,58,143,.35)}
+.tab.active span{font-weight:800}
+.tab.active .tab-ic svg{animation:tabPop .38s cubic-bezier(.34,1.56,.64,1)}
+@keyframes tabPop{0%{transform:scale(.72)}60%{transform:scale(1.16)}100%{transform:scale(1)}}
+.wallet-flap{transform-box:fill-box;transform-origin:0% 100%;animation:walletFlap .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes walletFlap{0%{transform:rotate(0deg)}40%{transform:rotate(-24deg)}100%{transform:rotate(0deg)}}
 .fab{width:52px;height:52px;border-radius:50%;border:0;flex-shrink:0;margin:0 var(--s1);
   background:linear-gradient(140deg,var(--gold2),var(--gold));color:#fff;font-size:26px;font-weight:400;
   cursor:pointer;box-shadow:0 6px 18px rgba(156,111,40,.45);display:grid;place-items:center;line-height:1;

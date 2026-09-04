@@ -62,7 +62,7 @@ export const TripsIconFilled = wrapFilled(
 );
 
 export const WalletIconFilled = wrapFilled(
-  '<path d="M2.5 8.7A3.2 3.2 0 0 1 5.7 5.5h11.6a3.2 3.2 0 0 1 3.2 3.2v.3H2.5z"/><path d="M2.5 10.5h19V16A3.2 3.2 0 0 1 18.3 19.2H5.7A3.2 3.2 0 0 1 2.5 16z"/><circle cx="17" cy="14.5" r="1.6" fill="var(--card)"/>'
+  '<path d="M2.5 10.5h19V16A3.2 3.2 0 0 1 18.3 19.2H5.7A3.2 3.2 0 0 1 2.5 16z"/><circle cx="17" cy="14.5" r="1.6" fill="var(--card)"/><path class="wallet-flap" d="M2.5 8.7A3.2 3.2 0 0 1 5.7 5.5h11.6a3.2 3.2 0 0 1 3.2 3.2v.3H2.5z"/>'
 );
 
 export const ProfileIconFilled = wrapFilled(
