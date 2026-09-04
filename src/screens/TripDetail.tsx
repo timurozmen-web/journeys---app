@@ -94,6 +94,18 @@ export function TripDetail() {
   const sortedHotels = [...trip.hotels].sort((a, b) => a.date.localeCompare(b.date));
   const sortedFlights = [...trip.flights].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''));
 
+  // Unified itinerary: outbound flight, stays in between, return flight --
+  // one chronological sequence rather than two disconnected lists, so a
+  // trip reads the way it was actually planned.
+  type Leg = { kind: 'hotel'; date: string; data: typeof sortedHotels[number] } | { kind: 'flight'; date: string; data: typeof sortedFlights[number]; role: 'Outbound' | 'Return' | null };
+  const legs: Leg[] = [
+    ...sortedHotels.map((h): Leg => ({ kind: 'hotel', date: h.date, data: h })),
+    ...sortedFlights.map((f, i): Leg => ({
+      kind: 'flight', date: f.date ?? '', data: f,
+      role: sortedFlights.length > 1 ? (i === 0 ? 'Outbound' : i === sortedFlights.length - 1 ? 'Return' : null) : null,
+    })),
+  ].sort((a, b) => a.date.localeCompare(b.date));
+
   return (
     <div>
       <div
@@ -140,46 +152,48 @@ export function TripDetail() {
 
       {uploadError && <div style={{ padding: '8px 20px', color: 'var(--red)', fontSize: 12.5 }}>{uploadError}</div>}
 
-      {sortedHotels.length > 0 && (
+      {(sortedHotels.length > 0 || sortedFlights.length > 0) && (
         <div style={{ padding: '18px 20px 0' }}>
-          <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)', marginBottom: 10 }}>Where you stay</div>
+          <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)', marginBottom: 10 }}>Itinerary</div>
           <div style={{ display: 'grid', gap: 8 }}>
-            {sortedHotels.map((h) => (
-              <div key={h.id} onClick={() => navigate('/log-hotel', { state: { hotel: h, tripId: trip.id } })} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, background: 'var(--card)', border: '1px solid var(--line)', cursor: 'pointer' }}>
-                <span style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(12,122,66,.1)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                  <BedIcon size={17} color="#0C7A42" />
-                </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.name}</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink2)', marginTop: 2, fontWeight: 500 }}>{fmt(h.date)} · {h.nights} night{h.nights === 1 ? '' : 's'}</div>
-                </div>
-                {h.total != null && <div style={{ fontSize: 13, fontWeight: 800, flexShrink: 0 }}>£{h.total}</div>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {sortedFlights.length > 0 && (
-        <div style={{ padding: '18px 20px 0' }}>
-          <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)', marginBottom: 10 }}>Flights</div>
-          <div style={{ display: 'grid', gap: 8 }}>
-            {sortedFlights.map((f) => (
-              <div key={f.id} onClick={() => navigate('/log-flight', { state: { flight: f, tripId: trip.id } })} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, background: 'var(--card)', border: '1px solid var(--line)', cursor: 'pointer' }}>
-                <span style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(30,58,143,.08)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                  <PlaneIcon size={17} color="var(--brand)" />
-                </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 800 }}>{f.from} → {f.to}</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink2)', marginTop: 2, fontWeight: 500 }}>
-                    {fmt(f.date)}{f.airline ? ` · ${f.airline}` : ''}{f.flightNo ? ` ${f.flightNo}` : ''} · {f.cabin}
+            {legs.map((leg) =>
+              leg.kind === 'hotel' ? (
+                <div key={`h-${leg.data.id}`} onClick={() => navigate('/log-hotel', { state: { hotel: leg.data, tripId: trip.id } })} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, background: 'var(--card)', border: '1px solid var(--line)', cursor: 'pointer' }}>
+                  <span style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(12,122,66,.1)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                    <BedIcon size={17} color="#0C7A42" />
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{leg.data.name}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--ink2)', marginTop: 2, fontWeight: 500 }}>{fmt(leg.data.date)} · {leg.data.nights} night{leg.data.nights === 1 ? '' : 's'}</div>
                   </div>
+                  {leg.data.total != null && <div style={{ fontSize: 13, fontWeight: 800, flexShrink: 0 }}>£{leg.data.total}</div>}
                 </div>
-                {f.cost != null && <div style={{ fontSize: 13, fontWeight: 800, flexShrink: 0 }}>£{f.cost}</div>}
-              </div>
-            ))}
+              ) : (
+                <div key={`f-${leg.data.id}`} onClick={() => navigate('/log-flight', { state: { flight: leg.data, tripId: trip.id } })} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, background: 'var(--card)', border: '1px solid var(--line)', cursor: 'pointer' }}>
+                  <span style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(30,58,143,.08)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                    <PlaneIcon size={17} color="var(--brand)" />
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {leg.data.from} → {leg.data.to}
+                      {leg.role && (
+                        <span style={{ fontSize: 9.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--brand)', background: 'rgba(30,58,143,.08)', borderRadius: 99, padding: '2px 7px' }}>
+                          {leg.role}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: 'var(--ink2)', marginTop: 2, fontWeight: 500 }}>
+                      {fmt(leg.data.date)}{leg.data.airline ? ` · ${leg.data.airline}` : ''}{leg.data.flightNo ? ` ${leg.data.flightNo}` : ''} · {leg.data.cabin}
+                    </div>
+                  </div>
+                  {leg.data.cost != null && <div style={{ fontSize: 13, fontWeight: 800, flexShrink: 0 }}>£{leg.data.cost}</div>}
+                </div>
+              )
+            )}
           </div>
-          <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 8 }}>Departure/arrival times aren't tracked yet — only the date.</div>
+          {sortedFlights.length > 0 && (
+            <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 8 }}>Departure/arrival times aren't tracked yet — only the date.</div>
+          )}
         </div>
       )}
 
