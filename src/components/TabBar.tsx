@@ -1,11 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { HomeIcon, TripsIcon, WalletIcon, ProfileIcon, PlanIcon, CaptureIcon, DiscoverIcon, HomeIconFilled, TripsIconFilled, WalletIconFilled, ProfileIconFilled } from './Icons';
+import { HomeIcon, TripsIcon, WalletIcon, ProfileIcon, PlanIcon, CaptureIcon, DiscoverIcon, CreditIcon, HomeIconFilled, TripsIconFilled, WalletIconFilled, ProfileIconFilled } from './Icons';
 
 const RADIAL = [
   { key: 'plan', label: 'Plan', Icon: PlanIcon, color: '#5B3FA6' },
   { key: 'capture', label: 'Capture', Icon: CaptureIcon, color: '#7B5FC7' },
   { key: 'discover', label: 'Discover', Icon: DiscoverIcon, color: '#5B3FA6' },
+  { key: 'credit', label: 'Where to credit', Icon: CreditIcon, color: '#5B3FA6' },
 ] as const;
 
 export function TabBar() {

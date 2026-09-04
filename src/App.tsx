@@ -16,6 +16,7 @@ import { ScanEmail } from './screens/ScanEmail';
 import { ScanPromotion } from './screens/ScanPromotion';
 import { BankSync } from './screens/BankSync';
 import { ReviewTrip } from './screens/ReviewTrip';
+import { CreditAdvisor } from './screens/CreditAdvisor';
 
 export default function App() {
   return (
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/action/discover" element={<Discover />} />
           <Route path="/action/plan" element={<Plan />} />
           <Route path="/log-loyalty-programme" element={<LogLoyaltyProgramme />} />
+          <Route path="/action/credit" element={<CreditAdvisor />} />
         </Routes>
       </div>
       <TabBar />

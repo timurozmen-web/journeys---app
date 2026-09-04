@@ -74,6 +74,9 @@ export const CaptureIcon = wrap(
 export const DiscoverIcon = wrap(
   '<path d="M12 3.5 13.9 9l5.6.3-4.4 3.5 1.5 5.4L12 15.2 7.4 18.2l1.5-5.4L4.5 9.3 10.1 9z"/>'
 );
+export const CreditIcon = wrap(
+  '<path d="M2.5 8.5 12 3l9.5 5.5-9.5 5.5-9.5-5.5Z"/><path d="M6 11v5.5c0 1.4 2.7 3 6 3s6-1.6 6-3V11"/>'
+);
 export const BedIcon = wrap(
   '<path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18h18M7 10V7h10v3"/>'
 );
