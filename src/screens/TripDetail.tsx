@@ -71,7 +71,6 @@ export function TripDetail() {
   }
 
   const spend = trip.hotels.reduce((s, h) => s + (h.total ?? 0), 0) + trip.flights.reduce((s, f) => s + (f.cost ?? 0), 0);
-  const nights = trip.hotels.reduce((s, h) => s + h.nights, 0);
   const points = computeTripPoints(trip, loyaltyProgrammes, promotions);
   const savings = computeTripSavings(trip);
   const destinations = groupDestinations(trip);
@@ -103,7 +102,7 @@ export function TripDetail() {
       >
         {!heroImage && (
           <div style={{ position: 'absolute', inset: 0 }}>
-            <DestinationPhoto query={destinationQuery(trip)} seed={trip.id} height={220} />
+            <DestinationPhoto query={destinationQuery(trip)} seed={trip.id} height={340} />
           </div>
         )}
         <div className="grad" />
@@ -140,25 +139,6 @@ export function TripDetail() {
       </div>
 
       {uploadError && <div style={{ padding: '8px 20px', color: 'var(--red)', fontSize: 12.5 }}>{uploadError}</div>}
-
-      <div className="tdstats">
-        <div className="tdstat">
-          <div className="v">£{Math.round(spend).toLocaleString()}</div>
-          <div className="k">spent</div>
-        </div>
-        <div className="tdstat">
-          <div className="v">{points.totalPoints.toLocaleString()}</div>
-          <div className="k">pts earned</div>
-        </div>
-        <div className="tdstat">
-          <div className="v">£{Math.round(savings).toLocaleString()}</div>
-          <div className="k">saved</div>
-        </div>
-        <div className="tdstat">
-          <div className="v">{nights}</div>
-          <div className="k">nights</div>
-        </div>
-      </div>
 
       {sortedHotels.length > 0 && (
         <div style={{ padding: '18px 20px 0' }}>

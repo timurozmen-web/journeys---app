@@ -1,12 +1,15 @@
 /* Self-hosted, single-file variable font -- Latin subset only (this app
-   is English-only). One family everywhere: hierarchy comes from size and
-   weight, not from mixing typefaces, for a clearer, more consistent read. */
+   is English-only). One family everywhere, including form controls
+   (browsers don't inherit font onto input/select/button by default,
+   which is why some screens could look inconsistent even with the body
+   font set correctly) -- hierarchy comes from size and weight, not from
+   mixing typefaces. */
 @font-face {
-  font-family: 'Instrument Sans Variable';
+  font-family: 'Geist Variable';
   font-style: normal;
   font-display: swap;
-  font-weight: 400 700;
-  src: url('/fonts/instrument-sans-latin-wght-normal.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  src: url('/fonts/geist-latin-wght-normal.woff2') format('woff2-variations');
 }
 
 /* Journeys design tokens -- royal blue + off-white, two-tone.
@@ -34,7 +37,7 @@
   --red: #D23C3C;
   --amber: #9C5F08;
 
-  --font-body: 'Instrument Sans Variable', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+  --font-body: 'Geist Variable', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
   --font-display: var(--font-body);
 
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s7: 32px;
@@ -57,6 +60,7 @@ body {
   background-color: #F7F6F2 !important;
 }
 * { box-sizing: border-box; }
+input, select, button, textarea { font-family: inherit; font-size: inherit; }
 body {
   margin: 0;
   font-family: var(--font-body);

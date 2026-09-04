@@ -98,11 +98,6 @@
 .tdbadge{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.1em;
   background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);border-radius:99px;padding:5px 11px;
   backdrop-filter:blur(6px);margin-bottom:12px}
-.tdstats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#101B44;
-  margin:-14px 20px 0;border-radius:14px;overflow:hidden;position:relative;z-index:2}
-.tdstat{background:#101B44;padding:12px 8px;text-align:center}
-.tdstat .v{font-size:15px;font-weight:800;letter-spacing:-.3px;color:#fff}
-.tdstat .k{font-size:9px;color:rgba(255,255,255,.7);font-weight:600;margin-top:2px;text-transform:uppercase;letter-spacing:.03em}
 .tdseg{display:flex;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:12px;
   padding:3px;margin:20px 20px 0}
 .tdseg button{flex:1;padding:8px 0;border:0;border-radius:9px;background:none;color:var(--ink3);
