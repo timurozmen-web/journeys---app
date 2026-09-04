@@ -208,7 +208,7 @@ export function Home() {
             style={{
               position: 'relative', display: 'block', width: '100%', height: 400, border: 0, padding: 0, borderRadius: 24,
               overflow: 'hidden', cursor: 'pointer', textAlign: 'left', font: 'inherit',
-              background: '#101B44', boxShadow: '0 14px 32px rgba(16,27,68,.28)',
+              background: '#15161B', boxShadow: '0 14px 32px rgba(21,22,27,.28)',
             }}
           >
             <span style={{ position: 'absolute', inset: 0 }}>
@@ -218,11 +218,11 @@ export function Home() {
                 <HeroScene seed={heroTrip.id} height={400} />
               )}
             </span>
-            <span style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(16,27,68,.55) 0%,rgba(16,27,68,.05) 22%,rgba(16,27,68,.05) 45%,rgba(16,27,68,.55) 68%,rgba(16,27,68,.92) 100%)' }} />
+            <span style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(21,22,27,.55) 0%,rgba(21,22,27,.05) 22%,rgba(21,22,27,.05) 45%,rgba(21,22,27,.55) 68%,rgba(21,22,27,.92) 100%)' }} />
 
             <span style={{ position: 'absolute', top: 16, left: 20, right: 60, color: '#fff' }}>
               <span style={{ display: 'block', fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', opacity: 0.85 }}>{fmtFullDate(TODAY)}</span>
-              <span style={{ display: 'block', fontSize: 19, fontWeight: 800, letterSpacing: '-.3px', marginTop: 2 }}>Good {timeOfDay()}, Timur</span>
+              <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, letterSpacing: '-.2px', marginTop: 2 }}>Good {timeOfDay()}, Timur</span>
             </span>
 
             <span style={{ position: 'absolute', right: 16, top: 16, width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,.2)', border: '1px solid rgba(255,255,255,.4)', display: 'grid', placeItems: 'center' }}>
@@ -233,12 +233,12 @@ export function Home() {
               <span style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '.1em', background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.3)', borderRadius: 99, padding: '5px 11px', backdropFilter: 'blur(6px)', marginBottom: 12 }}>
                 {heroIsCurrent ? `Current trip · Day ${heroDayInfo!.dayIndex} of ${heroDayInfo!.totalDays}` : `Upcoming · ${heroDaysToGo} day${heroDaysToGo === 1 ? '' : 's'} to go`}
               </span>
-              <span style={{ display: 'block', fontSize: 34, fontWeight: 800, letterSpacing: '-.6px', lineHeight: 1.08 }}>{heroTrip.title}</span>
+              <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 38, fontWeight: 600, letterSpacing: '-.3px', lineHeight: 1.05 }}>{heroTrip.title}</span>
               <span style={{ display: 'block', fontSize: 13, fontWeight: 600, opacity: 0.9, marginTop: 6 }}>{fmtDate(heroTrip.start)} – {fmtDate(heroTrip.end)}</span>
             </span>
 
             {heroHotel && (
-              <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '13px 20px', background: 'rgba(8,14,38,.55)', borderTop: '1px solid rgba(255,255,255,.15)', backdropFilter: 'blur(8px)' }}>
+              <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '13px 20px', background: 'rgba(12,13,17,.55)', borderTop: '1px solid rgba(255,255,255,.15)', backdropFilter: 'blur(8px)' }}>
                 <span style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                   <HotelIcon size={16} color="#fff" />
                 </span>
@@ -251,7 +251,7 @@ export function Home() {
         ) : (
           <div style={{ padding: '10px 2px 4px' }}>
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)' }}>{fmtFullDate(TODAY)}</div>
-            <div style={{ fontSize: 25, fontWeight: 800, letterSpacing: '-.4px', color: 'var(--ink)', marginTop: 3 }}>Good {timeOfDay()}, Timur</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-.2px', color: 'var(--ink)', marginTop: 3 }}>Good {timeOfDay()}, Timur</div>
           </div>
         )}
       </div>
@@ -261,24 +261,27 @@ export function Home() {
       <div style={{ padding: '16px 20px 0' }}>
         <button
           onClick={() => navigate('/wallet')}
-          style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, width: '100%', textAlign: 'left', font: 'inherit', border: '1px solid var(--line)', background: 'var(--card)', borderRadius: 20, padding: '18px 18px', cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'stretch', gap: 0, width: '100%', textAlign: 'left', font: 'inherit', border: '1px solid var(--line)', background: 'var(--card)', borderRadius: 20, overflow: 'hidden', padding: 0, cursor: 'pointer' }}
         >
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--brand)' }}>Travel wallet</div>
-            <div style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-1px', color: 'var(--ink)', marginTop: 3 }}>£{Math.round(walletValue).toLocaleString()}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--ink2)', fontWeight: 600, marginTop: 3 }}>
-              across {programmeCount} programme{programmeCount === 1 ? '' : 's'}
-            </div>
-          </div>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand)', flexShrink: 0, display: 'grid', placeItems: 'center' }}>
-            <ChevronDownIcon size={20} color="var(--brand)" style={{ transform: 'rotate(-90deg)' }} />
+          <span style={{ width: 4, background: 'var(--brand)', flexShrink: 0 }} />
+          <span style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, padding: '17px 18px' }}>
+            <span>
+              <span style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--ink2)' }}>Travel wallet</span>
+              <span style={{ display: 'block', fontSize: 32, fontWeight: 800, letterSpacing: '-1px', color: 'var(--ink)', marginTop: 3 }}>£{Math.round(walletValue).toLocaleString()}</span>
+              <span style={{ display: 'block', fontSize: 12.5, color: 'var(--ink2)', fontWeight: 600, marginTop: 3 }}>
+                across {programmeCount} programme{programmeCount === 1 ? '' : 's'}
+              </span>
+            </span>
+            <span style={{ flexShrink: 0, display: 'grid', placeItems: 'center' }}>
+              <ChevronDownIcon size={20} color="var(--brand)" style={{ transform: 'rotate(-90deg)' }} />
+            </span>
           </span>
         </button>
       </div>
 
       {actionItems.length > 0 && (
         <div style={{ padding: '22px 20px 0' }}>
-          <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)' }}>Worth knowing</div>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)' }}>Worth knowing</div>
           <div
             ref={actionScrollRef}
             onScroll={(e) => {

@@ -48,29 +48,29 @@ export function Wallet() {
 
   return (
     <div>
-      <div style={{ background: '#fff', height: 'env(safe-area-inset-top, 0px)' }} />
-      <div style={{ background: 'linear-gradient(165deg,#101B44 0%,#1E3A8F 100%)', padding: '24px 20px 22px', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, color: '#fff' }}>
+      <div style={{ background: 'var(--bg)', height: 'env(safe-area-inset-top, 0px)' }} />
+      <div style={{ padding: '20px 20px 18px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', opacity: 0.7 }}>Wallet value {!isLive && '· sample data'}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)' }}>Wallet value {!isLive && '· sample data'}</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <div style={{ fontSize: 38, fontWeight: 800, letterSpacing: '-1.8px', marginTop: 2, lineHeight: 1 }}>£{Math.round(totalValue).toLocaleString()}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 40, fontWeight: 600, letterSpacing: '-1px', marginTop: 4, lineHeight: 1, color: 'var(--ink)' }}>£{Math.round(totalValue).toLocaleString()}</div>
               {valueChange.hasData && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 3, color: valueChange.deltaValue >= 0 ? '#9BE7C4' : '#FFB4B4', fontSize: 13, fontWeight: 800 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 3, color: valueChange.deltaValue >= 0 ? 'var(--green)' : 'var(--red)', fontSize: 13, fontWeight: 800 }}>
                   <span>{valueChange.deltaValue >= 0 ? '▲' : '▼'}</span>
                   <span>£{Math.round(Math.abs(valueChange.deltaValue)).toLocaleString()}</span>
                 </div>
               )}
             </div>
-            <div style={{ fontSize: 12, fontWeight: 600, opacity: 0.8, marginTop: 6 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink2)', marginTop: 6 }}>
               {loyaltyProgrammes.reduce((s, p) => s + p.points, 0).toLocaleString()} points across {loyaltyProgrammes.length} programmes
-              {valueChange.hasData && <span style={{ opacity: 0.7 }}> · vs last 30 days from stays</span>}
+              {valueChange.hasData && <span> · vs last 30 days from stays</span>}
             </div>
           </div>
           <button
             onClick={() => navigate('/log-loyalty-programme')}
             aria-label="Add a loyalty scheme"
-            style={{ width: 34, height: 34, borderRadius: '50%', border: '1px solid rgba(255,255,255,.3)', background: 'rgba(255,255,255,.16)', color: '#fff', fontSize: 20, fontWeight: 600, display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0 }}
+            style={{ width: 34, height: 34, borderRadius: '50%', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink)', fontSize: 20, fontWeight: 600, display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0 }}
           >
             +
           </button>
@@ -80,7 +80,7 @@ export function Wallet() {
             <button
               key={s}
               onClick={() => setSeg(s)}
-              style={{ flex: 1, padding: '9px 0', borderRadius: 99, border: 'none', cursor: 'pointer', background: seg === s ? '#fff' : 'rgba(255,255,255,.16)', color: seg === s ? '#101B44' : '#fff', fontSize: 13, fontWeight: 800 }}
+              style={{ flex: 1, padding: '9px 0', borderRadius: 99, border: seg === s ? 'none' : '1px solid var(--line)', cursor: 'pointer', background: seg === s ? 'var(--ink)' : 'var(--card)', color: seg === s ? '#fff' : 'var(--ink2)', fontSize: 13, fontWeight: 800 }}
             >
               {s === 'loyalty' ? 'Points' : s === 'payment' ? 'Cards' : 'Promos'}
             </button>

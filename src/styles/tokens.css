@@ -1,9 +1,9 @@
-/* Self-hosted, single-file variable font -- Latin subset only (this app
-   is English-only). One family everywhere, including form controls
-   (browsers don't inherit font onto input/select/button by default,
-   which is why some screens could look inconsistent even with the body
-   font set correctly) -- hierarchy comes from size and weight, not from
-   mixing typefaces. */
+/* Self-hosted variable fonts -- Latin subset only (this app is
+   English-only). Two families again, per explicit visual reference:
+   Fraunces (serif, standard optical axis -- no wonk/soft quirkiness,
+   kept classic/editorial) carries headlines and hero moments; Geist
+   (sans) carries body copy, labels, and all form controls (browsers
+   don't inherit font onto input/select/button by default). */
 @font-face {
   font-family: 'Geist Variable';
   font-style: normal;
@@ -11,13 +11,23 @@
   font-weight: 100 900;
   src: url('/fonts/geist-latin-wght-normal.woff2') format('woff2-variations');
 }
+@font-face {
+  font-family: 'Fraunces Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 900;
+  src: url('/fonts/fraunces-latin-standard-normal.woff2') format('woff2-variations');
+}
 
-/* Journeys design tokens -- royal blue + off-white, two-tone.
-   Contrast measured against the new palette (WCAG formula): ink/bg
-   16.55:1, ink/card 17.9:1, ink2/card 6.54:1, brand/card 10.21:1 --
-   all pass AA for body text. gold/card is 4.45:1, which passes AA for
-   large/bold text and UI components but not small body text, so gold
-   is kept to icon-on-fill and large-label use, never small body copy. */
+/* Journeys design tokens. Off-white + white two-tone stays; royal
+   blue's role narrows to selection/active state only (toggle pills,
+   the active tab icon, a thin accent bar on "this matters" cards) --
+   it's no longer the default hero/header treatment. Hero photos and
+   section headers use a neutral near-black scrim/ink instead, so blue
+   reads as a deliberate signal rather than base decoration.
+   Contrast (WCAG formula): ink/bg 16.55:1, ink/card 17.9:1, ink2/card
+   6.54:1, brand/card 10.21:1 -- all pass AA for body text. gold/card
+   is 4.45:1 (large/bold text and UI components, not small body copy). */
 :root {
   color-scheme: light only;
 
@@ -30,7 +40,8 @@
   --ink3: #5C5D66;
   --brand: #1E3A8F;
   --brand2: #3E5FCB;
-  --brand-deep: #101B44;
+  --scrim: #15161B;     /* neutral near-black for hero/photo gradients -- replaces the old blue-tinted #101B44 */
+  --scrim2: #33353D;    /* lighter neutral stop for gradients */
   --gold: #9C6F28;
   --gold2: #C79A46;
   --green: #0C7A42;
@@ -38,7 +49,7 @@
   --amber: #9C5F08;
 
   --font-body: 'Geist Variable', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
-  --font-display: var(--font-body);
+  --font-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
 
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s7: 32px;
   --r-lg: 20px; --r-md: 16px; --r-sm: 12px; --r-xs: 8px;

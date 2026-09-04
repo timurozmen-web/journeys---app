@@ -53,19 +53,19 @@ export function Trips() {
               onClick={() => navigate(`/trips/${t.id}`)}
               style={{
                 position: 'relative', display: 'block', width: '100%', height: 340, border: 0, padding: 0, borderRadius: 24,
-                overflow: 'hidden', cursor: 'pointer', textAlign: 'left', font: 'inherit', background: '#101B44',
-                boxShadow: '0 14px 32px rgba(16,27,68,.28)',
+                overflow: 'hidden', cursor: 'pointer', textAlign: 'left', font: 'inherit', background: '#15161B',
+                boxShadow: '0 14px 32px rgba(21,22,27,.28)',
               }}
             >
               <span style={{ position: 'absolute', inset: 0 }}>
                 <DestinationPhoto query={destinationQuery(t)} seed={t.id} height={340} />
               </span>
-              <span style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(16,27,68,.5) 0%,rgba(16,27,68,.05) 30%,rgba(16,27,68,.05) 55%,rgba(16,27,68,.7) 82%,rgba(16,27,68,.94) 100%)' }} />
+              <span style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(21,22,27,.5) 0%,rgba(21,22,27,.05) 30%,rgba(21,22,27,.05) 55%,rgba(21,22,27,.7) 82%,rgba(21,22,27,.94) 100%)' }} />
               <span style={{ position: 'absolute', top: 18, left: 20, fontSize: 10.5, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '.1em', background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.3)', borderRadius: 99, padding: '5px 11px', backdropFilter: 'blur(6px)' }}>
                 {isUnderway ? `Under way · Day ${daysDone} of ${totalNights}` : `Upcoming · ${daysOut} day${daysOut === 1 ? '' : 's'} to go`}
               </span>
               <span style={{ position: 'absolute', left: 20, right: 20, bottom: 24, color: '#fff' }}>
-                <span style={{ display: 'block', fontSize: 34, fontWeight: 800, letterSpacing: '-.6px', lineHeight: 1.08 }}>{t.title}</span>
+                <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 600, letterSpacing: '-.3px', lineHeight: 1.05 }}>{t.title}</span>
                 <span style={{ display: 'block', fontSize: 13, fontWeight: 600, opacity: 0.9, marginTop: 6 }}>{formatDateRange(t.start, t.end)}</span>
               </span>
             </button>
