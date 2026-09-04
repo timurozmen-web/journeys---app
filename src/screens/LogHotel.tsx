@@ -199,7 +199,8 @@ export function LogHotel() {
               if (match) {
                 setForm((f) => ({
                   ...f, name, country: match.country, city: match.city ?? '', brand: normalizeBrand(match.brand),
-                  category: match.category, card: match.card ?? '',
+                  category: match.category, card: match.card ?? '', roomType: match.roomType ?? f.roomType,
+                  rateType: (match.rateType as (typeof RATE_TYPES)[number]) ?? f.rateType,
                 }));
               } else {
                 set('name', name);

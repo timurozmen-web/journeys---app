@@ -28,6 +28,9 @@ export function LogFlight() {
   const extractNote = state?.extractNote as string | undefined;
   const { data: trips } = useTrips();
   const { data: allFlights } = useAllFlights();
+  const knownFrom = Array.from(new Set(allFlights.map((f) => f.from))).sort();
+  const knownTo = Array.from(new Set(allFlights.map((f) => f.to))).sort();
+  const knownAirlines = Array.from(new Set(allFlights.map((f) => f.airline))).sort();
   const [dupWarning, setDupWarning] = useState<string | null>(null);
   const [confirmedDup, setConfirmedDup] = useState(false);
   const TODAY = new Date().toISOString().slice(0, 10);
@@ -115,17 +118,20 @@ export function LogFlight() {
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
             <label style={labelStyle}>From *</label>
-            <input style={inputStyle} value={form.from} onChange={(e) => set('from', e.target.value.toUpperCase())} placeholder="LHR" maxLength={3} />
+            <input style={inputStyle} list="known-from" value={form.from} onChange={(e) => set('from', e.target.value.toUpperCase())} placeholder="LHR" maxLength={3} />
+            <datalist id="known-from">{knownFrom.map((c) => <option key={c} value={c} />)}</datalist>
           </div>
           <div>
             <label style={labelStyle}>To *</label>
-            <input style={inputStyle} value={form.to} onChange={(e) => set('to', e.target.value.toUpperCase())} placeholder="JFK" maxLength={3} />
+            <input style={inputStyle} list="known-to" value={form.to} onChange={(e) => set('to', e.target.value.toUpperCase())} placeholder="JFK" maxLength={3} />
+            <datalist id="known-to">{knownTo.map((c) => <option key={c} value={c} />)}</datalist>
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
             <label style={labelStyle}>Airline *</label>
-            <input style={inputStyle} value={form.airline} onChange={(e) => set('airline', e.target.value)} placeholder="British Airways" />
+            <input style={inputStyle} list="known-airlines" value={form.airline} onChange={(e) => set('airline', e.target.value)} placeholder="British Airways" />
+            <datalist id="known-airlines">{knownAirlines.map((a) => <option key={a} value={a} />)}</datalist>
           </div>
           <div>
             <label style={labelStyle}>Flight no.</label>
