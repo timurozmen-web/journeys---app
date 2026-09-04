@@ -179,6 +179,12 @@
 @keyframes tabPop{0%{transform:scale(.72)}60%{transform:scale(1.16)}100%{transform:scale(1)}}
 .wallet-flap{transform-box:fill-box;transform-origin:0% 100%;animation:walletFlap .5s cubic-bezier(.34,1.56,.64,1)}
 @keyframes walletFlap{0%{transform:rotate(0deg)}40%{transform:rotate(-24deg)}100%{transform:rotate(0deg)}}
+.home-door{transform-box:fill-box;transform-origin:0% 100%;animation:doorOpen .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes doorOpen{0%{transform:rotate(0deg) scaleX(1)}40%{transform:rotate(0deg) scaleX(.55)}100%{transform:rotate(0deg) scaleX(1)}}
+.trips-pages{transform-box:fill-box;transform-origin:50% 50%;animation:pagesFlip .45s ease-out}
+@keyframes pagesFlip{0%{transform:scaleY(.3);opacity:.3}100%{transform:scaleY(1);opacity:.85}}
+.profile-head{transform-box:fill-box;transform-origin:50% 50%;animation:headPop .42s cubic-bezier(.34,1.56,.64,1)}
+@keyframes headPop{0%{transform:scale(.5)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
 .fab{width:52px;height:52px;border-radius:50%;border:0;flex-shrink:0;margin:0 var(--s1);
   background:linear-gradient(140deg,var(--gold2),var(--gold));color:#fff;font-size:26px;font-weight:400;
   cursor:pointer;box-shadow:0 6px 18px rgba(156,111,40,.45);display:grid;place-items:center;line-height:1;

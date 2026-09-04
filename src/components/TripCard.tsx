@@ -7,14 +7,10 @@ import type { Trip } from '../types';
 function nightsOf(t: Trip) {
   return t.hotels.reduce((s, h) => s + h.nights, 0);
 }
-export function destinationQuery(t: Trip) {
-  return t.hotels[0]?.country?.trim() || t.title.split(/[·+]/)[0].trim();
-}
-
 // The hotel worth showing at a glance: whichever stay is actually
 // happening right now if the trip is under way, otherwise the first stay
 // chronologically -- not just whatever order the hotels happen to be in.
-function relevantHotel(t: Trip): Trip['hotels'][number] | null {
+export function relevantHotel(t: Trip): Trip['hotels'][number] | null {
   if (t.hotels.length === 0) return null;
   const sorted = [...t.hotels].sort((a, b) => a.date.localeCompare(b.date));
   if (t.section === 'current') {
@@ -26,6 +22,41 @@ function relevantHotel(t: Trip): Trip['hotels'][number] | null {
     if (ongoing) return ongoing;
   }
   return sorted[0];
+}
+
+// Most-specific-first, same rule everywhere a destination photo is looked
+// up: city + country beats country alone, which beats the trip's own
+// title. A Faro stay should surface Faro's own photo, not a generic
+// Portugal one.
+export function destinationQuery(t: Trip) {
+  const hotel = relevantHotel(t);
+  if (hotel?.city) return `${hotel.city}, ${hotel.country}`;
+  return hotel?.country?.trim() || t.title.split(/[·+]/)[0].trim();
+}
+
+// Compact portrait card for the "three across" past-trips row. Precision
+// of the photo doesn't matter as much here as on the current-trip hero --
+// first stay chronologically is a fine stand-in for "what this trip was".
+export function PastTripCard({ trip }: { trip: Trip }) {
+  const navigate = useNavigate();
+  const nights = nightsOf(trip);
+  return (
+    <div
+      onClick={() => navigate(`/trips/${trip.id}`)}
+      style={{ flex: '0 0 110px', width: 110, height: 163, borderRadius: 14, overflow: 'hidden', position: 'relative', cursor: 'pointer' }}
+    >
+      {trip.heroImageUrl ? (
+        <img src={trip.heroImageUrl} alt={trip.title} style={{ width: '100%', height: 163, objectFit: 'cover', display: 'block' }} />
+      ) : (
+        <DestinationPhoto query={destinationQuery(trip)} seed={trip.id} height={163} />
+      )}
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,.62) 100%)' }} />
+      <div style={{ position: 'absolute', left: 9, right: 9, bottom: 9, color: '#fff' }}>
+        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '-.1px', lineHeight: 1.15, textShadow: '0 2px 6px rgba(0,0,0,.4)' }}>{trip.title}</div>
+        <div style={{ fontSize: 9.5, fontWeight: 600, opacity: 0.9, marginTop: 2, textShadow: '0 1px 4px rgba(0,0,0,.4)' }}>{nights} night{nights === 1 ? '' : 's'}</div>
+      </div>
+    </div>
+  );
 }
 
 const SECTION_PILL: Record<Trip['section'], { label: string; cls: string }> = {

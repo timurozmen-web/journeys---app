@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTrips } from '../lib/useLiveData';
-import { TripCard, destinationQuery } from '../components/TripCard';
+import { TripCard, PastTripCard, destinationQuery } from '../components/TripCard';
 import { DestinationPhoto } from '../components/DestinationPhoto';
 import { findGaps } from '../lib/tripStats';
 
@@ -9,7 +9,7 @@ export function Trips() {
   const navigate = useNavigate();
   const { data: allTrips } = useTrips();
   const [tripType, setTripType] = useState<'work' | 'leisure'>('leisure');
-  const [pastFilter, setPastFilter] = useState('');
+  const [pastExpanded, setPastExpanded] = useState(false);
   const trips = allTrips.filter((t) => t.tripType === tripType);
 
   const current = trips.filter((t) => t.section === 'current').sort((a, b) => a.start.localeCompare(b.start));
@@ -141,33 +141,26 @@ export function Trips() {
         <>
           <div className="sect" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <h2>Past</h2>
-            {past.length > 3 && (
-              <span style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 600 }}>{past.length} trips</span>
-            )}
+            <button
+              onClick={() => setPastExpanded((v) => !v)}
+              style={{ border: 0, background: 'none', font: 'inherit', fontSize: 12.5, fontWeight: 700, color: 'var(--brand)', cursor: 'pointer', padding: 0 }}
+            >
+              {pastExpanded ? 'Show less' : `View all (${past.length})`}
+            </button>
           </div>
-          {past.length > 3 && (
-            <div style={{ padding: '0 20px 10px' }}>
-              <input
-                value={pastFilter}
-                onChange={(e) => setPastFilter(e.target.value)}
-                placeholder="Search past trips (name or year)…"
-                style={{ width: '100%', padding: '9px 12px', borderRadius: 10, border: '1px solid var(--line)', fontSize: 13, font: 'inherit' }}
-              />
+          {pastExpanded ? (
+            <div className="stack">
+              {past.map((t) => (
+                <TripCard key={t.id} trip={t} />
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 10, overflowX: 'auto', padding: '0 20px 4px', scrollbarWidth: 'none' }}>
+              {past.map((t) => (
+                <PastTripCard key={t.id} trip={t} />
+              ))}
             </div>
           )}
-          <div className="stack">
-            {(pastFilter
-              ? past.filter((t) => (t.title + ' ' + t.start).toLowerCase().includes(pastFilter.toLowerCase()))
-              : past.slice(0, 3)
-            ).map((t) => (
-              <TripCard key={t.id} trip={t} />
-            ))}
-            {!pastFilter && past.length > 3 && (
-              <div style={{ fontSize: 12, color: 'var(--ink3)', textAlign: 'center', padding: '4px 0' }}>
-                Showing 3 most recent · search above to find an older trip
-              </div>
-            )}
-          </div>
         </>
       )}
       {trips.length === 0 && (

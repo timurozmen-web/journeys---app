@@ -1,11 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes, usePromotions, usePaymentCards, useVouchers, useReviews } from '../lib/useLiveData';
-import { computeStatusProgress } from '../lib/statusProgress';
+import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes, usePaymentCards, useVouchers, useReviews } from '../lib/useLiveData';
 import { computeCardResults } from '../lib/cardMath';
 import { findHotelsNeedingReview } from '../lib/reviewScoring';
 import { ChevronDownIcon, HotelIcon } from '../components/Icons';
-import { fetchDestinationPhoto, destinationQueries } from '../lib/destinationPhoto';
+import { getDestinationPhoto } from '../lib/unsplash';
+import { destinationQuery } from '../components/TripCard';
+import { HeroScene } from '../components/HeroScene';
+import { withLiveOverrides } from '../lib/walletValue';
 
 function daysBetween(a: string, b: string) {
   return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000);
@@ -47,7 +49,6 @@ export function Home() {
   const TODAY = new Date().toISOString().slice(0, 10);
   const { data: trips } = useTrips();
   const { data: hotels } = useAllHotels();
-  const { data: promotions } = usePromotions();
   const { data: flights } = useAllFlights();
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
   const { data: paymentCards } = usePaymentCards();
@@ -58,13 +59,8 @@ export function Home() {
 
   const currentTrip = trips.find((t) => t.section === 'current');
 
-  const topProgress = loyaltyProgrammes
-    .filter((p) => p.nextTier && p.nights != null && p.nightsNeeded != null)
-    .map((p) => ({ ...p, progress: computeStatusProgress(p, hotels, promotions, cardResults) }))
-    .sort((a, b) => (b.progress.pct ?? 0) - (a.progress.pct ?? 0))
-    .slice(0, 3);
-
-  const walletValue = loyaltyProgrammes.reduce((s, p) => s + (p.points ?? 0) * (p.ptValue ?? 0) / 100, 0);
+  const effectiveProgrammes = withLiveOverrides(loyaltyProgrammes, hotels);
+  const walletValue = effectiveProgrammes.reduce((s, p) => s + (p.points ?? 0) * (p.ptValue ?? 0) / 100, 0);
 
   // Real "do this week" signals -- only ever shows what's genuinely true
   // right now, never invented placeholders. Three sources: the card
@@ -144,59 +140,41 @@ export function Home() {
   const tripTotalDays = currentTrip ? daysBetween(currentTrip.start, currentTrip.end) + 1 : 0;
   const tripDayIndex = currentTrip ? Math.min(tripTotalDays, Math.max(1, daysBetween(currentTrip.start, TODAY) + 1)) : 0;
 
-  const programmeCount = loyaltyProgrammes.filter((p) => p.points > 0).length;
+  const programmeCount = effectiveProgrammes.filter((p) => p.points > 0).length;
 
-  const tickerItems = topProgress
-    .filter((p) => p.progress.total > p.progress.currentNights)
-    .map((p) => ({
-      key: p.name,
-      text: `${p.progress.total - p.progress.currentNights} night${p.progress.total - p.progress.currentNights === 1 ? '' : 's'} to ${p.progress.targetTier} with ${p.name}`,
-      pct: Math.max(0, Math.min(100, p.progress.pct ?? 0)),
-    }));
-
-  // Current-trip hero photo: real photo if the trip has one, otherwise
-  // fetched by destination (most specific location first) from Wikipedia's
-  // keyless, CORS-enabled API -- see lib/destinationPhoto.ts for the rule.
+  // Current-trip hero photo: real uploaded photo if the trip has one,
+  // otherwise the same licensed Unsplash lookup Trips already uses (most
+  // specific location first -- city + country beats country alone), so a
+  // Faro stay resolves to Faro's own photo rather than a generic Portugal
+  // one. No key configured, or no match: falls back to the same generated
+  // scene Trips uses rather than a flat gradient.
   const [heroPhoto, setHeroPhoto] = useState<string | null>(null);
   useEffect(() => {
     if (!currentTrip) { setHeroPhoto(null); return; }
     if (currentTrip.heroImageUrl) { setHeroPhoto(currentTrip.heroImageUrl); return; }
     setHeroPhoto(null);
     let cancelled = false;
-    const queries = destinationQueries(currentTrip.title, currentHotel);
-    fetchDestinationPhoto(queries).then((url) => { if (!cancelled) setHeroPhoto(url); });
+    getDestinationPhoto(destinationQuery(currentTrip)).then((p) => { if (!cancelled) setHeroPhoto(p?.url ?? null); });
     return () => { cancelled = true; };
-  }, [currentTrip?.id, currentTrip?.heroImageUrl, currentHotel?.id]);
+  }, [currentTrip?.id, currentTrip?.heroImageUrl]);
 
   return (
-    <>
     <div>
       <div style={{ background: 'var(--bg)', height: 'env(safe-area-inset-top, 0px)' }} />
 
       {/* Welcome */}
-      <div style={{ padding: '18px 20px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)' }}>
-            {fmtFullDate(TODAY)}
-          </div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 25, fontWeight: 600, letterSpacing: '-.3px', color: 'var(--ink)', marginTop: 3 }}>
-            Good {timeOfDay()}, Timur
-          </div>
+      <div style={{ padding: '18px 20px 4px' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)' }}>
+          {fmtFullDate(TODAY)}
         </div>
-        <div
-          onClick={() => navigate('/profile')}
-          style={{
-            width: 40, height: 40, borderRadius: 13, background: 'var(--brand)',
-            display: 'grid', placeItems: 'center', fontSize: 15, fontWeight: 800, color: '#fff', flexShrink: 0, cursor: 'pointer',
-          }}
-        >
-          T
+        <div style={{ fontSize: 25, fontWeight: 800, letterSpacing: '-.4px', color: 'var(--ink)', marginTop: 3 }}>
+          Good {timeOfDay()}, Timur
         </div>
       </div>
 
       {/* Current trip -- the key thing happening right now. Oversized,
-          photo-led: real trip photo if set, else fetched by destination
-          (see lib/destinationPhoto.ts), else a plain gradient -- never a
+          photo-led: real trip photo if set, else the same licensed photo
+          lookup Trips uses, else the shared generated scene -- never a
           fabricated or generic stock look. */}
       {currentTrip && (
         <div style={{ padding: '16px 20px 0' }}>
@@ -205,15 +183,19 @@ export function Home() {
             style={{
               position: 'relative', display: 'block', width: '100%', height: 340, border: 0, padding: 0, borderRadius: 24,
               overflow: 'hidden', cursor: 'pointer', textAlign: 'left', font: 'inherit',
-              background: heroPhoto
-                ? `url(${heroPhoto}) center/cover no-repeat`
-                : 'linear-gradient(150deg,#101B44 0%,#1E3A8F 55%,#3E5FCB 100%)',
-              boxShadow: '0 14px 32px rgba(16,27,68,.28)',
+              background: '#101B44', boxShadow: '0 14px 32px rgba(16,27,68,.28)',
             }}
           >
+            <span style={{ position: 'absolute', inset: 0 }}>
+              {heroPhoto ? (
+                <img src={heroPhoto} alt={currentTrip.title} style={{ width: '100%', height: 340, objectFit: 'cover', display: 'block' }} />
+              ) : (
+                <HeroScene seed={currentTrip.id} height={340} />
+              )}
+            </span>
             <span style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(16,27,68,.05) 0%,rgba(16,27,68,.05) 40%,rgba(16,27,68,.55) 68%,rgba(16,27,68,.92) 100%)' }} />
             <span style={{ position: 'absolute', top: 18, left: 18, fontSize: 10.5, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '.1em', background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.3)', borderRadius: 99, padding: '5px 11px', backdropFilter: 'blur(6px)' }}>
-              Day {tripDayIndex} of {tripTotalDays}
+              Current trip · Day {tripDayIndex} of {tripTotalDays}
             </span>
             <span style={{ position: 'absolute', right: 16, top: 16, width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,.2)', border: '1px solid rgba(255,255,255,.4)', display: 'grid', placeItems: 'center' }}>
               <ChevronDownIcon size={16} color="#fff" style={{ transform: 'rotate(-90deg)' }} />
@@ -249,7 +231,9 @@ export function Home() {
               across {programmeCount} programme{programmeCount === 1 ? '' : 's'}
             </div>
           </div>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand)', flexShrink: 0 }}>See all</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand)', flexShrink: 0, display: 'grid', placeItems: 'center' }}>
+            <ChevronDownIcon size={20} color="var(--brand)" style={{ transform: 'rotate(-90deg)' }} />
+          </span>
         </button>
       </div>
 
@@ -307,38 +291,8 @@ export function Home() {
         </div>
       )}
 
-      {/* Bottom breathing room so the fixed status ticker below never
-          overlaps the last real section above it. */}
-      <div style={{ height: tickerItems.length > 0 ? 64 : 12 }} />
+      <div style={{ height: 12 }} />
     </div>
-
-    {tickerItems.length > 0 && (
-      <div
-        style={{
-          position: 'fixed', left: 0, right: 0, bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))', zIndex: 55,
-          display: 'flex', overflowX: 'auto', gap: 10, padding: '0 20px', scrollbarWidth: 'none',
-        }}
-      >
-        {tickerItems.map((t) => (
-          <div
-            key={t.key}
-            style={{
-              flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 8,
-              background: 'var(--brand)', color: '#fff', borderRadius: 99, padding: '8px 8px 8px 14px',
-              boxShadow: '0 8px 20px rgba(16,27,68,.3)', maxWidth: 'calc(100vw - 40px)',
-            }}
-          >
-            <span style={{ fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>{t.text}</span>
-            <span style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: `conic-gradient(var(--gold2) ${t.pct}%, rgba(255,255,255,.25) 0)`, display: 'grid', placeItems: 'center' }}>
-              <span style={{ width: 19, height: 19, borderRadius: '50%', background: 'var(--brand)', display: 'grid', placeItems: 'center', fontSize: 8, fontWeight: 800 }}>
-                {Math.round(t.pct)}
-              </span>
-            </span>
-          </div>
-        ))}
-      </div>
-    )}
-    </>
   );
 }
 

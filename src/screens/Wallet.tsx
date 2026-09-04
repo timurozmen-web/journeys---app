@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLoyaltyProgrammes, usePaymentCards, useAllHotels, useAllFlights, usePromotions, useVouchers } from '../lib/useLiveData';
 import { computeCardResults, computeCardVoucherCandidates } from '../lib/cardMath';
 import { computeWalletValueChange } from '../lib/hotelPlanner';
+import { withLiveOverrides } from '../lib/walletValue';
 import { syncCardVouchers } from '../lib/queries';
 import { LoyaltyTab } from '../components/LoyaltyTab';
 import { PaymentTab } from '../components/PaymentTab';
@@ -37,24 +38,9 @@ export function Wallet() {
   }, [cardResults.length]);
 
   // One Key Cash isn't a fixed balance -- it's 6% of what's actually been
-  // booked through Expedia at Platinum tier, so it's computed live from
-  // real bookings rather than trusted as a stored number.
-  const oneKeyCash = hotels
-    .filter((h) => h.bookingChannel === 'Expedia' && h.status === 'Completed' && h.total)
-    .reduce((s, h) => s + (h.total ?? 0) * 0.06, 0);
-
-  // For hotel-brand programmes with real stay history, total points = base
-  // program points (rate × elite tier bonus, computed from real spend) +
-  // whatever the card-issued side already earned. These are two genuinely
-  // separate earning streams, not alternatives to each other.
-  // Marriott/Hilton/IHG/Accor balances were already manually tracked to
-  // include card spend and other factors -- overriding them with only
-  // what this app can compute would lose real information. The formula
-  // below is used prospectively instead (Trip Detail's per-trip points),
-  // not retroactively against the whole stored balance.
-  const loyaltyProgrammes = rawLoyaltyProgrammes.map((p) =>
-    p.name === 'Expedia One Key Cash' ? { ...p, points: Math.round(oneKeyCash), ptValue: 100 } : p
-  );
+  // booked through Expedia at Platinum tier, computed live in the shared
+  // helper so this always matches the figure Home shows.
+  const loyaltyProgrammes = withLiveOverrides(rawLoyaltyProgrammes, hotels);
 
   const totalValue = loyaltyProgrammes.reduce((s, p) => s + (p.points * p.ptValue) / 100, 0);
   const { data: vouchers } = useVouchers();
