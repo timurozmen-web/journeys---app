@@ -63,7 +63,7 @@ export function Wallet() {
   return (
     <div>
       <div style={{ background: '#fff', height: 'env(safe-area-inset-top, 0px)' }} />
-      <div style={{ background: 'linear-gradient(165deg,#4A3189 0%,#5B3FA6 100%)', padding: '24px 20px 22px', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, color: '#fff' }}>
+      <div style={{ background: 'linear-gradient(165deg,#101B44 0%,#1E3A8F 100%)', padding: '24px 20px 22px', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, color: '#fff' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', opacity: 0.7 }}>Wallet value {!isLive && '· sample data'}</div>
@@ -94,7 +94,7 @@ export function Wallet() {
             <button
               key={s}
               onClick={() => setSeg(s)}
-              style={{ flex: 1, padding: '9px 0', borderRadius: 99, border: 'none', cursor: 'pointer', background: seg === s ? '#fff' : 'rgba(255,255,255,.16)', color: seg === s ? '#4A3189' : '#fff', fontSize: 13, fontWeight: 800 }}
+              style={{ flex: 1, padding: '9px 0', borderRadius: 99, border: 'none', cursor: 'pointer', background: seg === s ? '#fff' : 'rgba(255,255,255,.16)', color: seg === s ? '#101B44' : '#fff', fontSize: 13, fontWeight: 800 }}
             >
               {s === 'loyalty' ? 'Points' : s === 'payment' ? 'Cards' : 'Promos'}
             </button>

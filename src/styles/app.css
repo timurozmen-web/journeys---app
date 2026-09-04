@@ -4,11 +4,11 @@
 @keyframes in{from{opacity:0}to{opacity:1}}
 
 .head{padding:calc(env(safe-area-inset-top,0px) + var(--s5)) var(--s5) var(--s4)}
-.h1{font-size:24px;font-weight:800;letter-spacing:-.5px;line-height:1.2}
+.h1{font-family:var(--font-display);font-size:26px;font-weight:600;letter-spacing:-.3px;line-height:1.18}
 .h-sub{font-size:14px;color:var(--ink3);margin-top:var(--s1)}
 .sect{display:flex;align-items:baseline;justify-content:space-between;margin:var(--s7) var(--s5) var(--s3);
   padding-top:var(--s5);border-top:1px solid var(--line)}
-.sect h2{font-size:19px;font-weight:800;letter-spacing:-.4px}
+.sect h2{font-family:var(--font-display);font-size:20px;font-weight:600;letter-spacing:-.2px}
 .sect a{font-size:13px;font-weight:600;color:var(--brand);text-decoration:none}
 
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s4)}
@@ -23,8 +23,8 @@
 
 .hero{border-radius:var(--r-lg);padding:var(--s5);color:#fff;min-height:196px;box-sizing:border-box;
   display:flex;flex-direction:column;
-  background:linear-gradient(140deg,#5B3FA6 0%,#6F4BC0 55%,#8560D6 100%);
-  box-shadow:0 10px 30px rgba(76,79,214,.28)}
+  background:linear-gradient(140deg,#1E3A8F 0%,#2D4DB0 55%,#3E5FCB 100%);
+  box-shadow:0 10px 30px rgba(30,58,143,.28)}
 .hero .k{font-size:12px;font-weight:700;opacity:.9;text-transform:uppercase;letter-spacing:.06em}
 .hero .brand{font-size:13px;font-weight:600;opacity:.92;margin-top:var(--s3)}
 .hero .tier{font-size:25px;font-weight:800;letter-spacing:-.6px;margin-top:2px}
@@ -88,16 +88,16 @@
 
 .tdhero{position:relative;height:220px;overflow:hidden}
 .tdhero img{width:100%;height:100%;object-fit:cover;display:block}
-.tdhero .grad{position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,23,28,.35) 0%,rgba(23,23,28,0) 40%,rgba(74,49,137,.55) 78%,#4A3189 100%)}
+.tdhero .grad{position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,23,28,.35) 0%,rgba(23,23,28,0) 40%,rgba(74,49,137,.55) 78%,#101B44 100%)}
 .tdback{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:16px;z-index:5;
   width:36px;height:36px;border-radius:50%;background:rgba(19,34,71,.55);backdrop-filter:blur(8px);
   border:1px solid rgba(255,255,255,.18);display:grid;place-items:center;cursor:pointer;color:#fff}
 .tdtitle{position:absolute;left:20px;right:20px;bottom:16px;color:#fff}
 .tdtitle h1{font-size:25px;font-weight:800;letter-spacing:-.5px;text-shadow:0 2px 12px rgba(0,0,0,.4)}
 .tdtitle .s{font-size:13px;font-weight:600;opacity:.92;margin-top:3px;text-shadow:0 1px 8px rgba(0,0,0,.4)}
-.tdstats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#4A3189;
+.tdstats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#101B44;
   margin:-14px 20px 0;border-radius:14px;overflow:hidden;position:relative;z-index:2}
-.tdstat{background:#4A3189;padding:12px 8px;text-align:center}
+.tdstat{background:#101B44;padding:12px 8px;text-align:center}
 .tdstat .v{font-size:15px;font-weight:800;letter-spacing:-.3px;color:#fff}
 .tdstat .k{font-size:9px;color:rgba(255,255,255,.7);font-weight:600;margin-top:2px;text-transform:uppercase;letter-spacing:.03em}
 .tdseg{display:flex;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:12px;
@@ -167,18 +167,21 @@
 
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;align-items:center;
   padding:var(--s2) var(--s2) calc(var(--s2) + env(safe-area-inset-bottom,0px));
-  background:rgba(255,255,255,.82);backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--line)}
+  background:rgba(255,255,255,.88);backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--line)}
 .tab{flex:1;border:0;background:none;color:var(--ink3);font:inherit;cursor:pointer;text-decoration:none;
-  padding:6px 0;display:flex;flex-direction:column;align-items:center;gap:3px}
-.tab svg{width:21px;height:21px}
-.tab span{font-size:10px;font-weight:600}
+  padding:4px 0 6px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tab svg{width:20px;height:20px;display:block}
+.tab span{font-size:10px;font-weight:700}
+.tab-ic{width:40px;height:26px;border-radius:13px;display:grid;place-items:center;
+  transition:background .2s ease,color .2s ease}
 .tab.active{color:var(--brand)}
-.fab{width:50px;height:50px;border-radius:50%;border:0;flex-shrink:0;margin:0 var(--s1);
-  background:linear-gradient(140deg,#5B3FA6,#8560D6);color:#fff;font-size:24px;font-weight:300;
-  cursor:pointer;box-shadow:0 6px 18px rgba(76,79,214,.4);display:grid;place-items:center;line-height:1;
+.tab.active .tab-ic{background:var(--brand);color:#fff;box-shadow:0 4px 10px rgba(30,58,143,.35)}
+.fab{width:52px;height:52px;border-radius:50%;border:0;flex-shrink:0;margin:0 var(--s1);
+  background:linear-gradient(140deg,var(--gold2),var(--gold));color:#fff;font-size:26px;font-weight:400;
+  cursor:pointer;box-shadow:0 6px 18px rgba(156,111,40,.45);display:grid;place-items:center;line-height:1;
   position:relative;z-index:82}
 .fab::before{content:"";position:absolute;inset:-6px;border-radius:50%;
-  background:radial-gradient(circle,rgba(19,34,71,.28) 0%,rgba(19,34,71,0) 70%);
+  background:radial-gradient(circle,rgba(156,111,40,.32) 0%,rgba(156,111,40,0) 70%);
   animation:fabpulse 2.6s ease-in-out infinite;z-index:-1}
 @keyframes fabpulse{0%,100%{opacity:.5;transform:scale(.92)}50%{opacity:1;transform:scale(1.08)}}
 
@@ -200,9 +203,9 @@
 .scrim.on ~ .radial .ract:nth-child(2){transform:translate(-86.6px,-50px) scale(1);transition-delay:.02s}
 .scrim.on ~ .radial .ract:nth-child(3){transform:translate(0,-100px) scale(1);transition-delay:.06s}
 .scrim.on ~ .radial .ract:nth-child(4){transform:translate(86.6px,-50px) scale(1);transition-delay:.1s}
-.rbtn{width:56px;height:56px;border-radius:50%;border:1.5px solid rgba(91,63,166,.35);
-  background:linear-gradient(160deg,#fff 0%,rgba(91,63,166,.08) 100%);display:grid;place-items:center;cursor:pointer;
-  box-shadow:0 8px 22px rgba(91,63,166,.35)}
+.rbtn{width:56px;height:56px;border-radius:50%;border:1.5px solid rgba(30,58,143,.35);
+  background:linear-gradient(160deg,#fff 0%,rgba(30,58,143,.08) 100%);display:grid;place-items:center;cursor:pointer;
+  box-shadow:0 8px 22px rgba(30,58,143,.35)}
 .rlab{font-size:11.5px;font-weight:700;color:var(--ink);text-shadow:0 1px 6px rgba(0,0,0,.6)}
 .rsub{font-size:9.5px;font-weight:600;color:var(--ink3);text-align:center;line-height:1.25;max-width:84px}
 .fab.open{transform:rotate(45deg)}

@@ -1,5 +1,8 @@
-/* Self-hosted, single-file variable font -- Latin subset only (this app
-   is English-only), covering weights 200-800 in one 27KB file. */
+/* Self-hosted, single-file variable fonts -- Latin subset only (this app
+   is English-only). Two families, two jobs: Jakarta Sans carries the
+   dense, data-heavy UI (numbers, labels, forms); Fraunces carries
+   headlines and hero moments, where its optical-size axis gives it real
+   character at large sizes without hurting legibility at small ones. */
 @font-face {
   font-family: 'Plus Jakarta Sans Variable';
   font-style: normal;
@@ -7,50 +10,65 @@
   font-weight: 200 800;
   src: url('/fonts/plus-jakarta-sans-latin-wght-normal.woff2') format('woff2-variations');
 }
+@font-face {
+  font-family: 'Fraunces Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 900;
+  src: url('/fonts/fraunces-latin-full-normal.woff2') format('woff2-variations');
+}
 
-/* Journeys design tokens — ported directly from the validated prototype.
-   Contrast verified: ink/bg 14.4:1, ink/card 15.58:1, ink2/card 7.43:1,
-   ink3/card 4.98:1. Do not change these without re-checking contrast. */
+/* Journeys design tokens -- royal blue + off-white, two-tone.
+   Contrast measured against the new palette (WCAG formula): ink/bg
+   16.55:1, ink/card 17.9:1, ink2/card 6.54:1, brand/card 10.21:1 --
+   all pass AA for body text. gold/card is 4.45:1, which passes AA for
+   large/bold text and UI components but not small body text, so gold
+   is kept to icon-on-fill and large-label use, never small body copy. */
 :root {
   color-scheme: light only;
 
-  --bg: #F4F6FA;
+  --bg: #F7F6F2;
   --card: #FFFFFF;
-  --card2: #EBEEF5;
-  --line: #E4E8F0;
-  --ink: #17171C;
-  --ink2: #5C5C6E;
-  --ink3: #5C5C6E;
-  --brand: #5B3FA6;
-  --brand2: #7B5FC7;
+  --card2: #EEF1F8;
+  --line: #E4E4DD;
+  --ink: #16171C;
+  --ink2: #5C5D66;
+  --ink3: #5C5D66;
+  --brand: #1E3A8F;
+  --brand2: #3E5FCB;
+  --brand-deep: #101B44;
+  --gold: #9C6F28;
+  --gold2: #C79A46;
   --green: #0C7A42;
   --red: #D23C3C;
   --amber: #9C5F08;
+
+  --font-body: 'Plus Jakarta Sans Variable', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+  --font-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
 
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s7: 32px;
   --r-lg: 20px; --r-md: 16px; --r-sm: 12px; --r-xs: 8px;
 }
 
 html {
-  background-color: #F4F6FA !important;
+  background-color: #F7F6F2 !important;
   color-scheme: light only;
 }
 html {
-  background-color: #F4F6FA !important;
+  background-color: #F7F6F2 !important;
   height: 100%;
   min-height: 100%;
 }
 body {
-  background-color: #F4F6FA !important;
+  background-color: #F7F6F2 !important;
 }
 #root {
-  background-color: #F4F6FA !important;
+  background-color: #F7F6F2 !important;
 }
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  font-family: 'Plus Jakarta Sans Variable', -apple-system, BlinkMacSystemFont,
-    'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+  font-family: var(--font-body);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
   font-variant-numeric: tabular-nums;

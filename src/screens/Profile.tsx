@@ -144,7 +144,7 @@ export function Profile() {
   return (
     <div>
       <div style={{ background: '#fff', height: 'env(safe-area-inset-top, 0px)' }} />
-      <div style={{ background: 'linear-gradient(165deg,#4A3189 0%,#5B3FA6 100%)', padding: '24px 20px 4px', color: '#fff', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' }}>
+      <div style={{ background: 'linear-gradient(165deg,#101B44 0%,#1E3A8F 100%)', padding: '24px 20px 4px', color: '#fff', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{ width: 54, height: 54, borderRadius: 18, background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.28)', display: 'grid', placeItems: 'center', fontSize: 20, fontWeight: 800, flexShrink: 0 }}>T</div>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -219,8 +219,8 @@ export function Profile() {
                 onClick={() => navigate('/review-trip', { state: { hotel: h } })}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
-                  padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(91,63,166,.15)',
-                  background: 'rgba(91,63,166,.05)', textAlign: 'left', cursor: 'pointer', width: '100%',
+                  padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(30,58,143,.15)',
+                  background: 'rgba(30,58,143,.05)', textAlign: 'left', cursor: 'pointer', width: '100%',
                 }}
               >
                 <div>
@@ -295,7 +295,7 @@ export function Profile() {
                       <span style={{ color: 'var(--ink2)' }}>{r.nights}n</span>
                     </div>
                     <div className="hbar" style={{ background: 'var(--card2)' }}>
-                      <i style={{ width: `${(r.nights / maxRegion) * 100}%`, background: active ? 'var(--brand)' : 'rgba(91,63,166,.45)' }} />
+                      <i style={{ width: `${(r.nights / maxRegion) * 100}%`, background: active ? 'var(--brand)' : 'rgba(30,58,143,.45)' }} />
                     </div>
                   </button>
                 );
@@ -327,7 +327,7 @@ export function Profile() {
             style={{
               padding: '5px 12px', borderRadius: 99, fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
               border: sortMode === mode ? '1px solid var(--brand)' : '1px solid var(--line)',
-              background: sortMode === mode ? 'rgba(91,63,166,.08)' : 'var(--card)',
+              background: sortMode === mode ? 'rgba(30,58,143,.08)' : 'var(--card)',
               color: sortMode === mode ? 'var(--brand)' : 'var(--ink2)',
             }}
           >

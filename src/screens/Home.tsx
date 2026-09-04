@@ -7,6 +7,7 @@ import { computeLoyaltyInsights } from '../lib/loyaltyInsights';
 import { BASE_POINTS_PER_GBP, TIER_BONUS } from '../lib/hotelPlanner';
 import { findGaps } from '../lib/tripStats';
 import { findHotelsNeedingReview } from '../lib/reviewScoring';
+import { ChevronDownIcon } from '../components/Icons';
 
 function daysBetween(a: string, b: string) {
   return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000);
@@ -22,6 +23,12 @@ function fmtDate(iso: string) {
 function fmtDayName(iso: string) {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   return days[new Date(iso + 'T00:00:00').getDay()];
+}
+function timeOfDay(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'morning';
+  if (h < 17) return 'afternoon';
+  return 'evening';
 }
 function fmtFullDate(iso: string) {
   const [, m, d] = iso.split('-');
@@ -189,81 +196,110 @@ export function Home() {
   }
   const maxMonthly = Math.max(1, ...monthlyLoyaltyValue);
 
+  // Wallet summary strip -- real per-programme balances, highest value first.
+  const walletProgrammes = [...loyaltyProgrammes]
+    .filter((p) => p.points > 0)
+    .sort((a, b) => (b.points * (b.ptValue ?? 0)) - (a.points * (a.ptValue ?? 0)));
+  const hotelProgrammeCount = loyaltyProgrammes.filter((p) => p.category === 'hotel' && p.points > 0).length;
+  const airlineProgrammeCount = loyaltyProgrammes.filter((p) => p.category === 'airline' && p.points > 0).length;
+
+  const tripTotalDays = currentTrip ? daysBetween(currentTrip.start, currentTrip.end) + 1 : 0;
+  const tripDayIndex = currentTrip ? Math.min(tripTotalDays, daysBetween(currentTrip.start, TODAY) + 1) : 0;
+
+  const tickerItems = topProgress
+    .filter((p) => p.progress.total > p.progress.currentNights)
+    .map((p) => ({
+      key: p.name,
+      text: `${p.progress.total - p.progress.currentNights} night${p.progress.total - p.progress.currentNights === 1 ? '' : 's'} to ${p.progress.targetTier} with ${p.name}`,
+      pct: Math.max(0, Math.min(100, p.progress.pct ?? 0)),
+    }));
+
   return (
+    <>
     <div>
-      <div style={{ background: '#fff', height: 'env(safe-area-inset-top, 0px)' }} />
-      <div
-        style={{
-          background: 'linear-gradient(165deg,#4A3189 0%,#5B3FA6 45%,#7B5FC7 100%)',
-          padding: '24px 20px 22px', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, color: '#fff',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', opacity: 0.7 }}>
-              {fmtFullDate(TODAY)}
-            </div>
-            <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-.5px', marginTop: 3 }}>
-              {currentTrip ? `Day ${daysBetween(currentTrip.start, TODAY) + 1} in ${currentTrip.title}` : 'Good to see you'}
-            </div>
+      <div style={{ background: 'var(--bg)', height: 'env(safe-area-inset-top, 0px)' }} />
+
+      {/* Welcome */}
+      <div style={{ padding: '18px 20px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)' }}>
+            {fmtFullDate(TODAY)}
           </div>
-          <div
-            onClick={() => navigate('/profile')}
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 25, fontWeight: 600, letterSpacing: '-.3px', color: 'var(--ink)', marginTop: 3 }}>
+            Good {timeOfDay()}, Timur
+          </div>
+        </div>
+        <div
+          onClick={() => navigate('/profile')}
+          style={{
+            width: 40, height: 40, borderRadius: 13, background: 'var(--brand)',
+            display: 'grid', placeItems: 'center', fontSize: 15, fontWeight: 800, color: '#fff', flexShrink: 0, cursor: 'pointer',
+          }}
+        >
+          T
+        </div>
+      </div>
+
+      {/* Current trip -- the key thing happening right now */}
+      {currentTrip && (
+        <div style={{ padding: '16px 20px 0' }}>
+          <button
+            onClick={() => navigate(`/trips/${currentTrip.id}`)}
             style={{
-              width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.24)',
-              display: 'grid', placeItems: 'center', fontSize: 14, fontWeight: 800, flexShrink: 0, cursor: 'pointer',
+              position: 'relative', display: 'block', width: '100%', height: 220, border: 0, padding: 0, borderRadius: 22,
+              overflow: 'hidden', cursor: 'pointer', textAlign: 'left', font: 'inherit',
+              background: currentTrip.heroImageUrl
+                ? `url(${currentTrip.heroImageUrl}) center/cover no-repeat`
+                : 'linear-gradient(150deg,#101B44 0%,#1E3A8F 55%,#3E5FCB 100%)',
+              boxShadow: '0 14px 32px rgba(16,27,68,.28)',
             }}
           >
-            T
-          </div>
-        </div>
-
-        {topProgress.length > 0 && (
-          <div style={{ display: 'grid', gap: 13, marginTop: 20 }}>
-            {topProgress.map((p) => {
-              const pct = Math.max(0, Math.min(100, p.progress.pct ?? 0));
-              const pendingPct = p.progress.pendingPct != null ? Math.max(0, Math.min(100, p.progress.pendingPct)) : null;
-              const valueLabel = `${p.progress.currentNights} / ${p.progress.total} nights`;
-              const captionParts: string[] = [];
-              if (p.progress.targetTier) {
-                const remaining = p.progress.total - p.progress.currentNights;
-                if (remaining > 0) captionParts.push(`${remaining} nights to ${p.progress.targetTier}`);
-              }
-              if (p.progress.bookedNights > 0) captionParts.push(`${p.progress.bookedNights} booked`);
-
-              return (
-                <div key={p.name}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 800 }}>{p.name}</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, opacity: 0.8 }}>{valueLabel}</span>
-                  </div>
-                  <div style={{ height: 7, borderRadius: 99, background: 'rgba(255,255,255,.22)', marginTop: 6, overflow: 'hidden', position: 'relative' }}>
-                    {pendingPct != null && (
-                      <i style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pendingPct}%`, background: 'rgba(255,193,90,.6)', borderRadius: 99 }} />
-                    )}
-                    <i style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct}%`, background: '#fff', borderRadius: 99 }} />
-                  </div>
-                  {captionParts.length > 0 && (
-                    <div style={{ fontSize: 10.5, fontWeight: 600, opacity: 0.7, marginTop: 5 }}>{captionParts.join(' · ')}</div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,.18)' }}>
-          <div>
-            <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', opacity: 0.7 }}>Wallet value</div>
-            <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-1.2px', marginTop: 1 }}>£{Math.round(walletValue).toLocaleString()}</div>
-          </div>
-          <button
-            onClick={() => navigate('/wallet')}
-            style={{ border: '1px solid rgba(255,255,255,.3)', background: 'rgba(255,255,255,.14)', color: '#fff', font: 'inherit', fontSize: 12, fontWeight: 700, padding: '8px 14px', borderRadius: 99, cursor: 'pointer', flexShrink: 0 }}
-          >
-            Open wallet
+            <span style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(16,27,68,0) 35%,rgba(16,27,68,.78) 100%)' }} />
+            <span style={{ position: 'absolute', top: 16, left: 18, fontSize: 10.5, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '.1em', background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.3)', borderRadius: 99, padding: '5px 11px' }}>
+              Current trip · Day {tripDayIndex} of {tripTotalDays}
+            </span>
+            <span style={{ position: 'absolute', left: 20, right: 62, bottom: 18, color: '#fff' }}>
+              <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-.3px', lineHeight: 1.15 }}>{currentTrip.title}</span>
+              <span style={{ display: 'block', fontSize: 12.5, fontWeight: 600, opacity: 0.88, marginTop: 5 }}>{fmtDate(currentTrip.start)} – {fmtDate(currentTrip.end)}</span>
+            </span>
+            <span style={{ position: 'absolute', right: 16, bottom: 16, width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,.2)', border: '1px solid rgba(255,255,255,.4)', display: 'grid', placeItems: 'center' }}>
+              <ChevronDownIcon size={16} color="#fff" style={{ transform: 'rotate(-90deg)' }} />
+            </span>
           </button>
         </div>
+      )}
+
+      {/* Wallet summary */}
+      <div style={{ padding: '16px 20px 0' }}>
+        <button
+          onClick={() => navigate('/wallet')}
+          style={{ display: 'block', width: '100%', textAlign: 'left', font: 'inherit', border: '1px solid var(--line)', background: 'var(--card)', borderRadius: 20, padding: '16px 18px', cursor: 'pointer' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--brand)' }}>Travel wallet</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600, letterSpacing: '-1px', color: 'var(--ink)', marginTop: 2 }}>£{Math.round(walletValue).toLocaleString()}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--ink2)', fontWeight: 600, marginTop: 2 }}>
+                {hotelProgrammeCount + airlineProgrammeCount} programmes · {hotelProgrammeCount} hotel · {airlineProgrammeCount} airline
+              </div>
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand)', flexShrink: 0 }}>See all</span>
+          </div>
+
+          {walletProgrammes.length > 0 && (
+            <div style={{ display: 'flex', gap: 10, overflowX: 'auto', marginTop: 14, paddingBottom: 2, scrollbarWidth: 'none' }}>
+              {walletProgrammes.map((p) => (
+                <div key={p.name} style={{ flex: '0 0 auto', width: 76, textAlign: 'center' }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 13, background: p.color || 'var(--card2)', color: '#fff', display: 'grid', placeItems: 'center', margin: '0 auto', fontSize: 13, fontWeight: 800 }}>
+                    {p.abbr}
+                  </div>
+                  <div style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--ink)', marginTop: 5 }}>{p.points >= 1000 ? `${(p.points / 1000).toFixed(1)}k` : p.points}</div>
+                  {p.tier && <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--ink2)', marginTop: 1 }}>{p.tier}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+        </button>
       </div>
 
       {actionItems.length > 0 && (
@@ -323,7 +359,7 @@ export function Home() {
       {currentTrip && tripEvents.length > 0 && (
         <div style={{ padding: '24px 20px 0' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)' }}>This trip</div>
+            <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)' }}>Itinerary</div>
             <button onClick={() => navigate(`/trips/${currentTrip.id}`)} style={{ border: 0, background: 'none', font: 'inherit', fontSize: 12, fontWeight: 700, color: 'var(--brand)', cursor: 'pointer', padding: 0 }}>
               Open
             </button>
@@ -337,7 +373,7 @@ export function Home() {
                       width: 11, height: 11, borderRadius: '50%', flexShrink: 0,
                       background: ev.status === 'done' ? 'var(--brand)' : ev.status === 'gap' ? 'var(--amber)' : '#fff',
                       border: ev.status === 'upcoming' ? '2px solid #C6C9D6' : '2px solid var(--bg)',
-                      boxShadow: ev.status === 'done' ? '0 0 0 2px rgba(91,63,166,.25)' : 'none',
+                      boxShadow: ev.status === 'done' ? '0 0 0 2px rgba(30,58,143,.25)' : 'none',
                     }}
                   />
                   {i < tripEvents.length - 1 && <span style={{ flex: 1, width: 2, background: 'var(--line)' }} />}
@@ -382,7 +418,7 @@ export function Home() {
                   key={i}
                   style={{
                     width: 8, height: Math.max(3, Math.round((v / maxMonthly) * 38)), borderRadius: 2, display: 'block',
-                    background: i === monthlyLoyaltyValue.length - 1 ? 'var(--brand)' : i >= monthlyLoyaltyValue.length - 3 ? '#D8CEEC' : 'var(--card2)',
+                    background: i === monthlyLoyaltyValue.length - 1 ? 'var(--brand)' : i >= monthlyLoyaltyValue.length - 3 ? '#C9D3F2' : 'var(--card2)',
                   }}
                 />
               ))}
@@ -391,6 +427,34 @@ export function Home() {
         </div>
       </div>
     </div>
+
+    {tickerItems.length > 0 && (
+      <div
+        style={{
+          position: 'fixed', left: 0, right: 0, bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))', zIndex: 55,
+          display: 'flex', overflowX: 'auto', gap: 10, padding: '0 20px', scrollbarWidth: 'none',
+        }}
+      >
+        {tickerItems.map((t) => (
+          <div
+            key={t.key}
+            style={{
+              flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 8,
+              background: 'var(--brand)', color: '#fff', borderRadius: 99, padding: '8px 8px 8px 14px',
+              boxShadow: '0 8px 20px rgba(16,27,68,.3)', maxWidth: 'calc(100vw - 40px)',
+            }}
+          >
+            <span style={{ fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>{t.text}</span>
+            <span style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: `conic-gradient(var(--gold2) ${t.pct}%, rgba(255,255,255,.25) 0)`, display: 'grid', placeItems: 'center' }}>
+              <span style={{ width: 19, height: 19, borderRadius: '50%', background: 'var(--brand)', display: 'grid', placeItems: 'center', fontSize: 8, fontWeight: 800 }}>
+                {Math.round(t.pct)}
+              </span>
+            </span>
+          </div>
+        ))}
+      </div>
+    )}
+    </>
   );
 }
 

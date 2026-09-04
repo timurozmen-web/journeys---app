@@ -36,7 +36,7 @@ export function BrandLogo({
   return (
     <div
       style={{
-        width, height: size, borderRadius: 10, background: color || '#5B3FA6',
+        width, height: size, borderRadius: 10, background: color || '#1E3A8F',
         display: 'grid', placeItems: 'center', flexShrink: 0, overflow: 'hidden',
         border: logo?.aspect === 'wide' ? '1px solid var(--line)' : undefined,
       }}

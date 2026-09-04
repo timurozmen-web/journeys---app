@@ -41,8 +41,8 @@ function legBadgeIcon(info: MapLegInfo): L.DivIcon {
   return L.divIcon({
     className: '',
     html: `
-      <div style="display:flex;align-items:center;gap:4px;background:#fff;border:1.5px solid #5B3FA6;border-radius:99px;padding:4px 9px;box-shadow:0 3px 8px rgba(23,23,28,.18);white-space:nowrap;font-family:inherit;">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5B3FA6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${MODE_ICON_SVG[info.mode]}</svg>
+      <div style="display:flex;align-items:center;gap:4px;background:#fff;border:1.5px solid #1E3A8F;border-radius:99px;padding:4px 9px;box-shadow:0 3px 8px rgba(23,23,28,.18);white-space:nowrap;font-family:inherit;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1E3A8F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${MODE_ICON_SVG[info.mode]}</svg>
         <span style="font-size:11.5px;font-weight:700;color:#17171C;">${label}</span>
       </div>`,
     iconSize: undefined,
@@ -55,7 +55,7 @@ function cityMarkerIcon(rank: number, active: boolean): L.DivIcon {
   return L.divIcon({
     className: '',
     html: `
-      <div style="width:${size}px;height:${size}px;border-radius:50%;background:#5B3FA6;border:2.5px solid #fff;
+      <div style="width:${size}px;height:${size}px;border-radius:50%;background:#1E3A8F;border:2.5px solid #fff;
         box-shadow:0 2px 6px rgba(23,23,28,.3);display:flex;align-items:center;justify-content:center;
         color:#fff;font-weight:800;font-size:${active ? 13 : 11.5}px;font-family:inherit;">
         ${rank}
@@ -126,16 +126,16 @@ export function PlanMap({
     const allPoints = homePoint ? [...points, homePoint] : points;
 
     if (homePoint && cities.length > 0) {
-      const line = L.polyline([homePoint, points[0]], { color: '#5B3FA6', weight: 2.5, dashArray: '2 8', opacity: 0.75 });
+      const line = L.polyline([homePoint, points[0]], { color: '#1E3A8F', weight: 2.5, dashArray: '2 8', opacity: 0.75 });
       layerGroup.addLayer(line);
-      L.circleMarker(homePoint, { radius: 6, color: '#5B3FA6', weight: 2, fillColor: '#fff', fillOpacity: 1 }).addTo(layerGroup);
+      L.circleMarker(homePoint, { radius: 6, color: '#1E3A8F', weight: 2, fillColor: '#fff', fillOpacity: 1 }).addTo(layerGroup);
       if (internationalLeg) {
         L.marker(midpoint(homePoint, points[0]), { icon: legBadgeIcon(internationalLeg), interactive: false }).addTo(layerGroup);
       }
     }
 
     for (let i = 0; i < points.length - 1; i++) {
-      const line = L.polyline([points[i], points[i + 1]], { color: '#5B3FA6', weight: 3, dashArray: '2 8', opacity: 0.85 });
+      const line = L.polyline([points[i], points[i + 1]], { color: '#1E3A8F', weight: 3, dashArray: '2 8', opacity: 0.85 });
       layerGroup.addLayer(line);
       if (domesticLegs[i]) {
         L.marker(midpoint(points[i], points[i + 1]), { icon: legBadgeIcon(domesticLegs[i]), interactive: false }).addTo(layerGroup);
@@ -148,7 +148,7 @@ export function PlanMap({
         <div style="font-family:inherit;min-width:170px;">
           ${photoUrl ? `<img src="${photoUrl}" alt="${c.city}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:6px;display:block;" />` : ''}
           <div style="font-size:13px;font-weight:800;color:#17171C;">${i + 1}. ${c.city}</div>
-          ${c.nights != null ? `<div style="font-size:11px;font-weight:700;color:#5B3FA6;margin-top:2px;">${c.nights} nights</div>` : ''}
+          ${c.nights != null ? `<div style="font-size:11px;font-weight:700;color:#1E3A8F;margin-top:2px;">${c.nights} nights</div>` : ''}
           ${c.why ? `<div style="font-size:11px;color:#5C5C6E;margin-top:3px;line-height:1.4;">${c.why}</div>` : ''}
         </div>`;
       marker.bindPopup(buildPopupHtml(), { closeButton: true, className: 'planmap-popup', maxWidth: 200 });

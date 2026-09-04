@@ -28,7 +28,7 @@ export function Trips() {
   return (
     <div>
       <div style={{ background: '#fff', height: 'env(safe-area-inset-top, 0px)' }} />
-      <div style={{ background: 'linear-gradient(165deg,#4A3189 0%,#5B3FA6 100%)', padding: '24px 20px 20px', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, color: '#fff' }}>
+      <div style={{ background: 'linear-gradient(165deg,#101B44 0%,#1E3A8F 100%)', padding: '24px 20px 20px', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, color: '#fff' }}>
         <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', opacity: 0.7 }}>Your year</div>
         <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-.6px', marginTop: 3 }}>{trips.length} trips, {continents} {continents === 1 ? 'country' : 'countries'}</div>
         <div style={{ display: 'flex', marginTop: 16, padding: '12px 0', borderTop: '1px solid rgba(255,255,255,.18)', borderBottom: '1px solid rgba(255,255,255,.18)' }}>
@@ -51,13 +51,13 @@ export function Trips() {
         <div style={{ display: 'flex', gap: 6, marginTop: 14 }}>
           <button
             onClick={() => setTripType('leisure')}
-            style={{ flex: 1, padding: '10px 0', borderRadius: 99, border: 'none', cursor: 'pointer', background: tripType === 'leisure' ? '#fff' : 'rgba(255,255,255,.16)', color: tripType === 'leisure' ? '#4A3189' : '#fff', fontSize: 13.5, fontWeight: 800 }}
+            style={{ flex: 1, padding: '10px 0', borderRadius: 99, border: 'none', cursor: 'pointer', background: tripType === 'leisure' ? '#fff' : 'rgba(255,255,255,.16)', color: tripType === 'leisure' ? '#101B44' : '#fff', fontSize: 13.5, fontWeight: 800 }}
           >
             Leisure
           </button>
           <button
             onClick={() => setTripType('work')}
-            style={{ flex: 1, padding: '10px 0', borderRadius: 99, border: 'none', cursor: 'pointer', background: tripType === 'work' ? '#fff' : 'rgba(255,255,255,.16)', color: tripType === 'work' ? '#4A3189' : '#fff', fontSize: 13.5, fontWeight: 800 }}
+            style={{ flex: 1, padding: '10px 0', borderRadius: 99, border: 'none', cursor: 'pointer', background: tripType === 'work' ? '#fff' : 'rgba(255,255,255,.16)', color: tripType === 'work' ? '#101B44' : '#fff', fontSize: 13.5, fontWeight: 800 }}
           >
             Work
           </button>
@@ -79,7 +79,7 @@ export function Trips() {
         return (
           <div style={{ padding: '20px 20px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <span style={{ width: 7, height: 7, borderRadius: '50%', background: isUnderway ? 'var(--green)' : 'var(--brand)', boxShadow: isUnderway ? '0 0 0 3px rgba(12,122,66,.18)' : '0 0 0 3px rgba(91,63,166,.18)' }} />
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: isUnderway ? 'var(--green)' : 'var(--brand)', boxShadow: isUnderway ? '0 0 0 3px rgba(12,122,66,.18)' : '0 0 0 3px rgba(30,58,143,.18)' }} />
               <span style={{ fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.09em', color: isUnderway ? 'var(--green)' : 'var(--brand)' }}>
                 {isUnderway ? 'Under way' : 'Coming up next'}
               </span>
@@ -89,7 +89,7 @@ export function Trips() {
                 <div style={{ position: 'absolute', inset: 0 }}>
                   <DestinationPhoto query={destinationQuery(t)} seed={t.id} height={150} />
                 </div>
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(23,23,28,.15) 0%,rgba(23,23,28,.1) 40%,rgba(74,49,137,.75) 85%,#4A3189 100%)' }} />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(23,23,28,.15) 0%,rgba(23,23,28,.1) 40%,rgba(74,49,137,.75) 85%,#101B44 100%)' }} />
                 <div style={{ position: 'absolute', top: 14, left: 14, right: 14, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                   <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.06em', padding: '5px 10px', borderRadius: 99, background: 'rgba(255,255,255,.94)', color: isUnderway ? 'var(--green)' : 'var(--brand)' }}>
                     {isUnderway ? `DAY ${daysDone + 1} OF ${totalNights}` : `${daysOut} DAYS OUT`}
@@ -105,7 +105,7 @@ export function Trips() {
                   )}
                 </div>
               </div>
-              <div style={{ display: 'flex', padding: '13px 16px', background: 'linear-gradient(180deg,#5B3FA6,#4A3189)' }}>
+              <div style={{ display: 'flex', padding: '13px 16px', background: 'linear-gradient(180deg,#1E3A8F,#101B44)' }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-.3px' }}>£{spend.toLocaleString()}</div>
                   <div style={{ fontSize: 9, opacity: 0.75, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 2 }}>spend</div>

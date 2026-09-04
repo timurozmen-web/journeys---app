@@ -268,10 +268,10 @@ export function WorldMap({
             })}
             {showRoutes &&
               routeLines.map((r) => (
-                <path key={r.key} d={r.d} fill="none" stroke="#5B3FA6" strokeWidth={0.7 / zoom} strokeDasharray={`${2 / zoom} ${1.5 / zoom}`} opacity={0.75} />
+                <path key={r.key} d={r.d} fill="none" stroke="#1E3A8F" strokeWidth={0.7 / zoom} strokeDasharray={`${2 / zoom} ${1.5 / zoom}`} opacity={0.75} />
               ))}
             {showRoutes &&
-              airportDots.map((a) => <circle key={a.code} cx={a.x} cy={a.y} r={1.6 / zoom} fill="#5B3FA6" stroke="#fff" strokeWidth={0.5 / zoom} />)}
+              airportDots.map((a) => <circle key={a.code} cx={a.x} cy={a.y} r={1.6 / zoom} fill="#1E3A8F" stroke="#fff" strokeWidth={0.5 / zoom} />)}
           </g>
         </svg>
 
@@ -331,7 +331,7 @@ function ZoomBtn({ children, onClick }: { children: React.ReactNode; onClick: ()
 
 function shadeFor(nights: number, max: number) {
   const t = Math.min(1, nights / max);
-  const shades = ['#8797BC', '#5F71A0', '#8560D6', '#5B3FA6'];
+  const shades = ['#8797BC', '#5F71A0', '#3E5FCB', '#1E3A8F'];
   const idx = Math.min(shades.length - 1, Math.floor(t * shades.length));
   return shades[idx];
 }

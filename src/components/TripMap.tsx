@@ -155,10 +155,10 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
           <path key={c.name} d={c.d} fill="#B9CEEC" stroke="#DCE7F5" strokeWidth={0.5} />
         ))}
         {routeLines.map((r) => (
-          <path key={r.key} d={r.d} fill="none" stroke="#5B3FA6" strokeWidth={1.1} strokeDasharray="3 2.2" opacity={0.85} />
+          <path key={r.key} d={r.d} fill="none" stroke="#1E3A8F" strokeWidth={1.1} strokeDasharray="3 2.2" opacity={0.85} />
         ))}
         {markers.map((m, i) => (
-          <circle key={`h${i}`} cx={m.x} cy={m.y} r={3.2} fill="#5B3FA6" stroke="#fff" strokeWidth={1} />
+          <circle key={`h${i}`} cx={m.x} cy={m.y} r={3.2} fill="#1E3A8F" stroke="#fff" strokeWidth={1} />
         ))}
         {photoMarkers.map((p, i) => (
           <g key={`p${i}`}>
@@ -167,10 +167,10 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
           </g>
         ))}
         {playing && traveledPath && (
-          <path d={traveledPath} fill="none" stroke="#5B3FA6" strokeWidth={2} strokeLinecap="round" opacity={0.9} />
+          <path d={traveledPath} fill="none" stroke="#1E3A8F" strokeWidth={2} strokeLinecap="round" opacity={0.9} />
         )}
         {playing && activeStop && (
-          <circle cx={activeStop.x} cy={activeStop.y} r={5.5} fill="#5B3FA6" stroke="#fff" strokeWidth={1.6}>
+          <circle cx={activeStop.x} cy={activeStop.y} r={5.5} fill="#1E3A8F" stroke="#fff" strokeWidth={1.6}>
             <animate attributeName="r" values="5.5;8;5.5" dur="1.2s" repeatCount="indefinite" />
           </circle>
         )}

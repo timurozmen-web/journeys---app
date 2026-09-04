@@ -3,10 +3,10 @@ import { useState } from 'react';
 import { HomeIcon, TripsIcon, WalletIcon, ProfileIcon, PlanIcon, CaptureIcon, DiscoverIcon, CreditIcon, HomeIconFilled, TripsIconFilled, WalletIconFilled, ProfileIconFilled } from './Icons';
 
 const RADIAL = [
-  { key: 'plan', label: 'Plan', Icon: PlanIcon, color: '#5B3FA6' },
-  { key: 'capture', label: 'Capture', Icon: CaptureIcon, color: '#7B5FC7' },
-  { key: 'discover', label: 'Discover', Icon: DiscoverIcon, color: '#5B3FA6' },
-  { key: 'credit', label: 'Where to credit', Icon: CreditIcon, color: '#5B3FA6' },
+  { key: 'plan', label: 'Plan', Icon: PlanIcon, color: '#1E3A8F' },
+  { key: 'capture', label: 'Capture', Icon: CaptureIcon, color: '#3E5FCB' },
+  { key: 'discover', label: 'Discover', Icon: DiscoverIcon, color: '#1E3A8F' },
+  { key: 'credit', label: 'Where to credit', Icon: CreditIcon, color: '#1E3A8F' },
 ] as const;
 
 export function TabBar() {
@@ -46,18 +46,18 @@ export function TabBar() {
       </div>
 
       <nav className="tabs" role="tablist">
-        <NavLink to="/" end className="tab">
+        <NavLink to="/" end className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
           {({ isActive }) => (
             <>
-              {isActive ? <HomeIconFilled /> : <HomeIcon />}
+              <span className="tab-ic">{isActive ? <HomeIconFilled /> : <HomeIcon />}</span>
               <span>Home</span>
             </>
           )}
         </NavLink>
-        <NavLink to="/trips" className="tab">
+        <NavLink to="/trips" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
           {({ isActive }) => (
             <>
-              {isActive ? <TripsIconFilled /> : <TripsIcon />}
+              <span className="tab-ic">{isActive ? <TripsIconFilled /> : <TripsIcon />}</span>
               <span>Trips</span>
             </>
           )}
@@ -65,18 +65,18 @@ export function TabBar() {
         <button className={`fab ${open ? 'open' : ''}`} onClick={() => setOpen((v) => !v)} aria-label="Actions">
           +
         </button>
-        <NavLink to="/wallet" className="tab">
+        <NavLink to="/wallet" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
           {({ isActive }) => (
             <>
-              {isActive ? <WalletIconFilled /> : <WalletIcon />}
+              <span className="tab-ic">{isActive ? <WalletIconFilled /> : <WalletIcon />}</span>
               <span>Wallet</span>
             </>
           )}
         </NavLink>
-        <NavLink to="/profile" className="tab">
+        <NavLink to="/profile" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
           {({ isActive }) => (
             <>
-              {isActive ? <ProfileIconFilled /> : <ProfileIcon />}
+              <span className="tab-ic">{isActive ? <ProfileIconFilled /> : <ProfileIcon />}</span>
               <span>Profile</span>
             </>
           )}

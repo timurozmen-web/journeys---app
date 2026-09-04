@@ -73,7 +73,7 @@ export async function addLoyaltyProgramme(input: NewLoyaltyProgrammeInput) {
   const today = new Date().toISOString().slice(0, 10);
   const { error } = await supabase.from('loyalty_programmes').insert({
     name: input.name, abbr, points: input.points, pt_value: input.ptValue,
-    color: '#5B3FA6', accent: '#7B5FC7', font: 'default', shape: 'orbit',
+    color: '#1E3A8F', accent: '#3E5FCB', font: 'default', shape: 'orbit',
     tier: input.tier, next_tier: input.nextTier,
     nights: input.nextTier ? 0 : null, nights_needed: input.nextTier ? input.nightsNeeded : null,
     nights_baseline_date: today, category: input.category,
