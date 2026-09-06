@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { HomeIcon, TripsIcon, WalletIcon, ProfileIcon, PlanIcon, CaptureIcon, DiscoverIcon, CreditIcon, HomeIconFilled, TripsIconFilled, WalletIconFilled, ProfileIconFilled } from './Icons';
+import { HomeIcon, TripsIcon, WalletIcon, ProfileIcon, PlanIcon, CaptureIcon, DiscoverIcon, CreditIcon } from './Icons';
 
 const RADIAL = [
   { key: 'plan', label: 'Plan', Icon: PlanIcon, color: '#1E3A8F' },
@@ -49,7 +49,7 @@ export function TabBar() {
         <NavLink to="/" end className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
           {({ isActive }) => (
             <>
-              <span className="tab-ic">{isActive ? <HomeIconFilled /> : <HomeIcon />}</span>
+              <span className="tab-ic"><HomeIcon strokeWidth={isActive ? 2.3 : 1.7} /></span>
               <span>Home</span>
             </>
           )}
@@ -57,7 +57,7 @@ export function TabBar() {
         <NavLink to="/trips" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
           {({ isActive }) => (
             <>
-              <span className="tab-ic">{isActive ? <TripsIconFilled /> : <TripsIcon />}</span>
+              <span className="tab-ic"><TripsIcon strokeWidth={isActive ? 2.3 : 1.7} /></span>
               <span>Trips</span>
             </>
           )}
@@ -68,7 +68,7 @@ export function TabBar() {
         <NavLink to="/wallet" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
           {({ isActive }) => (
             <>
-              <span className="tab-ic">{isActive ? <WalletIconFilled /> : <WalletIcon />}</span>
+              <span className="tab-ic"><WalletIcon strokeWidth={isActive ? 2.3 : 1.7} /></span>
               <span>Wallet</span>
             </>
           )}
@@ -76,7 +76,7 @@ export function TabBar() {
         <NavLink to="/profile" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
           {({ isActive }) => (
             <>
-              <span className="tab-ic">{isActive ? <ProfileIconFilled /> : <ProfileIcon />}</span>
+              <span className="tab-ic"><ProfileIcon strokeWidth={isActive ? 2.3 : 1.7} /></span>
               <span>Profile</span>
             </>
           )}

@@ -6,16 +6,17 @@ interface IconProps {
   size?: number;
   color?: string;
   style?: CSSProperties;
+  strokeWidth?: number;
 }
 
-const wrap = (path: string) => ({ size = 21, color = 'currentColor', style }: IconProps) => (
+const wrap = (path: string) => ({ size = 21, color = 'currentColor', style, strokeWidth = 1.7 }: IconProps) => (
   <svg
     width={size}
     height={size}
     viewBox="0 0 24 24"
     fill="none"
     stroke={color}
-    strokeWidth={1.7}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     style={style}
