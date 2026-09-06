@@ -5,6 +5,7 @@ import { uploadTripPhoto, fetchTripPhotos, splitTrip, deleteHotel, deleteFlight 
 import { SwipeToDelete } from '../components/SwipeToDelete';
 import type { TripPhoto } from '../lib/queries';
 import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, PlaneIcon, EditIcon } from '../components/Icons';
+import { AirlineLogo } from '../components/AirlineLogo';
 import { DestinationPhoto } from '../components/DestinationPhoto';
 const TripMap = lazy(() => import('../components/TripMap').then((m) => ({ default: m.TripMap })));
 import { destinationQuery } from '../components/TripCard';
@@ -170,12 +171,10 @@ export function TripDetail() {
                 </div>
               ) : (
                 <div key={`f-${leg.data.id}`} onClick={() => navigate('/log-flight', { state: { flight: leg.data, tripId: trip.id } })} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, background: 'var(--card)', border: '1px solid var(--line)', cursor: 'pointer' }}>
-                  <span style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--card2)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                    <PlaneIcon size={17} color="var(--ink2)" />
-                  </span>
+                  <AirlineLogo flightNo={leg.data.flightNo} airline={leg.data.airline} size={34} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13.5, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {leg.data.from} → {leg.data.to}
+                      {leg.data.from}{leg.data.departureTime ? ` ${leg.data.departureTime}` : ''} → {leg.data.to}{leg.data.arrivalTime ? ` ${leg.data.arrivalTime}` : ''}
                       {leg.role && (
                         <span style={{ fontSize: 9.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--brand)', background: 'rgba(30,58,143,.08)', borderRadius: 99, padding: '2px 7px' }}>
                           {leg.role}
@@ -191,9 +190,6 @@ export function TripDetail() {
               )
             )}
           </div>
-          {sortedFlights.length > 0 && (
-            <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 8 }}>Departure/arrival times aren't tracked yet — only the date.</div>
-          )}
         </div>
       )}
 

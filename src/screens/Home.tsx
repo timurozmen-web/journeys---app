@@ -10,6 +10,7 @@ import { destinationQuery } from '../components/TripCard';
 import { HeroScene } from '../components/HeroScene';
 import { withLiveOverrides } from '../lib/walletValue';
 import { tripDayInfo } from '../lib/tripDay';
+import { AirlineLogo } from '../components/AirlineLogo';
 
 function daysBetween(a: string, b: string) {
   return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000);
@@ -177,7 +178,6 @@ export function Home() {
   const nextFlight = heroTrip
     ? [...heroTrip.flights].filter((f) => f.date && f.date >= TODAY).sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))[0] ?? null
     : null;
-  const flightCode = (nextFlight?.flightNo?.trim().split(/\s+/)[0]?.slice(0, 2) ?? nextFlight?.airline?.slice(0, 2) ?? '').toUpperCase();
 
   const programmeCount = effectiveProgrammes.filter((p) => p.points > 0).length;
 
@@ -282,9 +282,7 @@ export function Home() {
 
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                <span style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--ink)', color: '#fff', fontSize: 10.5, fontWeight: 800, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                  {flightCode || '✈'}
-                </span>
+                <AirlineLogo flightNo={nextFlight.flightNo} airline={nextFlight.airline} size={28} />
                 <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink2)' }}>
                   {nextFlight.airline}{nextFlight.flightNo ? ` · ${nextFlight.flightNo}` : ''}
                 </span>
@@ -294,12 +292,18 @@ export function Home() {
               </span>
             </div>
 
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 14, marginTop: 16 }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 600, letterSpacing: '-.5px', color: 'var(--ink)' }}>{nextFlight.from}</span>
-              <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, var(--ink2), transparent)', position: 'relative' }}>
-                <PlaneIcon size={15} color="var(--ink2)" style={{ position: 'absolute', right: -2, top: -8 }} />
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', gap: 14, marginTop: 16 }}>
+              <span style={{ flex: '0 0 auto' }}>
+                <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 600, letterSpacing: '-.5px', color: 'var(--ink)', lineHeight: 1 }}>{nextFlight.from}</span>
+                {nextFlight.departureTime && <span style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink2)', marginTop: 3 }}>{nextFlight.departureTime}</span>}
               </span>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 600, letterSpacing: '-.5px', color: 'var(--ink)' }}>{nextFlight.to}</span>
+              <span style={{ flex: 1, height: 1, background: 'var(--line)', position: 'relative', marginTop: 17 }}>
+                <PlaneIcon size={16} color="var(--ink2)" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)' }} />
+              </span>
+              <span style={{ flex: '0 0 auto', textAlign: 'right' }}>
+                <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 600, letterSpacing: '-.5px', color: 'var(--ink)', lineHeight: 1 }}>{nextFlight.to}</span>
+                {nextFlight.arrivalTime && <span style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink2)', marginTop: 3 }}>{nextFlight.arrivalTime}</span>}
+              </span>
             </div>
 
             <div style={{ position: 'relative', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 10 }}>

@@ -102,8 +102,8 @@ export function Trips() {
               ))}
             </div>
           ) : (
-            <div style={{ display: 'flex', gap: 10, overflowX: 'auto', padding: '0 20px 4px', scrollbarWidth: 'none' }}>
-              {past.map((t) => (
+            <div style={{ display: 'flex', gap: 10, padding: '0 20px 4px' }}>
+              {past.slice(0, 3).map((t) => (
                 <PastTripCard key={t.id} trip={t} />
               ))}
             </div>

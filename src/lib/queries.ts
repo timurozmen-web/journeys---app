@@ -149,6 +149,7 @@ function mapFlight(f: any): Flight {
     id: f.id, date: f.date, from: f.from, via: f.via ?? [], to: f.to,
     airline: f.airline, flightNo: f.flight_no, cabin: f.cabin, status: f.status,
     cost: f.cost, award: f.award, overnight: f.overnight ?? false,
+    departureTime: f.departure_time ?? null, arrivalTime: f.arrival_time ?? null,
   };
 }
 
@@ -293,13 +294,14 @@ export interface NewFlightInput {
   date: string; from: string; to: string; airline: string; flightNo: string | null;
   cabin: 'Economy' | 'Premium Economy' | 'Business' | 'First';
   status: 'Completed' | 'Booked' | 'needs-confirm'; cost: number | null; award: boolean; overnight: boolean;
-  tripId: string | null;
+  tripId: string | null; departureTime: string | null; arrivalTime: string | null;
 }
 export async function addFlight(input: NewFlightInput) {
   const { error } = await supabase.from('flights').insert({
     date: input.date, from: input.from.toUpperCase(), to: input.to.toUpperCase(),
     airline: input.airline, flight_no: input.flightNo, cabin: input.cabin,
     status: input.status, cost: input.cost, award: input.award, overnight: input.overnight, trip_id: input.tripId,
+    departure_time: input.departureTime, arrival_time: input.arrivalTime,
   });
   if (error) throw error;
 }
@@ -309,6 +311,7 @@ export async function updateFlight(id: string, input: NewFlightInput) {
     date: input.date, from: input.from.toUpperCase(), to: input.to.toUpperCase(),
     airline: input.airline, flight_no: input.flightNo, cabin: input.cabin,
     status: input.status, cost: input.cost, award: input.award, overnight: input.overnight, trip_id: input.tripId,
+    departure_time: input.departureTime, arrival_time: input.arrivalTime,
   }).eq('id', id);
   if (error) throw error;
 }

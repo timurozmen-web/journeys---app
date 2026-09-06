@@ -46,6 +46,7 @@ export function LogFlight() {
     status: (src?.status ?? (src?.date && src.date > TODAY ? 'Booked' : 'Completed')) as (typeof STATUSES)[number],
     cost: src?.cost != null ? String(src.cost) : '',
     award: src?.award ?? false, overnight: src?.overnight ?? false, tripId: presetTripId ?? '',
+    departureTime: src?.departureTime ?? '', arrivalTime: src?.arrivalTime ?? '',
   });
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -73,7 +74,7 @@ export function LogFlight() {
         date: form.date, from: form.from, to: form.to, airline: form.airline,
         flightNo: form.flightNo || null, cabin: form.cabin, status: form.status,
         cost: form.cost ? parseFloat(form.cost) : null, award: form.award, overnight: form.overnight,
-        tripId: form.tripId || null,
+        tripId: form.tripId || null, departureTime: form.departureTime || null, arrivalTime: form.arrivalTime || null,
       };
       if (editing) {
         await updateFlight(editing.id, payload);
@@ -125,6 +126,16 @@ export function LogFlight() {
             <label style={labelStyle}>To *</label>
             <input style={inputStyle} list="known-to" value={form.to} onChange={(e) => set('to', e.target.value.toUpperCase())} placeholder="JFK" maxLength={3} />
             <datalist id="known-to">{knownTo.map((c) => <option key={c} value={c} />)}</datalist>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
+          <div>
+            <label style={labelStyle}>Departs (optional)</label>
+            <input style={inputStyle} type="time" value={form.departureTime} onChange={(e) => set('departureTime', e.target.value)} />
+          </div>
+          <div>
+            <label style={labelStyle}>Arrives (optional)</label>
+            <input style={inputStyle} type="time" value={form.arrivalTime} onChange={(e) => set('arrivalTime', e.target.value)} />
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>

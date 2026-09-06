@@ -344,7 +344,7 @@ export function Plan() {
           date: startDate, from: homeAirport, to: airportFor(cities[0])!,
           airline: 'TBC', flightNo: null, cabin: 'Economy', status: 'needs-confirm',
           cost: Math.round(Math.max(60, outboundKm * 0.11)),
-          award: false, overnight: false, tripId,
+          award: false, overnight: false, tripId, departureTime: null, arrivalTime: null,
         });
       }
       for (let i = 0; i < legs.length; i++) {
@@ -355,14 +355,14 @@ export function Plan() {
         await addFlight({
           date: cityDates[i + 1].checkIn!, from: fromAirport, to: toAirport,
           airline: 'TBC', flightNo: null, cabin: 'Economy', status: 'needs-confirm',
-          cost: Math.round(legs[i].estimatedCostGBP), award: false, overnight: false, tripId,
+          cost: Math.round(legs[i].estimatedCostGBP), award: false, overnight: false, tripId, departureTime: null, arrivalTime: null,
         });
       }
       if (home && airportFor(cities[cities.length - 1])) {
         await addFlight({
           date: endDate, from: airportFor(cities[cities.length - 1])!, to: homeAirport,
           airline: 'TBC', flightNo: null, cabin: 'Economy', status: 'needs-confirm',
-          cost: Math.round(Math.max(60, returnKm * 0.11)), award: false, overnight: false, tripId,
+          cost: Math.round(Math.max(60, returnKm * 0.11)), award: false, overnight: false, tripId, departureTime: null, arrivalTime: null,
         });
       }
 

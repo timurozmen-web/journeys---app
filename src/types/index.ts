@@ -42,6 +42,8 @@ export interface Flight {
   cost: number | null;
   award: boolean;
   overnight: boolean; // true if this flight itself covers a night (long-haul, no hotel needed that night)
+  departureTime: string | null; // "HH:MM", local to departure airport
+  arrivalTime: string | null; // "HH:MM", local to arrival airport
 }
 
 export interface LoyaltyProgramme {
