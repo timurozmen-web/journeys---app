@@ -326,7 +326,7 @@ export function TripDetail() {
         {seg === 'notes' && <p style={{ fontSize: 13.5, color: 'var(--ink2)' }}>{trip.notes || 'No notes yet.'}</p>}
       </div>
 
-      {gaps.length > 0 && (
+      {trip.tripType === 'leisure' && gaps.length > 0 && (
         <>
           <div className="sect">
             <h2>Missing nights</h2>

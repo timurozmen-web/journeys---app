@@ -23,6 +23,13 @@ const PROGRAM_WALLET_NAME: Record<ProgramId, string> = {
   BA: 'British Airways Executive Club', QR: 'Qatar Privilege Club', QF: 'Qantas Frequent Flyer', KF: 'KrisFlyer / PPS Club',
 };
 
+// Major UK airports -- used to infer whether the outbound leg departs
+// the UK (affects BA's tax-exclusion estimate) directly from the route
+// already being entered, rather than asking for it again separately.
+const UK_AIRPORTS = new Set([
+  'LHR', 'LGW', 'LCY', 'LTN', 'STN', 'MAN', 'BHX', 'EDI', 'GLA', 'BRS', 'NCL', 'LPL', 'LBA', 'BFS', 'BHD', 'ABZ', 'SOU', 'EMA', 'CWL', 'EXT', 'NWI', 'INV',
+]);
+
 export function CreditAdvisor() {
   const navigate = useNavigate();
   const { data: programmes } = useLoyaltyProgrammes();
@@ -38,7 +45,6 @@ export function CreditAdvisor() {
   const [fareLevel, setFareLevel] = useState<FareLevel>('standard');
   const [fareLevelTouched, setFareLevelTouched] = useState(false);
   const [price, setPrice] = useState('');
-  const [ukDeparture, setUkDeparture] = useState(true);
   const [tiers, setTiers] = useState<Partial<Record<ProgramId, string>>>({});
 
   // Prefill elite tiers from the wallet, once, where the person already
@@ -73,6 +79,7 @@ export function CreditAdvisor() {
   }
 
   const effectiveDistance = distanceMiles ?? (manualDistance ? parseInt(manualDistance, 10) : null);
+  const ukDeparture = UK_AIRPORTS.has(from.trim().toUpperCase());
 
   const advisor = useMemo(() => {
     if (!effectiveDistance || effectiveDistance <= 0) return null;
@@ -157,23 +164,9 @@ export function CreditAdvisor() {
           <input style={inputStyle} type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Only needed for BA's spend-based earning" />
         </div>
 
-        {carrier === 'BA' && (
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--ink2)' }}>
-            <input type="checkbox" checked={ukDeparture} onChange={(e) => setUkDeparture(e.target.checked)} />
-            Departing the UK (affects BA's tax-exclusion estimate)
-          </label>
-        )}
-
-        <div>
-          <label style={labelStyle}>Elite tier held</label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 10 }}>
-            {(['BA', 'QR', 'QF', 'KF'] as ProgramId[]).map((p) => (
-              <select key={p} style={inputStyle} value={tiers[p] ?? PROGRAM_TIERS[p][0]} onChange={(e) => setTiers((t) => ({ ...t, [p]: e.target.value }))}>
-                {PROGRAM_TIERS[p].map((t) => <option key={t} value={t}>{p} · {t}</option>)}
-              </select>
-            ))}
-          </div>
-        </div>
+        <p style={{ fontSize: 12, color: 'var(--ink2)', lineHeight: 1.5, margin: 0 }}>
+          Elite tiers are read from your programmes in the wallet — keep those up to date and this stays accurate automatically.
+        </p>
       </div>
 
       {advisor && <Results advisor={advisor} />}

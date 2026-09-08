@@ -298,7 +298,7 @@ export function Home() {
                 {nextFlight.departureTime && <span style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink2)', marginTop: 3 }}>{nextFlight.departureTime}</span>}
               </span>
               <span style={{ flex: 1, height: 1, background: 'var(--line)', position: 'relative', marginTop: 17 }}>
-                <PlaneIcon size={16} color="var(--ink2)" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)' }} />
+                <PlaneIcon size={16} color="var(--ink2)" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%) scaleX(-1)' }} />
               </span>
               <span style={{ flex: '0 0 auto', textAlign: 'right' }}>
                 <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 600, letterSpacing: '-.5px', color: 'var(--ink)', lineHeight: 1 }}>{nextFlight.to}</span>

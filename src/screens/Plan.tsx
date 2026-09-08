@@ -445,11 +445,6 @@ export function Plan() {
         <div>
           <label style={labelStyle}>Departure date</label>
           <input type="date" style={inputStyle} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-          {startDate && tripEndDate && (
-            <div style={{ fontSize: 11.5, color: 'var(--ink3)', marginTop: 4 }}>
-              Returns {tripEndDate} · every stop's dates below are worked out from this
-            </div>
-          )}
         </div>
 
         <button

@@ -81,6 +81,26 @@ export async function addLoyaltyProgramme(input: NewLoyaltyProgrammeInput) {
   if (error) throw error;
 }
 
+// Settings preferences (e.g. airline elite status) update the matching
+// programme's tier in place if it's already tracked in the wallet, or
+// create a minimal placeholder row if it isn't -- so "Where to credit"
+// can always read a real tier from one place instead of asking again.
+export async function setProgrammeTier(name: string, tier: string, category: 'hotel' | 'airline') {
+  const { data: existing, error: findErr } = await supabase.from('loyalty_programmes').select('id').eq('name', name).maybeSingle();
+  if (findErr) throw findErr;
+  if (existing) {
+    const { error } = await supabase.from('loyalty_programmes').update({ tier }).eq('id', existing.id);
+    if (error) throw error;
+  } else {
+    const abbr = name.split(' ').filter((w) => w.length > 2 && w[0] === w[0].toUpperCase()).map((w) => w[0]).join('').slice(0, 4) || name.slice(0, 3).toUpperCase();
+    const { error } = await supabase.from('loyalty_programmes').insert({
+      name, abbr, points: 0, pt_value: 0, color: '#1E3A8F', accent: '#3E5FCB', font: 'default', shape: 'orbit',
+      tier, next_tier: null, nights: null, nights_needed: null, nights_baseline_date: null, category,
+    });
+    if (error) throw error;
+  }
+}
+
 export async function updateTrip(id: string, input: NewTripInput) {
   const today = new Date().toISOString().slice(0, 10);
   const { error } = await supabase

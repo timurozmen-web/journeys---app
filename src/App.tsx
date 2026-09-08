@@ -4,6 +4,7 @@ import { Home } from './screens/Home';
 import { Trips } from './screens/Trips';
 import { Wallet } from './screens/Wallet';
 import { Profile } from './screens/Profile';
+import { Settings } from './screens/Settings';
 import { TripDetail } from './screens/TripDetail';
 import { Action } from './screens/Action';
 import { Discover } from './screens/Discover';
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/trips/:id" element={<TripDetail />} />
           <Route path="/wallet" element={<Wallet />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/log-hotel" element={<LogHotel />} />
           <Route path="/log-flight" element={<LogFlight />} />
           <Route path="/log-trip" element={<LogTrip />} />

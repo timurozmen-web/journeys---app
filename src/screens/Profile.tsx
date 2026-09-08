@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useReviews, useAllHotels, useAllFlights, useTrips } from '../lib/useLiveData';
 import { findHotelsNeedingReview } from '../lib/reviewScoring';
 import { flightDistanceKm, estimateFlightHours } from '../lib/travelStats';
+import { SettingsIcon } from '../components/Icons';
 const WorldMap = lazy(() => import('../components/WorldMap').then((m) => ({ default: m.WorldMap })));
 
 const CATEGORIES = [
@@ -153,6 +154,13 @@ export function Profile() {
               {firstYear ? `Travelling since ${firstYear}` : 'Traveller'} · {reviews.filter((r) => r.category === 'overall').length} reviews
             </div>
           </div>
+          <button
+            onClick={() => navigate('/settings')}
+            aria-label="Settings"
+            style={{ width: 38, height: 38, borderRadius: '50%', border: '1px solid var(--line)', background: 'var(--card)', display: 'grid', placeItems: 'center', flexShrink: 0, cursor: 'pointer' }}
+          >
+            <SettingsIcon size={19} color="var(--ink2)" />
+          </button>
         </div>
         <div style={{ display: 'flex', marginTop: 20, paddingBottom: 16, borderBottom: '1px solid var(--line)' }}>
           <div style={{ flex: 1 }}>

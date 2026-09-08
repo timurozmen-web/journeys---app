@@ -39,6 +39,9 @@ export const ProfileIcon = wrap(
 export const PlanIcon = wrap(
   '<circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.2 13 13l-3.8 1.8L11 11z"/>'
 );
+export const SettingsIcon = wrap(
+  '<circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.6M12 18.4V21M21 12h-2.6M5.6 12H3M18.4 5.6l-1.9 1.9M7.5 16.5l-1.9 1.9M18.4 18.4l-1.9-1.9M7.5 7.5 5.6 5.6"/>'
+);
 
 // Filled variants -- bolder, solid silhouettes for the bottom tab bar,
 // matching a more app-native look than the thin-stroke set above.
