@@ -1,7 +1,7 @@
 // Stand-in for what Supabase will return once Phase 2 is wired up.
 // Same shape as the real query results — swapping this for a real
 // `supabase.from('trips').select()` call later is mechanical, not a rewrite.
-import type { Trip, LoyaltyProgramme, PaymentCard, Review } from '../types';
+import type { Trip, LoyaltyProgramme, PaymentCard, Review, DiscoverItem } from '../types';
 
 export const trips: Trip[] = [
   {
@@ -59,4 +59,34 @@ export const reviews: Review[] = [
   { id: 'rev5', hotelId: 'r5', hotelName: 'Marriott Marble Arch', country: 'United Kingdom', date: '2026-07', category: 'overall', score: 9.4 },
   { id: 'rev6', hotelId: 'r6', hotelName: 'Hilton Dalaman', country: 'Türkiye', date: '2026-07', category: 'overall', score: 8.6 },
   { id: 'rev7', hotelId: 'r7', hotelName: 'Courtyard London City', country: 'United Kingdom', date: '2026-07', category: 'overall', score: 5.8 },
+];
+
+// Real, researched items (not fabricated) -- used as both the offline
+// fallback and the basis for the initial live seed. See the Discover
+// screen for how these render.
+export const discoverItems: DiscoverItem[] = [
+  {
+    id: 'dis1', category: 'card_bonus', title: 'IHG x Revolut debit cards -- launch bonus',
+    summary: 'IHG partnered with Revolut on two UK debit cards (Essential, free; Elite, £18/month) with instant elite status. The launch bonus window has now closed.',
+    detail: 'Essential: free, Silver Elite status, 5 Elite Night Credits/year, 5,000 bonus points for £1,000 spend in the first 3 months (launch offer, ended 25 Aug 2026). Elite: £18/month, Platinum Elite status, 15 Elite Night Credits/year, spend-triggered bonuses at £10k/£15k/£25k/£35k annually, Diamond Elite at £35k spend. Since you already hold IHG One Rewards, this is worth knowing about for next time IHG runs a similar offer.',
+    source: 'Head for Points', sourceUrl: 'https://www.headforpoints.com/2026/06/30/ihg-revolut-debit-cards-launched/',
+    deadline: '2026-08-25', relatedProgramme: 'IHG One Rewards', annualFee: 'Free / £18 per month (Elite)', headlineStat: 'Up to 30,000 points',
+    createdAt: '2026-06-30',
+  },
+  {
+    id: 'dis2', category: 'new_card', title: 'Post Office launches a travel credit card',
+    summary: 'No annual fee, 0% foreign transaction fees, and 6 months 0% interest on purchases. Representative APR 34.9% (variable).',
+    detail: 'Issued with Capital One. No fee to buy Post Office Travel Money with the card (3% cash advance fee applies everywhere else). Aimed at everyday overseas spending rather than points-earning -- no loyalty programme attached, so it sits outside your wallet by design, but worth knowing about as a fee-free option.',
+    source: 'Which?', sourceUrl: 'https://www.which.co.uk/news/article/post-office-launches-new-travel-credit-card-is-it-any-good-aS5kK3J2zHg2',
+    deadline: null, relatedProgramme: null, annualFee: 'None', headlineStat: '0% FX fees',
+    createdAt: '2026-05-18',
+  },
+  {
+    id: 'dis3', category: 'loyalty_news', title: 'British Airways Executive Club is now "The British Airways Club"',
+    summary: 'BA rebranded and overhauled its loyalty programme in 2025: tier points now earn from spend rather than flight segments, and the membership year runs 1 April - 31 March for everyone.',
+    detail: 'If you\u2019re tracking this programme by its old name, the underlying account and Avios/Tier Points are unaffected -- it\u2019s a rebrand plus an earning-model change, not a new programme. Worth a skim if your BA status renewal date or earning rate looks different to what you expect.',
+    source: 'One Mile at a Time', sourceUrl: 'https://onemileatatime.com/news/the-british-airways-club/',
+    deadline: null, relatedProgramme: 'British Airways Executive Club', annualFee: null, headlineStat: null,
+    createdAt: '2025-04-01',
+  },
 ];

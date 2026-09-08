@@ -25,7 +25,7 @@ export function TabBar() {
         }}
       >
         <div style={{ width: 36, height: 4, borderRadius: 99, background: 'var(--line)', margin: '0 auto 14px' }} />
-        <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--ink)', marginBottom: 12 }}>What are we doing?</div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 600, color: 'var(--ink)', marginBottom: 12 }}>What are we doing?</div>
         <div style={{ display: 'grid', gap: 8 }}>
           {RADIAL.map((r) => (
             <button

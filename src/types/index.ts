@@ -110,6 +110,23 @@ export interface Voucher {
   sourceKey: string | null; // stable key for auto-synced card vouchers, prevents duplicate creation
 }
 
+export type DiscoverCategory = 'new_card' | 'card_bonus' | 'loyalty_news';
+
+export interface DiscoverItem {
+  id: string;
+  category: DiscoverCategory;
+  title: string;
+  summary: string;
+  detail: string | null;
+  source: string;
+  sourceUrl: string | null;
+  deadline: string | null;
+  relatedProgramme: string | null; // matches a loyalty_programmes.name, for wallet intelligence
+  annualFee: string | null;
+  headlineStat: string | null;
+  createdAt: string;
+}
+
 export type PromoType = 'multiplier' | 'threshold_bonus' | 'fixed_discount' | 'status_boost' | 'airline_partner' | 'other';
 
 export interface Promotion {

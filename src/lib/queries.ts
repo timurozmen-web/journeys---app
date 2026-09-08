@@ -1,7 +1,7 @@
 // Real Supabase queries. Same shape as src/data/mock.ts, so components
 // don't need to change when they switch from mock data to this.
 import { supabase } from './supabase';
-import type { Trip, Hotel, Flight, LoyaltyProgramme, PaymentCard, Review, Voucher, Promotion, PromoType } from '../types';
+import type { Trip, Hotel, Flight, LoyaltyProgramme, PaymentCard, Review, Voucher, Promotion, PromoType, DiscoverItem } from '../types';
 
 export async function fetchTrips(): Promise<Trip[]> {
   const { data: trips, error } = await supabase.from('trips').select('*');
@@ -487,6 +487,29 @@ export async function acceptPromotionCandidate(candidate: PromotionCandidate) {
 
 export async function dismissPromotionCandidate(id: string) {
   const { error } = await supabase.from('promotion_scan_candidates').update({ dismissed: true }).eq('id', id);
+  if (error) throw error;
+}
+
+// Discover feed -- curated travel/loyalty news (new card launches, existing
+// card bonuses, general programme news). Seeded manually/periodically
+// rather than a live scraper (no backend job exists in this app), but
+// reads and dismiss-state work exactly like any other live data here.
+export async function fetchDiscoverItems(): Promise<DiscoverItem[]> {
+  const { data, error } = await supabase
+    .from('discover_items')
+    .select('*')
+    .eq('dismissed', false)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((d) => ({
+    id: d.id, category: d.category, title: d.title, summary: d.summary, detail: d.detail,
+    source: d.source, sourceUrl: d.source_url, deadline: d.deadline, relatedProgramme: d.related_programme,
+    annualFee: d.annual_fee, headlineStat: d.headline_stat, createdAt: d.created_at,
+  }));
+}
+
+export async function dismissDiscoverItem(id: string) {
+  const { error } = await supabase.from('discover_items').update({ dismissed: true }).eq('id', id);
   if (error) throw error;
 }
 
