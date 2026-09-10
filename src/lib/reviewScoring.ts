@@ -53,14 +53,18 @@ export function findHotelsNeedingReview(
   today: string
 ): HotelNeedingReview[] {
   const overallReviews = reviews.filter((r) => r.category === 'overall');
-  const reviewedHotelIds = new Set(overallReviews.map((r) => r.hotelId).filter(Boolean));
   const reviewCountByName = new Map<string, number>();
   for (const r of overallReviews) {
     const key = r.hotelName.trim().toLowerCase();
     reviewCountByName.set(key, (reviewCountByName.get(key) ?? 0) + 1);
   }
 
-  const result: HotelNeedingReview[] = [];
+  // Group every genuinely-finished stay by property, oldest first. Matching
+  // by name+count rather than by hotel_id, since most historically-imported
+  // reviews predate this app's hotel records and don't have a reliable id
+  // link -- id matching alone left almost nothing recognised as "already
+  // reviewed" and flagged every past stay at once.
+  const stopsByProperty = new Map<string, { trip: (typeof trips)[number]; hotel: (typeof trips)[number]['hotels'][number] }[]>();
   for (const trip of trips) {
     for (const h of trip.hotels) {
       if (h.status !== 'Completed') continue;
@@ -68,11 +72,24 @@ export function findHotelsNeedingReview(
       // end date, since a stay can genuinely finish mid-trip.
       const checkOut = new Date(new Date(h.date + 'T00:00:00').getTime() + h.nights * 86400000).toISOString().slice(0, 10);
       if (checkOut > today) continue;
-      if (reviewedHotelIds.has(h.id)) continue; // this exact stay already reviewed
       const key = h.name.trim().toLowerCase();
-      if ((reviewCountByName.get(key) ?? 0) >= MAX_REVIEWS_PER_PROPERTY) continue; // property's score is settled
-      result.push({ tripId: trip.id, tripTitle: trip.title, hotelId: h.id, hotelName: h.name, country: h.country, date: h.date });
+      const arr = stopsByProperty.get(key) ?? [];
+      arr.push({ trip, hotel: h });
+      stopsByProperty.set(key, arr);
     }
+  }
+
+  const result: HotelNeedingReview[] = [];
+  for (const [key, stops] of stopsByProperty) {
+    const reviewedCount = reviewCountByName.get(key) ?? 0;
+    if (reviewedCount >= MAX_REVIEWS_PER_PROPERTY) continue; // property's score is settled
+    if (reviewedCount >= stops.length) continue; // no stay beyond what's already been reviewed
+    // Only the next chronologically-unreviewed stay -- not every stay past
+    // the reviewed count at once, so a property with several old
+    // never-reviewed stays prompts one at a time instead of all together.
+    const sorted = [...stops].sort((a, b) => a.hotel.date.localeCompare(b.hotel.date));
+    const next = sorted[reviewedCount];
+    result.push({ tripId: next.trip.id, tripTitle: next.trip.title, hotelId: next.hotel.id, hotelName: next.hotel.name, country: next.hotel.country, date: next.hotel.date });
   }
   return result;
 }

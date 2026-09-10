@@ -214,12 +214,13 @@ export function Profile() {
         </div>
       )}
 
-      <div style={{ padding: '18px 20px 4px', display: 'flex', justifyContent: 'flex-end' }}>
+      <div className="sect" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2>{year === 'all' ? 'All time' : year} at a glance</h2>
         <select
           value={year === 'all' ? 'all' : String(year)}
           onChange={(e) => setYear(e.target.value === 'all' ? 'all' : Number(e.target.value))}
           style={{
-            padding: '7px 12px', borderRadius: 99, border: '1px solid var(--line)', background: 'var(--card)',
+            padding: '6px 11px', borderRadius: 99, border: '1px solid var(--line)', background: 'var(--card)',
             color: 'var(--ink)', fontSize: 12.5, fontWeight: 700, font: 'inherit', cursor: 'pointer',
           }}
         >
@@ -229,8 +230,6 @@ export function Profile() {
           ))}
         </select>
       </div>
-
-      <div className="sect"><h2>{year === 'all' ? 'All time' : year} at a glance</h2></div>
       <div className="stack">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <StatTile label="Stays" value={totalStays.toLocaleString()} />
