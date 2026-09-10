@@ -33,7 +33,6 @@ export function WorldMap({
   hotels: Hotel[]; flights: Flight[]; reviews: Review[]; focusCountries?: string[] | null;
 }) {
   const [showRoutes, setShowRoutes] = useState(false);
-  const [year, setYear] = useState<'all' | number>('all');
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [selected, setSelected] = useState<string | null>(null);
@@ -77,23 +76,15 @@ export function WorldMap({
     // It gets reset on the next pointerdown instead.
   }
 
-  const years = useMemo(() => {
-    const set = new Set<number>();
-    for (const h of hotels) if (h.date) set.add(Number(h.date.slice(0, 4)));
-    for (const f of flights) if (f.date) set.add(Number(f.date.slice(0, 4)));
-    return [...set].sort((a, b) => b - a);
-  }, [hotels, flights]);
-
   const nightsByCountry = useMemo(() => {
     const m = new Map<string, number>();
     for (const h of hotels) {
       if (!h.date || !h.country) continue;
-      if (year !== 'all' && Number(h.date.slice(0, 4)) !== year) continue;
       const key = normalizeCountry(h.country.trim());
       m.set(key, (m.get(key) ?? 0) + (h.nights || 1));
     }
     return m;
-  }, [hotels, year]);
+  }, [hotels]);
 
   const maxNights = Math.max(1, ...nightsByCountry.values());
 
@@ -101,7 +92,6 @@ export function WorldMap({
     const lines: { d: string; key: string }[] = [];
     for (const f of flights) {
       if (!f.date) continue;
-      if (year !== 'all' && Number(f.date.slice(0, 4)) !== year) continue;
       const a = AIRPORTS[f.from];
       const b = AIRPORTS[f.to];
       if (!a || !b) continue;
@@ -113,13 +103,12 @@ export function WorldMap({
       lines.push({ d: `M${p1[0]},${p1[1]} Q${mx},${my} ${p2[0]},${p2[1]}`, key: `${f.id}` });
     }
     return lines;
-  }, [flights, year]);
+  }, [flights]);
 
   const airportDots = useMemo(() => {
     const used = new Set<string>();
     for (const f of flights) {
       if (!f.date) continue;
-      if (year !== 'all' && Number(f.date.slice(0, 4)) !== year) continue;
       used.add(f.from);
       used.add(f.to);
     }
@@ -131,7 +120,7 @@ export function WorldMap({
       if (p) dots.push({ x: p[0], y: p[1], code });
     }
     return dots;
-  }, [flights, year]);
+  }, [flights]);
 
   // Top-rated place logged in the selected country, from real review
   // scores -- not a separate estimate, the same ranking already used on
@@ -139,13 +128,11 @@ export function WorldMap({
   const selectedDetail = useMemo(() => {
     if (!selected) return null;
     const nights = nightsByCountry.get(selected) ?? 0;
-    const inCountry = reviews.filter(
-      (r) => normalizeCountry(r.country.trim()) === selected && (year === 'all' || Number(r.date.slice(0, 4)) === year)
-    );
-    const stayCount = new Set(hotels.filter((h) => h.date && normalizeCountry(h.country.trim()) === selected && (year === 'all' || Number(h.date.slice(0, 4)) === year)).map((h) => h.id)).size;
+    const inCountry = reviews.filter((r) => normalizeCountry(r.country.trim()) === selected);
+    const stayCount = new Set(hotels.filter((h) => h.date && normalizeCountry(h.country.trim()) === selected).map((h) => h.id)).size;
     const topPlaces = [...inCountry].sort((a, b) => b.score - a.score).slice(0, 3);
     return { nights, stayCount, topPlaces };
-  }, [selected, nightsByCountry, reviews, hotels, year]);
+  }, [selected, nightsByCountry, reviews, hotels]);
 
   function zoomBy(factor: number) {
     setZoom((z) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z * factor)));
@@ -216,31 +203,6 @@ export function WorldMap({
         >
           Routes
         </button>
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto' }}>
-          <button
-            onClick={() => setYear('all')}
-            style={{
-              flexShrink: 0, padding: '6px 12px', borderRadius: 99, border: '1px solid var(--line)',
-              background: year === 'all' ? 'var(--brand)' : 'var(--card2)', color: year === 'all' ? '#fff' : 'var(--ink2)',
-              fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
-            }}
-          >
-            All
-          </button>
-          {years.map((y) => (
-            <button
-              key={y}
-              onClick={() => setYear(y)}
-              style={{
-                flexShrink: 0, padding: '6px 12px', borderRadius: 99, border: '1px solid var(--line)',
-                background: year === y ? 'var(--brand)' : 'var(--card2)', color: year === y ? '#fff' : 'var(--ink2)',
-                fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
-              }}
-            >
-              {y}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div style={{ position: 'relative' }}>

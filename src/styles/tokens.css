@@ -1,22 +1,14 @@
-/* Self-hosted variable fonts -- Latin subset only (this app is
-   English-only). Two families again, per explicit visual reference:
-   Fraunces (serif, standard optical axis -- no wonk/soft quirkiness,
-   kept classic/editorial) carries headlines and hero moments; Geist
-   (sans) carries body copy, labels, and all form controls (browsers
-   don't inherit font onto input/select/button by default). */
+/* Self-hosted variable font -- Latin subset only (this app is
+   English-only). One family everywhere, including form controls
+   (browsers don't inherit font onto input/select/button by default) --
+   per explicit feedback that headline/body font-mixing wasn't wanted,
+   hierarchy comes from size and weight only. */
 @font-face {
   font-family: 'Geist Variable';
   font-style: normal;
   font-display: swap;
   font-weight: 100 900;
   src: url('/fonts/geist-latin-wght-normal.woff2') format('woff2-variations');
-}
-@font-face {
-  font-family: 'Fraunces Variable';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 300 900;
-  src: url('/fonts/fraunces-latin-standard-normal.woff2') format('woff2-variations');
 }
 
 /* Journeys design tokens. Off-white + white two-tone stays; royal
@@ -49,7 +41,7 @@
   --amber: #9C5F08;
 
   --font-body: 'Geist Variable', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
-  --font-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+  --font-display: var(--font-body);
 
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s7: 32px;
   --r-lg: 20px; --r-md: 16px; --r-sm: 12px; --r-xs: 8px;

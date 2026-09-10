@@ -41,10 +41,12 @@ export interface HotelNeedingReview {
 
 // A hotel needs review once its trip has actually finished (not just
 // "past" by section label, which can be stale -- checked against the
-// trip's real end date) and it has no "overall" review logged yet.
-// Matches by hotel_id where available, but falls back to matching by
-// name -- the originally-imported reviews predate this app's own hotel
-// records and may not have a reliable hotel_id link.
+// trip's real end date) and this specific stay hasn't been reviewed yet.
+// Repeat stays at the same property genuinely can trigger a new review
+// (opinions change), capped at 3 reviews total per property -- past that,
+// the property's score is considered settled and stops prompting.
+const MAX_REVIEWS_PER_PROPERTY = 3;
+
 export function findHotelsNeedingReview(
   trips: { id: string; title: string; end: string; hotels: { id: string; name: string; country: string; date: string; nights: number; status: string }[] }[],
   reviews: { hotelId: string | null; hotelName: string; category: string }[],
@@ -52,7 +54,11 @@ export function findHotelsNeedingReview(
 ): HotelNeedingReview[] {
   const overallReviews = reviews.filter((r) => r.category === 'overall');
   const reviewedHotelIds = new Set(overallReviews.map((r) => r.hotelId).filter(Boolean));
-  const reviewedHotelNames = new Set(overallReviews.map((r) => r.hotelName.trim().toLowerCase()));
+  const reviewCountByName = new Map<string, number>();
+  for (const r of overallReviews) {
+    const key = r.hotelName.trim().toLowerCase();
+    reviewCountByName.set(key, (reviewCountByName.get(key) ?? 0) + 1);
+  }
 
   const result: HotelNeedingReview[] = [];
   for (const trip of trips) {
@@ -62,8 +68,9 @@ export function findHotelsNeedingReview(
       // end date, since a stay can genuinely finish mid-trip.
       const checkOut = new Date(new Date(h.date + 'T00:00:00').getTime() + h.nights * 86400000).toISOString().slice(0, 10);
       if (checkOut > today) continue;
-      if (reviewedHotelIds.has(h.id)) continue;
-      if (reviewedHotelNames.has(h.name.trim().toLowerCase())) continue;
+      if (reviewedHotelIds.has(h.id)) continue; // this exact stay already reviewed
+      const key = h.name.trim().toLowerCase();
+      if ((reviewCountByName.get(key) ?? 0) >= MAX_REVIEWS_PER_PROPERTY) continue; // property's score is settled
       result.push({ tripId: trip.id, tripTitle: trip.title, hotelId: h.id, hotelName: h.name, country: h.country, date: h.date });
     }
   }

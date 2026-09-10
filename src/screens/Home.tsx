@@ -229,7 +229,7 @@ export function Home() {
 
             <span style={{ position: 'absolute', top: 16, left: 20, right: 60, color: '#fff' }}>
               <span style={{ display: 'block', fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', opacity: 0.85 }}>{fmtFullDate(TODAY)}</span>
-              <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, letterSpacing: '-.2px', marginTop: 2 }}>Good {timeOfDay()}, Timur</span>
+              <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 800, letterSpacing: '-.2px', marginTop: 2 }}>Good {timeOfDay()}, Timur</span>
             </span>
 
             <span style={{ position: 'absolute', right: 16, top: 16, width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,.2)', border: '1px solid rgba(255,255,255,.4)', display: 'grid', placeItems: 'center' }}>
@@ -240,7 +240,7 @@ export function Home() {
               <span style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '.1em', background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.3)', borderRadius: 99, padding: '5px 11px', backdropFilter: 'blur(6px)', marginBottom: 12 }}>
                 {heroIsCurrent ? `Current trip · Day ${heroDayInfo!.dayIndex} of ${heroDayInfo!.totalDays}` : `Upcoming · ${heroDaysToGo} day${heroDaysToGo === 1 ? '' : 's'} to go`}
               </span>
-              <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 38, fontWeight: 600, letterSpacing: '-.3px', lineHeight: 1.05 }}>{heroTrip.title}</span>
+              <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 800, letterSpacing: '-.6px', lineHeight: 1.05 }}>{heroTrip.title}</span>
               <span style={{ display: 'block', fontSize: 13, fontWeight: 600, opacity: 0.9, marginTop: 6 }}>{fmtDate(heroTrip.start)} – {fmtDate(heroTrip.end)}</span>
             </span>
 
@@ -258,7 +258,7 @@ export function Home() {
         ) : (
           <div style={{ padding: '10px 2px 4px' }}>
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)' }}>{fmtFullDate(TODAY)}</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-.2px', color: 'var(--ink)', marginTop: 3 }}>Good {timeOfDay()}, Timur</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 25, fontWeight: 800, letterSpacing: '-.4px', color: 'var(--ink)', marginTop: 3 }}>Good {timeOfDay()}, Timur</div>
           </div>
         )}
       </div>

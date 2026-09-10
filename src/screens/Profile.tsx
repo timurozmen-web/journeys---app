@@ -1,9 +1,9 @@
-import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useMemo, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useReviews, useAllHotels, useAllFlights, useTrips } from '../lib/useLiveData';
 import { findHotelsNeedingReview } from '../lib/reviewScoring';
 import { flightDistanceKm, estimateFlightHours } from '../lib/travelStats';
-import { SettingsIcon } from '../components/Icons';
+import { SettingsIcon, StarIcon } from '../components/Icons';
 const WorldMap = lazy(() => import('../components/WorldMap').then((m) => ({ default: m.WorldMap })));
 
 const CATEGORIES = [
@@ -34,39 +34,6 @@ function rankBadge(rank: number) {
 export function Profile() {
   const navigate = useNavigate();
   const [cat, setCat] = useState('overall');
-  const mapAnchorRef = useRef<HTMLDivElement>(null);
-  const mapCardRef = useRef<HTMLDivElement>(null);
-  const [mapPinned, setMapPinned] = useState(false);
-  const [mapWidth, setMapWidth] = useState(0);
-  const [mapCardHeight, setMapCardHeight] = useState(0);
-
-  useEffect(() => {
-    function onScroll() {
-      const anchor = mapAnchorRef.current;
-      const card = mapCardRef.current;
-      if (!anchor || !card) return;
-      const anchorTop = anchor.getBoundingClientRect().top;
-      if (!mapPinned) {
-        // Not yet pinned: measure the card's natural size/position before switching.
-        const rect = card.getBoundingClientRect();
-        if (rect.top <= 8) {
-          setMapWidth(rect.width);
-          setMapCardHeight(rect.height);
-          setMapPinned(true);
-        }
-      } else if (anchorTop > 8) {
-        // Scrolled back up past the anchor's natural position: unpin.
-        setMapPinned(false);
-      }
-    }
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-    };
-  }, [mapPinned]);
 
   const [sortMode, setSortMode] = useState<SortMode>('score');
   const [regionFilter, setRegionFilter] = useState<string | null>(null);
@@ -133,13 +100,36 @@ export function Profile() {
   const categoryReviews = filteredReviews
     .filter((r) => r.category === cat)
     .filter((r) => !regionFilter || regionFor(r.country) === regionFilter);
+
+  // Rank by property, not by individual review -- a re-reviewed hotel's
+  // score is the average of its (up to 3) reviews, since opinions can
+  // genuinely change on a second or third stay rather than the latest
+  // review just overwriting the story.
+  type RankedProperty = { key: string; hotelName: string; country: string; avgScore: number; reviewCount: number; latestDate: string; latestId: string };
+  const grouped = useMemo(() => {
+    const m = new Map<string, RankedProperty>();
+    for (const r of categoryReviews) {
+      const key = r.hotelName.trim().toLowerCase();
+      const existing = m.get(key);
+      if (existing) {
+        const totalScore = existing.avgScore * existing.reviewCount + r.score;
+        existing.reviewCount += 1;
+        existing.avgScore = totalScore / existing.reviewCount;
+        if (r.date > existing.latestDate) { existing.latestDate = r.date; existing.latestId = r.id; }
+      } else {
+        m.set(key, { key, hotelName: r.hotelName, country: r.country, avgScore: r.score, reviewCount: 1, latestDate: r.date, latestId: r.id });
+      }
+    }
+    return [...m.values()];
+  }, [categoryReviews]);
+
   const sorted = useMemo(() => {
-    const arr = [...categoryReviews];
-    if (sortMode === 'score') arr.sort((a, b) => b.score - a.score);
-    else if (sortMode === 'recent') arr.sort((a, b) => (b.date > a.date ? 1 : -1));
+    const arr = [...grouped];
+    if (sortMode === 'score') arr.sort((a, b) => b.avgScore - a.avgScore);
+    else if (sortMode === 'recent') arr.sort((a, b) => (b.latestDate > a.latestDate ? 1 : -1));
     else arr.sort((a, b) => a.hotelName.localeCompare(b.hotelName));
     return arr;
-  }, [categoryReviews, sortMode]);
+  }, [grouped, sortMode]);
   const visible = showAll ? sorted : sorted.slice(0, SHOW_INITIALLY);
 
   return (
@@ -149,7 +139,7 @@ export function Profile() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{ width: 54, height: 54, borderRadius: 18, background: 'var(--brand)', display: 'grid', placeItems: 'center', fontSize: 20, fontWeight: 700, flexShrink: 0, color: '#fff', fontFamily: 'var(--font-display)' }}>T</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 600, letterSpacing: '-.3px', color: 'var(--ink)' }}>Timur</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 23, fontWeight: 800, letterSpacing: '-.5px', color: 'var(--ink)' }}>Timur</div>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink2)', marginTop: 2 }}>
               {firstYear ? `Travelling since ${firstYear}` : 'Traveller'} · {reviews.filter((r) => r.category === 'overall').length} reviews
             </div>
@@ -187,60 +177,58 @@ export function Profile() {
         </div>
       </div>
 
-      <div style={{ padding: '18px 20px 4px' }}>
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto' }}>
-          <button
-            onClick={() => setYear('all')}
-            style={{
-              flexShrink: 0, padding: '6px 14px', borderRadius: 99, border: '1px solid var(--line)',
-              background: year === 'all' ? 'var(--brand)' : 'var(--card2)', color: year === 'all' ? '#fff' : 'var(--ink2)',
-              fontSize: 12, fontWeight: 700, cursor: 'pointer',
-            }}
-          >
-            All time
-          </button>
-          {years.map((y) => (
-            <button
-              key={y}
-              onClick={() => setYear(y)}
-              style={{
-                flexShrink: 0, padding: '6px 14px', borderRadius: 99, border: '1px solid var(--line)',
-                background: year === y ? 'var(--brand)' : 'var(--card2)', color: year === y ? '#fff' : 'var(--ink2)',
-                fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              }}
-            >
-              {y}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {needsReview.length > 0 && (
-        <div style={{ padding: '16px 20px 0' }}>
-          <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>
+        <div style={{ padding: '18px 0 0' }}>
+          <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8, padding: '0 20px' }}>
             Outstanding
           </div>
-          <div style={{ display: 'grid', gap: 8 }}>
+          <div style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '0 20px', scrollbarWidth: 'none' }}>
             {needsReview.map((h) => (
               <button
                 key={h.hotelId}
                 onClick={() => navigate('/review-trip', { state: { hotel: h } })}
                 style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
-                  padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(30,58,143,.15)',
-                  background: 'rgba(30,58,143,.05)', textAlign: 'left', cursor: 'pointer', width: '100%',
+                  flex: '0 0 100%', width: '100%', scrollSnapAlign: 'start', textAlign: 'left', cursor: 'pointer', font: 'inherit',
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px', borderRadius: 18,
+                  border: '1px solid var(--line)', background: 'var(--card)', boxShadow: '0 4px 14px rgba(23,23,28,.06)',
                 }}
               >
-                <div>
-                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>Rate your stay at {h.hotelName}</div>
-                  <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 2 }}>{h.tripTitle} · {h.date}</div>
-                </div>
-                <span style={{ color: 'var(--brand)', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>Rate ›</span>
+                <span style={{ width: 42, height: 42, borderRadius: 13, background: 'var(--brand)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                  <StarIcon size={20} color="#fff" />
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' }}>Rate your stay at {h.hotelName}</span>
+                  <span style={{ display: 'block', fontSize: 11.5, color: 'var(--ink2)', marginTop: 2 }}>{h.tripTitle} · {h.date}</span>
+                </span>
+                <span style={{ flexShrink: 0, fontSize: 12.5, fontWeight: 800, color: '#fff', background: 'var(--brand)', borderRadius: 99, padding: '7px 14px' }}>Rate</span>
               </button>
             ))}
           </div>
+          {needsReview.length > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 8 }}>
+              {needsReview.map((h) => (
+                <span key={h.hotelId} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--line)' }} />
+              ))}
+            </div>
+          )}
         </div>
       )}
+
+      <div style={{ padding: '18px 20px 4px', display: 'flex', justifyContent: 'flex-end' }}>
+        <select
+          value={year === 'all' ? 'all' : String(year)}
+          onChange={(e) => setYear(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+          style={{
+            padding: '7px 12px', borderRadius: 99, border: '1px solid var(--line)', background: 'var(--card)',
+            color: 'var(--ink)', fontSize: 12.5, fontWeight: 700, font: 'inherit', cursor: 'pointer',
+          }}
+        >
+          <option value="all">All time</option>
+          {years.map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+      </div>
 
       <div className="sect"><h2>{year === 'all' ? 'All time' : year} at a glance</h2></div>
       <div className="stack">
@@ -252,16 +240,8 @@ export function Profile() {
         </div>
       </div>
 
-      <div className="stack" ref={mapAnchorRef}>
-        {mapPinned && <div style={{ height: mapCardHeight }} />}
-        <div
-          className="card"
-          ref={mapCardRef}
-          style={{
-            padding: 0, overflow: 'hidden', boxShadow: '0 6px 18px rgba(23,23,28,.12)',
-            ...(mapPinned ? { position: 'fixed', top: 8, left: 20, width: mapWidth, zIndex: 5 } : {}),
-          }}
-        >
+      <div className="stack" style={{ marginTop: 18 }}>
+        <div className="card" style={{ padding: 0, overflow: 'hidden', boxShadow: '0 6px 18px rgba(23,23,28,.12)' }}>
           <div style={{ padding: '16px 16px 4px' }}>
             <div style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 600 }}>Countries visited</div>
             <div style={{ fontSize: 26, fontWeight: 800 }}>{visitedCountries.size}</div>
@@ -333,10 +313,10 @@ export function Profile() {
             key={mode}
             onClick={() => setSortMode(mode)}
             style={{
-              padding: '5px 12px', borderRadius: 99, fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
-              border: sortMode === mode ? '1px solid var(--brand)' : '1px solid var(--line)',
-              background: sortMode === mode ? 'rgba(30,58,143,.08)' : 'var(--card)',
-              color: sortMode === mode ? 'var(--brand)' : 'var(--ink2)',
+              padding: '6px 14px', borderRadius: 99, fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
+              border: sortMode === mode ? 'none' : '1px solid var(--line)',
+              background: sortMode === mode ? 'var(--brand)' : 'var(--card)',
+              color: sortMode === mode ? '#fff' : 'var(--ink2)',
             }}
           >
             {label}
@@ -344,7 +324,7 @@ export function Profile() {
         ))}
       </div>
 
-      <div className="stack">
+      <div className="stack" style={{ marginTop: 14 }}>
         <div style={{ display: 'grid', gap: 8 }}>
           {sorted.length === 0 && (
             <div style={{ padding: '14px 4px', fontSize: 12.5, color: 'var(--ink3)' }}>No reviews yet in this category.</div>
@@ -352,7 +332,6 @@ export function Profile() {
           {visible.map((r, i) => {
             const rank = sortMode === 'score' ? i + 1 : null;
             const badge = rank ? rankBadge(rank) : null;
-            const reviewCount = reviews.filter((rv) => rv.category === 'overall' && rv.hotelName.trim().toLowerCase() === r.hotelName.trim().toLowerCase()).length;
             // Most recent completed stay at this hotel across every trip --
             // a re-review reflects the latest real visit, not necessarily
             // the specific stay that originally triggered the review.
@@ -361,7 +340,7 @@ export function Profile() {
               .sort((a, b) => b.date.localeCompare(a.date))[0];
             return (
               <div
-                key={r.id}
+                key={r.key}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px',
                   borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)',
@@ -383,7 +362,7 @@ export function Profile() {
                     {r.hotelName}
                   </div>
                   <div style={{ fontSize: 11.5, color: 'var(--ink2)', marginTop: 1 }}>
-                    {r.country} · {r.date}{reviewCount > 1 ? ` · reviewed ${reviewCount}x` : ''}
+                    {r.country} · {r.latestDate}{r.reviewCount > 1 ? ` · avg of ${r.reviewCount} reviews` : ''}
                   </div>
                   {mostRecentStay && (
                     <button
@@ -397,10 +376,10 @@ export function Profile() {
                 <div
                   style={{
                     fontSize: 14, fontWeight: 800, flexShrink: 0,
-                    color: r.score >= 6.7 ? 'var(--green)' : r.score >= 3.4 ? 'var(--amber)' : 'var(--red)',
+                    color: r.avgScore >= 6.7 ? 'var(--green)' : r.avgScore >= 3.4 ? 'var(--amber)' : 'var(--red)',
                   }}
                 >
-                  {r.score.toFixed(1)}
+                  {r.avgScore.toFixed(1)}
                 </div>
               </div>
             );

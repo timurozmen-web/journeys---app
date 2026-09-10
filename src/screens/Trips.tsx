@@ -21,7 +21,7 @@ export function Trips() {
   return (
     <div>
       <div style={{ background: 'var(--bg)', height: 'env(safe-area-inset-top, 0px)' }} />
-      <div className="head" style={{ paddingBottom: 14 }}>
+      <div style={{ padding: '20px 20px 14px' }}>
         <div className="h1">Trips</div>
       </div>
       <div style={{ display: 'flex', gap: 8, padding: '0 20px' }}>
@@ -65,7 +65,7 @@ export function Trips() {
                 {isUnderway ? `Under way · Day ${daysDone} of ${totalNights}` : `Upcoming · ${daysOut} day${daysOut === 1 ? '' : 's'} to go`}
               </span>
               <span style={{ position: 'absolute', left: 20, right: 20, bottom: 24, color: '#fff' }}>
-                <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 600, letterSpacing: '-.3px', lineHeight: 1.05 }}>{t.title}</span>
+                <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 800, letterSpacing: '-.6px', lineHeight: 1.05 }}>{t.title}</span>
                 <span style={{ display: 'block', fontSize: 13, fontWeight: 600, opacity: 0.9, marginTop: 6 }}>{formatDateRange(t.start, t.end)}</span>
               </span>
             </button>

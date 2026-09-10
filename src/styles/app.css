@@ -4,11 +4,11 @@
 @keyframes in{from{opacity:0}to{opacity:1}}
 
 .head{padding:calc(env(safe-area-inset-top,0px) + var(--s5)) var(--s5) var(--s4)}
-.h1{font-family:var(--font-display);font-size:26px;font-weight:600;letter-spacing:-.2px;line-height:1.15}
+.h1{font-family:var(--font-display);font-size:25px;font-weight:800;letter-spacing:-.4px;line-height:1.2}
 .h-sub{font-size:14px;color:var(--ink3);margin-top:var(--s1)}
 .sect{display:flex;align-items:baseline;justify-content:space-between;margin:var(--s7) var(--s5) var(--s3);
   padding-top:var(--s5);border-top:1px solid var(--line)}
-.sect h2{font-family:var(--font-display);font-size:19px;font-weight:600;letter-spacing:-.1px}
+.sect h2{font-family:var(--font-display);font-size:19px;font-weight:800;letter-spacing:-.3px}
 .sect a{font-size:13px;font-weight:600;color:var(--brand);text-decoration:none}
 
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s4)}
@@ -93,7 +93,7 @@
   width:36px;height:36px;border-radius:50%;background:rgba(19,34,71,.55);backdrop-filter:blur(8px);
   border:1px solid rgba(255,255,255,.18);display:grid;place-items:center;cursor:pointer;color:#fff}
 .tdtitle{position:absolute;left:20px;right:20px;bottom:16px;color:#fff}
-.tdtitle h1{font-family:var(--font-display);font-size:32px;font-weight:600;letter-spacing:-.3px;text-shadow:0 2px 12px rgba(0,0,0,.4)}
+.tdtitle h1{font-family:var(--font-display);font-size:30px;font-weight:800;letter-spacing:-.5px;text-shadow:0 2px 12px rgba(0,0,0,.4)}
 .tdtitle .s{font-size:13px;font-weight:600;opacity:.92;margin-top:6px;text-shadow:0 1px 8px rgba(0,0,0,.4)}
 .tdbadge{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.1em;
   background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);border-radius:99px;padding:5px 11px;
