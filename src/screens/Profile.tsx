@@ -1,7 +1,7 @@
 import { useState, useMemo, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useReviews, useAllHotels, useAllFlights, useTrips } from '../lib/useLiveData';
-import { findHotelsNeedingReview } from '../lib/reviewScoring';
+import { findHotelsNeedingReview, findHotelsMissingCategories, REVIEW_CATEGORIES } from '../lib/reviewScoring';
 import { flightDistanceKm, estimateFlightHours } from '../lib/travelStats';
 import { SettingsIcon, StarIcon } from '../components/Icons';
 const WorldMap = lazy(() => import('../components/WorldMap').then((m) => ({ default: m.WorldMap })));
@@ -13,6 +13,8 @@ const CATEGORIES = [
   { key: 'facilities', label: 'Facilities' },
   { key: 'food', label: 'Food' },
   { key: 'shower', label: 'Shower' },
+  { key: 'bed', label: 'Bed' },
+  { key: 'room', label: 'Room' },
 ];
 
 type SortMode = 'score' | 'recent' | 'az';
@@ -34,6 +36,7 @@ function rankBadge(rank: number) {
 export function Profile() {
   const navigate = useNavigate();
   const [cat, setCat] = useState('overall');
+  const [expandedHotel, setExpandedHotel] = useState<string | null>(null);
 
   const [sortMode, setSortMode] = useState<SortMode>('score');
   const [regionFilter, setRegionFilter] = useState<string | null>(null);
@@ -46,6 +49,8 @@ export function Profile() {
   const { data: trips } = useTrips();
   const today = new Date().toISOString().slice(0, 10);
   const needsReview = findHotelsNeedingReview(trips, reviews, today);
+  const missingCategories = findHotelsMissingCategories(trips, reviews);
+  const categoryLabel = (key: string) => REVIEW_CATEGORIES.find((c) => c.key === key)?.label ?? key;
 
   const years = useMemo(() => {
     const set = new Set<number>();
@@ -105,7 +110,7 @@ export function Profile() {
   // score is the average of its (up to 3) reviews, since opinions can
   // genuinely change on a second or third stay rather than the latest
   // review just overwriting the story.
-  type RankedProperty = { key: string; hotelName: string; country: string; avgScore: number; reviewCount: number; latestDate: string; latestId: string };
+  type RankedProperty = { key: string; hotelName: string; country: string; avgScore: number; reviewCount: number; latestDate: string; latestId: string; entries: { id: string; date: string; score: number }[] };
   const grouped = useMemo(() => {
     const m = new Map<string, RankedProperty>();
     for (const r of categoryReviews) {
@@ -115,9 +120,10 @@ export function Profile() {
         const totalScore = existing.avgScore * existing.reviewCount + r.score;
         existing.reviewCount += 1;
         existing.avgScore = totalScore / existing.reviewCount;
+        existing.entries.push({ id: r.id, date: r.date, score: r.score });
         if (r.date > existing.latestDate) { existing.latestDate = r.date; existing.latestId = r.id; }
       } else {
-        m.set(key, { key, hotelName: r.hotelName, country: r.country, avgScore: r.score, reviewCount: 1, latestDate: r.date, latestId: r.id });
+        m.set(key, { key, hotelName: r.hotelName, country: r.country, avgScore: r.score, reviewCount: 1, latestDate: r.date, latestId: r.id, entries: [{ id: r.id, date: r.date, score: r.score }] });
       }
     }
     return [...m.values()];
@@ -208,6 +214,47 @@ export function Profile() {
             <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 8 }}>
               {needsReview.map((h) => (
                 <span key={h.hotelId} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--line)' }} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {missingCategories.length > 0 && (
+        <div style={{ padding: '18px 0 0' }}>
+          <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8, padding: '0 20px' }}>
+            Complete your ratings
+          </div>
+          <div style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '0 20px', scrollbarWidth: 'none' }}>
+            {missingCategories.map((m) => (
+              <button
+                key={m.hotelName}
+                onClick={() => navigate('/review-trip', {
+                  state: {
+                    hotel: { tripId: '', tripTitle: '', hotelId: m.hotelId, hotelName: m.hotelName, country: m.country, date: m.date },
+                    onlyCategories: m.missing,
+                  },
+                })}
+                style={{
+                  flex: '0 0 100%', width: '100%', scrollSnapAlign: 'start', textAlign: 'left', cursor: 'pointer', font: 'inherit',
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 16,
+                  border: '1px solid var(--line)', background: 'var(--card)',
+                }}
+              >
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 13.5, fontWeight: 800, color: 'var(--ink)' }}>{m.hotelName}</span>
+                  <span style={{ display: 'block', fontSize: 11.5, color: 'var(--ink2)', marginTop: 2 }}>
+                    Missing: {m.missing.map(categoryLabel).join(', ')}
+                  </span>
+                </span>
+                <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 800, color: 'var(--brand)' }}>Complete ›</span>
+              </button>
+            ))}
+          </div>
+          {missingCategories.length > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 8 }}>
+              {missingCategories.map((m) => (
+                <span key={m.hotelName} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--line)' }} />
               ))}
             </div>
           )}
@@ -340,46 +387,64 @@ export function Profile() {
             return (
               <div
                 key={r.key}
+                onClick={() => setExpandedHotel(expandedHotel === r.key ? null : r.key)}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px',
+                  display: 'flex', flexDirection: 'column', gap: 0, padding: '11px 14px', cursor: 'pointer',
                   borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)',
                 }}
               >
-                {rank && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  {rank && (
+                    <div
+                      style={{
+                        width: 24, height: 24, borderRadius: '50%', flexShrink: 0, display: 'grid', placeItems: 'center',
+                        fontSize: 11, fontWeight: 800,
+                        background: badge ? badge.bg : 'var(--card2)', color: badge ? badge.fg : 'var(--ink3)',
+                      }}
+                    >
+                      {rank}
+                    </div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {r.hotelName}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: 'var(--ink2)', marginTop: 1 }}>
+                      {r.country} · {r.latestDate}{r.reviewCount > 1 ? ` · average rating (${r.reviewCount} reviews)` : ''}
+                    </div>
+                  </div>
                   <div
                     style={{
-                      width: 24, height: 24, borderRadius: '50%', flexShrink: 0, display: 'grid', placeItems: 'center',
-                      fontSize: 11, fontWeight: 800,
-                      background: badge ? badge.bg : 'var(--card2)', color: badge ? badge.fg : 'var(--ink3)',
+                      fontSize: 14, fontWeight: 800, flexShrink: 0,
+                      color: r.avgScore >= 6.7 ? 'var(--green)' : r.avgScore >= 3.4 ? 'var(--amber)' : 'var(--red)',
                     }}
                   >
-                    {rank}
+                    {r.avgScore.toFixed(1)}
+                  </div>
+                </div>
+                {expandedHotel === r.key && (
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--line)', display: 'grid', gap: 6 }}>
+                    {r.entries.length > 1 && (
+                      <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--ink3)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                        Average rating, from {r.entries.length} visits
+                      </div>
+                    )}
+                    {[...r.entries].sort((a, b) => b.date.localeCompare(a.date)).map((e) => (
+                      <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                        <span style={{ color: 'var(--ink2)' }}>{e.date}</span>
+                        <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{e.score.toFixed(1)}</span>
+                      </div>
+                    ))}
+                    {mostRecentStay && (
+                      <button
+                        onClick={(ev) => { ev.stopPropagation(); navigate('/review-trip', { state: { hotel: { tripId: '', tripTitle: '', hotelId: mostRecentStay.id, hotelName: mostRecentStay.name, country: mostRecentStay.country, date: mostRecentStay.date } } } ); }}
+                        style={{ marginTop: 2, background: 'none', border: 'none', color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', padding: 0, textAlign: 'left' }}
+                      >
+                        Review again
+                      </button>
+                    )}
                   </div>
                 )}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {r.hotelName}
-                  </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink2)', marginTop: 1 }}>
-                    {r.country} · {r.latestDate}{r.reviewCount > 1 ? ` · avg of ${r.reviewCount} reviews` : ''}
-                  </div>
-                  {mostRecentStay && (
-                    <button
-                      onClick={() => navigate('/review-trip', { state: { hotel: { tripId: '', tripTitle: '', hotelId: mostRecentStay.id, hotelName: mostRecentStay.name, country: mostRecentStay.country, date: mostRecentStay.date } } })}
-                      style={{ marginTop: 3, background: 'none', border: 'none', color: 'var(--brand)', fontSize: 11, fontWeight: 700, cursor: 'pointer', padding: 0 }}
-                    >
-                      Review again
-                    </button>
-                  )}
-                </div>
-                <div
-                  style={{
-                    fontSize: 14, fontWeight: 800, flexShrink: 0,
-                    color: r.avgScore >= 6.7 ? 'var(--green)' : r.avgScore >= 3.4 ? 'var(--amber)' : 'var(--red)',
-                  }}
-                >
-                  {r.avgScore.toFixed(1)}
-                </div>
               </div>
             );
           })}

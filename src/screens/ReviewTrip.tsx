@@ -35,11 +35,13 @@ const SENTIMENT_CIRCLES: { key: Sentiment; label: string; color: string }[] = [
 export function ReviewTrip() {
   const navigate = useNavigate();
   const location = useLocation();
-  const hotel = (location.state as { hotel?: HotelNeedingReview } | null)?.hotel;
+  const state = location.state as { hotel?: HotelNeedingReview; onlyCategories?: string[] } | null;
+  const hotel = state?.hotel;
   const { data: allReviews } = useReviews();
+  const categories = state?.onlyCategories ? REVIEW_CATEGORIES.filter((c) => state.onlyCategories!.includes(c.key)) : REVIEW_CATEGORIES;
 
   const [step, setStep] = useState(0);
-  const [states, setStates] = useState<CategoryState[]>(REVIEW_CATEGORIES.map(() => freshCategoryState()));
+  const [states, setStates] = useState<CategoryState[]>(categories.map(() => freshCategoryState()));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -54,7 +56,7 @@ export function ReviewTrip() {
     );
   }
 
-  const category = REVIEW_CATEGORIES[step];
+  const category = categories[step];
   const current = states[step];
   const phase: Phase = current.score != null || current.skipped ? 'done' : current.sentiment == null ? 'sentiment' : 'comparing';
 
@@ -106,19 +108,19 @@ export function ReviewTrip() {
   }
 
   async function handleNext() {
-    if (step < REVIEW_CATEGORIES.length - 1) {
+    if (step < categories.length - 1) {
       setStep(step + 1);
       return;
     }
     setSaving(true);
     setError('');
     try {
-      for (let i = 0; i < REVIEW_CATEGORIES.length; i++) {
+      for (let i = 0; i < categories.length; i++) {
         const s = states[i];
         if (s.score == null) continue;
         await addReview({
           hotelId: hotel!.hotelId, hotelName: hotel!.hotelName, country: hotel!.country,
-          date: hotel!.date, category: REVIEW_CATEGORIES[i].key, score: s.score,
+          date: hotel!.date, category: categories[i].key, score: s.score,
         });
       }
       navigate('/profile');
@@ -148,9 +150,9 @@ export function ReviewTrip() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 20px 100px' }}>
         <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, marginBottom: 16, textAlign: 'center' }}>
-          {step + 1} of {REVIEW_CATEGORIES.length}
+          {step + 1} of {categories.length}
         </div>
-        <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 28, textAlign: 'center' }}>{category.label}</div>
+        <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 28, textAlign: 'center', color: 'var(--brand)' }}>{category.label}</div>
 
         {phase === 'sentiment' && (
           <div>
@@ -185,7 +187,7 @@ export function ReviewTrip() {
 
         {phase === 'comparing' && comparisonCandidate && (
           <div>
-            <div style={{ fontSize: 15, fontWeight: 800, textAlign: 'center', marginBottom: 16 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, textAlign: 'center', marginBottom: 16, color: 'var(--brand)' }}>
               Which do you prefer?
             </div>
             <div style={{ position: 'relative', display: 'flex', gap: 10 }}>
@@ -260,7 +262,7 @@ export function ReviewTrip() {
               cursor: saving ? 'default' : 'pointer',
             }}
           >
-            {saving ? 'Saving…' : step < REVIEW_CATEGORIES.length - 1 ? 'Next' : 'Finish'}
+            {saving ? 'Saving…' : step < categories.length - 1 ? 'Next' : 'Finish'}
           </button>
         )}
       </div>

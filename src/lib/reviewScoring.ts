@@ -7,6 +7,8 @@ export const REVIEW_CATEGORIES = [
   { key: 'facilities', label: 'Facilities' },
   { key: 'food', label: 'Food' },
   { key: 'shower', label: 'Shower' },
+  { key: 'bed', label: 'Bed' },
+  { key: 'room', label: 'Room' },
 ];
 
 // Liked -> top band (6-10), not liked -> bottom band (1-5). Intensity
@@ -90,6 +92,55 @@ export function findHotelsNeedingReview(
     const sorted = [...stops].sort((a, b) => a.hotel.date.localeCompare(b.hotel.date));
     const next = sorted[reviewedCount];
     result.push({ tripId: next.trip.id, tripTitle: next.trip.title, hotelId: next.hotel.id, hotelName: next.hotel.name, country: next.hotel.country, date: next.hotel.date });
+  }
+  return result;
+}
+
+// Properties that have at least one category rated but are missing
+// others -- most commonly because a category (like Bed/Room) simply
+// didn't exist yet when the property was originally reviewed, or a
+// category was skipped as N/A at the time. Surfaces the most recent
+// completed stay for that property so "complete this" has a real stay
+// to attach the missing categories to.
+export interface HotelMissingCategories {
+  hotelName: string;
+  country: string;
+  date: string;
+  hotelId: string;
+  missing: string[]; // REVIEW_CATEGORIES keys not yet rated for this property
+}
+
+export function findHotelsMissingCategories(
+  trips: { hotels: { id: string; name: string; country: string; date: string; status: string }[] }[],
+  reviews: { hotelName: string; category: string }[]
+): HotelMissingCategories[] {
+  const ratedCategoriesByName = new Map<string, Set<string>>();
+  for (const r of reviews) {
+    const key = r.hotelName.trim().toLowerCase();
+    const set = ratedCategoriesByName.get(key) ?? new Set<string>();
+    set.add(r.category);
+    ratedCategoriesByName.set(key, set);
+  }
+
+  const allKeys = REVIEW_CATEGORIES.map((c) => c.key);
+  const latestStayByName = new Map<string, { id: string; name: string; country: string; date: string }>();
+  for (const trip of trips) {
+    for (const h of trip.hotels) {
+      if (h.status !== 'Completed') continue;
+      const key = h.name.trim().toLowerCase();
+      const existing = latestStayByName.get(key);
+      if (!existing || h.date > existing.date) latestStayByName.set(key, h);
+    }
+  }
+
+  const result: HotelMissingCategories[] = [];
+  for (const [key, rated] of ratedCategoriesByName) {
+    if (!rated.has('overall')) continue; // never properly reviewed at all -- that's Outstanding's job, not this
+    const missing = allKeys.filter((k) => k !== 'overall' && !rated.has(k));
+    if (missing.length === 0) continue;
+    const stay = latestStayByName.get(key);
+    if (!stay) continue;
+    result.push({ hotelName: stay.name, country: stay.country, date: stay.date, hotelId: stay.id, missing });
   }
   return result;
 }
