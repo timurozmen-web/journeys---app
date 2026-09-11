@@ -51,14 +51,17 @@ const MAX_REVIEWS_PER_PROPERTY = 3;
 
 export function findHotelsNeedingReview(
   trips: { id: string; title: string; end: string; hotels: { id: string; name: string; country: string; date: string; nights: number; status: string }[] }[],
-  reviews: { hotelId: string | null; hotelName: string; category: string }[],
+  reviews: { hotelId: string | null; hotelName: string; category: string; date: string }[],
   today: string
 ): HotelNeedingReview[] {
   const overallReviews = reviews.filter((r) => r.category === 'overall');
   const reviewCountByName = new Map<string, number>();
+  const latestReviewDateByName = new Map<string, string>();
   for (const r of overallReviews) {
     const key = r.hotelName.trim().toLowerCase();
     reviewCountByName.set(key, (reviewCountByName.get(key) ?? 0) + 1);
+    const existing = latestReviewDateByName.get(key);
+    if (!existing || r.date > existing) latestReviewDateByName.set(key, r.date);
   }
 
   // Group every genuinely-finished stay by property, oldest first. Matching
@@ -91,6 +94,22 @@ export function findHotelsNeedingReview(
     // never-reviewed stays prompts one at a time instead of all together.
     const sorted = [...stops].sort((a, b) => a.hotel.date.localeCompare(b.hotel.date));
     const next = sorted[reviewedCount];
+
+    // A repeat stay only earns a re-review once it's genuinely been a
+    // while since the last one -- opinions worth re-checking need real
+    // time to have passed, not just "stayed there again next week".
+    // First-ever review for a property (reviewedCount === 0) skips this
+    // gate entirely, there's nothing to compare against yet.
+    if (reviewedCount > 0) {
+      const lastReviewDate = latestReviewDateByName.get(key);
+      if (lastReviewDate) {
+        const gateDate = new Date(lastReviewDate + 'T00:00:00');
+        gateDate.setMonth(gateDate.getMonth() + 9);
+        const gateDateStr = gateDate.toISOString().slice(0, 10);
+        if (next.hotel.date < gateDateStr) continue; // too soon since the last review -- skip the prompt
+      }
+    }
+
     result.push({ tripId: next.trip.id, tripTitle: next.trip.title, hotelId: next.hotel.id, hotelName: next.hotel.name, country: next.hotel.country, date: next.hotel.date });
   }
   return result;

@@ -81,6 +81,9 @@ export const DiscoverIcon = wrap(
 export const CreditIcon = wrap(
   '<path d="M2.5 8.5 12 3l9.5 5.5-9.5 5.5-9.5-5.5Z"/><path d="M6 11v5.5c0 1.4 2.7 3 6 3s6-1.6 6-3V11"/>'
 );
+export const AlertIcon = wrap(
+  '<circle cx="12" cy="12" r="9"/><path d="M12 7.8v5.6"/><path d="M12 16.6v.01"/>'
+);
 export const StarIcon = wrap(
   '<path d="M12 2.8 14.9 9l6.8.6-5.2 4.5 1.6 6.7-6.1-3.7-6.1 3.7 1.6-6.7-5.2-4.5L11.1 9z"/>'
 );

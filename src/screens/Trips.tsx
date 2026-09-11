@@ -5,6 +5,8 @@ import { TripCard, PastTripCard, destinationQuery } from '../components/TripCard
 import { DestinationPhoto } from '../components/DestinationPhoto';
 import { tripDayInfo } from '../lib/tripDay';
 import { formatDateRange } from '../lib/format';
+import { isTripIncomplete } from '../lib/tripCompleteness';
+import { AlertIcon } from '../components/Icons';
 
 export function Trips() {
   const navigate = useNavigate();
@@ -61,8 +63,15 @@ export function Trips() {
                 <DestinationPhoto query={destinationQuery(t)} seed={t.id} height={340} />
               </span>
               <span style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(21,22,27,.5) 0%,rgba(21,22,27,.05) 30%,rgba(21,22,27,.05) 55%,rgba(21,22,27,.7) 82%,rgba(21,22,27,.94) 100%)' }} />
-              <span style={{ position: 'absolute', top: 18, left: 20, fontSize: 10.5, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '.1em', background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.3)', borderRadius: 99, padding: '5px 11px', backdropFilter: 'blur(6px)' }}>
-                {isUnderway ? `Under way · Day ${daysDone} of ${totalNights}` : `Upcoming · ${daysOut} day${daysOut === 1 ? '' : 's'} to go`}
+              <span style={{ position: 'absolute', top: 18, left: 20, right: 20, display: 'flex', gap: 8 }}>
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '.1em', background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.3)', borderRadius: 99, padding: '5px 11px', backdropFilter: 'blur(6px)' }}>
+                  {isUnderway ? `Under way · Day ${daysDone} of ${totalNights}` : `Upcoming · ${daysOut} day${daysOut === 1 ? '' : 's'} to go`}
+                </span>
+                {isTripIncomplete(t) && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700, color: '#fff', background: 'var(--brand)', borderRadius: 99, padding: '5px 10px 5px 8px', flexShrink: 0 }}>
+                    <AlertIcon size={12} color="#fff" /> Trip incomplete
+                  </span>
+                )}
               </span>
               <span style={{ position: 'absolute', left: 20, right: 20, bottom: 24, color: '#fff' }}>
                 <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 800, letterSpacing: '-.6px', lineHeight: 1.05 }}>{t.title}</span>

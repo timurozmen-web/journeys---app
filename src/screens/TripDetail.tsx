@@ -4,7 +4,7 @@ import { useTrips, useLoyaltyProgrammes, usePromotions } from '../lib/useLiveDat
 import { uploadTripPhoto, fetchTripPhotos, splitTrip, deleteHotel, deleteFlight } from '../lib/queries';
 import { SwipeToDelete } from '../components/SwipeToDelete';
 import type { TripPhoto } from '../lib/queries';
-import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, PlaneIcon, EditIcon } from '../components/Icons';
+import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, PlaneIcon, EditIcon, AlertIcon } from '../components/Icons';
 import { AirlineLogo } from '../components/AirlineLogo';
 import { DestinationPhoto } from '../components/DestinationPhoto';
 const TripMap = lazy(() => import('../components/TripMap').then((m) => ({ default: m.TripMap })));
@@ -13,6 +13,7 @@ import { TripMemories } from '../components/TripMemories';
 import { formatDateRange, formatMoney } from '../lib/format';
 import { computeTripPoints, computeTripSavings, groupDestinations, findGaps, suggestTripSplit } from '../lib/tripStats';
 import { tripDayInfo } from '../lib/tripDay';
+import { checkTripCompleteness, flightSearchUrl, returnFlightSearchUrl, tripGapDescription } from '../lib/tripCompleteness';
 
 type Seg = 'overview' | 'itinerary' | 'expenses' | 'notes';
 
@@ -107,6 +108,14 @@ export function TripDetail() {
     })),
   ].sort((a, b) => a.date.localeCompare(b.date));
 
+  const tripGap = checkTripCompleteness(trip);
+  const gapDestination = trip.title.split(/[·+]/)[0].trim();
+  const gapDateOut = sortedHotels[0]?.date;
+  const gapDateBack = sortedHotels.length ? (() => {
+    const last = sortedHotels[sortedHotels.length - 1];
+    return new Date(new Date(last.date + 'T00:00:00').getTime() + last.nights * 86400000).toISOString().slice(0, 10);
+  })() : undefined;
+
   return (
     <div>
       <div
@@ -152,6 +161,42 @@ export function TripDetail() {
       </div>
 
       {uploadError && <div style={{ padding: '8px 20px', color: 'var(--red)', fontSize: 12.5 }}>{uploadError}</div>}
+
+      {tripGap && (
+        <div style={{ padding: '18px 20px 0' }}>
+          <div style={{ border: '1px solid rgba(30,58,143,.2)', background: 'rgba(30,58,143,.05)', borderRadius: 16, padding: '14px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+              <span style={{ flexShrink: 0, marginTop: 1 }}><AlertIcon size={18} color="var(--brand)" /></span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--ink)' }}>Trip incomplete</div>
+                {tripGapDescription(trip, tripGap).map((note) => (
+                  <div key={note} style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 3 }}>{note}</div>
+                ))}
+                <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                  {tripGap.missingOutbound && gapDateOut && (
+                    <a
+                      href={flightSearchUrl(gapDestination, gapDateOut, tripGap.missingReturn ? gapDateBack : undefined)}
+                      target="_blank" rel="noreferrer"
+                      style={{ fontSize: 12, fontWeight: 700, color: '#fff', background: 'var(--brand)', borderRadius: 99, padding: '7px 13px', textDecoration: 'none' }}
+                    >
+                      Find flights
+                    </a>
+                  )}
+                  {!tripGap.missingOutbound && tripGap.missingReturn && gapDateBack && (
+                    <a
+                      href={returnFlightSearchUrl(gapDestination, gapDateBack)}
+                      target="_blank" rel="noreferrer"
+                      style={{ fontSize: 12, fontWeight: 700, color: '#fff', background: 'var(--brand)', borderRadius: 99, padding: '7px 13px', textDecoration: 'none' }}
+                    >
+                      Find return flight
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {(sortedHotels.length > 0 || sortedFlights.length > 0) && (
         <div style={{ padding: '18px 20px 0' }}>

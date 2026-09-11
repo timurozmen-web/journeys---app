@@ -223,7 +223,7 @@ export function Profile() {
       {missingCategories.length > 0 && (
         <div style={{ padding: '18px 0 0' }}>
           <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8, padding: '0 20px' }}>
-            Complete your ratings
+            Complete your ratings ({missingCategories.length})
           </div>
           <div style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '0 20px', scrollbarWidth: 'none' }}>
             {missingCategories.map((m) => (

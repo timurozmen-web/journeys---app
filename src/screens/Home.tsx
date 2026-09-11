@@ -4,13 +4,14 @@ import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes, usePromoti
 import { computeCardResults } from '../lib/cardMath';
 import { computeStatusProgress } from '../lib/statusProgress';
 import { findHotelsNeedingReview } from '../lib/reviewScoring';
-import { ChevronDownIcon, HotelIcon, PlaneIcon } from '../components/Icons';
+import { ChevronDownIcon, HotelIcon, PlaneIcon, AlertIcon } from '../components/Icons';
 import { getDestinationPhoto } from '../lib/unsplash';
 import { destinationQuery } from '../components/TripCard';
 import { HeroScene } from '../components/HeroScene';
 import { withLiveOverrides } from '../lib/walletValue';
 import { tripDayInfo } from '../lib/tripDay';
 import { AirlineLogo } from '../components/AirlineLogo';
+import { isTripIncomplete } from '../lib/tripCompleteness';
 
 function daysBetween(a: string, b: string) {
   return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000);
@@ -237,8 +238,15 @@ export function Home() {
             </span>
 
             <span style={{ position: 'absolute', left: 20, right: 20, bottom: 62, color: '#fff' }}>
-              <span style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '.1em', background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.3)', borderRadius: 99, padding: '5px 11px', backdropFilter: 'blur(6px)', marginBottom: 12 }}>
-                {heroIsCurrent ? `Current trip · Day ${heroDayInfo!.dayIndex} of ${heroDayInfo!.totalDays}` : `Upcoming · ${heroDaysToGo} day${heroDaysToGo === 1 ? '' : 's'} to go`}
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <span style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '.1em', background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.3)', borderRadius: 99, padding: '5px 11px', backdropFilter: 'blur(6px)' }}>
+                  {heroIsCurrent ? `Current trip · Day ${heroDayInfo!.dayIndex} of ${heroDayInfo!.totalDays}` : `Upcoming · ${heroDaysToGo} day${heroDaysToGo === 1 ? '' : 's'} to go`}
+                </span>
+                {isTripIncomplete(heroTrip) && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700, color: '#fff', background: 'var(--brand)', borderRadius: 99, padding: '5px 10px 5px 8px' }}>
+                    <AlertIcon size={12} color="#fff" /> Trip incomplete
+                  </span>
+                )}
               </span>
               <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 800, letterSpacing: '-.6px', lineHeight: 1.05 }}>{heroTrip.title}</span>
               <span style={{ display: 'block', fontSize: 13, fontWeight: 600, opacity: 0.9, marginTop: 6 }}>{fmtDate(heroTrip.start)} – {fmtDate(heroTrip.end)}</span>
