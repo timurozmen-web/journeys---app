@@ -24,10 +24,7 @@ export function DestinationPhoto({ query, seed, height }: { query: string; seed:
     <div style={{ position: 'relative', height }}>
       <img src={photo.url} alt={query} style={{ width: '100%', height, objectFit: 'cover', display: 'block' }} />
       <a
-        href={photo.photographerUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={(e) => e.stopPropagation()}
+        href={photo.photographerUrl} onClick={(e) => e.stopPropagation()}
         style={{
           position: 'absolute', right: 6, bottom: 4, fontSize: 8.5, color: 'rgba(255,255,255,.85)',
           textShadow: '0 1px 3px rgba(0,0,0,.6)', textDecoration: 'none',

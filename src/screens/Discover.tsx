@@ -88,7 +88,7 @@ export function Discover() {
                     <span style={{ fontSize: 11, color: 'var(--ink3)' }}>Source: {item.source}</span>
                     <div style={{ display: 'flex', gap: 8 }}>
                       {item.sourceUrl && (
-                        <a href={item.sourceUrl} target="_blank" rel="noreferrer" style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink)', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
+                        <a href={item.sourceUrl} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink)', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
                           Read more
                         </a>
                       )}

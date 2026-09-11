@@ -178,18 +178,14 @@ export function TripDetail() {
                 <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
                   {tripGap.missingOutbound && gapDateOut && (
                     <a
-                      href={flightSearchUrl(gapDestination, gapDateOut, tripGap.missingReturn ? gapDateBack : undefined)}
-                      target="_blank" rel="noreferrer"
-                      style={{ fontSize: 12, fontWeight: 700, color: '#fff', background: 'var(--brand)', borderRadius: 99, padding: '7px 13px', textDecoration: 'none' }}
+                      href={flightSearchUrl(gapDestination, gapDateOut, tripGap.missingReturn ? gapDateBack : undefined)} style={{ fontSize: 12, fontWeight: 700, color: '#fff', background: 'var(--brand)', borderRadius: 99, padding: '7px 13px', textDecoration: 'none' }}
                     >
                       Find flights
                     </a>
                   )}
                   {!tripGap.missingOutbound && tripGap.missingReturn && gapDateBack && (
                     <a
-                      href={returnFlightSearchUrl(gapDestination, gapDateBack)}
-                      target="_blank" rel="noreferrer"
-                      style={{ fontSize: 12, fontWeight: 700, color: '#fff', background: 'var(--brand)', borderRadius: 99, padding: '7px 13px', textDecoration: 'none' }}
+                      href={returnFlightSearchUrl(gapDestination, gapDateBack)} style={{ fontSize: 12, fontWeight: 700, color: '#fff', background: 'var(--brand)', borderRadius: 99, padding: '7px 13px', textDecoration: 'none' }}
                     >
                       Find return flight
                     </a>

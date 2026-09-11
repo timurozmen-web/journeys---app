@@ -573,9 +573,7 @@ export function Plan() {
                     href={smartFlightUrl(
                       home?.city ?? 'London', cities[0].city, startDate || null,
                       uniqueCountries.length === 1 ? tripEndDate : null
-                    )}
-                    target="_blank" rel="noopener noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
+                    )} style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
                   >
                     Search <ExternalLinkIcon size={12} color="var(--brand)" />
                   </a>
@@ -632,9 +630,7 @@ export function Plan() {
                         </div>
                       )}
                       <a
-                        href={smartHotelUrl(c.city, c.country, cityDates[i]?.checkIn ?? null, c.nights)}
-                        target="_blank" rel="noopener noreferrer"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', marginTop: 8 }}
+                        href={smartHotelUrl(c.city, c.country, cityDates[i]?.checkIn ?? null, c.nights)} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', marginTop: 8 }}
                       >
                         Search {hotelBrandFilter !== 'any' ? hotelBrandFilter : 'hotels'} <ExternalLinkIcon size={11} color="var(--brand)" />
                       </a>
@@ -657,9 +653,7 @@ export function Plan() {
                       </div>
                       {leg.recommendedMode === 'flight' && (
                         <a
-                          href={smartFlightUrl(cities[i].city, cities[i + 1].city, cityDates[i + 1]?.checkIn ?? null, null)}
-                          target="_blank" rel="noopener noreferrer"
-                          style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'var(--brand)', fontSize: 11, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
+                          href={smartFlightUrl(cities[i].city, cities[i + 1].city, cityDates[i + 1]?.checkIn ?? null, null)} style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'var(--brand)', fontSize: 11, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
                         >
                           Search <ExternalLinkIcon size={11} color="var(--brand)" />
                         </a>
@@ -675,9 +669,7 @@ export function Plan() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700 }}>{cities[cities.length - 1].city} → {home.city}</div>
                   <a
-                    href={smartFlightUrl(cities[cities.length - 1].city, home.city, tripEndDate, null)}
-                    target="_blank" rel="noopener noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
+                    href={smartFlightUrl(cities[cities.length - 1].city, home.city, tripEndDate, null)} style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
                   >
                     Search <ExternalLinkIcon size={12} color="var(--brand)" />
                   </a>
