@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BackIcon } from '../components/Icons';
-import { useLoyaltyProgrammes } from '../lib/useLiveData';
-import { setProgrammeTier } from '../lib/queries';
+import { useLoyaltyProgrammes, useHomeLocation } from '../lib/useLiveData';
+import { setProgrammeTier, setHomeLocation } from '../lib/queries';
 import { BA_TIERS, QR_TIERS, QF_TIERS, KF_TIERS } from '../lib/creditingEngine';
+import { loadWorldCities, type WorldCity } from '../data/worldCitiesLoader';
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 10,
@@ -20,7 +21,29 @@ const AIRLINE_PROGRAMMES = [
 export function Settings() {
   const navigate = useNavigate();
   const { data: programmes, refetch } = useLoyaltyProgrammes();
+  const { data: home, refetch: refetchHome } = useHomeLocation();
   const [saving, setSaving] = useState<string | null>(null);
+  const [cityInput, setCityInput] = useState(home.city);
+  const [cities, setCities] = useState<WorldCity[]>([]);
+  const [homeSaving, setHomeSaving] = useState(false);
+  const [homeSaved, setHomeSaved] = useState(false);
+
+  useEffect(() => { setCityInput(home.city); }, [home.city]);
+  useEffect(() => { loadWorldCities().then(setCities); }, []);
+
+  async function saveHome() {
+    if (!cityInput.trim()) return;
+    setHomeSaving(true);
+    setHomeSaved(false);
+    try {
+      const match = cities.find((c) => c.name.toLowerCase() === cityInput.trim().toLowerCase());
+      await setHomeLocation(match?.name ?? cityInput.trim(), match?.country ?? '');
+      refetchHome();
+      setHomeSaved(true);
+    } finally {
+      setHomeSaving(false);
+    }
+  }
 
   async function onChange(name: string, tier: string, category: 'airline') {
     setSaving(name);
@@ -41,8 +64,40 @@ export function Settings() {
         <div className="h1" style={{ fontSize: 21 }}>Settings</div>
       </div>
 
-      <div style={{ padding: '4px 20px 32px' }}>
+      <div style={{ padding: '4px 20px 24px' }}>
         <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)', marginBottom: 4 }}>
+          Home location
+        </div>
+        <p style={{ fontSize: 12.5, color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
+          Trips close enough to reach without flying (like a short domestic hop) won't be flagged as missing flights.
+        </p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            style={inputStyle}
+            list="settings-cities"
+            value={cityInput}
+            onChange={(e) => { setCityInput(e.target.value); setHomeSaved(false); }}
+            placeholder="e.g. London"
+          />
+          <datalist id="settings-cities">
+            {cities.slice(0, 500).map((c) => <option key={`${c.name}-${c.country}`} value={c.name} />)}
+          </datalist>
+          <button
+            onClick={saveHome}
+            disabled={homeSaving || !cityInput.trim() || cityInput.trim() === home.city}
+            style={{
+              padding: '0 18px', borderRadius: 10, border: 'none', fontSize: 13.5, fontWeight: 800, cursor: 'pointer', flexShrink: 0,
+              background: 'var(--brand)', color: '#fff', opacity: homeSaving || !cityInput.trim() || cityInput.trim() === home.city ? 0.5 : 1,
+            }}
+          >
+            {homeSaving ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+        {homeSaved && <div style={{ fontSize: 11.5, color: 'var(--green)', fontWeight: 700, marginTop: 6 }}>Saved</div>}
+      </div>
+
+      <div style={{ padding: '4px 20px 32px', borderTop: '1px solid var(--line)' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)', marginBottom: 4, marginTop: 20 }}>
           Airline elite status
         </div>
         <p style={{ fontSize: 12.5, color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>

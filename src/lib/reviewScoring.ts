@@ -1,3 +1,5 @@
+import { addDays } from './tripDay';
+
 export type ReviewIntensity = 'mild' | 'strong' | 'extreme';
 
 export const REVIEW_CATEGORIES = [
@@ -75,7 +77,7 @@ export function findHotelsNeedingReview(
       if (h.status !== 'Completed') continue;
       // The stay's own checkout must have passed -- not the whole trip's
       // end date, since a stay can genuinely finish mid-trip.
-      const checkOut = new Date(new Date(h.date + 'T00:00:00').getTime() + h.nights * 86400000).toISOString().slice(0, 10);
+      const checkOut = addDays(h.date, h.nights);
       if (checkOut > today) continue;
       const key = h.name.trim().toLowerCase();
       const arr = stopsByProperty.get(key) ?? [];

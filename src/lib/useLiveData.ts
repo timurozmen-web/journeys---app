@@ -4,7 +4,7 @@
 // and rows exist.
 import { useCallback, useEffect, useState } from 'react';
 import * as mock from '../data/mock';
-import { fetchTrips, fetchLoyaltyProgrammes, fetchPaymentCards, fetchReviews, fetchAllHotels, fetchAllFlights, fetchVouchers, fetchPromotions, fetchBankConnections, fetchUnreviewedBankTransactions, fetchPromotionCandidates, fetchDiscoverItems } from './queries';
+import { fetchTrips, fetchLoyaltyProgrammes, fetchPaymentCards, fetchReviews, fetchAllHotels, fetchAllFlights, fetchVouchers, fetchPromotions, fetchBankConnections, fetchUnreviewedBankTransactions, fetchPromotionCandidates, fetchDiscoverItems, fetchHomeLocation } from './queries';
 
 function useLive<T>(fetcher: () => Promise<T[]>, fallback: T[]) {
   const [data, setData] = useState<T[]>(fallback);
@@ -33,6 +33,36 @@ function useLive<T>(fetcher: () => Promise<T[]>, fallback: T[]) {
   return { data, isLive, refetch: load };
 }
 
+// Same idea as useLive, but for a single-object fetch (e.g. one row of
+// preferences) rather than a list -- useLive's "rows.length > 0" check
+// doesn't apply to a plain object/null result.
+function useLiveSingle<T>(fetcher: () => Promise<T | null>, fallback: T) {
+  const [data, setData] = useState<T>(fallback);
+  const [isLive, setIsLive] = useState(false);
+
+  const load = useCallback(() => {
+    let cancelled = false;
+    fetcher()
+      .then((row) => {
+        if (cancelled) return;
+        if (row != null) {
+          setData(row);
+          setIsLive(true);
+        }
+      })
+      .catch(() => {
+        // table doesn't exist yet, or user isn't signed in — stay on fallback
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetcher]);
+
+  useEffect(() => load(), [load]);
+
+  return { data, isLive, refetch: load };
+}
+
 export const useTrips = () => useLive(fetchTrips, mock.trips);
 export const useLoyaltyProgrammes = () => useLive(fetchLoyaltyProgrammes, mock.loyaltyProgrammes);
 export const usePaymentCards = () => useLive(fetchPaymentCards, mock.paymentCards);
@@ -45,3 +75,4 @@ export const useBankConnections = () => useLive(fetchBankConnections, []);
 export const useUnreviewedBankTransactions = () => useLive(fetchUnreviewedBankTransactions, []);
 export const usePromotionCandidates = () => useLive(fetchPromotionCandidates, []);
 export const useDiscoverItems = () => useLive(fetchDiscoverItems, mock.discoverItems);
+export const useHomeLocation = () => useLiveSingle(fetchHomeLocation, { city: 'London', country: 'United Kingdom' });

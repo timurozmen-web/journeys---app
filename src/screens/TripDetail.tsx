@@ -12,8 +12,9 @@ import { destinationQuery } from '../components/TripCard';
 import { TripMemories } from '../components/TripMemories';
 import { formatDateRange, formatMoney } from '../lib/format';
 import { computeTripPoints, computeTripSavings, groupDestinations, findGaps, suggestTripSplit } from '../lib/tripStats';
-import { tripDayInfo } from '../lib/tripDay';
+import { tripDayInfo, addDays } from '../lib/tripDay';
 import { checkTripCompleteness, flightSearchUrl, returnFlightSearchUrl, tripGapDescription } from '../lib/tripCompleteness';
+import { useFlightExemptTripIds } from '../lib/homeLocation';
 
 type Seg = 'overview' | 'itinerary' | 'expenses' | 'notes';
 
@@ -89,7 +90,7 @@ export function TripDetail() {
   // The hotel actually being stayed at right now, for a trip under way.
   const stayingNow = trip.section === 'current'
     ? trip.hotels.find((h) => {
-        const checkOut = new Date(new Date(h.date + 'T00:00:00').getTime() + h.nights * 86400000).toISOString().slice(0, 10);
+        const checkOut = addDays(h.date, h.nights);
         return h.date <= TODAY && TODAY < checkOut;
       }) ?? null
     : null;
@@ -109,11 +110,13 @@ export function TripDetail() {
   ].sort((a, b) => a.date.localeCompare(b.date));
 
   const tripGap = checkTripCompleteness(trip);
+  const flightExemptTripIds = useFlightExemptTripIds(trips);
+  const showTripGap = tripGap && !flightExemptTripIds.has(trip.id);
   const gapDestination = trip.title.split(/[·+]/)[0].trim();
   const gapDateOut = sortedHotels[0]?.date;
   const gapDateBack = sortedHotels.length ? (() => {
     const last = sortedHotels[sortedHotels.length - 1];
-    return new Date(new Date(last.date + 'T00:00:00').getTime() + last.nights * 86400000).toISOString().slice(0, 10);
+    return addDays(last.date, last.nights);
   })() : undefined;
 
   return (
@@ -162,7 +165,7 @@ export function TripDetail() {
 
       {uploadError && <div style={{ padding: '8px 20px', color: 'var(--red)', fontSize: 12.5 }}>{uploadError}</div>}
 
-      {tripGap && (
+      {showTripGap && tripGap && (
         <div style={{ padding: '18px 20px 0' }}>
           <div style={{ border: '1px solid rgba(30,58,143,.2)', background: 'rgba(30,58,143,.05)', borderRadius: 16, padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>

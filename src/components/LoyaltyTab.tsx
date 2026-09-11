@@ -242,7 +242,7 @@ export function LoyaltyTab({
                     )}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                       {progress.brandExplorer.brandsStayed.map((b) => (
-                        <span key={b} style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 99, background: 'rgba(91,63,166,.1)', color: 'var(--brand)' }}>
+                        <span key={b} style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 99, background: 'rgba(30,58,143,.1)', color: 'var(--brand)' }}>
                           {b}
                         </span>
                       ))}

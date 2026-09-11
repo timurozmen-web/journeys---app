@@ -1,4 +1,5 @@
 import type { Hotel, LoyaltyProgramme } from '../types';
+import { addDays } from './tripDay';
 
 // Real base earning rates per programme, per £1 spent on qualifying stays.
 // These are the published base rates -- the elite bonus is applied on top
@@ -75,7 +76,7 @@ export function computeWalletValueChange(
   vouchers: { value: number | null; redeemed: boolean; redeemedDate: string | null }[],
   today: string
 ): WalletValueChange {
-  const windowStart = new Date(new Date(today).getTime() - 30 * 86400000).toISOString().slice(0, 10);
+  const windowStart = addDays(today, -30);
   let pointsValueEarned = 0;
   let sawActivity = false;
 

@@ -6,11 +6,13 @@ import { DestinationPhoto } from '../components/DestinationPhoto';
 import { tripDayInfo } from '../lib/tripDay';
 import { formatDateRange } from '../lib/format';
 import { isTripIncomplete } from '../lib/tripCompleteness';
+import { useFlightExemptTripIds } from '../lib/homeLocation';
 import { AlertIcon } from '../components/Icons';
 
 export function Trips() {
   const navigate = useNavigate();
   const { data: allTrips } = useTrips();
+  const flightExemptTripIds = useFlightExemptTripIds(allTrips);
   const [tripType, setTripType] = useState<'work' | 'leisure'>('leisure');
   const [pastExpanded, setPastExpanded] = useState(false);
   const trips = allTrips.filter((t) => t.tripType === tripType);
@@ -67,7 +69,7 @@ export function Trips() {
                 <span style={{ fontSize: 10.5, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '.1em', background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.3)', borderRadius: 99, padding: '5px 11px', backdropFilter: 'blur(6px)' }}>
                   {isUnderway ? `Under way · Day ${daysDone} of ${totalNights}` : `Upcoming · ${daysOut} day${daysOut === 1 ? '' : 's'} to go`}
                 </span>
-                {isTripIncomplete(t) && (
+                {isTripIncomplete(t) && !flightExemptTripIds.has(t.id) && (
                   <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700, color: '#fff', background: 'var(--brand)', borderRadius: 99, padding: '5px 10px 5px 8px', flexShrink: 0 }}>
                     <AlertIcon size={12} color="#fff" /> Trip incomplete
                   </span>

@@ -75,7 +75,7 @@ export function CitySearchInput({
               key={c.name}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 5px 4px 10px',
-                borderRadius: 99, background: 'rgba(91,63,166,.08)', border: '1px solid var(--brand)',
+                borderRadius: 99, background: 'rgba(30,58,143,.08)', border: '1px solid var(--brand)',
                 fontSize: 12, fontWeight: 700, color: 'var(--brand)',
               }}
             >
@@ -135,7 +135,7 @@ export function CitySearchInput({
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 13, color: 'var(--ink)' }}>{l.name}</span>
                 <span style={{
-                  fontSize: 9.5, fontWeight: 700, color: 'var(--brand)', background: 'rgba(91,63,166,.1)',
+                  fontSize: 9.5, fontWeight: 700, color: 'var(--brand)', background: 'rgba(30,58,143,.1)',
                   padding: '1px 6px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '.04em',
                 }}>
                   {l.category}

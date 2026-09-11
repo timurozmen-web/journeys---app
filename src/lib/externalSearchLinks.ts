@@ -5,6 +5,8 @@
 // since neither service offers one -- worth a quick confirm that these
 // still open correctly, as Google doesn't guarantee the format long-term.
 
+import { addDays } from './tripDay';
+
 export type StopsFilter = 'any' | 'nonstop' | 'one-stop';
 export type CabinFilter = 'any' | 'economy' | 'premium-economy' | 'business' | 'first';
 export type AllianceFilter = 'any' | 'star-alliance' | 'oneworld' | 'skyteam';
@@ -75,9 +77,8 @@ function googleHotelsSearchUrlBranded(brand: string, city: string, country: stri
 export function googleHotelsSearchUrl(city: string, country: string, checkIn: string | null, nights: number | null): string {
   let query = `Hotels in ${city}, ${country}`;
   if (checkIn && nights) {
-    const checkInDate = new Date(checkIn + 'T00:00:00');
-    const checkOutDate = new Date(checkInDate.getTime() + nights * 86400000);
-    query += ` ${checkIn} to ${checkOutDate.toISOString().slice(0, 10)}`;
+    const checkOutDate = addDays(checkIn, nights);
+    query += ` ${checkIn} to ${checkOutDate}`;
   }
   return `https://www.google.com/travel/hotels?q=${encodeURIComponent(query)}`;
 }

@@ -111,7 +111,7 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
                         style={{
                           padding: '4px 10px', borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: 'pointer',
                           border: spendIsUK === opt.v ? '1px solid var(--brand)' : '1px solid var(--line)',
-                          background: spendIsUK === opt.v ? 'rgba(91,63,166,.08)' : 'var(--card)',
+                          background: spendIsUK === opt.v ? 'rgba(30,58,143,.08)' : 'var(--card)',
                           color: spendIsUK === opt.v ? 'var(--brand)' : 'var(--ink3)',
                         }}
                       >

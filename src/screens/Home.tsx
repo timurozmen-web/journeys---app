@@ -9,9 +9,10 @@ import { getDestinationPhoto } from '../lib/unsplash';
 import { destinationQuery } from '../components/TripCard';
 import { HeroScene } from '../components/HeroScene';
 import { withLiveOverrides } from '../lib/walletValue';
-import { tripDayInfo } from '../lib/tripDay';
+import { tripDayInfo, addDays } from '../lib/tripDay';
 import { AirlineLogo } from '../components/AirlineLogo';
 import { isTripIncomplete } from '../lib/tripCompleteness';
+import { useFlightExemptTripIds } from '../lib/homeLocation';
 
 function daysBetween(a: string, b: string) {
   return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000);
@@ -52,6 +53,7 @@ export function Home() {
   const actionScrollRef = useRef<HTMLDivElement>(null);
   const TODAY = new Date().toISOString().slice(0, 10);
   const { data: trips } = useTrips();
+  const flightExemptTripIds = useFlightExemptTripIds(trips);
   const { data: hotels } = useAllHotels();
   const { data: flights } = useAllFlights();
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
@@ -165,7 +167,7 @@ export function Home() {
   const heroHotel = heroTrip
     ? heroIsCurrent
       ? heroTrip.hotels.find((h) => {
-          const checkOut = new Date(new Date(h.date + 'T00:00:00').getTime() + h.nights * 86400000).toISOString().slice(0, 10);
+          const checkOut = addDays(h.date, h.nights);
           return h.date <= TODAY && TODAY < checkOut;
         }) ?? null
       : [...heroTrip.hotels].sort((a, b) => a.date.localeCompare(b.date))[0] ?? null
@@ -242,7 +244,7 @@ export function Home() {
                 <span style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '.1em', background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.3)', borderRadius: 99, padding: '5px 11px', backdropFilter: 'blur(6px)' }}>
                   {heroIsCurrent ? `Current trip · Day ${heroDayInfo!.dayIndex} of ${heroDayInfo!.totalDays}` : `Upcoming · ${heroDaysToGo} day${heroDaysToGo === 1 ? '' : 's'} to go`}
                 </span>
-                {isTripIncomplete(heroTrip) && (
+                {isTripIncomplete(heroTrip) && !flightExemptTripIds.has(heroTrip.id) && (
                   <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700, color: '#fff', background: 'var(--brand)', borderRadius: 99, padding: '5px 10px 5px 8px' }}>
                     <AlertIcon size={12} color="#fff" /> Trip incomplete
                   </span>

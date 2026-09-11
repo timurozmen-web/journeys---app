@@ -3,6 +3,7 @@ import { DestinationPhoto } from './DestinationPhoto';
 import { formatDateRange } from '../lib/format';
 import { BedIcon, HotelIcon, PlaneIcon } from './Icons';
 import type { Trip } from '../types';
+import { addDays } from '../lib/tripDay';
 
 function nightsOf(t: Trip) {
   return t.hotels.reduce((s, h) => s + h.nights, 0);
@@ -16,7 +17,7 @@ export function relevantHotel(t: Trip): Trip['hotels'][number] | null {
   if (t.section === 'current') {
     const today = new Date().toISOString().slice(0, 10);
     const ongoing = sorted.find((h) => {
-      const checkOut = new Date(new Date(h.date + 'T00:00:00').getTime() + h.nights * 86400000).toISOString().slice(0, 10);
+      const checkOut = addDays(h.date, h.nights);
       return h.date <= today && today < checkOut;
     });
     if (ongoing) return ongoing;

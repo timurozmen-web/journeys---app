@@ -83,7 +83,7 @@ export function LogLoyaltyProgramme() {
                 style={{
                   flex: 1, padding: '10px 0', borderRadius: 10, fontSize: 13.5, fontWeight: 700, cursor: 'pointer',
                   border: form.category === c ? '2px solid var(--brand)' : '1px solid var(--line)',
-                  background: form.category === c ? 'rgba(91,63,166,.08)' : 'var(--card)',
+                  background: form.category === c ? 'rgba(30,58,143,.08)' : 'var(--card)',
                   color: form.category === c ? 'var(--brand)' : 'var(--ink)',
                 }}
               >

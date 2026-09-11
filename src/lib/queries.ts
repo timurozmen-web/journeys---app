@@ -1,6 +1,7 @@
 // Real Supabase queries. Same shape as src/data/mock.ts, so components
 // don't need to change when they switch from mock data to this.
 import { supabase } from './supabase';
+import { addDays } from './tripDay';
 import type { Trip, Hotel, Flight, LoyaltyProgramme, PaymentCard, Review, Voucher, Promotion, PromoType, DiscoverItem } from '../types';
 
 export async function fetchTrips(): Promise<Trip[]> {
@@ -133,7 +134,7 @@ export async function deleteTrip(id: string) {
  * logged as one continuous journey but was actually two separate ones.
  */
 export async function splitTrip(tripId: string, splitDate: string, newTitle: string, originalEnd: string, tripType: 'work' | 'leisure'): Promise<string> {
-  const dayBefore = new Date(new Date(splitDate + 'T00:00:00').getTime() - 86400000).toISOString().slice(0, 10);
+  const dayBefore = addDays(splitDate, -1);
 
   const { data: newTrip, error: createErr } = await supabase
     .from('trips')
@@ -608,5 +609,22 @@ export async function addTripPhoto(
 
 export async function deleteTripPhoto(id: string) {
   const { error } = await supabase.from('trip_photos').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// Home location (set in Settings) -- used to decide whether a trip
+// genuinely needs flights logged, or is close enough to reach by other
+// means (see src/lib/homeLocation.ts).
+export interface HomeLocation { city: string; country: string }
+export async function fetchHomeLocation(): Promise<HomeLocation | null> {
+  const { data, error } = await supabase.from('user_preferences').select('home_city, home_country').maybeSingle();
+  if (error) throw error;
+  if (!data?.home_city) return null;
+  return { city: data.home_city, country: data.home_country ?? '' };
+}
+export async function setHomeLocation(city: string, country: string) {
+  const userId = (await supabase.from('trips').select('user_id').limit(1).maybeSingle()).data?.user_id;
+  if (!userId) throw new Error('No existing user to attach preferences to');
+  const { error } = await supabase.from('user_preferences').upsert({ user_id: userId, home_city: city, home_country: country, updated_at: new Date().toISOString() });
   if (error) throw error;
 }

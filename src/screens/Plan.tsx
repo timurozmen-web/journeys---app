@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { addDays } from '../lib/tripDay';
 import { BackIcon, PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon } from '../components/Icons';
 import { googleFlightsSearchUrl, googleHotelsSearchUrl, brandHotelSearchUrl, ALLIANCE_LABELS, type StopsFilter, type CabinFilter, type AllianceFilter } from '../lib/externalSearchLinks';
 import { planningCountries, PLANNING_AIRPORTS_BY_IATA } from '../data/planningAirports';
@@ -297,18 +298,18 @@ export function Plan() {
   // search links and the save-to-trips flow, rather than computed twice.
   const cityDates = (() => {
     if (!startDate) return cities.map((c) => ({ city: c, checkIn: null as string | null }));
-    let cursor = new Date(startDate + 'T00:00:00');
+    let cursor = startDate;
     return cities.map((c) => {
-      const checkIn = cursor.toISOString().slice(0, 10);
-      cursor = new Date(cursor.getTime() + c.nights * 86400000);
+      const checkIn = cursor;
+      cursor = addDays(cursor, c.nights);
       return { city: c, checkIn };
     });
   })();
   const tripEndDate = (() => {
     if (!startDate) return null;
-    let cursor = new Date(startDate + 'T00:00:00');
-    for (const c of cities) cursor = new Date(cursor.getTime() + c.nights * 86400000);
-    return cursor.toISOString().slice(0, 10);
+    let cursor = startDate;
+    for (const c of cities) cursor = addDays(cursor, c.nights);
+    return cursor;
   })();
 
   async function saveToTrips() {
@@ -507,7 +508,7 @@ export function Plan() {
                   style={{
                     padding: '5px 12px', borderRadius: 99, fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
                     border: stopsFilter === s ? '1px solid var(--brand)' : '1px solid var(--line)',
-                    background: stopsFilter === s ? 'rgba(91,63,166,.08)' : 'var(--card)',
+                    background: stopsFilter === s ? 'rgba(30,58,143,.08)' : 'var(--card)',
                     color: stopsFilter === s ? 'var(--brand)' : 'var(--ink2)',
                   }}
                 >
