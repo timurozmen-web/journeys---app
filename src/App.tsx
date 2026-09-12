@@ -1,5 +1,6 @@
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { TabBar } from './components/TabBar';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Home } from './screens/Home';
 import { Trips } from './screens/Trips';
 import { Wallet } from './screens/Wallet';
@@ -24,26 +25,28 @@ export default function App() {
     <HashRouter>
      <>
       <div className="screen on">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/trips" element={<Trips />} />
-          <Route path="/trips/:id" element={<TripDetail />} />
-          <Route path="/wallet" element={<Wallet />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/log-hotel" element={<LogHotel />} />
-          <Route path="/log-flight" element={<LogFlight />} />
-          <Route path="/log-trip" element={<LogTrip />} />
-          <Route path="/scan-email" element={<ScanEmail />} />
-          <Route path="/scan-promotion" element={<ScanPromotion />} />
-          <Route path="/bank-sync" element={<BankSync />} />
-          <Route path="/review-trip" element={<ReviewTrip />} />
-          <Route path="/action/:kind" element={<Action />} />
-          <Route path="/action/discover" element={<Discover />} />
-          <Route path="/action/plan" element={<Plan />} />
-          <Route path="/log-loyalty-programme" element={<LogLoyaltyProgramme />} />
-          <Route path="/action/credit" element={<CreditAdvisor />} />
-        </Routes>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/trips" element={<Trips />} />
+            <Route path="/trips/:id" element={<TripDetail />} />
+            <Route path="/wallet" element={<Wallet />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/log-hotel" element={<LogHotel />} />
+            <Route path="/log-flight" element={<LogFlight />} />
+            <Route path="/log-trip" element={<LogTrip />} />
+            <Route path="/scan-email" element={<ScanEmail />} />
+            <Route path="/scan-promotion" element={<ScanPromotion />} />
+            <Route path="/bank-sync" element={<BankSync />} />
+            <Route path="/review-trip" element={<ReviewTrip />} />
+            <Route path="/action/:kind" element={<Action />} />
+            <Route path="/action/discover" element={<Discover />} />
+            <Route path="/action/plan" element={<Plan />} />
+            <Route path="/log-loyalty-programme" element={<LogLoyaltyProgramme />} />
+            <Route path="/action/credit" element={<CreditAdvisor />} />
+          </Routes>
+        </ErrorBoundary>
       </div>
       <TabBar />
      </>
