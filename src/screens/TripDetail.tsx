@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTrips, useLoyaltyProgrammes, usePromotions } from '../lib/useLiveData';
 import { uploadTripPhoto, fetchTripPhotos, splitTrip, deleteHotel, deleteFlight } from '../lib/queries';
@@ -6,8 +6,9 @@ import { SwipeToDelete } from '../components/SwipeToDelete';
 import type { TripPhoto } from '../lib/queries';
 import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, PlaneIcon, EditIcon, AlertIcon } from '../components/Icons';
 import { AirlineLogo } from '../components/AirlineLogo';
+import { lazyWithRetry } from '../lib/lazyWithRetry';
 import { DestinationPhoto } from '../components/DestinationPhoto';
-const TripMap = lazy(() => import('../components/TripMap').then((m) => ({ default: m.TripMap })));
+const TripMap = lazyWithRetry(() => import('../components/TripMap').then((m) => ({ default: m.TripMap })));
 import { destinationQuery } from '../components/TripCard';
 import { TripMemories } from '../components/TripMemories';
 import { formatDateRange, formatMoney } from '../lib/format';

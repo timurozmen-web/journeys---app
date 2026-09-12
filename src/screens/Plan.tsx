@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addDays } from '../lib/tripDay';
+import { lazyWithRetry } from '../lib/lazyWithRetry';
 import { BackIcon, PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon } from '../components/Icons';
 import { googleFlightsSearchUrl, googleHotelsSearchUrl, brandHotelSearchUrl, ALLIANCE_LABELS, type StopsFilter, type CabinFilter, type AllianceFilter } from '../lib/externalSearchLinks';
 import { planningCountries, PLANNING_AIRPORTS_BY_IATA } from '../data/planningAirports';
@@ -14,7 +15,7 @@ import { addTrip, addHotel, addFlight } from '../lib/queries';
 import { CitySearchInput } from '../components/CitySearchInput';
 import type { WorldCity } from '../data/worldCitiesLoader';
 
-const PlanMap = lazy(() => import('../components/PlanMap').then((m) => ({ default: m.PlanMap })));
+const PlanMap = lazyWithRetry(() => import('../components/PlanMap').then((m) => ({ default: m.PlanMap })));
 
 const HOME_AIRPORTS = ['LHR', 'LGW', 'STN', 'LTN', 'LCY'];
 

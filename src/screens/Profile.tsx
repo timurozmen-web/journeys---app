@@ -1,10 +1,11 @@
-import { useState, useMemo, lazy, Suspense } from 'react';
+import { useState, useMemo, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useReviews, useAllHotels, useAllFlights, useTrips } from '../lib/useLiveData';
 import { findHotelsNeedingReview, findHotelsMissingCategories, REVIEW_CATEGORIES } from '../lib/reviewScoring';
 import { flightDistanceKm, estimateFlightHours } from '../lib/travelStats';
 import { SettingsIcon, StarIcon } from '../components/Icons';
-const WorldMap = lazy(() => import('../components/WorldMap').then((m) => ({ default: m.WorldMap })));
+import { lazyWithRetry } from '../lib/lazyWithRetry';
+const WorldMap = lazyWithRetry(() => import('../components/WorldMap').then((m) => ({ default: m.WorldMap })));
 
 const CATEGORIES = [
   { key: 'overall', label: 'Overall' },

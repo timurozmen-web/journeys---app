@@ -29,6 +29,13 @@ export default defineConfig({
         // untouched -- the app should always show real, live data, never
         // a stale cached copy of your trips or balances.
         globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+        // Activate a new service worker (and its updated file list)
+        // immediately rather than waiting for every open tab/PWA instance
+        // to fully close first -- reduces the window where an
+        // already-loaded page can request an old, no-longer-served
+        // chunk filename from a previous deploy.
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],
