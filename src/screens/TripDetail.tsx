@@ -47,6 +47,7 @@ export function TripDetail() {
   }, [id]);
 
   const [splitting, setSplitting] = useState(false);
+  const flightExemptTripIds = useFlightExemptTripIds(trips);
 
   if (!trip) return <div className="head">Trip not found</div>;
 
@@ -111,7 +112,6 @@ export function TripDetail() {
   ].sort((a, b) => a.date.localeCompare(b.date));
 
   const tripGap = checkTripCompleteness(trip);
-  const flightExemptTripIds = useFlightExemptTripIds(trips);
   const showTripGap = tripGap && !flightExemptTripIds.has(trip.id);
   const gapDestination = trip.title.split(/[·+]/)[0].trim();
   const gapDateOut = sortedHotels[0]?.date;
