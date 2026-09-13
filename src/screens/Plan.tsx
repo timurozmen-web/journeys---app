@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addDays } from '../lib/tripDay';
 import { calculateLeaveNeeded } from '../lib/annualLeave';
+import { findDestinationGuide, dominantMonth, PRICE_COLOR, WEATHER_COLOR } from '../lib/destinationGuide';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
 import { BackIcon, PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon, TripsIcon } from '../components/Icons';
 import { googleFlightsSearchUrl, googleHotelsSearchUrl, brandHotelSearchUrl, ALLIANCE_LABELS, type StopsFilter, type CabinFilter, type AllianceFilter } from '../lib/externalSearchLinks';
@@ -655,6 +656,25 @@ export function Plan() {
                       >
                         Search {hotelBrandFilter !== 'any' ? hotelBrandFilter : 'hotels'} <ExternalLinkIcon size={11} color="var(--brand)" />
                       </a>
+                      {(() => {
+                        const checkIn = cityDates[i]?.checkIn;
+                        if (!checkIn) return null;
+                        const checkOut = addDays(checkIn, c.nights);
+                        const guide = findDestinationGuide(c.city, c.country);
+                        if (!guide) return null;
+                        const month = guide.months[dominantMonth(checkIn, checkOut)];
+                        return (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '7px 10px', borderRadius: 8, background: 'var(--card2)' }}>
+                            <span style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
+                              <span title="Season/price" style={{ width: 8, height: 8, borderRadius: '50%', background: PRICE_COLOR[month.price] }} />
+                              <span title="Weather" style={{ width: 8, height: 8, borderRadius: '50%', background: WEATHER_COLOR[month.weather] }} />
+                            </span>
+                            <span style={{ fontSize: 11, color: 'var(--ink2)', fontWeight: 600 }}>
+                              {month.summary} · {month.tempRangeC[0]}–{month.tempRangeC[1]}°C · {month.price === 'high' ? 'peak season' : month.price === 'shoulder' ? 'shoulder season' : 'low season'}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 
