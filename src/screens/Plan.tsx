@@ -11,9 +11,10 @@ import { allPlanningCountries } from '../data/globalAirportsLoader';
 import { planLeg, STRONG_RAIL_COUNTRIES, estimateTravelHours, estimateOverheadHours, type LegPlan } from '../lib/tripPlanner';
 import { nearestAirportToCity, type NearestAirportResult } from '../data/worldCitiesLoader';
 import { planHotelOptions } from '../lib/hotelPlanner';
-import { useLoyaltyProgrammes, useAllHotels } from '../lib/useLiveData';
+import { useLoyaltyProgrammes, useAllHotels, useHomeLocation } from '../lib/useLiveData';
 import { haversineKm } from '../lib/travelStats';
 import { addTrip, addHotel, addFlight } from '../lib/queries';
+import { getBudgetEstimate, type BudgetEstimate } from '../lib/budgetEstimate';
 import { CitySearchInput } from '../components/CitySearchInput';
 import type { WorldCity } from '../data/worldCitiesLoader';
 
@@ -77,6 +78,10 @@ export function Plan() {
   const [stopsFilter, setStopsFilter] = useState<StopsFilter>('any');
   const [cabinFilter, setCabinFilter] = useState<CabinFilter>('any');
   const [allianceFilter, setAllianceFilter] = useState<AllianceFilter>('any');
+  const { data: homeLocation } = useHomeLocation();
+  const [budgetLoading, setBudgetLoading] = useState(false);
+  const [budgetEstimate, setBudgetEstimate] = useState<BudgetEstimate | null>(null);
+  const [budgetError, setBudgetError] = useState('');
   const [hotelBrandFilter, setHotelBrandFilter] = useState<string>('any');
   const [smartQueries, setSmartQueries] = useState<Record<string, string>>({});
 
@@ -190,6 +195,21 @@ export function Plan() {
   }
   function updateDestination(id: string, patch: Partial<Destination>) {
     setDestinations((d) => d.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  }
+
+  async function fetchBudgetEstimate() {
+    setBudgetLoading(true);
+    setBudgetError('');
+    setBudgetEstimate(null);
+    try {
+      const legs = cities.map((c, i) => ({ city: c.city, country: c.country, nights: c.nights, checkIn: cityDates[i]?.checkIn ?? startDate }));
+      const est = await getBudgetEstimate(homeAirport, homeLocation.city, startDate, legs);
+      setBudgetEstimate(est);
+    } catch (e) {
+      setBudgetError(e instanceof Error ? e.message : 'Something went wrong getting the estimate.');
+    } finally {
+      setBudgetLoading(false);
+    }
   }
 
   async function suggest() {
@@ -828,6 +848,59 @@ export function Plan() {
                 Distances are exact great-circle calculations. Durations and costs are rough estimates
                 for planning only — not live fares, and real journey times vary by route and service.
               </div>
+            </div>
+          </div>
+
+          <div className="sect"><h2>Budget estimate</h2></div>
+          <div className="stack">
+            <div className="card" style={{ display: 'grid', gap: 10 }}>
+              {!budgetEstimate && !budgetLoading && (
+                <>
+                  <p style={{ fontSize: 12, color: 'var(--ink2)', lineHeight: 1.5, margin: 0 }}>
+                    Researches current flight, hotel, and food price ranges for this exact route and dates. Takes 10–30 seconds.
+                  </p>
+                  <button
+                    onClick={fetchBudgetEstimate}
+                    disabled={!startDate || cities.length === 0}
+                    style={{
+                      padding: '11px 0', borderRadius: 10, border: 'none', fontSize: 13.5, fontWeight: 700, cursor: 'pointer',
+                      background: 'var(--brand)', color: '#fff', opacity: !startDate || cities.length === 0 ? 0.5 : 1,
+                    }}
+                  >
+                    Get budget estimate
+                  </button>
+                </>
+              )}
+              {budgetLoading && (
+                <div style={{ fontSize: 12.5, color: 'var(--ink3)', textAlign: 'center', padding: '8px 0' }}>Researching current prices…</div>
+              )}
+              {budgetError && (
+                <div style={{ fontSize: 12.5, color: 'var(--red)' }}>{budgetError}</div>
+              )}
+              {budgetEstimate && (
+                <>
+                  <Row label="Flights" value={`£${budgetEstimate.flightEstimateGBP[0]}–${budgetEstimate.flightEstimateGBP[1]}`} />
+                  {budgetEstimate.hotelEstimates.map((h) => (
+                    <Row key={h.city} label={`${h.city} hotel (per night)`} value={`£${h.perNightGBP[0]}–${h.perNightGBP[1]}`} />
+                  ))}
+                  <Row label="Food & drink (per day)" value={`£${budgetEstimate.foodPerDayGBP[0]}–${budgetEstimate.foodPerDayGBP[1]}`} />
+                  <div style={{ borderTop: '1px solid var(--line)', paddingTop: 8, marginTop: 2 }}>
+                    <Row label="Total estimate" value={`£${budgetEstimate.totalEstimateGBP[0].toLocaleString()}–${budgetEstimate.totalEstimateGBP[1].toLocaleString()}`} />
+                  </div>
+                  {budgetEstimate.notes && (
+                    <div style={{ fontSize: 11.5, color: 'var(--ink2)', lineHeight: 1.5, fontStyle: 'italic' }}>{budgetEstimate.notes}</div>
+                  )}
+                  <div style={{ fontSize: 10.5, color: 'var(--ink3)', lineHeight: 1.5 }}>
+                    AI-researched ballpark based on current web search, not a live quote — actual prices vary.
+                  </div>
+                  <button
+                    onClick={fetchBudgetEstimate}
+                    style={{ padding: '9px 0', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    Refresh estimate
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
