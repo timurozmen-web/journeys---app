@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addDays } from '../lib/tripDay';
+import { calculateLeaveNeeded } from '../lib/annualLeave';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
-import { BackIcon, PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon } from '../components/Icons';
+import { BackIcon, PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon, TripsIcon } from '../components/Icons';
 import { googleFlightsSearchUrl, googleHotelsSearchUrl, brandHotelSearchUrl, ALLIANCE_LABELS, type StopsFilter, type CabinFilter, type AllianceFilter } from '../lib/externalSearchLinks';
 import { planningCountries, PLANNING_AIRPORTS_BY_IATA } from '../data/planningAirports';
 import { allPlanningCountries } from '../data/globalAirportsLoader';
@@ -312,6 +313,12 @@ export function Plan() {
     for (const c of cities) cursor = addDays(cursor, c.nights);
     return cursor;
   })();
+  // For the leave estimate specifically: use the real per-city plan once
+  // one exists, but fall back to the total nights already entered per
+  // destination so the estimate is useful immediately while filling in
+  // the form, not just after "Plan this trip" has been pressed.
+  const totalPlannedNights = destinations.reduce((sum, d) => sum + (Number(d.nights) || 0), 0);
+  const leaveEstimateEndDate = cities.length > 0 ? tripEndDate : (startDate && totalPlannedNights > 0 ? addDays(startDate, totalPlannedNights) : null);
 
   async function saveToTrips() {
     if (!startDate || cities.length === 0) return;
@@ -448,6 +455,19 @@ export function Plan() {
           <label style={labelStyle}>Departure date</label>
           <input type="date" style={inputStyle} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </div>
+
+        {startDate && leaveEstimateEndDate && (() => {
+          const leave = calculateLeaveNeeded(startDate, leaveEstimateEndDate);
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 12, background: 'rgba(30,58,143,.05)', border: '1px solid rgba(30,58,143,.15)' }}>
+              <TripsIcon size={18} color="var(--brand)" style={{ flexShrink: 0 }} />
+              <div style={{ fontSize: 12.5, color: 'var(--ink)', lineHeight: 1.45 }}>
+                <b>{leave.leaveDaysNeeded} day{leave.leaveDaysNeeded === 1 ? '' : 's'} of annual leave</b> for {leave.totalDays} day{leave.totalDays === 1 ? '' : 's'} away
+                {leave.bankHolidays > 0 && <> — lands on {leave.bankHolidays} UK bank holiday{leave.bankHolidays === 1 ? '' : 's'}, free days you don't need to book off</>}
+              </div>
+            </div>
+          );
+        })()}
 
         <button
           onClick={suggest}
