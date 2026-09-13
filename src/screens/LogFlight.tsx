@@ -128,7 +128,7 @@ export function LogFlight() {
             <datalist id="known-to">{knownTo.map((c) => <option key={c} value={c} />)}</datalist>
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
+        <div style={{ display: 'grid', gap: 10 }}>
           <div>
             <label style={labelStyle}>Departs (optional)</label>
             <input style={inputStyle} type="time" value={form.departureTime} onChange={(e) => set('departureTime', e.target.value)} />

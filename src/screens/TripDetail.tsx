@@ -109,7 +109,16 @@ export function TripDetail() {
       kind: 'flight', date: f.date ?? '', data: f,
       role: sortedFlights.length > 1 ? (i === 0 ? 'Outbound' : i === sortedFlights.length - 1 ? 'Return' : null) : null,
     })),
-  ].sort((a, b) => a.date.localeCompare(b.date));
+  ].sort((a, b) => {
+    const byDate = a.date.localeCompare(b.date);
+    if (byDate !== 0) return byDate;
+    // Same day: an outbound/unlabelled flight (arriving) comes before a
+    // hotel check-in that day -- you land, then go to the hotel. A
+    // return flight (departing) comes after -- checkout, then fly home.
+    if (a.kind === 'flight' && b.kind === 'hotel') return a.role === 'Return' ? 1 : -1;
+    if (a.kind === 'hotel' && b.kind === 'flight') return b.role === 'Return' ? -1 : 1;
+    return 0;
+  });
 
   const tripGap = checkTripCompleteness(trip);
   const showTripGap = tripGap && !flightExemptTripIds.has(trip.id);
