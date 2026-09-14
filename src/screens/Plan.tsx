@@ -808,7 +808,7 @@ export function Plan() {
                       {o.tier ? `${o.tier} · ` : ''}
                       {o.rateSource === 'history'
                         ? `rate from your ${o.historyCount} past stay${o.historyCount === 1 ? '' : 's'}`
-                        : 'no stay history — generic estimate'}
+                        : 'no stay history, generic estimate'}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 6 }}>
                       Earns ~{Math.round(o.pointsEarned).toLocaleString()} pts (~£{Math.round(o.pointsValueGBP)})

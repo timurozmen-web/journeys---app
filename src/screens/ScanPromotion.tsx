@@ -107,7 +107,7 @@ export function ScanPromotion() {
       {!result ? (
         <>
           <p style={{ padding: '0 20px 4px', fontSize: 13, color: 'var(--ink2)', lineHeight: 1.5 }}>
-            Screenshot a promotion — a rate boost, bonus offer, status boost, or airline partnership — and it'll be classified automatically.
+            Screenshot a promotion (a rate boost, bonus offer, status boost, or airline partnership) and it'll be classified automatically.
           </p>
           <div style={{ padding: '14px 20px 0' }}>
             <label style={labelStyle}>Screenshots</label>

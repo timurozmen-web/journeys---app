@@ -416,7 +416,7 @@ export function LogHotel() {
         {dupWarning && (
           <div style={{ background: 'rgba(156,95,8,.1)', border: '1px solid rgba(156,95,8,.25)', borderRadius: 10, padding: '12px 14px' }}>
             <div style={{ fontSize: 12.5, color: 'var(--amber)', fontWeight: 600, marginBottom: 8 }}>
-              This looks like it might already be logged as "{dupWarning}" — same brand, similar date. Save anyway?
+              This looks like it might already be logged as "{dupWarning}": same brand, similar date. Save anyway?
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button

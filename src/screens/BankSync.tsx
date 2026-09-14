@@ -75,7 +75,7 @@ export function BankSync() {
         {connections.length === 0 ? (
           <>
             <p style={{ fontSize: 13, color: 'var(--ink2)', lineHeight: 1.5, marginBottom: 16 }}>
-              Connect your bank to have new spend pulled in automatically, once a day. You'll review and assign each transaction to a card yourself — nothing gets added to your spend totals without your say.
+              Connect your bank and new spend gets pulled in once a day. You still review and assign each transaction to a card yourself, so nothing's added to your totals without your say.
             </p>
             {loadingBanks && <div style={{ color: 'var(--ink3)', fontSize: 13 }}>Loading banks…</div>}
             {error && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12 }}>{error}</div>}

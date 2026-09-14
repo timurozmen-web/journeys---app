@@ -100,7 +100,7 @@ export function CreditAdvisor() {
         <div className="h1" style={{ fontSize: 21 }}>Where to credit</div>
       </div>
       <p style={{ padding: '0 20px', fontSize: 13.5, color: 'var(--ink2)', lineHeight: 1.5, marginTop: -4 }}>
-        British Airways, Qatar, Qantas and KrisFlyer for now — more programmes coming in groups.
+        British Airways, Qatar, Qantas and KrisFlyer for now. More programmes are coming in groups.
       </p>
 
       <div style={{ padding: '10px 20px', display: 'grid', gap: 14 }}>
@@ -151,7 +151,7 @@ export function CreditAdvisor() {
         </div>
 
         <div>
-          <label style={labelStyle}>Fare level {bookingClass && <span style={{ textTransform: 'none', fontWeight: 400 }}>(suggested from booking class — adjust if it's off)</span>}</label>
+          <label style={labelStyle}>Fare level {bookingClass && <span style={{ textTransform: 'none', fontWeight: 400 }}>(suggested from booking class, adjust if it's off)</span>}</label>
           <select style={inputStyle} value={fareLevel} onChange={(e) => { setFareLevel(e.target.value as FareLevel); setFareLevelTouched(true); }}>
             <option value="lowest">Lowest / deep discount</option>
             <option value="standard">Standard</option>
@@ -189,8 +189,8 @@ function Results({ advisor }: { advisor: ReturnType<typeof runAdvisor> }) {
       )}
       {results.map((r) => <ProgramCard key={r.program} r={r} isBest={r.program === bestValue?.program} />)}
       <p style={{ fontSize: 11.5, color: 'var(--ink2)', lineHeight: 1.5 }}>
-        Value estimates use rough per-point rates ({(['BA', 'QR', 'QF', 'KF'] as ProgramId[]).map((p) => `${p} ${REDEEMABLE_VALUE_PENCE[p]}p`).join(' · ')}) —
-        for comparing options here, not a guarantee of redemption value.
+        Value estimates use rough per-point rates ({(['BA', 'QR', 'QF', 'KF'] as ProgramId[]).map((p) => `${p} ${REDEEMABLE_VALUE_PENCE[p]}p`).join(' · ')}),
+        useful for comparing options here, not a guarantee of redemption value.
       </p>
     </div>
   );

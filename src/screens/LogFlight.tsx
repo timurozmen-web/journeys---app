@@ -178,7 +178,7 @@ export function LogFlight() {
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--ink2)' }}>
             <input type="checkbox" checked={form.overnight} onChange={(e) => set('overnight', e.target.checked)} />
-            Overnight/long-haul flight — covers the night before and of this date, no hotel needed either night
+            Overnight or long-haul flight, covers the night before and of this date. No hotel needed either night.
           </label>
         </div>
         <div>
@@ -197,7 +197,7 @@ export function LogFlight() {
         {dupWarning && (
           <div style={{ background: 'rgba(156,95,8,.1)', border: '1px solid rgba(156,95,8,.25)', borderRadius: 10, padding: '12px 14px' }}>
             <div style={{ fontSize: 12.5, color: 'var(--amber)', fontWeight: 600, marginBottom: 8 }}>
-              This looks like it might already be logged as {dupWarning} — same route and date. Save anyway?
+              This looks like it might already be logged as {dupWarning}: same route and date. Save anyway?
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button

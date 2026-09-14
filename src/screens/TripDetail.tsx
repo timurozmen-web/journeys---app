@@ -68,7 +68,7 @@ export function TripDetail() {
           ? err.message
           : typeof err === 'object' && err !== null && 'message' in err
           ? String((err as { message: unknown }).message)
-          : 'Upload failed (unknown error — check browser console)';
+          : 'Upload failed: unknown error, check browser console';
       setUploadError(message);
     } finally {
       setUploading(false);
@@ -254,7 +254,7 @@ export function TripDetail() {
           <div style={{ margin: '14px 20px 0', padding: '12px 14px', borderRadius: 14, background: 'rgba(156,95,8,.08)', border: '1px solid rgba(156,95,8,.25)' }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>This looks like two trips</div>
             <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 3 }}>
-              A long gap and a country change between {suggestion.beforeCountry} and {suggestion.afterCountry} — want to split this into two separate trips?
+              There's a long gap and a country change between {suggestion.beforeCountry} and {suggestion.afterCountry}. Want to split this into two separate trips?
             </div>
             <button
               disabled={splitting}
@@ -305,7 +305,7 @@ export function TripDetail() {
             </div>
             {trip.flights.some((f) => f.award) && (
               <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 10 }}>
-                This trip includes an award flight — points redeemed aren't tracked as a value yet.
+                This trip includes an award flight. Points redeemed aren't tracked as a value yet.
               </div>
             )}
             </div>

@@ -338,7 +338,7 @@ export function Profile() {
             </div>
             {regionFilter && (
               <div style={{ fontSize: 11.5, color: 'var(--ink3)', padding: '0 4px' }}>
-                Showing reviews from {regionFilter} only — tap the region again, or "Clear filter" above, to see everything.
+                Showing reviews from {regionFilter} only. Tap the region again, or "Clear filter" above, to see everything.
               </div>
             )}
           </div>

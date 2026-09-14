@@ -76,7 +76,7 @@ export function ScanEmail() {
             date: b.checkIn, nights: b.nights, total: b.total,
             roomType: b.roomType ?? null, rateType: b.rateType ?? 'Standard',
           },
-          extractNote: b.currency && b.currency !== 'GBP' ? `Detected amount was in ${b.currency} — double-check the £ figure.` : undefined,
+          extractNote: b.currency && b.currency !== 'GBP' ? `Detected amount was in ${b.currency}, worth double-checking the £ figure.` : undefined,
           returnTo,
         },
       });
@@ -84,7 +84,7 @@ export function ScanEmail() {
       navigate('/log-flight', {
         state: {
           prefill: { date: b.date, from: b.from, to: b.to, airline: b.airline, flightNo: b.flightNo, cabin: b.cabin, cost: b.cost },
-          extractNote: b.currency && b.currency !== 'GBP' ? `Detected amount was in ${b.currency} — double-check the £ figure.` : undefined,
+          extractNote: b.currency && b.currency !== 'GBP' ? `Detected amount was in ${b.currency}, worth double-checking the £ figure.` : undefined,
           returnTo,
         },
       });
@@ -136,7 +136,7 @@ export function ScanEmail() {
           <div className="h1" style={{ fontSize: 21 }}>Found {bookings.length} bookings</div>
         </div>
         <p style={{ padding: '0 20px 4px', fontSize: 13, color: 'var(--ink2)', lineHeight: 1.5 }}>
-          Tap each one to review and save it — you can check and correct the details before anything's added.
+          Tap each one to review and save it. You can check and correct the details before anything's added.
         </p>
         <div className="stack" style={{ marginTop: 8 }}>
           {bookings.map((b, i) => {
@@ -159,7 +159,7 @@ export function ScanEmail() {
                   <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>{summarize(b)}</span>
                   {dup && !saved && (
                     <span style={{ display: 'block', fontSize: 11, color: 'var(--amber)', fontWeight: 600, marginTop: 2 }}>
-                      ⚠ Might already be logged — check before saving again
+                      ⚠ Might already be logged, worth checking before saving again
                     </span>
                   )}
                 </span>
@@ -176,7 +176,7 @@ export function ScanEmail() {
               onClick={() => navigate('/trips')}
               style={{ width: '100%', padding: '13px 0', borderRadius: 12, border: 'none', background: 'var(--brand)', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
             >
-              Done — go to trips
+              Done, go to trips
             </button>
           </div>
         )}
@@ -193,7 +193,7 @@ export function ScanEmail() {
         <div className="h1" style={{ fontSize: 21 }}>Scan an email</div>
       </div>
       <p style={{ padding: '0 20px 4px', fontSize: 13, color: 'var(--ink2)', lineHeight: 1.5 }}>
-        Easiest way: screenshot the confirmation and attach it below — no need to copy any text. Multiple bookings in one confirmation (like a flight plus a hotel) are all picked up together. You'll get a chance to review and correct everything before it's saved.
+        Easiest way: screenshot the confirmation and attach it below, no need to copy any text. Multiple bookings in one confirmation (a flight plus a hotel, say) all get picked up together, and you'll get a chance to review and correct everything before it's saved.
       </p>
 
       <div style={{ padding: '14px 20px 0' }}>
@@ -239,7 +239,7 @@ export function ScanEmail() {
         />
         {images.length > 0 && (
           <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 6 }}>
-            Long email? Attach a few screenshots covering different parts of it — up to {MAX_IMAGES}.
+            Long email? Attach a few screenshots covering different parts of it, up to {MAX_IMAGES}.
           </div>
         )}
       </div>

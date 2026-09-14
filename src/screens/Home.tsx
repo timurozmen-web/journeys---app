@@ -110,7 +110,7 @@ export function Home() {
     actionItems.push({
       key: `card-milestone-${r.card.id}`, color: 'var(--brand)',
       title: `Spend £${Math.round(remaining).toLocaleString()} on the ${r.card.id}`,
-      subtitle: `Turns into ${r.nextMilestone!.m.rewardLabel}${estValue ? ` — worth about £${estValue}` : ''}`,
+      subtitle: `Turns into ${r.nextMilestone!.m.rewardLabel}${estValue ? `, worth about £${estValue}` : ''}`,
       progressPct: pct,
       onClick: () => navigate('/wallet'),
     });
@@ -155,8 +155,8 @@ export function Home() {
       key: `renewal-${r.card.id}`, color: goodValue ? 'var(--green)' : 'var(--red)',
       title: `${r.card.id} renews in ${daysToRenewal} day${daysToRenewal === 1 ? '' : 's'}`,
       subtitle: goodValue
-        ? `Worth keeping — £${Math.round(r.net)} ahead of the £${r.card.annualFee} fee this year`
-        : `Consider cancelling — only £${Math.round(r.gross)} of value against a £${r.card.annualFee} fee this year`,
+        ? `Worth keeping: £${Math.round(r.net)} ahead of the £${r.card.annualFee} fee this year`
+        : `Consider cancelling: only £${Math.round(r.gross)} of value against a £${r.card.annualFee} fee this year`,
       onClick: () => navigate('/wallet'),
     });
   }
