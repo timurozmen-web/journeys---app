@@ -484,7 +484,7 @@ export function Plan() {
               <TripsIcon size={18} color="var(--brand)" style={{ flexShrink: 0 }} />
               <div style={{ fontSize: 12.5, color: 'var(--ink)', lineHeight: 1.45 }}>
                 <b>{leave.leaveDaysNeeded} day{leave.leaveDaysNeeded === 1 ? '' : 's'} of annual leave</b> for {leave.totalDays} day{leave.totalDays === 1 ? '' : 's'} away
-                {leave.bankHolidays > 0 && <> — lands on {leave.bankHolidays} UK bank holiday{leave.bankHolidays === 1 ? '' : 's'}, free days you don't need to book off</>}
+                {leave.bankHolidays > 0 && <>. Covers {leave.bankHolidays} UK bank holiday{leave.bankHolidays === 1 ? '' : 's'}, so you don't need to book those off.</>}
               </div>
             </div>
           );
@@ -776,7 +776,7 @@ export function Plan() {
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 10, lineHeight: 1.5 }}>{g.summary}</div>
                       <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 8, fontStyle: 'italic' }}>
-                        General seasonal guidance, not live pricing -- real fares vary by route and booking time.
+                        General seasonal guidance, not live pricing. Real fares vary by route and booking time.
                       </div>
                     </div>
                   );
@@ -845,8 +845,8 @@ export function Plan() {
                 />
               )}
               <div style={{ fontSize: 11, color: 'var(--ink3)', lineHeight: 1.5, marginTop: 4 }}>
-                Distances are exact great-circle calculations. Durations and costs are rough estimates
-                for planning only — not live fares, and real journey times vary by route and service.
+                Distances are exact great-circle calculations. Durations and costs are rough planning
+                estimates, not live fares. Real journey times vary by route and service.
               </div>
             </div>
           </div>
@@ -857,7 +857,7 @@ export function Plan() {
               {!budgetEstimate && !budgetLoading && (
                 <>
                   <p style={{ fontSize: 12, color: 'var(--ink2)', lineHeight: 1.5, margin: 0 }}>
-                    Researches current flight, hotel, and food price ranges for this exact route and dates. Takes 10–30 seconds.
+                    Current flight, hotel, and food prices for this route and these dates. Takes 10–30 seconds.
                   </p>
                   <button
                     onClick={fetchBudgetEstimate}
@@ -891,7 +891,7 @@ export function Plan() {
                     <div style={{ fontSize: 11.5, color: 'var(--ink2)', lineHeight: 1.5, fontStyle: 'italic' }}>{budgetEstimate.notes}</div>
                   )}
                   <div style={{ fontSize: 10.5, color: 'var(--ink3)', lineHeight: 1.5 }}>
-                    AI-researched ballpark based on current web search, not a live quote — actual prices vary.
+                    A rough estimate from a web search, not a live quote. Prices change.
                   </div>
                   <button
                     onClick={fetchBudgetEstimate}

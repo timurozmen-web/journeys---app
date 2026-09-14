@@ -34,7 +34,7 @@ export function Discover() {
         <div className="h1" style={{ fontSize: 21 }}>Discover</div>
       </div>
       <p style={{ padding: '0 20px', fontSize: 13.5, color: 'var(--ink2)', lineHeight: 1.6, marginTop: -4 }}>
-        Points-earning cards, and hotel/airline loyalty news worth knowing about. Dismiss what's not for you.
+        Points-earning cards and hotel or airline loyalty news. Dismiss anything that's not for you.
       </p>
 
       <div style={{ padding: '10px 20px 8px', display: 'grid', gap: 10 }}>

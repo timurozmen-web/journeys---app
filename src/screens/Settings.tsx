@@ -69,7 +69,7 @@ export function Settings() {
           Home location
         </div>
         <p style={{ fontSize: 12.5, color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
-          Trips close enough to reach without flying (like a short domestic hop) won't be flagged as missing flights.
+          Trips within a short domestic hop of here won't be flagged for missing flights.
         </p>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
@@ -101,7 +101,7 @@ export function Settings() {
           Airline elite status
         </div>
         <p style={{ fontSize: 12.5, color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
-          Set once here — Where to Credit reads these automatically, no need to re-enter them there.
+          Set once here and Where to Credit picks it up automatically. No need to enter it twice.
         </p>
         <div style={{ display: 'grid', gap: 10 }}>
           {AIRLINE_PROGRAMMES.map((p) => {

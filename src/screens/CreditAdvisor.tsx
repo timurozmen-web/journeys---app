@@ -165,7 +165,7 @@ export function CreditAdvisor() {
         </div>
 
         <p style={{ fontSize: 12, color: 'var(--ink2)', lineHeight: 1.5, margin: 0 }}>
-          Elite tiers are read from your programmes in the wallet — keep those up to date and this stays accurate automatically.
+          Elite tiers come from your programmes in the wallet. Keep those current and this stays accurate on its own.
         </p>
       </div>
 
