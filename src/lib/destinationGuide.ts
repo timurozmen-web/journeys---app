@@ -34,7 +34,7 @@ const M = (price: PriceLevel, weather: WeatherLevel, summary: string, tempRangeC
 
 export const DESTINATION_GUIDES: DestinationGuide[] = [
   {
-    name: 'Tokyo', country: 'Japan', aliases: ['tokyo', 'yokohama', 'kanto'],
+    name: 'Tokyo', country: 'Japan', aliases: ['tokyo', 'yokohama', 'kanto', 'japan'],
     months: [
       M('low', 'okay', 'Cold, clear, dry', [4, 10]), M('low', 'okay', 'Cold, clear, dry', [4, 10]),
       M('shoulder', 'good', 'Spring arriving, early blossom', [7, 14]), M('high', 'good', 'Peak cherry blossom, warm', [10, 19]),
@@ -67,7 +67,7 @@ export const DESTINATION_GUIDES: DestinationGuide[] = [
     ],
   },
   {
-    name: 'Bangkok', country: 'Thailand', aliases: ['bangkok'],
+    name: 'Bangkok', country: 'Thailand', aliases: ['bangkok', 'thailand'],
     months: [
       M('high', 'good', 'Cool (relatively), dry, best month', [23, 32]), M('high', 'good', 'Dry, warming up', [24, 33]),
       M('shoulder', 'okay', 'Hot season begins', [26, 35]), M('shoulder', 'okay', 'Very hot, Songkran festival', [27, 35]),
@@ -89,7 +89,7 @@ export const DESTINATION_GUIDES: DestinationGuide[] = [
     ],
   },
   {
-    name: 'Algarve', country: 'Portugal', aliases: ['algarve', 'faro', 'lagos', 'albufeira'],
+    name: 'Algarve', country: 'Portugal', aliases: ['algarve', 'faro', 'lagos', 'albufeira', 'portugal'],
     months: [
       M('low', 'okay', 'Mild, some rain', [8, 16]), M('low', 'okay', 'Mild, some rain', [9, 17]),
       M('shoulder', 'good', 'Warming, pleasant', [10, 19]), M('shoulder', 'good', 'Warm, sunny', [12, 20]),
@@ -100,7 +100,7 @@ export const DESTINATION_GUIDES: DestinationGuide[] = [
     ],
   },
   {
-    name: 'Aegean & Mediterranean coast', country: 'Türkiye', aliases: ['bodrum', 'dalaman', 'kemer', 'antalya', 'fethiye', 'marmaris'],
+    name: 'Aegean & Mediterranean coast', country: 'Türkiye', aliases: ['bodrum', 'dalaman', 'kemer', 'antalya', 'fethiye', 'marmaris', 'türkiye', 'turkey'],
     months: [
       M('low', 'okay', 'Cool, wet, quiet', [6, 14]), M('low', 'okay', 'Cool, wet', [6, 15]),
       M('shoulder', 'good', 'Warming, drier', [9, 18]), M('shoulder', 'good', 'Mild, pleasant', [12, 21]),
@@ -111,7 +111,7 @@ export const DESTINATION_GUIDES: DestinationGuide[] = [
     ],
   },
   {
-    name: 'Spanish coast & islands', country: 'Spain', aliases: ['ibiza', 'mallorca', 'palma', 'valencia', 'barcelona', 'alicante'],
+    name: 'Spanish coast & islands', country: 'Spain', aliases: ['ibiza', 'mallorca', 'palma', 'valencia', 'barcelona', 'alicante', 'spain'],
     months: [
       M('low', 'okay', 'Mild, some rain', [8, 15]), M('low', 'okay', 'Mild', [9, 16]),
       M('shoulder', 'good', 'Warming', [11, 18]), M('shoulder', 'good', 'Pleasant, mild', [13, 20]),
@@ -133,7 +133,7 @@ export const DESTINATION_GUIDES: DestinationGuide[] = [
     ],
   },
   {
-    name: 'Greek Islands', country: 'Greece', aliases: ['santorini', 'mykonos', 'crete', 'rhodes', 'corfu', 'athens'],
+    name: 'Greek Islands', country: 'Greece', aliases: ['santorini', 'mykonos', 'crete', 'rhodes', 'corfu', 'athens', 'greece'],
     months: [
       M('low', 'okay', 'Cool, wet, most closed for season', [9, 14]), M('low', 'okay', 'Cool, wet', [9, 15]),
       M('shoulder', 'good', 'Warming, season starting', [11, 17]), M('shoulder', 'good', 'Pleasant, uncrowded', [14, 20]),
@@ -144,7 +144,7 @@ export const DESTINATION_GUIDES: DestinationGuide[] = [
     ],
   },
   {
-    name: 'Rome & mainland Italy', country: 'Italy', aliases: ['rome', 'florence', 'venice', 'milan', 'tuscany', 'amalfi'],
+    name: 'Rome & mainland Italy', country: 'Italy', aliases: ['rome', 'florence', 'venice', 'milan', 'tuscany', 'amalfi', 'italy'],
     months: [
       M('low', 'okay', 'Cold, some rain', [4, 12]), M('low', 'okay', 'Cool', [5, 13]),
       M('shoulder', 'good', 'Mild, pleasant', [7, 16]), M('shoulder', 'good', 'Pleasant, great for sightseeing', [9, 18]),
@@ -155,7 +155,7 @@ export const DESTINATION_GUIDES: DestinationGuide[] = [
     ],
   },
   {
-    name: 'Dubai', country: 'UAE', aliases: ['dubai', 'abu dhabi'],
+    name: 'Dubai', country: 'UAE', aliases: ['dubai', 'abu dhabi', 'uae', 'united arab emirates'],
     months: [
       M('high', 'good', 'Warm, dry, ideal', [14, 24]), M('high', 'good', 'Warm, pleasant', [15, 25]),
       M('shoulder', 'good', 'Warming, still pleasant', [18, 29]), M('shoulder', 'okay', 'Hot', [22, 34]),
@@ -177,7 +177,7 @@ export const DESTINATION_GUIDES: DestinationGuide[] = [
     ],
   },
   {
-    name: 'Riviera Maya & Cancun', country: 'Mexico', aliases: ['cancun', 'riviera maya', 'tulum', 'playa del carmen', 'kanai'],
+    name: 'Riviera Maya & Cancun', country: 'Mexico', aliases: ['cancun', 'riviera maya', 'tulum', 'playa del carmen', 'kanai', 'mexico'],
     months: [
       M('high', 'good', 'Dry, warm, peak season', [21, 28]), M('high', 'good', 'Dry, ideal', [21, 29]),
       M('high', 'good', 'Warm, dry, spring break crowds', [22, 30]), M('shoulder', 'good', 'Warm, drier', [23, 31]),
@@ -188,7 +188,7 @@ export const DESTINATION_GUIDES: DestinationGuide[] = [
     ],
   },
   {
-    name: 'Bali', country: 'Indonesia', aliases: ['bali', 'ubud', 'seminyak', 'canggu'],
+    name: 'Bali', country: 'Indonesia', aliases: ['bali', 'ubud', 'seminyak', 'canggu', 'indonesia'],
     months: [
       M('low', 'poor', 'Wet season', [24, 31]), M('low', 'poor', 'Wet season', [24, 31]),
       M('shoulder', 'okay', 'Wet season easing', [24, 31]), M('shoulder', 'good', 'Transition, drying out', [24, 32]),
@@ -199,7 +199,7 @@ export const DESTINATION_GUIDES: DestinationGuide[] = [
     ],
   },
   {
-    name: 'Goa', country: 'India', aliases: ['goa'],
+    name: 'Goa', country: 'India', aliases: ['goa', 'india'],
     months: [
       M('high', 'good', 'Dry, warm, peak season', [19, 32]), M('high', 'good', 'Dry, warm', [20, 32]),
       M('shoulder', 'okay', 'Hot, dry', [23, 33]), M('low', 'poor', 'Very hot, humid, building to monsoon', [25, 33]),
@@ -210,7 +210,7 @@ export const DESTINATION_GUIDES: DestinationGuide[] = [
     ],
   },
   {
-    name: 'Budapest', country: 'Hungary', aliases: ['budapest'],
+    name: 'Budapest', country: 'Hungary', aliases: ['budapest', 'hungary'],
     months: [
       M('low', 'okay', 'Cold', [-2, 3]), M('low', 'okay', 'Cold', [-1, 6]),
       M('shoulder', 'good', 'Mild, pleasant', [3, 12]), M('shoulder', 'good', 'Pleasant, ideal', [8, 17]),
@@ -221,7 +221,7 @@ export const DESTINATION_GUIDES: DestinationGuide[] = [
     ],
   },
   {
-    name: 'New York', country: 'United States', aliases: ['new york', 'nyc', 'manhattan'],
+    name: 'New York', country: 'United States', aliases: ['new york', 'nyc', 'manhattan', 'united states', 'usa'],
     months: [
       M('low', 'okay', 'Cold', [-3, 4]), M('low', 'okay', 'Cold', [-2, 6]),
       M('shoulder', 'okay', 'Cold, warming', [2, 11]), M('shoulder', 'good', 'Mild, pleasant', [7, 17]),
@@ -232,7 +232,7 @@ export const DESTINATION_GUIDES: DestinationGuide[] = [
     ],
   },
   {
-    name: 'Sydney & east coast', country: 'Australia', aliases: ['sydney', 'melbourne', 'brisbane', 'gold coast'],
+    name: 'Sydney & east coast', country: 'Australia', aliases: ['sydney', 'melbourne', 'brisbane', 'gold coast', 'australia'],
     months: [
       M('high', 'good', 'Summer, warm, peak season', [19, 26]), M('high', 'good', 'Summer, warm', [19, 26]),
       M('shoulder', 'good', 'Late summer, pleasant', [17, 24]), M('shoulder', 'good', 'Autumn, mild, ideal', [14, 21]),
@@ -269,6 +269,26 @@ export function dominantMonth(startDate: string, endDate: string): number {
   for (let i = 1; i < 12; i++) if (counts[i] > counts[best]) best = i;
   return best;
 }
+
+export type RainfallLevel = 'low' | 'medium' | 'high';
+
+// Derived from each month's own researched summary rather than a second
+// research pass: the wet/dry season language is already in there
+// ("rainy season", "monsoon", "dry, sunny"), so this reads it back out
+// as a plain low/medium/high instead of a separate, harder-to-keep-
+// consistent dataset.
+const RAIN_WORDS: [RegExp, RainfallLevel][] = [
+  [/monsoon|peak.*rain|wettest|peak of.*rainy|rainy season/i, 'high'],
+  [/\brain\b|\bwet\b|showers/i, 'medium'],
+  [/dry|sunny/i, 'low'],
+];
+export function rainfallLevel(summary: string, weather: WeatherLevel): RainfallLevel {
+  for (const [pattern, level] of RAIN_WORDS) {
+    if (pattern.test(summary)) return level;
+  }
+  return weather === 'poor' ? 'medium' : 'low';
+}
+export const RAINFALL_LABEL: Record<RainfallLevel, string> = { low: 'Dry', medium: 'Some rain', high: 'Wet season' };
 
 export const PRICE_COLOR: Record<PriceLevel, string> = { high: 'var(--red)', shoulder: 'var(--amber)', low: 'var(--green)' };
 export const WEATHER_COLOR: Record<WeatherLevel, string> = { poor: 'var(--red)', okay: 'var(--amber)', good: 'var(--green)' };

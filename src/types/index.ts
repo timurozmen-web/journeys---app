@@ -27,6 +27,7 @@ export interface Hotel {
   roomType: string | null;
   rateType: string | null; // 'Standard' | 'Member' | 'Promotional' | 'Non-refundable' | 'Other'
   award: boolean; // booked with points/certificate rather than paid -- never earns elite night credit
+  createdAt: string | null; // when this stay was logged in the app -- used to tell a new-bookings-only promo apart from a stay already booked before registering
 }
 
 export interface Flight {
@@ -111,6 +112,7 @@ export interface Voucher {
 }
 
 export type DiscoverCategory = 'new_card' | 'card_bonus' | 'loyalty_news';
+export type DiscoverStatus = 'new' | 'kept' | 'dismissed';
 
 export interface DiscoverItem {
   id: string;
@@ -125,6 +127,19 @@ export interface DiscoverItem {
   annualFee: string | null;
   headlineStat: string | null;
   createdAt: string;
+  status: DiscoverStatus;
+  // Structured promo terms, extracted from the source when possible --
+  // lets the app actually apply a promo to real logged stays instead of
+  // just showing it as a headline.
+  requiresRegistration: boolean;
+  registered: boolean;
+  registeredAt: string | null;
+  newBookingsOnly: boolean;
+  promoStart: string | null;
+  promoEnd: string | null;
+  minNights: number | null;
+  bonusPoints: number | null;
+  bonusDescription: string | null;
 }
 
 export type PromoType = 'multiplier' | 'threshold_bonus' | 'fixed_discount' | 'status_boost' | 'airline_partner' | 'other';

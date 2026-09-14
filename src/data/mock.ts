@@ -8,9 +8,9 @@ export const trips: Trip[] = [
     id: 'tr1', title: 'Türkiye', start: '2026-07-25', end: '2026-08-15', section: 'current', tripType: 'leisure',
     notes: 'Kemer check-in from 3pm — flag Titanium status on arrival.', heroImageUrl: null,
     hotels: [
-      { id: 'h1', name: 'Hilton Dalaman', country: 'Türkiye', city: 'Dalaman', brand: 'Hilton Honors', nights: 3, date: '2026-07-25', status: 'Completed', total: 480, nightlyRate: 160, avgRate: 190, sqm: null, card: 'Hilton Debit', category: 'Premium', lat: 36.7, lng: 28.8, benefitValue: null, benefitNote: null, bookingChannel: null, roomType: null, rateType: 'Standard', award: false, benefitType: null },
-      { id: 'h2', name: 'Maxx Royal Kemer', country: 'Türkiye', city: 'Kemer', brand: 'Independent', nights: 3, date: '2026-08-04', status: 'Booked', total: 890, nightlyRate: 296, avgRate: 340, sqm: null, card: null, category: 'Luxury', lat: 36.5, lng: 30.5, benefitValue: null, benefitNote: null, bookingChannel: null, roomType: null, rateType: 'Standard', award: false, benefitType: null },
-      { id: 'h3', name: 'Maxx Royal Bodrum', country: 'Türkiye', city: 'Bodrum', brand: 'Independent', nights: 2, date: '2026-08-13', status: 'Booked', total: 620, nightlyRate: 310, avgRate: 350, sqm: null, card: null, category: 'Luxury', lat: 37.0, lng: 27.4, benefitValue: null, benefitNote: null, bookingChannel: null, roomType: null, rateType: 'Standard', award: false, benefitType: null },
+      { id: 'h1', name: 'Hilton Dalaman', country: 'Türkiye', city: 'Dalaman', brand: 'Hilton Honors', nights: 3, date: '2026-07-25', status: 'Completed', total: 480, nightlyRate: 160, avgRate: 190, sqm: null, card: 'Hilton Debit', category: 'Premium', lat: 36.7, lng: 28.8, benefitValue: null, benefitNote: null, bookingChannel: null, roomType: null, rateType: 'Standard', award: false, benefitType: null, createdAt: null },
+      { id: 'h2', name: 'Maxx Royal Kemer', country: 'Türkiye', city: 'Kemer', brand: 'Independent', nights: 3, date: '2026-08-04', status: 'Booked', total: 890, nightlyRate: 296, avgRate: 340, sqm: null, card: null, category: 'Luxury', lat: 36.5, lng: 30.5, benefitValue: null, benefitNote: null, bookingChannel: null, roomType: null, rateType: 'Standard', award: false, benefitType: null, createdAt: null },
+      { id: 'h3', name: 'Maxx Royal Bodrum', country: 'Türkiye', city: 'Bodrum', brand: 'Independent', nights: 2, date: '2026-08-13', status: 'Booked', total: 620, nightlyRate: 310, avgRate: 350, sqm: null, card: null, category: 'Luxury', lat: 37.0, lng: 27.4, benefitValue: null, benefitNote: null, bookingChannel: null, roomType: null, rateType: 'Standard', award: false, benefitType: null, createdAt: null },
     ],
     flights: [
       { id: 'f1', date: '2026-07-25', from: 'LGW', via: [], to: 'DLM', airline: 'easyJet', flightNo: 'U2 8565', cabin: 'Economy', status: 'Completed', cost: 180, award: false, overnight: false, departureTime: null, arrivalTime: null },
@@ -71,7 +71,9 @@ export const discoverItems: DiscoverItem[] = [
     detail: 'Members who register and complete paid stays of two or more consecutive nights between 22 September and 22 November 2026 earn 1,500 bonus points per stay; designated resort properties earn an additional 3,000 bonus points, for a maximum of 4,500. Homes & Villas by Marriott Bonvoy properties count, though bonus posting can take up to six weeks. Award stays using points or certificates are ineligible. Registration closes 13 November 2026 via Marriott\u2019s Promotion Central page.',
     source: 'Head for Points / LoyaltyLobby', sourceUrl: 'https://www.headforpoints.com/2026/09/10/register-marriott-1500-bonus-points-promotion/',
     deadline: '2026-11-13', relatedProgramme: 'Marriott Bonvoy', annualFee: null, headlineStat: '4,500 bonus points per resort stay',
-    createdAt: '2026-09-10',
+    createdAt: '2026-09-10', status: 'new', requiresRegistration: true, registered: false, registeredAt: null,
+    newBookingsOnly: false, promoStart: '2026-09-22', promoEnd: '2026-11-22', minNights: 2, bonusPoints: 4500,
+    bonusDescription: '1,500 points per stay of 2+ nights, +3,000 more at resort properties',
   },
   {
     id: 'dis2', category: 'loyalty_news', title: 'Qatar Airways Privilege Club Launches September Bonus Avios + Fare Sale for UK Members',
@@ -79,6 +81,8 @@ export const discoverItems: DiscoverItem[] = [
     detail: 'Booking via promo code SEPTPC26 on qatarairways.com or the app gives up to 20% off the base fare plus up to 10,000 bonus Avios, credited on the Europe-to-Doha sector only and cabin-dependent. Booking window 8-18 September 2026, travel valid through 31 May 2027. Since Avios transfer freely between Privilege Club and The British Airways Club, this is accessible to UK-based Avios collectors holding either programme.',
     source: 'Head for Points', sourceUrl: 'https://www.headforpoints.com/2026/09/09/10000-avios-with-qatar-airways/',
     deadline: '2026-09-18', relatedProgramme: 'Qatar Privilege Club', annualFee: null, headlineStat: 'Up to 10,000 bonus Avios + 20% off fares',
-    createdAt: '2026-09-10',
+    createdAt: '2026-09-10', status: 'new', requiresRegistration: false, registered: false, registeredAt: null,
+    newBookingsOnly: true, promoStart: '2026-09-08', promoEnd: '2027-05-31', minNights: null, bonusPoints: 10000,
+    bonusDescription: 'Up to 10,000 bonus Avios on Europe-Doha bookings made 8-18 Sep 2026',
   },
 ];

@@ -163,6 +163,7 @@ function mapHotel(h: any): Hotel {
     benefitValue: h.benefit_value ?? null, benefitNote: h.benefit_note ?? null, benefitType: h.benefit_type ?? null,
     bookingChannel: h.booking_channel ?? null,
     roomType: h.room_type ?? null, rateType: h.rate_type ?? null, award: h.award ?? false,
+    createdAt: h.created_at ?? null,
   };
 }
 function mapFlight(f: any): Flight {
@@ -492,25 +493,43 @@ export async function dismissPromotionCandidate(id: string) {
 }
 
 // Discover feed -- curated travel/loyalty news (new card launches, existing
-// card bonuses, general programme news). Seeded manually/periodically
-// rather than a live scraper (no backend job exists in this app), but
-// reads and dismiss-state work exactly like any other live data here.
+// card bonuses, general programme news). The daily scan (an Edge
+// Function, see supabase/functions/discover-scan) populates this
+// automatically; reads and status changes work exactly like any other
+// live data here. Fetches everything not dismissed -- both 'new' and
+// 'kept' -- since the UI splits those into two sections itself.
 export async function fetchDiscoverItems(): Promise<DiscoverItem[]> {
   const { data, error } = await supabase
     .from('discover_items')
     .select('*')
-    .eq('dismissed', false)
+    .neq('status', 'dismissed')
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []).map((d) => ({
     id: d.id, category: d.category, title: d.title, summary: d.summary, detail: d.detail,
     source: d.source, sourceUrl: d.source_url, deadline: d.deadline, relatedProgramme: d.related_programme,
     annualFee: d.annual_fee, headlineStat: d.headline_stat, createdAt: d.created_at,
+    status: d.status ?? 'new', requiresRegistration: d.requires_registration ?? false,
+    registered: d.registered ?? false, registeredAt: d.registered_at,
+    newBookingsOnly: d.new_bookings_only ?? false, promoStart: d.promo_start, promoEnd: d.promo_end,
+    minNights: d.min_nights, bonusPoints: d.bonus_points, bonusDescription: d.bonus_description,
   }));
 }
 
 export async function dismissDiscoverItem(id: string) {
-  const { error } = await supabase.from('discover_items').update({ dismissed: true }).eq('id', id);
+  const { error } = await supabase.from('discover_items').update({ status: 'dismissed', dismissed: true }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function keepDiscoverItem(id: string) {
+  const { error } = await supabase.from('discover_items').update({ status: 'kept' }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function registerDiscoverItem(id: string, registered: boolean) {
+  const { error } = await supabase.from('discover_items').update({
+    registered, registered_at: registered ? new Date().toISOString() : null,
+  }).eq('id', id);
   if (error) throw error;
 }
 
