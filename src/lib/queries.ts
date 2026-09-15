@@ -521,6 +521,33 @@ export interface RealClimateMonth {
 // on region) -- currently covers Japan, Australia, Thailand, Vietnam,
 // Indonesia, Malaysia, Singapore. Everywhere else falls back to
 // src/lib/destinationGuide.ts's lighter estimates.
+export interface RealCrowdPriceMonth {
+  country: string;
+  region: string | null; // null = applies nationwide
+  month: string;
+  crowdLevel: 'low' | 'medium' | 'high';
+  priceLevel: 'low' | 'medium' | 'high';
+  driver: string;
+  driverDates: string | null;
+  source: string;
+  confidence: string;
+}
+
+// Real, researched holiday/event-driven crowd and price signals (see
+// supabase/crowd_price_data) -- genuine public holidays, school
+// terms, and documented tourism-demand patterns, each with the actual
+// driver cited (e.g. "Golden Week Apr 29 - May 6"), not a fabricated
+// numeric index. Currently covers the same 7 countries as climate_data.
+export async function fetchCrowdPriceData(): Promise<RealCrowdPriceMonth[]> {
+  const { data, error } = await supabase.from('crowd_price_data').select('*');
+  if (error) throw error;
+  return (data ?? []).map((d) => ({
+    country: d.country, region: d.region, month: d.month,
+    crowdLevel: d.crowd_level, priceLevel: d.price_level,
+    driver: d.driver, driverDates: d.driver_dates, source: d.source, confidence: d.confidence,
+  }));
+}
+
 export async function fetchClimateData(): Promise<RealClimateMonth[]> {
   const { data, error } = await supabase.from('climate_data').select('*');
   if (error) throw error;

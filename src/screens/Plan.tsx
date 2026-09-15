@@ -11,7 +11,7 @@ import { allPlanningCountries } from '../data/globalAirportsLoader';
 import { planLeg, STRONG_RAIL_COUNTRIES, estimateTravelHours, estimateOverheadHours, type LegPlan } from '../lib/tripPlanner';
 import { nearestAirportToCity, type NearestAirportResult } from '../data/worldCitiesLoader';
 import { planHotelOptions } from '../lib/hotelPlanner';
-import { useLoyaltyProgrammes, useAllHotels, useHomeLocation, useClimateData } from '../lib/useLiveData';
+import { useLoyaltyProgrammes, useAllHotels, useHomeLocation, useClimateData, useCrowdPriceData } from '../lib/useLiveData';
 import { haversineKm } from '../lib/travelStats';
 import { addTrip, addHotel, addFlight } from '../lib/queries';
 import { getBudgetEstimate, type BudgetEstimate } from '../lib/budgetEstimate';
@@ -80,6 +80,7 @@ export function Plan() {
   const [allianceFilter, setAllianceFilter] = useState<AllianceFilter>('any');
   const { data: homeLocation } = useHomeLocation();
   const { data: climateData } = useClimateData();
+  const { data: crowdPriceData } = useCrowdPriceData();
   const [budgetLoading, setBudgetLoading] = useState(false);
   const [budgetEstimate, setBudgetEstimate] = useState<BudgetEstimate | null>(null);
   const [budgetError, setBudgetError] = useState('');
@@ -457,7 +458,7 @@ export function Plan() {
               const nightsNum = Number(dest.nights) || 0;
               const approxCheckOut = nightsNum > 0 ? addDays(startDate, nightsNum) : startDate;
               const monthIdx = dominantMonth(startDate, approxCheckOut);
-              const blended = blendedGuideForMonth(climateData, dest.cities[0]?.name ?? null, dest.country, monthIdx);
+              const blended = blendedGuideForMonth(climateData, crowdPriceData, dest.cities[0]?.name ?? null, dest.country, monthIdx);
               if (!blended) return null;
               return (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '7px 10px', borderRadius: 8, background: 'var(--card2)' }}>
@@ -469,6 +470,7 @@ export function Plan() {
                     {blended.label} in {MONTH_NAMES[monthIdx]}: {blended.summary} · {Math.round(blended.tempLow)}–{Math.round(blended.tempHigh)}°C
                     {blended.humidityPct != null ? ` · ${Math.round(blended.humidityPct)}% humidity` : ''} · {blended.rainLabel}
                     {blended.price ? ` · ${blended.price === 'high' ? 'peak season' : blended.price === 'shoulder' ? 'shoulder season' : 'low season'}` : ''}
+                    {blended.crowdDriver ? ` · ${blended.crowdDriver}${blended.crowdDriverDates ? ` (${blended.crowdDriverDates})` : ''}` : ''}
                   </span>
                 </div>
               );
@@ -702,7 +704,7 @@ export function Plan() {
                         if (!checkIn) return null;
                         const checkOut = addDays(checkIn, c.nights);
                         const monthIdx = dominantMonth(checkIn, checkOut);
-                        const blended = blendedGuideForMonth(climateData, c.city, c.country, monthIdx);
+                        const blended = blendedGuideForMonth(climateData, crowdPriceData, c.city, c.country, monthIdx);
                         if (!blended) return null;
                         return (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '7px 10px', borderRadius: 8, background: 'var(--card2)' }}>
@@ -714,6 +716,7 @@ export function Plan() {
                               {blended.summary} · {Math.round(blended.tempLow)}–{Math.round(blended.tempHigh)}°C
                               {blended.humidityPct != null ? ` · ${Math.round(blended.humidityPct)}% humidity` : ''} · {blended.rainLabel}
                               {blended.price ? ` · ${blended.price === 'high' ? 'peak season' : blended.price === 'shoulder' ? 'shoulder season' : 'low season'}` : ''}
+                              {blended.crowdDriver ? ` · ${blended.crowdDriver}${blended.crowdDriverDates ? ` (${blended.crowdDriverDates})` : ''}` : ''}
                             </span>
                           </div>
                         );

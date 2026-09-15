@@ -13,7 +13,7 @@
 // wet/dry seasons, etc.) that are standard textbook climate knowledge
 // rather than time-sensitive facts.
 
-import type { RealClimateMonth } from './queries';
+import type { RealClimateMonth, RealCrowdPriceMonth } from './queries';
 
 export type PriceLevel = 'high' | 'shoulder' | 'low';
 export type WeatherLevel = 'good' | 'okay' | 'poor';
@@ -315,22 +315,43 @@ export interface BlendedMonthGuide {
   price: PriceLevel | null; // null when there's no static guide to source a price judgement from
   weather: WeatherLevel;
   source: string | null; // present when backed by real climate_data
+  crowd: 'low' | 'medium' | 'high' | null; // present when backed by real crowd_price_data
+  crowdDriver: string | null; // the specific real event/holiday behind the crowd/price rating
+  crowdDriverDates: string | null;
+}
+
+function findCrowdPriceMonth(data: RealCrowdPriceMonth[], city: string | null, country: string, monthAbbr: string): RealCrowdPriceMonth | null {
+  const countryq = country.trim().toLowerCase();
+  const rows = data.filter((r) => r.country.toLowerCase() === countryq && r.month === monthAbbr);
+  if (rows.length === 0) return null;
+  const cq = city?.trim().toLowerCase();
+  if (cq) {
+    const regional = rows.find((r) => r.region && (r.region.toLowerCase().includes(cq) || cq.includes(r.region.toLowerCase())));
+    if (regional) return regional;
+  }
+  return rows.find((r) => r.region === null) ?? rows[0];
 }
 
 // The single source of truth both guide chips in Plan a trip use: real
 // climate_data numbers take priority when available (blended with the
 // static guide's price/weather judgement calls when one also exists
 // for the same destination), falling back to the static guide alone,
-// then to nothing.
+// then to nothing. Real crowd_price_data (holiday/event-driven, see
+// supabase/crowd_price_data) overrides the static guide's rougher
+// price estimate when available, and carries the actual driving event
+// through for display.
 export function blendedGuideForMonth(
-  realData: RealClimateMonth[], city: string | null, country: string, monthIndex: number
+  realData: RealClimateMonth[], crowdPriceData: RealCrowdPriceMonth[], city: string | null, country: string, monthIndex: number
 ): BlendedMonthGuide | null {
   const staticGuide = findDestinationGuide(city, country);
   const staticMonth = staticGuide?.months[monthIndex] ?? null;
   const realMonths = findRealClimateMonths(realData, city, country);
   const real = realMonths ? realClimateForMonth(realMonths, monthIndex) : null;
+  const crowdPrice = findCrowdPriceMonth(crowdPriceData, city, country, MONTH_ABBR[monthIndex]);
 
   if (!real && !staticMonth) return null;
+
+  const price = crowdPrice ? crowdPriceToLevel(crowdPrice.priceLevel) : (staticMonth?.price ?? null);
 
   if (real) {
     const rain = rainfallLevel(staticMonth?.summary ?? '', staticMonth?.weather ?? deriveWeatherLevel(real));
@@ -341,13 +362,17 @@ export function blendedGuideForMonth(
       tempHigh: real.tempHighC ?? real.tempMeanC ?? staticMonth?.tempRangeC[1] ?? 0,
       humidityPct: real.humidityPct,
       rainLabel: real.rainMm != null ? `${Math.round(real.rainMm)}mm` : RAINFALL_LABEL[rain],
-      price: staticMonth?.price ?? null,
+      price,
       weather: staticMonth?.weather ?? deriveWeatherLevel(real),
       source: real.source,
+      crowd: crowdPrice?.crowdLevel ?? null,
+      crowdDriver: crowdPrice?.driver ?? null,
+      crowdDriverDates: crowdPrice?.driverDates ?? null,
     };
   }
 
-  // No real data for this destination -- static guide only.
+  // No real climate data for this destination -- static guide only
+  // (crowd/price data can still apply on its own).
   const rain = rainfallLevel(staticMonth!.summary, staticMonth!.weather);
   return {
     label: staticGuide!.name,
@@ -356,10 +381,17 @@ export function blendedGuideForMonth(
     tempHigh: staticMonth!.tempRangeC[1],
     humidityPct: null,
     rainLabel: RAINFALL_LABEL[rain],
-    price: staticMonth!.price,
+    price,
     weather: staticMonth!.weather,
     source: null,
+    crowd: crowdPrice?.crowdLevel ?? null,
+    crowdDriver: crowdPrice?.driver ?? null,
+    crowdDriverDates: crowdPrice?.driverDates ?? null,
   };
+}
+
+function crowdPriceToLevel(l: 'low' | 'medium' | 'high'): PriceLevel {
+  return l === 'high' ? 'high' : l === 'medium' ? 'shoulder' : 'low';
 }
 
 export const PRICE_COLOR: Record<PriceLevel, string> = { high: 'var(--red)', shoulder: 'var(--amber)', low: 'var(--green)' };
