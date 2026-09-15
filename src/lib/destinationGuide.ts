@@ -395,6 +395,9 @@ function crowdPriceToLevel(l: 'low' | 'medium' | 'high'): PriceLevel {
 }
 
 export const PRICE_COLOR: Record<PriceLevel, string> = { high: 'var(--red)', shoulder: 'var(--amber)', low: 'var(--green)' };
+export const PRICE_TINT: Record<PriceLevel, string> = { high: 'rgba(210,60,60,.08)', shoulder: 'rgba(156,95,8,.08)', low: 'rgba(12,122,66,.08)' };
+export const CROWD_COLOR: Record<'low' | 'medium' | 'high', string> = { high: 'var(--red)', medium: 'var(--amber)', low: 'var(--green)' };
+export const CROWD_TINT: Record<'low' | 'medium' | 'high', string> = { high: 'rgba(210,60,60,.08)', medium: 'rgba(156,95,8,.08)', low: 'rgba(12,122,66,.08)' };
 export const WEATHER_COLOR: Record<WeatherLevel, string> = { poor: 'var(--red)', okay: 'var(--amber)', good: 'var(--green)' };
 export const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
