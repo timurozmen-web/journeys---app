@@ -498,6 +498,41 @@ export async function dismissPromotionCandidate(id: string) {
 // automatically; reads and status changes work exactly like any other
 // live data here. Fetches everything not dismissed -- both 'new' and
 // 'kept' -- since the UI splits those into two sections itself.
+export interface RealClimateMonth {
+  country: string;
+  region: string;
+  hubStation: string;
+  month: string; // 'Jan' .. 'Dec'
+  tempHighC: number | null;
+  tempLowC: number | null;
+  tempMeanC: number | null;
+  humidityPct: number | null;
+  feelsLikeC: number | null;
+  rainMm: number | null;
+  rainyDays: number | null;
+  sunshineHours: number | null;
+  seaTempC: number | null;
+  source: string;
+  confidence: string;
+}
+
+// Real, sourced climate normals (WMO 1991-2020 baseline; JMA/TCC,
+// Australian BOM, Singapore Met Service, Thai Met Department depending
+// on region) -- currently covers Japan, Australia, Thailand, Vietnam,
+// Indonesia, Malaysia, Singapore. Everywhere else falls back to
+// src/lib/destinationGuide.ts's lighter estimates.
+export async function fetchClimateData(): Promise<RealClimateMonth[]> {
+  const { data, error } = await supabase.from('climate_data').select('*');
+  if (error) throw error;
+  return (data ?? []).map((d) => ({
+    country: d.country, region: d.region, hubStation: d.hub_station, month: d.month,
+    tempHighC: d.temp_high_c, tempLowC: d.temp_low_c, tempMeanC: d.temp_mean_c,
+    humidityPct: d.humidity_pct, feelsLikeC: d.feels_like_c, rainMm: d.rain_mm,
+    rainyDays: d.rainy_days, sunshineHours: d.sunshine_hours, seaTempC: d.sea_temp_c,
+    source: d.source, confidence: d.confidence,
+  }));
+}
+
 export async function fetchDiscoverItems(): Promise<DiscoverItem[]> {
   const { data, error } = await supabase
     .from('discover_items')

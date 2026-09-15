@@ -4,7 +4,7 @@
 // and rows exist.
 import { useCallback, useEffect, useState } from 'react';
 import * as mock from '../data/mock';
-import { fetchTrips, fetchLoyaltyProgrammes, fetchPaymentCards, fetchReviews, fetchAllHotels, fetchAllFlights, fetchVouchers, fetchPromotions, fetchBankConnections, fetchUnreviewedBankTransactions, fetchPromotionCandidates, fetchDiscoverItems, fetchHomeLocation } from './queries';
+import { fetchTrips, fetchLoyaltyProgrammes, fetchPaymentCards, fetchReviews, fetchAllHotels, fetchAllFlights, fetchVouchers, fetchPromotions, fetchBankConnections, fetchUnreviewedBankTransactions, fetchPromotionCandidates, fetchDiscoverItems, fetchHomeLocation, fetchClimateData } from './queries';
 
 function useLive<T>(fetcher: () => Promise<T[]>, fallback: T[]) {
   const [data, setData] = useState<T[]>(fallback);
@@ -76,3 +76,4 @@ export const useUnreviewedBankTransactions = () => useLive(fetchUnreviewedBankTr
 export const usePromotionCandidates = () => useLive(fetchPromotionCandidates, []);
 export const useDiscoverItems = () => useLive(fetchDiscoverItems, mock.discoverItems);
 export const useHomeLocation = () => useLiveSingle(fetchHomeLocation, { city: 'London', country: 'United Kingdom' });
+export const useClimateData = () => useLive(fetchClimateData, []);

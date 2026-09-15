@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addDays } from '../lib/tripDay';
 import { calculateLeaveNeeded } from '../lib/annualLeave';
-import { findDestinationGuide, dominantMonth, PRICE_COLOR, WEATHER_COLOR, rainfallLevel, RAINFALL_LABEL, MONTH_NAMES } from '../lib/destinationGuide';
+import { blendedGuideForMonth, dominantMonth, PRICE_COLOR, WEATHER_COLOR, MONTH_NAMES } from '../lib/destinationGuide';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
 import { BackIcon, PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon, TripsIcon } from '../components/Icons';
 import { googleFlightsSearchUrl, googleHotelsSearchUrl, brandHotelSearchUrl, ALLIANCE_LABELS, type StopsFilter, type CabinFilter, type AllianceFilter } from '../lib/externalSearchLinks';
@@ -11,7 +11,7 @@ import { allPlanningCountries } from '../data/globalAirportsLoader';
 import { planLeg, STRONG_RAIL_COUNTRIES, estimateTravelHours, estimateOverheadHours, type LegPlan } from '../lib/tripPlanner';
 import { nearestAirportToCity, type NearestAirportResult } from '../data/worldCitiesLoader';
 import { planHotelOptions } from '../lib/hotelPlanner';
-import { useLoyaltyProgrammes, useAllHotels, useHomeLocation } from '../lib/useLiveData';
+import { useLoyaltyProgrammes, useAllHotels, useHomeLocation, useClimateData } from '../lib/useLiveData';
 import { haversineKm } from '../lib/travelStats';
 import { addTrip, addHotel, addFlight } from '../lib/queries';
 import { getBudgetEstimate, type BudgetEstimate } from '../lib/budgetEstimate';
@@ -79,6 +79,7 @@ export function Plan() {
   const [cabinFilter, setCabinFilter] = useState<CabinFilter>('any');
   const [allianceFilter, setAllianceFilter] = useState<AllianceFilter>('any');
   const { data: homeLocation } = useHomeLocation();
+  const { data: climateData } = useClimateData();
   const [budgetLoading, setBudgetLoading] = useState(false);
   const [budgetEstimate, setBudgetEstimate] = useState<BudgetEstimate | null>(null);
   const [budgetError, setBudgetError] = useState('');
@@ -453,20 +454,21 @@ export function Plan() {
               />
             </div>
             {startDate && (() => {
-              const guide = findDestinationGuide(dest.cities[0]?.name ?? null, dest.country);
-              if (!guide) return null;
               const nightsNum = Number(dest.nights) || 0;
               const approxCheckOut = nightsNum > 0 ? addDays(startDate, nightsNum) : startDate;
-              const month = guide.months[dominantMonth(startDate, approxCheckOut)];
-              const rain = rainfallLevel(month.summary, month.weather);
+              const monthIdx = dominantMonth(startDate, approxCheckOut);
+              const blended = blendedGuideForMonth(climateData, dest.cities[0]?.name ?? null, dest.country, monthIdx);
+              if (!blended) return null;
               return (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '7px 10px', borderRadius: 8, background: 'var(--card2)' }}>
                   <span style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
-                    <span title="Season/price" style={{ width: 8, height: 8, borderRadius: '50%', background: PRICE_COLOR[month.price] }} />
-                    <span title="Weather" style={{ width: 8, height: 8, borderRadius: '50%', background: WEATHER_COLOR[month.weather] }} />
+                    {blended.price && <span title="Season/price" style={{ width: 8, height: 8, borderRadius: '50%', background: PRICE_COLOR[blended.price] }} />}
+                    <span title="Weather" style={{ width: 8, height: 8, borderRadius: '50%', background: WEATHER_COLOR[blended.weather] }} />
                   </span>
                   <span style={{ fontSize: 11, color: 'var(--ink2)', fontWeight: 600 }}>
-                    {guide.name} in {MONTH_NAMES[dominantMonth(startDate, approxCheckOut)]}: {month.summary} · {month.tempRangeC[0]}–{month.tempRangeC[1]}°C · {RAINFALL_LABEL[rain]} · {month.price === 'high' ? 'peak season' : month.price === 'shoulder' ? 'shoulder season' : 'low season'}
+                    {blended.label} in {MONTH_NAMES[monthIdx]}: {blended.summary} · {Math.round(blended.tempLow)}–{Math.round(blended.tempHigh)}°C
+                    {blended.humidityPct != null ? ` · ${Math.round(blended.humidityPct)}% humidity` : ''} · {blended.rainLabel}
+                    {blended.price ? ` · ${blended.price === 'high' ? 'peak season' : blended.price === 'shoulder' ? 'shoulder season' : 'low season'}` : ''}
                   </span>
                 </div>
               );
@@ -699,18 +701,19 @@ export function Plan() {
                         const checkIn = cityDates[i]?.checkIn;
                         if (!checkIn) return null;
                         const checkOut = addDays(checkIn, c.nights);
-                        const guide = findDestinationGuide(c.city, c.country);
-                        if (!guide) return null;
-                        const month = guide.months[dominantMonth(checkIn, checkOut)];
-                        const rain = rainfallLevel(month.summary, month.weather);
+                        const monthIdx = dominantMonth(checkIn, checkOut);
+                        const blended = blendedGuideForMonth(climateData, c.city, c.country, monthIdx);
+                        if (!blended) return null;
                         return (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '7px 10px', borderRadius: 8, background: 'var(--card2)' }}>
                             <span style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
-                              <span title="Season/price" style={{ width: 8, height: 8, borderRadius: '50%', background: PRICE_COLOR[month.price] }} />
-                              <span title="Weather" style={{ width: 8, height: 8, borderRadius: '50%', background: WEATHER_COLOR[month.weather] }} />
+                              {blended.price && <span title="Season/price" style={{ width: 8, height: 8, borderRadius: '50%', background: PRICE_COLOR[blended.price] }} />}
+                              <span title="Weather" style={{ width: 8, height: 8, borderRadius: '50%', background: WEATHER_COLOR[blended.weather] }} />
                             </span>
                             <span style={{ fontSize: 11, color: 'var(--ink2)', fontWeight: 600 }}>
-                              {month.summary} · {month.tempRangeC[0]}–{month.tempRangeC[1]}°C · {RAINFALL_LABEL[rain]} · {month.price === 'high' ? 'peak season' : month.price === 'shoulder' ? 'shoulder season' : 'low season'}
+                              {blended.summary} · {Math.round(blended.tempLow)}–{Math.round(blended.tempHigh)}°C
+                              {blended.humidityPct != null ? ` · ${Math.round(blended.humidityPct)}% humidity` : ''} · {blended.rainLabel}
+                              {blended.price ? ` · ${blended.price === 'high' ? 'peak season' : blended.price === 'shoulder' ? 'shoulder season' : 'low season'}` : ''}
                             </span>
                           </div>
                         );

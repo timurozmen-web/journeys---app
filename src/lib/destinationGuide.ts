@@ -13,6 +13,8 @@
 // wet/dry seasons, etc.) that are standard textbook climate knowledge
 // rather than time-sensitive facts.
 
+import type { RealClimateMonth } from './queries';
+
 export type PriceLevel = 'high' | 'shoulder' | 'low';
 export type WeatherLevel = 'good' | 'okay' | 'poor';
 
@@ -290,6 +292,104 @@ export function rainfallLevel(summary: string, weather: WeatherLevel): RainfallL
 }
 export const RAINFALL_LABEL: Record<RainfallLevel, string> = { low: 'Dry', medium: 'Some rain', high: 'Wet season' };
 
+// Derives a rough weather-comfort level directly from real climate
+// numbers -- used for destinations that have real climate_data but no
+// hand-researched static guide entry (so there's no pre-made judgement
+// call to reuse). Heavy rain or uncomfortable heat/humidity reads as
+// 'poor', mild discomfort as 'okay', otherwise 'good'.
+function deriveWeatherLevel(m: RealClimateMonth): WeatherLevel {
+  const heavyRain = (m.rainMm ?? 0) > 200;
+  const veryHot = (m.tempHighC ?? m.tempMeanC ?? 0) > 33 || (m.feelsLikeC ?? 0) > 40;
+  const humid = (m.humidityPct ?? 0) > 80;
+  if (heavyRain || (veryHot && humid)) return 'poor';
+  if ((m.rainMm ?? 0) > 100 || veryHot || humid) return 'okay';
+  return 'good';
+}
+
+export interface BlendedMonthGuide {
+  label: string; // display name for the destination/region
+  summary: string;
+  tempLow: number; tempHigh: number;
+  humidityPct: number | null;
+  rainLabel: string;
+  price: PriceLevel | null; // null when there's no static guide to source a price judgement from
+  weather: WeatherLevel;
+  source: string | null; // present when backed by real climate_data
+}
+
+// The single source of truth both guide chips in Plan a trip use: real
+// climate_data numbers take priority when available (blended with the
+// static guide's price/weather judgement calls when one also exists
+// for the same destination), falling back to the static guide alone,
+// then to nothing.
+export function blendedGuideForMonth(
+  realData: RealClimateMonth[], city: string | null, country: string, monthIndex: number
+): BlendedMonthGuide | null {
+  const staticGuide = findDestinationGuide(city, country);
+  const staticMonth = staticGuide?.months[monthIndex] ?? null;
+  const realMonths = findRealClimateMonths(realData, city, country);
+  const real = realMonths ? realClimateForMonth(realMonths, monthIndex) : null;
+
+  if (!real && !staticMonth) return null;
+
+  if (real) {
+    const rain = rainfallLevel(staticMonth?.summary ?? '', staticMonth?.weather ?? deriveWeatherLevel(real));
+    return {
+      label: staticGuide?.name ?? real.region,
+      summary: staticMonth?.summary ?? `${real.tempMeanC != null ? Math.round(real.tempMeanC) + '°C average' : ''}`,
+      tempLow: real.tempLowC ?? real.tempMeanC ?? staticMonth?.tempRangeC[0] ?? 0,
+      tempHigh: real.tempHighC ?? real.tempMeanC ?? staticMonth?.tempRangeC[1] ?? 0,
+      humidityPct: real.humidityPct,
+      rainLabel: real.rainMm != null ? `${Math.round(real.rainMm)}mm` : RAINFALL_LABEL[rain],
+      price: staticMonth?.price ?? null,
+      weather: staticMonth?.weather ?? deriveWeatherLevel(real),
+      source: real.source,
+    };
+  }
+
+  // No real data for this destination -- static guide only.
+  const rain = rainfallLevel(staticMonth!.summary, staticMonth!.weather);
+  return {
+    label: staticGuide!.name,
+    summary: staticMonth!.summary,
+    tempLow: staticMonth!.tempRangeC[0],
+    tempHigh: staticMonth!.tempRangeC[1],
+    humidityPct: null,
+    rainLabel: RAINFALL_LABEL[rain],
+    price: staticMonth!.price,
+    weather: staticMonth!.weather,
+    source: null,
+  };
+}
+
 export const PRICE_COLOR: Record<PriceLevel, string> = { high: 'var(--red)', shoulder: 'var(--amber)', low: 'var(--green)' };
 export const WEATHER_COLOR: Record<WeatherLevel, string> = { poor: 'var(--red)', okay: 'var(--amber)', good: 'var(--green)' };
 export const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// Matches real, sourced climate_data rows (see supabase/climate_data --
+// imported from a researched WMO/JMA/BOM/Thai-Met dataset) to a
+// city/country, the same alias-matching approach as the static guide
+// above but keyed on hub_station/region since that's what the real
+// data uses. Real data takes priority over the static estimates when
+// both exist for the same destination.
+export function findRealClimateMonths(realData: RealClimateMonth[], city: string | null, country: string) {
+  const cq = city?.trim().toLowerCase();
+  const countryq = country.trim().toLowerCase();
+  let rows = realData.filter((r) => r.country.toLowerCase() === countryq);
+  if (rows.length === 0) return null;
+  if (cq) {
+    const byCity = rows.filter((r) => r.hubStation.toLowerCase().includes(cq) || r.region.toLowerCase().includes(cq) || cq.includes(r.hubStation.toLowerCase()));
+    if (byCity.length > 0) rows = byCity;
+  }
+  // No city given, or city didn't narrow it down (e.g. a multi-region
+  // country selected at country level only) -- use the first region as
+  // a reasonable default, same approach as the static guide's country
+  // aliases.
+  const firstRegion = rows[0].region;
+  return rows.filter((r) => r.region === firstRegion).sort((a, b) => MONTH_ABBR.indexOf(a.month) - MONTH_ABBR.indexOf(b.month));
+}
+
+export function realClimateForMonth(months: RealClimateMonth[], monthIndex: number): RealClimateMonth | null {
+  return months.find((m) => MONTH_ABBR[monthIndex] === m.month) ?? null;
+}
