@@ -110,27 +110,34 @@ function PointsValueCard({ country, city, rates, programmes }: { country: string
   if (matched.length === 0) return null;
   const tierOrder: Array<'budget' | 'mid' | 'luxury'> = ['budget', 'mid', 'luxury'];
   const tierLabel = { budget: 'Budget', mid: 'Mid-range', luxury: 'Luxury' };
-  const mainProgrammes = programmes.filter((p) => p.programme === 'Marriott Bonvoy' || p.programme === 'Hilton Honors');
+  const priorityOrder = ['Marriott Bonvoy', 'Hilton Honors', 'World of Hyatt', 'IHG One Rewards'];
+  const mainProgrammes = programmes
+    .filter((p) => priorityOrder.includes(p.programme))
+    .sort((a, b) => priorityOrder.indexOf(a.programme) - priorityOrder.indexOf(b.programme));
 
   return (
     <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 12, background: 'var(--card2)' }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>{matched[0].city}: cash vs. points value</div>
-      <div style={{ display: 'grid', gap: 6 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>{matched[0].city}: cash vs. points value</div>
+      <div style={{ display: 'grid', gap: 10 }}>
         {tierOrder.map((tier) => {
           const rate = matched.find((r) => r.tier === tier);
           if (!rate) return null;
           const midCash = (rate.priceLowUsd + rate.priceHighUsd) / 2;
           return (
-            <div key={tier} style={{ fontSize: 11.5, color: 'var(--ink2)' }}>
-              <b style={{ color: 'var(--ink)' }}>{tierLabel[tier]}:</b> ${rate.priceLowUsd}–${rate.priceHighUsd}/night
-              {mainProgrammes.map((p) => (
-                <span key={p.programme}> · {Math.round((midCash * 100) / p.avgCentsPerPoint).toLocaleString()} {p.programme.split(' ')[0]} pts fair value</span>
-              ))}
+            <div key={tier}>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)' }}>{tierLabel[tier]}: ${rate.priceLowUsd}–${rate.priceHighUsd}/night</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginTop: 4 }}>
+                {mainProgrammes.map((p) => (
+                  <div key={p.programme} style={{ fontSize: 10.5, color: 'var(--ink2)' }}>
+                    {p.programme.replace('World of ', '').replace(' Bonvoy', '').replace(' Honors', '').replace(' One Rewards', '')}: {Math.round((midCash * 100) / p.avgCentsPerPoint).toLocaleString()} pts
+                  </div>
+                ))}
+              </div>
             </div>
           );
         })}
       </div>
-      <div style={{ fontSize: 10, color: 'var(--ink3)', marginTop: 6, lineHeight: 1.4 }}>
+      <div style={{ fontSize: 10, color: 'var(--ink3)', marginTop: 8, lineHeight: 1.4 }}>
         "Fair value" is the mid-tier cash price divided by each programme's average 2026 redemption value — if a search asks for more points than that, you're likely getting below-average value. Real redemption prices vary by property and date.
       </div>
     </div>
