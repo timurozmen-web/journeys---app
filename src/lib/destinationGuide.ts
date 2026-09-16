@@ -332,6 +332,65 @@ function findCrowdPriceMonth(data: RealCrowdPriceMonth[], city: string | null, c
   return rows.find((r) => r.region === null) ?? rows[0];
 }
 
+// How close a trip needs to be to a specific dated holiday for it to be
+// worth mentioning -- a week's leeway either side, per the explicit
+// rule: if the trip ends more than a week before the holiday starts,
+// or starts more than a week after it ends, it isn't relevant.
+const HOLIDAY_BUFFER_DAYS = 7;
+
+// Finds whichever real occurrence of a recorded holiday (trying the
+// stored date shifted a year earlier/later, since Golden Week/Obon/etc.
+// recur close to the same date every year, and a date stored for one
+// specific year like Tet 2027 will simply fall far outside the buffer
+// for any other year rather than being wrongly matched) sits closest to
+// the trip's own dates.
+function nearestOccurrence(driverStart: string, driverEnd: string, tripStart: string, tripEnd: string, lunarCalendar: boolean) {
+  const ds = new Date(driverStart + 'T00:00:00Z');
+  const spanMs = new Date(driverEnd + 'T00:00:00Z').getTime() - ds.getTime();
+  const ts = new Date(tripStart + 'T00:00:00Z').getTime();
+  const te = new Date(tripEnd + 'T00:00:00Z').getTime();
+  const tripYear = new Date(tripStart + 'T00:00:00Z').getUTCFullYear();
+
+  // A fixed Gregorian holiday recurs on (near enough) the same month-day
+  // every year, so it's placed in whichever year is actually close to
+  // the trip -- trying the trip's own year and its neighbours, not the
+  // stored template's year, so a trip a decade after the data was
+  // researched still matches correctly. Lunar-calendar dates (Tet, etc.)
+  // drift ~11 days a year and don't recur on a fixed month-day at all,
+  // so they're only ever matched against the exact year they were
+  // actually researched for -- a wrong-year match there would silently
+  // show the wrong real date instead of no date.
+  const yearShifts = lunarCalendar ? [0] : [-1, 0, 1];
+  const baseYear = lunarCalendar ? ds.getUTCFullYear() : tripYear;
+
+  let best: { start: Date; end: Date; gapDays: number } | null = null;
+  for (const yearShift of yearShifts) {
+    const shiftedStart = new Date(Date.UTC(baseYear + yearShift, ds.getUTCMonth(), ds.getUTCDate()));
+    const shiftedEnd = new Date(shiftedStart.getTime() + spanMs);
+    const gapMs = shiftedEnd.getTime() < ts ? ts - shiftedEnd.getTime() : shiftedStart.getTime() > te ? shiftedStart.getTime() - te : 0;
+    const gapDays = gapMs / 86400000;
+    if (!best || gapDays < best.gapDays) best = { start: shiftedStart, end: shiftedEnd, gapDays };
+  }
+  return best!;
+}
+
+function formatDriverDateRange(start: Date, end: Date): string {
+  const fmt = (d: Date) => `${d.getUTCDate()} ${MONTH_NAMES[d.getUTCMonth()].slice(0, 3)}`;
+  return start.getTime() === end.getTime() ? fmt(start) : `${fmt(start)} - ${fmt(end)}`;
+}
+
+// Only surfaces a holiday callout when the trip is actually near it --
+// a "watch out: Golden Week" note is noise, not help, on a trip that
+// starts three weeks after Golden Week ends. A driver with no specific
+// date (a general season description, not a dated event) never shows
+// a callout at all, since there's nothing to check proximity against.
+export function relevantHolidayDriver(cp: RealCrowdPriceMonth | null, tripStart: string, tripEnd: string): { text: string; dates: string } | null {
+  if (!cp || !cp.driverStartDate || !cp.driverEndDate) return null;
+  const { start, end, gapDays } = nearestOccurrence(cp.driverStartDate, cp.driverEndDate, tripStart, tripEnd, cp.lunarCalendar);
+  if (gapDays > HOLIDAY_BUFFER_DAYS) return null;
+  return { text: cp.driver, dates: formatDriverDateRange(start, end) };
+}
+
 // The single source of truth both guide chips in Plan a trip use: real
 // climate_data numbers take priority when available (blended with the
 // static guide's price/weather judgement calls when one also exists
@@ -341,13 +400,15 @@ function findCrowdPriceMonth(data: RealCrowdPriceMonth[], city: string | null, c
 // price estimate when available, and carries the actual driving event
 // through for display.
 export function blendedGuideForMonth(
-  realData: RealClimateMonth[], crowdPriceData: RealCrowdPriceMonth[], city: string | null, country: string, monthIndex: number
+  realData: RealClimateMonth[], crowdPriceData: RealCrowdPriceMonth[], city: string | null, country: string, monthIndex: number,
+  tripStart: string, tripEnd: string
 ): BlendedMonthGuide | null {
   const staticGuide = findDestinationGuide(city, country);
   const staticMonth = staticGuide?.months[monthIndex] ?? null;
   const realMonths = findRealClimateMonths(realData, city, country);
   const real = realMonths ? realClimateForMonth(realMonths, monthIndex) : null;
   const crowdPrice = findCrowdPriceMonth(crowdPriceData, city, country, MONTH_ABBR[monthIndex]);
+  const relevantDriver = relevantHolidayDriver(crowdPrice, tripStart, tripEnd);
 
   if (!real && !staticMonth) return null;
 
@@ -366,8 +427,8 @@ export function blendedGuideForMonth(
       weather: staticMonth?.weather ?? deriveWeatherLevel(real),
       source: real.source,
       crowd: crowdPrice?.crowdLevel ?? null,
-      crowdDriver: crowdPrice?.driver ?? null,
-      crowdDriverDates: crowdPrice?.driverDates ?? null,
+      crowdDriver: relevantDriver?.text ?? null,
+      crowdDriverDates: relevantDriver?.dates ?? null,
     };
   }
 
@@ -385,8 +446,8 @@ export function blendedGuideForMonth(
     weather: staticMonth!.weather,
     source: null,
     crowd: crowdPrice?.crowdLevel ?? null,
-    crowdDriver: crowdPrice?.driver ?? null,
-    crowdDriverDates: crowdPrice?.driverDates ?? null,
+    crowdDriver: relevantDriver?.text ?? null,
+    crowdDriverDates: relevantDriver?.dates ?? null,
   };
 }
 

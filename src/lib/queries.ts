@@ -529,6 +529,9 @@ export interface RealCrowdPriceMonth {
   priceLevel: 'low' | 'medium' | 'high';
   driver: string;
   driverDates: string | null;
+  driverStartDate: string | null; // real date for a specific dated event -- used to check it's actually near the trip, not just "same month"
+  driverEndDate: string | null;
+  lunarCalendar: boolean; // true for dates that shift significantly year to year (Tet, etc) -- these are only matched against their exact stored year, never year-shifted
   source: string;
   confidence: string;
 }
@@ -544,7 +547,9 @@ export async function fetchCrowdPriceData(): Promise<RealCrowdPriceMonth[]> {
   return (data ?? []).map((d) => ({
     country: d.country, region: d.region, month: d.month,
     crowdLevel: d.crowd_level, priceLevel: d.price_level,
-    driver: d.driver, driverDates: d.driver_dates, source: d.source, confidence: d.confidence,
+    driver: d.driver, driverDates: d.driver_dates,
+    driverStartDate: d.driver_start_date, driverEndDate: d.driver_end_date, lunarCalendar: d.lunar_calendar ?? false,
+    source: d.source, confidence: d.confidence,
   }));
 }
 

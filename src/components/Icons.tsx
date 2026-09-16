@@ -81,6 +81,21 @@ export const DiscoverIcon = wrap(
 export const CreditIcon = wrap(
   '<path d="M2.5 8.5 12 3l9.5 5.5-9.5 5.5-9.5-5.5Z"/><path d="M6 11v5.5c0 1.4 2.7 3 6 3s6-1.6 6-3V11"/>'
 );
+export const ThermometerIcon = wrap(
+  '<path d="M14 14.76V3.5a2 2 0 0 0-4 0v11.26a4 4 0 1 0 4 0z"/><path d="M11 8h1"/>'
+);
+export const DropletIcon = wrap(
+  '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>'
+);
+export const CloudRainIcon = wrap(
+  '<path d="M6.5 18a4 4 0 1 1 .9-7.9 5 5 0 0 1 9.6-1.6A4.5 4.5 0 0 1 17.5 17H7z"/><path d="M9 19v1"/><path d="M12 19v2"/><path d="M15 19v1"/>'
+);
+export const UsersIcon = wrap(
+  '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'
+);
+export const TagIcon = wrap(
+  '<path d="M20.6 12.6 12.4 20.8a2 2 0 0 1-2.83 0l-7.4-7.4a2 2 0 0 1 0-2.83L9.4 2.4A2 2 0 0 1 10.8 1.8H19a2 2 0 0 1 2 2v8.2a2 2 0 0 1-.4 1.6z"/><circle cx="15" cy="7" r="1.5"/>'
+);
 export const AlertIcon = wrap(
   '<circle cx="12" cy="12" r="9"/><path d="M12 7.8v5.6"/><path d="M12 16.6v.01"/>'
 );

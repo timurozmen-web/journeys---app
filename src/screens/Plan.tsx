@@ -4,7 +4,7 @@ import { addDays } from '../lib/tripDay';
 import { calculateLeaveNeeded } from '../lib/annualLeave';
 import { blendedGuideForMonth, dominantMonth, PRICE_COLOR, PRICE_TINT, CROWD_COLOR, CROWD_TINT, MONTH_NAMES, type BlendedMonthGuide } from '../lib/destinationGuide';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
-import { BackIcon, PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon, TripsIcon } from '../components/Icons';
+import { BackIcon, PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon, TripsIcon, ThermometerIcon, DropletIcon, CloudRainIcon, TagIcon, UsersIcon } from '../components/Icons';
 import { googleFlightsSearchUrl, googleHotelsSearchUrl, brandHotelSearchUrl, ALLIANCE_LABELS, type StopsFilter, type CabinFilter, type AllianceFilter } from '../lib/externalSearchLinks';
 import { planningCountries, PLANNING_AIRPORTS_BY_IATA } from '../data/planningAirports';
 import { allPlanningCountries } from '../data/globalAirportsLoader';
@@ -59,11 +59,14 @@ function formatHours(h: number): string {
   return mins === 0 ? `${hours}h` : `${hours}h ${mins}m`;
 }
 
-function GuideTile({ label, value, color, bg }: { label: string; value: string; color?: string; bg?: string }) {
+function GuideTile({ icon, label, value, color, bg }: { icon: React.ReactNode; label: string; value: string; color?: string; bg?: string }) {
   return (
-    <div style={{ background: bg ?? 'var(--card2)', borderRadius: 10, padding: '8px 10px' }}>
-      <div style={{ fontSize: 9.5, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</div>
-      <div style={{ fontSize: 15, fontWeight: 800, color: color ?? 'var(--ink)', marginTop: 2 }}>{value}</div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: bg ?? 'var(--card2)', borderRadius: 10, padding: '8px 10px' }}>
+      <span style={{ flexShrink: 0, color: color ?? 'var(--ink3)' }}>{icon}</span>
+      <div>
+        <div style={{ fontSize: 9.5, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</div>
+        <div style={{ fontSize: 15, fontWeight: 800, color: color ?? 'var(--ink)', marginTop: 1 }}>{value}</div>
+      </div>
     </div>
   );
 }
@@ -81,16 +84,16 @@ function GuideTileGrid({ blended, heading }: { blended: BlendedMonthGuide; headi
     <div style={{ marginTop: 8 }}>
       {heading && <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>{heading}</div>}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-        <GuideTile label="Avg high" value={`${Math.round(blended.tempHigh)}°C`} />
-        <GuideTile label="Avg low" value={`${Math.round(blended.tempLow)}°C`} />
-        <GuideTile label="Humidity" value={blended.humidityPct != null ? `${Math.round(blended.humidityPct)}%` : '—'} />
-        <GuideTile label="Rain" value={blended.rainLabel} />
-        <GuideTile label="Season" value={priceLabel} color={blended.price ? PRICE_COLOR[blended.price] : undefined} bg={blended.price ? PRICE_TINT[blended.price] : undefined} />
-        <GuideTile label="Crowds" value={crowdLabel} color={blended.crowd ? CROWD_COLOR[blended.crowd] : undefined} bg={blended.crowd ? CROWD_TINT[blended.crowd] : undefined} />
+        <GuideTile icon={<ThermometerIcon size={16} />} label="Avg high" value={`${Math.round(blended.tempHigh)}°C`} />
+        <GuideTile icon={<ThermometerIcon size={16} />} label="Avg low" value={`${Math.round(blended.tempLow)}°C`} />
+        <GuideTile icon={<DropletIcon size={16} />} label="Humidity" value={blended.humidityPct != null ? `${Math.round(blended.humidityPct)}%` : '—'} />
+        <GuideTile icon={<CloudRainIcon size={16} />} label="Rain" value={blended.rainLabel} />
+        <GuideTile icon={<TagIcon size={16} />} label="Season" value={priceLabel} color={blended.price ? PRICE_COLOR[blended.price] : undefined} bg={blended.price ? PRICE_TINT[blended.price] : undefined} />
+        <GuideTile icon={<UsersIcon size={16} />} label="Crowds" value={crowdLabel} color={blended.crowd ? CROWD_COLOR[blended.crowd] : undefined} bg={blended.crowd ? CROWD_TINT[blended.crowd] : undefined} />
       </div>
       {blended.crowdDriver && (
         <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 6, lineHeight: 1.4 }}>
-          {blended.crowdDriver}{blended.crowdDriverDates ? ` (${blended.crowdDriverDates})` : ''}
+          Watch out: {blended.crowdDriver}{blended.crowdDriverDates ? `, ${blended.crowdDriverDates}` : ''}
         </div>
       )}
     </div>
@@ -496,7 +499,7 @@ export function Plan() {
               const nightsNum = Number(dest.nights) || 0;
               const approxCheckOut = nightsNum > 0 ? addDays(startDate, nightsNum) : startDate;
               const monthIdx = dominantMonth(startDate, approxCheckOut);
-              const blended = blendedGuideForMonth(climateData, crowdPriceData, dest.cities[0]?.name ?? null, dest.country, monthIdx);
+              const blended = blendedGuideForMonth(climateData, crowdPriceData, dest.cities[0]?.name ?? null, dest.country, monthIdx, startDate, approxCheckOut);
               if (!blended) return null;
               return <GuideTileGrid blended={blended} heading={`${blended.label} in ${MONTH_NAMES[monthIdx]}: ${blended.summary}`} />;
             })()}
@@ -729,7 +732,7 @@ export function Plan() {
                         if (!checkIn) return null;
                         const checkOut = addDays(checkIn, c.nights);
                         const monthIdx = dominantMonth(checkIn, checkOut);
-                        const blended = blendedGuideForMonth(climateData, crowdPriceData, c.city, c.country, monthIdx);
+                        const blended = blendedGuideForMonth(climateData, crowdPriceData, c.city, c.country, monthIdx, checkIn, checkOut);
                         if (!blended) return null;
                         return <GuideTileGrid blended={blended} heading={blended.summary} />;
                       })()}
