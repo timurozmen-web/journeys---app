@@ -541,6 +541,59 @@ export interface RealCrowdPriceMonth {
 // terms, and documented tourism-demand patterns, each with the actual
 // driver cited (e.g. "Golden Week Apr 29 - May 6"), not a fabricated
 // numeric index. Currently covers the same 7 countries as climate_data.
+export interface PointsValueProgramme {
+  programme: string;
+  avgCentsPerPoint: number;
+  sweetSpotCentsPerPoint: number | null;
+  redemptionLowPoints: number | null;
+  redemptionHighPoints: number | null;
+  pricingModel: string;
+  fifthNightFree: boolean;
+  notes: string | null;
+  source: string;
+  confidence: string;
+}
+
+// Real, researched points-value reference (see supabase/points_value_data)
+// -- current cents-per-point averages and typical redemption ranges for
+// the major hotel loyalty programmes, so a search can be read against
+// "is this actually good value" rather than just the raw points number.
+export async function fetchPointsValueData(): Promise<PointsValueProgramme[]> {
+  const { data, error } = await supabase.from('points_value_data').select('*');
+  if (error) throw error;
+  return (data ?? []).map((d) => ({
+    programme: d.programme, avgCentsPerPoint: d.avg_cents_per_point, sweetSpotCentsPerPoint: d.sweet_spot_cents_per_point,
+    redemptionLowPoints: d.redemption_low_points, redemptionHighPoints: d.redemption_high_points,
+    pricingModel: d.pricing_model, fifthNightFree: d.fifth_night_free, notes: d.notes,
+    source: d.source, confidence: d.confidence,
+  }));
+}
+
+export interface CityCashRate {
+  country: string;
+  city: string;
+  tier: 'budget' | 'mid' | 'luxury';
+  priceLowUsd: number;
+  priceHighUsd: number;
+  source: string;
+  confidence: string;
+  notes: string | null;
+}
+
+// Real, researched typical cash hotel rates by city and tier (see
+// supabase/city_cash_rates) -- a starter set, not exhaustive; pairs
+// with points_value_data so a redemption can be checked against what
+// the cash price would actually have been.
+export async function fetchCityCashRates(): Promise<CityCashRate[]> {
+  const { data, error } = await supabase.from('city_cash_rates').select('*');
+  if (error) throw error;
+  return (data ?? []).map((d) => ({
+    country: d.country, city: d.city, tier: d.tier,
+    priceLowUsd: d.price_low_usd, priceHighUsd: d.price_high_usd,
+    source: d.source, confidence: d.confidence, notes: d.notes,
+  }));
+}
+
 export async function fetchCrowdPriceData(): Promise<RealCrowdPriceMonth[]> {
   const { data, error } = await supabase.from('crowd_price_data').select('*');
   if (error) throw error;

@@ -11,9 +11,9 @@ import { allPlanningCountries } from '../data/globalAirportsLoader';
 import { planLeg, STRONG_RAIL_COUNTRIES, estimateTravelHours, estimateOverheadHours, type LegPlan } from '../lib/tripPlanner';
 import { nearestAirportToCity, type NearestAirportResult } from '../data/worldCitiesLoader';
 import { planHotelOptions } from '../lib/hotelPlanner';
-import { useLoyaltyProgrammes, useAllHotels, useHomeLocation, useClimateData, useCrowdPriceData } from '../lib/useLiveData';
+import { useLoyaltyProgrammes, useAllHotels, useHomeLocation, useClimateData, useCrowdPriceData, usePointsValueData, useCityCashRates } from '../lib/useLiveData';
 import { haversineKm } from '../lib/travelStats';
-import { addTrip, addHotel, addFlight } from '../lib/queries';
+import { addTrip, addHotel, addFlight, type PointsValueProgramme, type CityCashRate } from '../lib/queries';
 import { getBudgetEstimate, type BudgetEstimate } from '../lib/budgetEstimate';
 import { CitySearchInput } from '../components/CitySearchInput';
 import type { WorldCity } from '../data/worldCitiesLoader';
@@ -100,6 +100,43 @@ function GuideTileGrid({ blended, heading }: { blended: BlendedMonthGuide; headi
   );
 }
 
+// Real cash rates for the destination, tier by tier, next to what that
+// same money is worth in points at the programmes actually researched
+// (Marriott, Hilton) -- lets a redemption be checked against what the
+// cash price would actually have been, not just the raw points number.
+function PointsValueCard({ country, city, rates, programmes }: { country: string; city: string | null; rates: CityCashRate[]; programmes: PointsValueProgramme[] }) {
+  const cq = city?.trim().toLowerCase();
+  const matched = rates.filter((r) => r.country.toLowerCase() === country.toLowerCase() && (!cq || r.city.toLowerCase().includes(cq) || cq.includes(r.city.toLowerCase())));
+  if (matched.length === 0) return null;
+  const tierOrder: Array<'budget' | 'mid' | 'luxury'> = ['budget', 'mid', 'luxury'];
+  const tierLabel = { budget: 'Budget', mid: 'Mid-range', luxury: 'Luxury' };
+  const mainProgrammes = programmes.filter((p) => p.programme === 'Marriott Bonvoy' || p.programme === 'Hilton Honors');
+
+  return (
+    <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 12, background: 'var(--card2)' }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>{matched[0].city}: cash vs. points value</div>
+      <div style={{ display: 'grid', gap: 6 }}>
+        {tierOrder.map((tier) => {
+          const rate = matched.find((r) => r.tier === tier);
+          if (!rate) return null;
+          const midCash = (rate.priceLowUsd + rate.priceHighUsd) / 2;
+          return (
+            <div key={tier} style={{ fontSize: 11.5, color: 'var(--ink2)' }}>
+              <b style={{ color: 'var(--ink)' }}>{tierLabel[tier]}:</b> ${rate.priceLowUsd}–${rate.priceHighUsd}/night
+              {mainProgrammes.map((p) => (
+                <span key={p.programme}> · {Math.round((midCash * 100) / p.avgCentsPerPoint).toLocaleString()} {p.programme.split(' ')[0]} pts fair value</span>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ fontSize: 10, color: 'var(--ink3)', marginTop: 6, lineHeight: 1.4 }}>
+        "Fair value" is the mid-tier cash price divided by each programme's average 2026 redemption value — if a search asks for more points than that, you're likely getting below-average value. Real redemption prices vary by property and date.
+      </div>
+    </div>
+  );
+}
+
 export function Plan() {
   const navigate = useNavigate();
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
@@ -122,6 +159,8 @@ export function Plan() {
   const { data: homeLocation } = useHomeLocation();
   const { data: climateData } = useClimateData();
   const { data: crowdPriceData } = useCrowdPriceData();
+  const { data: pointsValueData } = usePointsValueData();
+  const { data: cityCashRates } = useCityCashRates();
   const [budgetLoading, setBudgetLoading] = useState(false);
   const [budgetEstimate, setBudgetEstimate] = useState<BudgetEstimate | null>(null);
   const [budgetError, setBudgetError] = useState('');
@@ -500,8 +539,12 @@ export function Plan() {
               const approxCheckOut = nightsNum > 0 ? addDays(startDate, nightsNum) : startDate;
               const monthIdx = dominantMonth(startDate, approxCheckOut);
               const blended = blendedGuideForMonth(climateData, crowdPriceData, dest.cities[0]?.name ?? null, dest.country, monthIdx, startDate, approxCheckOut);
-              if (!blended) return null;
-              return <GuideTileGrid blended={blended} heading={`${blended.label} in ${MONTH_NAMES[monthIdx]}: ${blended.summary}`} />;
+              return (
+                <>
+                  {blended && <GuideTileGrid blended={blended} heading={`${blended.label} in ${MONTH_NAMES[monthIdx]}: ${blended.summary}`} />}
+                  <PointsValueCard country={dest.country} city={dest.cities[0]?.name ?? null} rates={cityCashRates} programmes={pointsValueData} />
+                </>
+              );
             })()}
           </div>
         ))}
