@@ -4,7 +4,7 @@
 // and rows exist.
 import { useCallback, useEffect, useState } from 'react';
 import * as mock from '../data/mock';
-import { fetchTrips, fetchLoyaltyProgrammes, fetchPaymentCards, fetchReviews, fetchAllHotels, fetchAllFlights, fetchVouchers, fetchPromotions, fetchBankConnections, fetchUnreviewedBankTransactions, fetchPromotionCandidates, fetchDiscoverItems, fetchHomeLocation, fetchClimateData, fetchCrowdPriceData, fetchPointsValueData, fetchCityCashRates } from './queries';
+import { fetchTrips, fetchLoyaltyProgrammes, fetchPaymentCards, fetchReviews, fetchAllHotels, fetchAllFlights, fetchVouchers, fetchPromotions, fetchBankConnections, fetchUnreviewedBankTransactions, fetchPromotionCandidates, fetchDiscoverItems, fetchHomeLocation, fetchClimateData, fetchCrowdPriceData, fetchPointsValueData, fetchCityCashRates, fetchCurrencyPreference } from './queries';
 
 function useLive<T>(fetcher: () => Promise<T[]>, fallback: T[]) {
   const [data, setData] = useState<T[]>(fallback);
@@ -80,3 +80,4 @@ export const useClimateData = () => useLive(fetchClimateData, []);
 export const useCrowdPriceData = () => useLive(fetchCrowdPriceData, []);
 export const usePointsValueData = () => useLive(fetchPointsValueData, []);
 export const useCityCashRates = () => useLive(fetchCityCashRates, []);
+export const useCurrencyPreference = () => useLiveSingle(fetchCurrencyPreference, 'GBP');

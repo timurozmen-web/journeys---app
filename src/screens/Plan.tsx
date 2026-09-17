@@ -14,6 +14,7 @@ import { planHotelOptions } from '../lib/hotelPlanner';
 import { useLoyaltyProgrammes, useAllHotels, useHomeLocation, useClimateData, useCrowdPriceData, usePointsValueData, useCityCashRates } from '../lib/useLiveData';
 import { haversineKm } from '../lib/travelStats';
 import { addTrip, addHotel, addFlight, type PointsValueProgramme, type CityCashRate } from '../lib/queries';
+import { useCurrency } from '../lib/currency';
 import { getBudgetEstimate, type BudgetEstimate } from '../lib/budgetEstimate';
 import { CitySearchInput } from '../components/CitySearchInput';
 import type { WorldCity } from '../data/worldCitiesLoader';
@@ -105,12 +106,13 @@ function GuideTileGrid({ blended, heading }: { blended: BlendedMonthGuide; headi
 // (Marriott, Hilton) -- lets a redemption be checked against what the
 // cash price would actually have been, not just the raw points number.
 function PointsValueCard({ country, city, rates, programmes }: { country: string; city: string | null; rates: CityCashRate[]; programmes: PointsValueProgramme[] }) {
+  const { format, fromUsd, currency, isLive } = useCurrency();
   const cq = city?.trim().toLowerCase();
   const matched = rates.filter((r) => r.country.toLowerCase() === country.toLowerCase() && (!cq || r.city.toLowerCase().includes(cq) || cq.includes(r.city.toLowerCase())));
   if (matched.length === 0) return null;
   const tierOrder: Array<'budget' | 'mid' | 'luxury'> = ['budget', 'mid', 'luxury'];
   const tierLabel = { budget: 'Budget', mid: 'Mid-range', luxury: 'Luxury' };
-  const priorityOrder = ['Marriott Bonvoy', 'Hilton Honors', 'World of Hyatt', 'IHG One Rewards'];
+  const priorityOrder = ['Marriott Bonvoy', 'Hilton Honors', 'World of Hyatt', 'IHG One Rewards', 'Accor ALL'];
   const mainProgrammes = programmes
     .filter((p) => priorityOrder.includes(p.programme))
     .sort((a, b) => priorityOrder.indexOf(a.programme) - priorityOrder.indexOf(b.programme));
@@ -122,14 +124,14 @@ function PointsValueCard({ country, city, rates, programmes }: { country: string
         {tierOrder.map((tier) => {
           const rate = matched.find((r) => r.tier === tier);
           if (!rate) return null;
-          const midCash = (rate.priceLowUsd + rate.priceHighUsd) / 2;
+          const midCashUsd = (rate.priceLowUsd + rate.priceHighUsd) / 2;
           return (
             <div key={tier}>
-              <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)' }}>{tierLabel[tier]}: ${rate.priceLowUsd}–${rate.priceHighUsd}/night</div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)' }}>{tierLabel[tier]}: {format(fromUsd(rate.priceLowUsd))}–{format(fromUsd(rate.priceHighUsd))}/night</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginTop: 4 }}>
                 {mainProgrammes.map((p) => (
                   <div key={p.programme} style={{ fontSize: 10.5, color: 'var(--ink2)' }}>
-                    {p.programme.replace('World of ', '').replace(' Bonvoy', '').replace(' Honors', '').replace(' One Rewards', '')}: {Math.round((midCash * 100) / p.avgCentsPerPoint).toLocaleString()} pts
+                    {p.programme.replace('World of ', '').replace(' Bonvoy', '').replace(' Honors', '').replace(' One Rewards', '').replace(' ALL', '')}: {Math.round((midCashUsd * 100) / p.avgCentsPerPoint).toLocaleString()} pts
                   </div>
                 ))}
               </div>
@@ -139,6 +141,7 @@ function PointsValueCard({ country, city, rates, programmes }: { country: string
       </div>
       <div style={{ fontSize: 10, color: 'var(--ink3)', marginTop: 8, lineHeight: 1.4 }}>
         "Fair value" is the mid-tier cash price divided by each programme's average 2026 redemption value — if a search asks for more points than that, you're likely getting below-average value. Real redemption prices vary by property and date.
+        {currency !== 'USD' && ` Converted from USD research figures at ${isLive ? 'live' : 'cached'} exchange rates.`}
       </div>
     </div>
   );

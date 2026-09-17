@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BackIcon } from '../components/Icons';
-import { useLoyaltyProgrammes, useHomeLocation } from '../lib/useLiveData';
-import { setProgrammeTier, setHomeLocation } from '../lib/queries';
+import { useLoyaltyProgrammes, useHomeLocation, useCurrencyPreference } from '../lib/useLiveData';
+import { setProgrammeTier, setHomeLocation, setCurrencyPreference } from '../lib/queries';
+import { SUPPORTED_CURRENCIES, CURRENCY_SYMBOL } from '../lib/currency';
 import { BA_TIERS, QR_TIERS, QF_TIERS, KF_TIERS } from '../lib/creditingEngine';
 import { loadWorldCities, type WorldCity } from '../data/worldCitiesLoader';
 
@@ -27,6 +28,21 @@ export function Settings() {
   const [cities, setCities] = useState<WorldCity[]>([]);
   const [homeSaving, setHomeSaving] = useState(false);
   const [homeSaved, setHomeSaved] = useState(false);
+  const { data: currency, refetch: refetchCurrency } = useCurrencyPreference();
+  const [currencySaving, setCurrencySaving] = useState(false);
+  const [currencySaved, setCurrencySaved] = useState(false);
+
+  async function onChangeCurrency(next: string) {
+    setCurrencySaving(true);
+    setCurrencySaved(false);
+    try {
+      await setCurrencyPreference(next);
+      refetchCurrency();
+      setCurrencySaved(true);
+    } finally {
+      setCurrencySaving(false);
+    }
+  }
 
   useEffect(() => { setCityInput(home.city); }, [home.city]);
   useEffect(() => { loadWorldCities().then(setCities); }, []);
@@ -94,6 +110,24 @@ export function Settings() {
           </button>
         </div>
         {homeSaved && <div style={{ fontSize: 11.5, color: 'var(--green)', fontWeight: 700, marginTop: 6 }}>Saved</div>}
+      </div>
+
+      <div style={{ padding: '4px 20px 24px', borderTop: '1px solid var(--line)' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)', marginBottom: 4, marginTop: 20 }}>
+          Display currency
+        </div>
+        <p style={{ fontSize: 12.5, color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
+          Prices researched in another currency (like Plan a trip's cash-vs-points figures) convert to this using live exchange rates.
+        </p>
+        <select
+          style={inputStyle}
+          value={currency}
+          onChange={(e) => onChangeCurrency(e.target.value)}
+          disabled={currencySaving}
+        >
+          {SUPPORTED_CURRENCIES.map((c) => <option key={c} value={c}>{c} ({CURRENCY_SYMBOL[c]})</option>)}
+        </select>
+        {currencySaved && <div style={{ fontSize: 11.5, color: 'var(--green)', fontWeight: 700, marginTop: 6 }}>Saved</div>}
       </div>
 
       <div style={{ padding: '4px 20px 32px', borderTop: '1px solid var(--line)' }}>

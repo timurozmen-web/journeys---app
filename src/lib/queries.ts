@@ -767,3 +767,19 @@ export async function setHomeLocation(city: string, country: string) {
   const { error } = await supabase.from('user_preferences').upsert({ user_id: userId, home_city: city, home_country: country, updated_at: new Date().toISOString() });
   if (error) throw error;
 }
+
+// Display currency preference -- the app's own logged data (hotel/flight
+// costs) is entered in GBP, and this converts everything shown on screen
+// into whichever currency the user picks, via live exchange rates
+// (see src/lib/currency.ts).
+export async function fetchCurrencyPreference(): Promise<string> {
+  const { data, error } = await supabase.from('user_preferences').select('currency').maybeSingle();
+  if (error) throw error;
+  return data?.currency ?? 'GBP';
+}
+export async function setCurrencyPreference(currency: string) {
+  const userId = (await supabase.from('trips').select('user_id').limit(1).maybeSingle()).data?.user_id;
+  if (!userId) throw new Error('No existing user to attach preferences to');
+  const { error } = await supabase.from('user_preferences').upsert({ user_id: userId, currency, updated_at: new Date().toISOString() });
+  if (error) throw error;
+}
