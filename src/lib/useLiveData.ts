@@ -20,8 +20,12 @@ function useLive<T>(fetcher: () => Promise<T[]>, fallback: T[]) {
           setIsLive(true);
         }
       })
-      .catch(() => {
-        // table doesn't exist yet, or user isn't signed in — stay on fallback
+      .catch((err) => {
+        // A real error here (not just no rows yet) is exactly the kind
+        // of thing that has been hard to diagnose remotely -- log it so
+        // it shows up in the browser console instead of silently
+        // falling back to mock data with no trace of why.
+        console.error(`[useLive] ${fetcher.name || 'fetch'} failed, falling back to cached/mock data:`, err);
       });
     return () => {
       cancelled = true;
@@ -50,8 +54,8 @@ function useLiveSingle<T>(fetcher: () => Promise<T | null>, fallback: T) {
           setIsLive(true);
         }
       })
-      .catch(() => {
-        // table doesn't exist yet, or user isn't signed in — stay on fallback
+      .catch((err) => {
+        console.error(`[useLiveSingle] ${fetcher.name || 'fetch'} failed, falling back to cached/mock data:`, err);
       });
     return () => {
       cancelled = true;

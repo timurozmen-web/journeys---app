@@ -44,10 +44,11 @@ export function Profile() {
   const [showAll, setShowAll] = useState(false);
   const [year, setYear] = useState<'all' | number>('all');
 
-  const { data: reviews } = useReviews();
-  const { data: hotels } = useAllHotels();
-  const { data: flights } = useAllFlights();
-  const { data: trips } = useTrips();
+  const { data: reviews, isLive: reviewsLive } = useReviews();
+  const { data: hotels, isLive: hotelsLive } = useAllHotels();
+  const { data: flights, isLive: flightsLive } = useAllFlights();
+  const { data: trips, isLive: tripsLive } = useTrips();
+  const showingMockData = !reviewsLive || !hotelsLive || !flightsLive || !tripsLive;
   const today = new Date().toISOString().slice(0, 10);
   const needsReview = findHotelsNeedingReview(trips, reviews, today);
   const missingCategories = findHotelsMissingCategories(trips, reviews);
@@ -159,6 +160,13 @@ export function Profile() {
             <SettingsIcon size={19} color="var(--ink2)" />
           </button>
         </div>
+        {showingMockData && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, padding: '10px 12px', borderRadius: 10, background: 'rgba(210,60,60,.08)', border: '1px solid rgba(210,60,60,.2)' }}>
+            <span style={{ fontSize: 12, color: 'var(--red)', fontWeight: 700, lineHeight: 1.4 }}>
+              Showing sample data, not your real account — the live connection didn't load. Try closing and reopening the app.
+            </span>
+          </div>
+        )}
         <div style={{ display: 'flex', marginTop: 20, paddingBottom: 16, borderBottom: '1px solid var(--line)' }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.6px', color: 'var(--ink)' }}>{visitedCountries.size}</div>
