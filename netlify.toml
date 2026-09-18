@@ -5,3 +5,33 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+# index.html (and the PWA manifest/service-worker files) must never be
+# cached by the browser itself -- they're small, and they're the only
+# thing that tells a returning visitor which hashed JS/CSS files the
+# current deploy actually uses. If a browser caches an old index.html
+# for even a few minutes, it can end up requesting chunk filenames from
+# a previous deploy that Netlify no longer serves, which is exactly the
+# failure mode chased earlier in this project. Hashed asset files
+# (Vite gives every JS/CSS file a content hash in its name) are safe to
+# cache aggressively, since a change in content always means a new
+# filename.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

@@ -8,6 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: null,
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Journeys',
@@ -36,6 +37,11 @@ export default defineConfig({
         // chunk filename from a previous deploy.
         skipWaiting: true,
         clientsClaim: true,
+        // Explicitly delete any cached files left over from a previous
+        // deploy's precache list when the new service worker activates
+        // -- belt-and-suspenders alongside skipWaiting/clientsClaim, so
+        // nothing stale can linger and get served by accident.
+        cleanupOutdatedCaches: true,
       },
     }),
   ],
