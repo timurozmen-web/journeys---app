@@ -405,7 +405,7 @@ export function blendedGuideForMonth(
 ): BlendedMonthGuide | null {
   const staticGuide = findDestinationGuide(city, country);
   const staticMonth = staticGuide?.months[monthIndex] ?? null;
-  const realMonths = findRealClimateMonths(realData, city, country);
+  const realMonths = findRealClimateMonths(realData, city, country, staticGuide?.name);
   const real = realMonths ? realClimateForMonth(realMonths, monthIndex) : null;
   const crowdPrice = findCrowdPriceMonth(crowdPriceData, city, country, MONTH_ABBR[monthIndex]);
   const relevantDriver = relevantHolidayDriver(crowdPrice, tripStart, tripEnd);
@@ -469,7 +469,7 @@ const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep
 // above but keyed on hub_station/region since that's what the real
 // data uses. Real data takes priority over the static estimates when
 // both exist for the same destination.
-export function findRealClimateMonths(realData: RealClimateMonth[], city: string | null, country: string) {
+export function findRealClimateMonths(realData: RealClimateMonth[], city: string | null, country: string, defaultHint?: string | null) {
   const cq = city?.trim().toLowerCase();
   const countryq = country.trim().toLowerCase();
   let rows = realData.filter((r) => r.country.toLowerCase() === countryq);
@@ -477,11 +477,16 @@ export function findRealClimateMonths(realData: RealClimateMonth[], city: string
   if (cq) {
     const byCity = rows.filter((r) => r.hubStation.toLowerCase().includes(cq) || r.region.toLowerCase().includes(cq) || cq.includes(r.hubStation.toLowerCase()));
     if (byCity.length > 0) rows = byCity;
+  } else if (defaultHint) {
+    // No specific city given -- prefer whichever region matches the
+    // static guide's own default for this country (e.g. Tokyo for
+    // Japan), so the two systems agree on what "the default" means
+    // instead of picking an arbitrary row based on unordered query
+    // results.
+    const hint = defaultHint.trim().toLowerCase();
+    const byHint = rows.filter((r) => r.hubStation.toLowerCase().includes(hint) || r.region.toLowerCase().includes(hint) || hint.includes(r.hubStation.toLowerCase()));
+    if (byHint.length > 0) rows = byHint;
   }
-  // No city given, or city didn't narrow it down (e.g. a multi-region
-  // country selected at country level only) -- use the first region as
-  // a reasonable default, same approach as the static guide's country
-  // aliases.
   const firstRegion = rows[0].region;
   return rows.filter((r) => r.region === firstRegion).sort((a, b) => MONTH_ABBR.indexOf(a.month) - MONTH_ABBR.indexOf(b.month));
 }
