@@ -45,11 +45,12 @@ export interface NewTripInput {
   notes: string;
 }
 
-export async function addTrip(input: NewTripInput): Promise<string> {
+export async function addTrip(input: NewTripInput, id?: string): Promise<string> {
   const today = new Date().toISOString().slice(0, 10);
   const { data, error } = await supabase
     .from('trips')
     .insert({
+      ...(id ? { id } : {}), // lets a caller pre-generate the id client-side (see offline queue: a queued hotel needs a real trip id to reference before the trip itself has actually synced)
       title: input.title, start_date: input.start, end_date: input.end,
       section: computeSection(input.start, input.end, today),
       trip_type: input.tripType, notes: input.notes,

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { addFlight, updateFlight, deleteFlight } from '../lib/queries';
+import { withOfflineFallback } from '../lib/offlineQueue';
 import type { Flight } from '../types';
 import { useTrips, useAllFlights } from '../lib/useLiveData';
 import { findLikelyDuplicateFlight } from '../lib/duplicateDetection';
@@ -79,7 +80,7 @@ export function LogFlight() {
       if (editing) {
         await updateFlight(editing.id, payload);
       } else {
-        await addFlight(payload);
+        await withOfflineFallback('addFlight', `${payload.airline ?? 'Flight'} ${payload.flightNo ?? ''}`.trim(), addFlight, payload);
       }
       if (state?.returnTo) navigate(state.returnTo.pathname, { state: state.returnTo.state });
       else navigate(form.tripId ? `/trips/${form.tripId}` : '/trips');

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { addHotel, updateHotel, deleteHotel, addTrip, updateTrip } from '../lib/queries';
+import { withOfflineFallback } from '../lib/offlineQueue';
 import { suggestTripAssignment } from '../lib/autoTrip';
 import { normalizeBrand } from '../data/brandMap';
 import type { Hotel } from '../types';
@@ -125,7 +126,7 @@ export function LogHotel() {
             newEnd.setDate(newEnd.getDate() + nights);
             const newEndStr = newEnd.toISOString().slice(0, 10);
             if (newEndStr > existingTrip.end) {
-              await updateTrip(existingTrip.id, {
+              await withOfflineFallback('updateTrip', `Extend ${existingTrip.title}`, updateTrip, existingTrip.id, {
                 title: existingTrip.title, start: existingTrip.start, end: newEndStr,
                 tripType: existingTrip.tripType, notes: existingTrip.notes,
               });
@@ -134,10 +135,22 @@ export function LogHotel() {
         } else {
           const end = new Date(form.date);
           end.setDate(end.getDate() + nights);
-          resolvedTripId = await addTrip({
+          const newTripInput = {
             title: autoSuggestion.suggestedTitle, start: form.date, end: end.toISOString().slice(0, 10),
             tripType: autoSuggestion.tripType, notes: '',
-          });
+          };
+          // Pre-generate the id client-side so the hotel below can
+          // reference this trip right away, even if creating the trip
+          // itself also has to queue for later -- addTrip accepts an
+          // explicit id specifically to make this chaining work; without
+          // it, a queued trip wouldn't have a real id yet for the
+          // queued hotel to point at.
+          resolvedTripId = crypto.randomUUID();
+          await withOfflineFallback(
+            'addTrip', autoSuggestion.suggestedTitle,
+            async (input: typeof newTripInput, id: string) => { await addTrip(input, id); },
+            newTripInput, resolvedTripId
+          );
         }
       }
 
@@ -160,7 +173,11 @@ export function LogHotel() {
       if (editing) {
         await updateHotel(editing.id, payload);
       } else {
-        await addHotel(payload);
+        // If this can't reach the network, it queues instead of failing
+        // outright -- the persistent "N pending" indicator in the tab
+        // bar is what tells the user it's waiting to sync, rather than
+        // a one-off message here that would vanish on navigation anyway.
+        await withOfflineFallback('addHotel', `${payload.name} stay`, addHotel, payload);
       }
       if (state?.returnTo) navigate(state.returnTo.pathname, { state: state.returnTo.state });
       else navigate(resolvedTripId ? `/trips/${resolvedTripId}` : '/trips');

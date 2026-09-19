@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { HomeIcon, TripsIcon, WalletIcon, ProfileIcon, PlanIcon, CaptureIcon, DiscoverIcon, CreditIcon } from './Icons';
+import { getQueuedWrites, onQueueChange } from '../lib/offlineQueue';
 
 const RADIAL = [
   { key: 'plan', label: 'Plan', Icon: PlanIcon, color: '#1E3A8F' },
@@ -12,9 +13,24 @@ const RADIAL = [
 export function TabBar() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const [pendingCount, setPendingCount] = useState(() => getQueuedWrites().length);
+
+  useEffect(() => onQueueChange(() => setPendingCount(getQueuedWrites().length)), []);
 
   return (
     <>
+      {pendingCount > 0 && (
+        <div
+          style={{
+            position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 'calc(74px + env(safe-area-inset-bottom, 0px))',
+            zIndex: 94, display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 99,
+            background: 'var(--ink)', color: '#fff', fontSize: 11.5, fontWeight: 700, boxShadow: '0 4px 14px rgba(23,23,28,.25)',
+          }}
+        >
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--amber)' }} />
+          {pendingCount} change{pendingCount === 1 ? '' : 's'} waiting to sync
+        </div>
+      )}
       <div className={`scrim ${open ? 'on' : ''}`} onClick={() => setOpen(false)} />
       <div
         style={{
