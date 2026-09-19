@@ -1,6 +1,7 @@
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { TabBar } from './components/TabBar';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { AuthGate } from './components/AuthGate';
 import { Home } from './screens/Home';
 import { Trips } from './screens/Trips';
 import { Wallet } from './screens/Wallet';
@@ -23,7 +24,7 @@ import { CreditAdvisor } from './screens/CreditAdvisor';
 export default function App() {
   return (
     <HashRouter>
-     <>
+     <AuthGate>
       <div className="screen on">
         <ErrorBoundary>
           <Routes>
@@ -49,7 +50,7 @@ export default function App() {
         </ErrorBoundary>
       </div>
       <TabBar />
-     </>
+     </AuthGate>
     </HashRouter>
   );
 }
