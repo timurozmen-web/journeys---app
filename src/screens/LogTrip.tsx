@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { addTrip, updateTrip, deleteTrip } from '../lib/queries';
+import { withOfflineFallback } from '../lib/offlineQueue';
 import type { Trip } from '../types';
 import { BackIcon } from '../components/Icons';
 
@@ -43,10 +44,19 @@ export function LogTrip() {
     setError('');
     try {
       if (editing) {
-        await updateTrip(editing.id, form);
+        await withOfflineFallback('updateTrip', form.title, updateTrip, editing.id, form);
         navigate(`/trips/${editing.id}`);
       } else {
-        const id = await addTrip(form);
+        // Same pre-generated-id pattern as the hotel/flight queue: the
+        // id is created client-side so navigation can go straight to
+        // the trip page immediately, whether or not the actual write
+        // has to queue for later.
+        const id = crypto.randomUUID();
+        await withOfflineFallback(
+          'addTrip', form.title,
+          async (input: typeof form, tripId: string) => { await addTrip(input, tripId); },
+          form, id
+        );
         navigate(`/trips/${id}`);
       }
     } catch (err) {
