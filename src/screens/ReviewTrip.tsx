@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { BackIcon } from '../components/Icons';
 import { addReview } from '../lib/queries';
+import { withOfflineFallback } from '../lib/offlineQueue';
 import { useReviews } from '../lib/useLiveData';
 import { REVIEW_CATEGORIES } from '../lib/reviewScoring';
 import {
@@ -118,7 +119,7 @@ export function ReviewTrip() {
       for (let i = 0; i < categories.length; i++) {
         const s = states[i];
         if (s.score == null) continue;
-        await addReview({
+        await withOfflineFallback('addReview', `${hotel!.hotelName}: ${categories[i].label}`, addReview, {
           hotelId: hotel!.hotelId, hotelName: hotel!.hotelName, country: hotel!.country,
           date: hotel!.date, category: categories[i].key, score: s.score,
         });

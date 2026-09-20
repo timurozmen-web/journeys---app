@@ -5,7 +5,7 @@ import './styles/tokens.css';
 import './styles/app.css';
 import App from './App';
 import { initOfflineQueue } from './lib/offlineQueue';
-import { addHotel, addFlight, addTrip, updateTrip } from './lib/queries';
+import { addHotel, addFlight, addTrip, updateTrip, addReview } from './lib/queries';
 
 // autoUpdate + skipWaiting/clientsClaim (see vite.config.ts) handle most
 // of this already, but a PWA opened from the home screen icon doesn't
@@ -20,16 +20,17 @@ document.addEventListener('visibilitychange', () => {
 
 // Registers the writes that can currently be queued while offline (see
 // src/lib/offlineQueue.ts) and starts auto-retrying them once
-// connectivity returns. Scoped to logging a hotel/flight for now, plus
-// the trip-creation/extension a hotel log can trigger automatically
-// (addTrip accepts a pre-generated id specifically so a queued hotel
-// can reference a queued trip before that trip itself has synced) --
-// not every write in the app.
+// connectivity returns. Covers logging a hotel/flight, creating or
+// editing a trip (addTrip accepts a pre-generated id specifically so a
+// queued hotel or trip can reference each other correctly before either
+// has actually synced), and submitting a review -- the actions someone
+// is realistically doing with patchy signal, not every write in the app.
 initOfflineQueue({
   addHotel: addHotel as (...args: unknown[]) => Promise<void>,
   addFlight: addFlight as (...args: unknown[]) => Promise<void>,
   addTrip: (async (input: Parameters<typeof addTrip>[0], id?: string) => { await addTrip(input, id); }) as (...args: unknown[]) => Promise<void>,
   updateTrip: updateTrip as (...args: unknown[]) => Promise<void>,
+  addReview: addReview as (...args: unknown[]) => Promise<void>,
 });
 
 createRoot(document.getElementById('root')!).render(
