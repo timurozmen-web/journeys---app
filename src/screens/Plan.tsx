@@ -68,6 +68,16 @@ function civilianAirportName(name: string): string {
   return name.split(' / ')[0];
 }
 
+// No hotel loyalty programme, dynamic or fixed-chart, actually prices a
+// night at an exact figure like 58,434 points -- Hyatt's real chart
+// values land on round 500-multiples (3,500, 6,500, 40,000, etc.) and
+// the dynamic programmes (Marriott, Hilton, IHG) round to similarly
+// clean numbers in practice. Snapping the estimate to the nearest 500
+// reads as a realistic figure instead of false formula precision.
+function roundPointsEstimate(points: number): number {
+  return Math.round(points / 500) * 500;
+}
+
 function formatHours(h: number): string {
   const totalMins = h * 60;
   const rounded = totalMins > 60 ? Math.round(totalMins / 15) * 15 : Math.round(totalMins);
@@ -147,7 +157,7 @@ function PointsValueCard({ country, city, rates, programmes }: { country: string
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginTop: 4 }}>
                 {mainProgrammes.map((p) => (
                   <div key={p.programme} style={{ fontSize: 10.5, color: 'var(--ink2)' }}>
-                    {p.programme.replace('World of ', '').replace(' Bonvoy', '').replace(' Honors', '').replace(' One Rewards', '').replace(' ALL', '')}: {Math.round((midCashUsd * 100) / p.avgCentsPerPoint).toLocaleString()} pts
+                    {p.programme.replace('World of ', '').replace(' Bonvoy', '').replace(' Honors', '').replace(' One Rewards', '').replace(' ALL', '')}: {roundPointsEstimate(Math.round((midCashUsd * 100) / p.avgCentsPerPoint)).toLocaleString()} pts
                   </div>
                 ))}
               </div>

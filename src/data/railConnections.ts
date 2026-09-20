@@ -7,10 +7,11 @@
 // guess wherever one has actually been researched.
 //
 // This is a starter set, not exhaustive -- currently the Tokaido/Sanyo
-// Shinkansen corridor (Tokyo-Nagoya-Kyoto-Osaka-Hiroshima-Fukuoka),
-// since that's the rail network this app's Japan coverage actually
-// touches. Extending to other countries' rail networks (France's TGV,
-// Spain's AVE, etc.) is a natural next step, not done here.
+// Shinkansen corridor (Tokyo-Nagoya-Kyoto-Osaka-Hiroshima-Fukuoka) and
+// the main France/Spain TGV/AVE corridor (Paris-Lyon-Barcelona-Madrid-
+// Seville, plus Marseille). Extending to other rail-heavy regions
+// (Germany's ICE, Italy's Frecciarossa, the UK, more of the Spanish and
+// French networks) is a natural next step, not done here.
 export interface RailConnection {
   cityA: string;
   cityB: string;
@@ -39,6 +40,14 @@ export const RAIL_CONNECTIONS: RailConnection[] = [
   { cityA: 'Kyoto', cityB: 'Fukuoka', minutes: 145, source: 'Derived: Tokyo-Fukuoka (285min) minus Tokyo-Kyoto (140min)', confidence: 'Medium' },
   { cityA: 'Osaka', cityB: 'Fukuoka', minutes: 144, source: 'Derived: Tokyo-Fukuoka (285min) minus Tokyo-Osaka (141min)', confidence: 'Medium' },
   { cityA: 'Hiroshima', cityB: 'Fukuoka', minutes: 60, source: 'Derived from Tokyo-Fukuoka minus Tokyo-Hiroshima (~50-55min); rounded to the commonly-cited ~1 hour figure for this well-known segment', confidence: 'Medium' },
+  // France/Spain high-speed corridor (TGV/AVE)
+  { cityA: 'Paris', cityB: 'Lyon', minutes: 120, source: 'Well-established, one of the original and most famous TGV routes, ~1h55-2h across many sources', confidence: 'High' },
+  { cityA: 'Paris', cityB: 'Barcelona', minutes: 385, source: 'acprail.com -- as little as 6h25m; showmethejourney.com and seat61.com corroborate a same-ballpark direct/near-direct journey', confidence: 'High' },
+  { cityA: 'Madrid', cityB: 'Barcelona', minutes: 150, source: 'everyrail.com, fastesttrains.com -- both confirm ~2h30m at up to 300-310km/h, the flagship AVE route', confidence: 'High' },
+  { cityA: 'Madrid', cityB: 'Seville', minutes: 135, source: 'everyrail.com -- 2h15-30m, one of the original AVE routes from the 1990s', confidence: 'High' },
+  { cityA: 'Lyon', cityB: 'Barcelona', minutes: 91, source: 'acprail.com -- 1h31m', confidence: 'High' },
+  { cityA: 'Marseille', cityB: 'Barcelona', minutes: 257, source: 'acprail.com -- 4h17m', confidence: 'High' },
+  { cityA: 'Marseille', cityB: 'Madrid', minutes: 423, source: 'acprail.com -- 7h03m at up to 300km/h; note thetrainline.com cites a slower 11h16m for a different/indirect routing option, the faster direct-ish figure used here', confidence: 'Medium' },
 ];
 
 function normalize(city: string): string {

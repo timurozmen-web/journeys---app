@@ -25,9 +25,15 @@ const MODE_ICON_SVG: Record<TransportMode, string> = {
   road: '<path d="M4 16V11l2-5h12l2 5v5"/><path d="M4 16h16M6 16v2M18 16v2"/><circle cx="7.5" cy="16" r="1.5"/><circle cx="16.5" cy="16" r="1.5"/>',
 };
 
+// Same rounding rule as the rest of the app's duration displays (see
+// Plan.tsx's formatHours): a formula estimate has no business claiming
+// false precision, and this map label was a separate, un-rounded
+// implementation of the same thing.
 function formatHours(h: number): string {
-  const hours = Math.floor(h);
-  const mins = Math.round((h - hours) * 60);
+  const totalMins = h * 60;
+  const rounded = totalMins > 60 ? Math.round(totalMins / 15) * 15 : Math.round(totalMins);
+  const hours = Math.floor(rounded / 60);
+  const mins = rounded % 60;
   return mins === 0 ? `${hours}h` : `${hours}h${mins}m`;
 }
 
@@ -86,15 +92,17 @@ export function PlanMap({
       zoomControl: true, attributionControl: true, scrollWheelZoom: true,
     }).setView([20, 0], 2);
 
-    // Carto Voyager: real OSM road/city data underneath, but with a
-    // clearer road hierarchy and much less visual clutter than raw OSM's
-    // default style -- closer to the requested Apple Maps middle ground.
-    // Free, no API key required. Labels are still in each place's local
-    // language, same as raw OSM -- that's a genuine limitation of free
-    // pre-rendered raster tiles generally (the label language is baked in
-    // by whoever renders the tile), not something fixable by picking a
-    // different free style.
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    // Carto Positron: real OSM road/city data underneath, with a muted,
+    // near-monochrome palette that actually sits with this app's warm,
+    // minimal off-white theme -- Voyager's more saturated colours (bright
+    // blue water, busy road/label colour-coding) clashed with it,
+    // especially at world zoom where that saturation and label density
+    // is most visible. Free, no API key required. Labels are still in
+    // each place's local language, same as raw OSM -- that's a genuine
+    // limitation of free pre-rendered raster tiles generally (the label
+    // language is baked in by whoever renders the tile), not something
+    // fixable by picking a different free style.
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       maxZoom: 19,
       subdomains: 'abcd',
