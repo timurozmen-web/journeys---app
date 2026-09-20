@@ -7,11 +7,17 @@
 // guess wherever one has actually been researched.
 //
 // This is a starter set, not exhaustive -- currently the Tokaido/Sanyo
-// Shinkansen corridor (Tokyo-Nagoya-Kyoto-Osaka-Hiroshima-Fukuoka) and
-// the main France/Spain TGV/AVE corridor (Paris-Lyon-Barcelona-Madrid-
-// Seville, plus Marseille). Extending to other rail-heavy regions
-// (Germany's ICE, Italy's Frecciarossa, the UK, more of the Spanish and
-// French networks) is a natural next step, not done here.
+// Shinkansen corridor (Tokyo-Nagoya-Kyoto-Osaka-Hiroshima-Fukuoka), the
+// main France/Spain TGV/AVE corridor (Paris-Lyon-Barcelona-Madrid-
+// Seville, plus Marseille), Italy's Frecciarossa network (Milan-Rome-
+// Naples, Bologna-Florence, plus the Milan-Paris cross-border service),
+// and Germany's ICE network (Frankfurt-Cologne, Munich-Nuremberg,
+// Berlin-Hamburg-Frankfurt, Cologne-Munich). The planned Frecciarossa
+// Italy-Germany cross-border routes (Milan/Rome to Munich) are
+// deliberately not included -- still in testing as of September 2026,
+// not yet in commercial service. Extending to other rail-heavy regions
+// (the UK, more of the French/Spanish/German/Italian networks) is a
+// natural next step, not done here.
 export interface RailConnection {
   cityA: string;
   cityB: string;
@@ -48,6 +54,17 @@ export const RAIL_CONNECTIONS: RailConnection[] = [
   { cityA: 'Lyon', cityB: 'Barcelona', minutes: 91, source: 'acprail.com -- 1h31m', confidence: 'High' },
   { cityA: 'Marseille', cityB: 'Barcelona', minutes: 257, source: 'acprail.com -- 4h17m', confidence: 'High' },
   { cityA: 'Marseille', cityB: 'Madrid', minutes: 423, source: 'acprail.com -- 7h03m at up to 300km/h; note thetrainline.com cites a slower 11h16m for a different/indirect routing option, the faster direct-ish figure used here', confidence: 'Medium' },
+  // Italy Frecciarossa corridor
+  { cityA: 'Milan', cityB: 'Rome', minutes: 175, source: 'italiarail.com -- 28 daily nonstop Frecciarossa services, "just under 3 hours"', confidence: 'High' },
+  { cityA: 'Milan', cityB: 'Naples', minutes: 245, source: 'italiarail.com -- 36 daily Frecciarossa services, "just over 4 hours"', confidence: 'High' },
+  { cityA: 'Bologna', cityB: 'Florence', minutes: 37, source: 'italiarail.com -- 70 daily Frecciarossa services, roughly 37 minutes', confidence: 'High' },
+  { cityA: 'Milan', cityB: 'Paris', minutes: 410, source: 'Wikipedia (Milan-Paris Frecciarossa) -- average journey time 6h50m, operating since Dec 2021', confidence: 'High' },
+  // Germany ICE network
+  { cityA: 'Frankfurt', cityB: 'Cologne', minutes: 65, source: 'bahnpedia.de and fastesttrains.com both confirm ~1h04-05m on the dedicated Cologne-Frankfurt high-speed line (opened 2002)', confidence: 'High' },
+  { cityA: 'Munich', cityB: 'Nuremberg', minutes: 64, source: 'bahnpedia.de -- 1h04m on the dedicated Nurnberg-Munich high-speed line (opened 2006)', confidence: 'High' },
+  { cityA: 'Berlin', cityB: 'Hamburg', minutes: 102, source: 'acprail.com and bahnpedia.de both confirm 1h42m', confidence: 'High' },
+  { cityA: 'Berlin', cityB: 'Frankfurt', minutes: 230, source: 'fastesttrains.com cites 3h50m as a direct example; note polishtrains.eu cites a faster 3h30m and acprail.com a slower 4h25m -- genuine variance across sources depending on service/routing, middle figure used', confidence: 'Medium' },
+  { cityA: 'Cologne', cityB: 'Munich', minutes: 255, source: 'fastesttrains.com -- "usually takes 4 to 4.5 hours", middle figure used', confidence: 'Medium' },
 ];
 
 function normalize(city: string): string {
