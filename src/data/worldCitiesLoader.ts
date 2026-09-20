@@ -29,7 +29,7 @@ export interface NearestAirportResult {
   distanceKm: number;
 }
 
-const LARGE_AIRPORT_SEARCH_RADIUS_KM = 100;
+const LARGE_AIRPORT_SEARCH_RADIUS_KM = 60;
 
 /**
  * Finds the genuinely closest airport to a city, preferring large/primary

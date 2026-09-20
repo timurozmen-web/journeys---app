@@ -1,5 +1,6 @@
 import { haversineKm } from './travelStats';
 import { PLANNING_AIRPORTS_BY_IATA, type PlanningAirport } from '../data/planningAirports';
+import { findRailConnection } from '../data/railConnections';
 
 export type TransportMode = 'flight' | 'rail' | 'road';
 
@@ -103,13 +104,14 @@ export function planLeg(
 ): LegPlan {
   const distanceKm = haversineKm(from.lat, from.lng, to.lat, to.lng);
   const { mode, rationale } = recommendMode(distanceKm, railLikely);
+  const realRail = mode === 'rail' ? findRailConnection(from.city, to.city) : null;
   return {
     fromCity: from.city,
     toCity: to.city,
     distanceKm,
     recommendedMode: mode,
-    rationale,
-    estimatedTravelHours: estimateTravelHours(distanceKm, mode, railLikely),
+    rationale: realRail ? `${rationale} (real rail time, not estimated)` : rationale,
+    estimatedTravelHours: realRail ? realRail.minutes / 60 : estimateTravelHours(distanceKm, mode, railLikely),
     estimatedOverheadHours: estimateOverheadHours(mode),
     estimatedCostGBP: estimateCostGBP(distanceKm, mode),
   };

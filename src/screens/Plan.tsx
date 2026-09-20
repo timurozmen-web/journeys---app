@@ -13,7 +13,7 @@ import { nearestAirportToCity, type NearestAirportResult } from '../data/worldCi
 import { planHotelOptions } from '../lib/hotelPlanner';
 import { useLoyaltyProgrammes, useAllHotels, useHomeLocation, useClimateData, useCrowdPriceData, usePointsValueData, useCityCashRates } from '../lib/useLiveData';
 import { haversineKm } from '../lib/travelStats';
-import { addTrip, addHotel, addFlight, type PointsValueProgramme, type CityCashRate } from '../lib/queries';
+import { addTrip, addHotel, addFlight, type PointsValueProgramme, type CityCashRate, type RealClimateMonth, type RealCrowdPriceMonth } from '../lib/queries';
 import { useCurrency } from '../lib/currency';
 import { getBudgetEstimate, type BudgetEstimate } from '../lib/budgetEstimate';
 import { CitySearchInput } from '../components/CitySearchInput';
@@ -54,9 +54,25 @@ const labelStyle: React.CSSProperties = {
   letterSpacing: '.05em', marginBottom: 5, display: 'block',
 };
 
+// Anything over an hour rounds to the nearest 15 minutes -- a formula
+// estimate has no business claiming false precision like "12h 46m";
+// under an hour, exact minutes are kept since that level of precision
+// is normal for a short local hop.
+// Several airports in the dataset are genuine dual-use civilian/military
+// fields (Komatsu, Nagoya-Komaki, etc.) named with a "/ JASDF ... Air
+// Base" or similar suffix -- accurate for an aviation reference, but
+// alarming and irrelevant to a traveller booking a real commercial
+// flight. Strips that back to the plain civilian name actually used for
+// booking and check-in.
+function civilianAirportName(name: string): string {
+  return name.split(' / ')[0];
+}
+
 function formatHours(h: number): string {
-  const hours = Math.floor(h);
-  const mins = Math.round((h - hours) * 60);
+  const totalMins = h * 60;
+  const rounded = totalMins > 60 ? Math.round(totalMins / 15) * 15 : Math.round(totalMins);
+  const hours = Math.floor(rounded / 60);
+  const mins = rounded % 60;
   return mins === 0 ? `${hours}h` : `${hours}h ${mins}m`;
 }
 
@@ -140,8 +156,47 @@ function PointsValueCard({ country, city, rates, programmes }: { country: string
         })}
       </div>
       <div style={{ fontSize: 10, color: 'var(--ink3)', marginTop: 8, lineHeight: 1.4 }}>
-        "Fair value" is the mid-tier cash price divided by each programme's average 2026 redemption value — if a search asks for more points than that, you're likely getting below-average value. Real redemption prices vary by property and date.
-        {currency !== 'USD' && ` Converted from USD research figures at ${isLive ? 'live' : 'cached'} exchange rates.`}
+        Based on estimated fair value.
+        {currency !== 'USD' && ` Converted at ${isLive ? 'live' : 'cached'} rates.`}
+      </div>
+    </div>
+  );
+}
+
+// A whole-year overview shown the moment a destination is picked --
+// before any date is chosen, not gated behind it. Twelve segments,
+// colour-coded the same way as the season tile, with today's month
+// (or the month a date has actually been picked in) picked out
+// clearly so there's an obvious "you are here" reference point.
+function SeasonHeatmap({ country, city, climateData, crowdPriceData, highlightMonth }: {
+  country: string; city: string | null; climateData: RealClimateMonth[]; crowdPriceData: RealCrowdPriceMonth[]; highlightMonth: number;
+}) {
+  const months = Array.from({ length: 12 }, (_, i) => {
+    // A representative date within the month, just to drive the
+    // lookup -- the heatmap shows the general seasonal pattern, not a
+    // specific trip's holiday-proximity, so the exact day doesn't matter.
+    const rep = `2026-${String(i + 1).padStart(2, '0')}-15`;
+    return blendedGuideForMonth(climateData, crowdPriceData, city, country, i, rep, rep);
+  });
+  if (months.every((m) => m === null)) return null;
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ fontSize: 10, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 4 }}>Season at a glance</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3 }}>
+        {months.map((m, i) => (
+          <div
+            key={i}
+            title={`${MONTH_NAMES[i]}${m ? `: ${m.price ?? 'unknown'} season` : ''}`}
+            style={{
+              height: 22, borderRadius: 4, background: m?.price ? PRICE_COLOR[m.price] : 'var(--line)',
+              opacity: m?.price ? 1 : 0.3,
+              outline: i === highlightMonth ? '2px solid var(--ink)' : 'none', outlineOffset: 1,
+            }}
+          />
+        ))}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 8.5, color: 'var(--ink3)', marginTop: 3 }}>
+        <span>J</span><span>F</span><span>M</span><span>A</span><span>M</span><span>J</span><span>J</span><span>A</span><span>S</span><span>O</span><span>N</span><span>D</span>
       </div>
     </div>
   );
@@ -544,14 +599,20 @@ export function Plan() {
                 onChange={(cities) => { updateDestination(dest.id, { cities }); setCities([]); }}
               />
             </div>
-            {startDate && (() => {
+            {(() => {
+              const today = new Date().toISOString().slice(0, 10);
+              const effectiveStart = startDate || today;
               const nightsNum = Number(dest.nights) || 0;
-              const approxCheckOut = nightsNum > 0 ? addDays(startDate, nightsNum) : startDate;
-              const monthIdx = dominantMonth(startDate, approxCheckOut);
-              const blended = blendedGuideForMonth(climateData, crowdPriceData, dest.cities[0]?.name ?? null, dest.country, monthIdx, startDate, approxCheckOut);
+              const approxCheckOut = nightsNum > 0 ? addDays(effectiveStart, nightsNum) : effectiveStart;
+              const monthIdx = dominantMonth(effectiveStart, approxCheckOut);
+              const blended = blendedGuideForMonth(climateData, crowdPriceData, dest.cities[0]?.name ?? null, dest.country, monthIdx, effectiveStart, approxCheckOut);
+              const heading = startDate
+                ? `${blended?.label ?? dest.country} in ${MONTH_NAMES[monthIdx]}: ${blended?.summary ?? ''}`
+                : `${blended?.label ?? dest.country} right now: ${blended?.summary ?? ''}`;
               return (
                 <>
-                  {blended && <GuideTileGrid blended={blended} heading={`${blended.label} in ${MONTH_NAMES[monthIdx]}: ${blended.summary}`} />}
+                  <SeasonHeatmap country={dest.country} city={dest.cities[0]?.name ?? null} climateData={climateData} crowdPriceData={crowdPriceData} highlightMonth={monthIdx} />
+                  {blended && <GuideTileGrid blended={blended} heading={heading} />}
                   <PointsValueCard country={dest.country} city={dest.cities[0]?.name ?? null} rates={cityCashRates} programmes={pointsValueData} />
                 </>
               );
@@ -571,7 +632,7 @@ export function Plan() {
           <select style={inputStyle} value={homeAirport} onChange={(e) => setHomeAirport(e.target.value)}>
             {HOME_AIRPORTS.map((code) => {
               const a = PLANNING_AIRPORTS_BY_IATA[code];
-              return <option key={code} value={code}>{a ? `${a.city} ${a.name} (${code})` : code}</option>;
+              return <option key={code} value={code}>{a ? `${a.city} ${civilianAirportName(a.name)} (${code})` : code}</option>;
             })}
           </select>
         </div>
@@ -587,8 +648,8 @@ export function Plan() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 12, background: 'rgba(30,58,143,.05)', border: '1px solid rgba(30,58,143,.15)' }}>
               <TripsIcon size={18} color="var(--brand)" style={{ flexShrink: 0 }} />
               <div style={{ fontSize: 12.5, color: 'var(--ink)', lineHeight: 1.45 }}>
-                <b>{leave.leaveDaysNeeded} day{leave.leaveDaysNeeded === 1 ? '' : 's'} of annual leave</b> for {leave.totalDays} day{leave.totalDays === 1 ? '' : 's'} away
-                {leave.bankHolidays > 0 && <>. Covers {leave.bankHolidays} UK bank holiday{leave.bankHolidays === 1 ? '' : 's'}, so you don't need to book those off.</>}
+                <b>{leave.leaveDaysNeeded} day{leave.leaveDaysNeeded === 1 ? '' : 's'} annual leave</b>
+                {leave.bankHolidays > 0 && ` (${leave.bankHolidays} bank holiday${leave.bankHolidays === 1 ? '' : 's'})`}
               </div>
             </div>
           );
@@ -772,7 +833,7 @@ export function Plan() {
                       <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 4, lineHeight: 1.5 }}>{c.why}</div>
                       {transfer && (
                         <div style={{ fontSize: 11.5, color: 'var(--ink3)', marginTop: 6 }}>
-                          {transfer.airport.name || transfer.airport.city} ({transfer.airport.iata}) · {Math.round(transfer.distanceKm)} km to centre · ~{Math.round((transfer.distanceKm / 45) * 60 + 10)} min transfer
+                          {civilianAirportName(transfer.airport.name || transfer.airport.city)} ({transfer.airport.iata}) · {Math.round(transfer.distanceKm)} km to centre · ~{Math.round((transfer.distanceKm / 45) * 60 + 10)} min transfer
                         </div>
                       )}
                       <a
