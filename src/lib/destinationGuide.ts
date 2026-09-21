@@ -487,7 +487,15 @@ export function findRealClimateMonths(realData: RealClimateMonth[], city: string
     const byHint = rows.filter((r) => r.hubStation.toLowerCase().includes(hint) || r.region.toLowerCase().includes(hint) || hint.includes(r.hubStation.toLowerCase()));
     if (byHint.length > 0) rows = byHint;
   }
-  const firstRegion = rows[0].region;
+  // If the hint didn't match any region either, fall back to whichever
+  // region sorts first alphabetically -- not a claim that it's the
+  // "best" one, just deterministic and stable, so the same country
+  // always resolves to the same default rather than flipping between
+  // regions depending on unordered query results (the exact bug fixed
+  // for Takayama/Japan, now guarded against generally rather than only
+  // for that one case).
+  const sortedRows = [...rows].sort((a, b) => a.region.localeCompare(b.region));
+  const firstRegion = sortedRows[0].region;
   return rows.filter((r) => r.region === firstRegion).sort((a, b) => MONTH_ABBR.indexOf(a.month) - MONTH_ABBR.indexOf(b.month));
 }
 
