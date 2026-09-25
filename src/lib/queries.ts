@@ -532,7 +532,14 @@ export interface RealCrowdPriceMonth {
   driverDates: string | null;
   driverStartDate: string | null; // real date for a specific dated event -- used to check it's actually near the trip, not just "same month"
   driverEndDate: string | null;
-  lunarCalendar: boolean; // true for dates that shift significantly year to year (Tet, etc) -- these are only matched against their exact stored year, never year-shifted
+  // Despite the column name (lunar_calendar), this really means "exact
+  // year only": true for ANY date that doesn't recur on the same month-day
+  // -- lunar/Islamic holidays (Tet, Ramadan, Eid, Hajj), movable Christian
+  // feasts (Easter, Orthodox Easter, Pentecost), weekday-rule holidays
+  // (Thanksgiving, Memorial Day, Oktoberfest's 3rd Saturday), and
+  // published school-term calendars. These are only matched against the
+  // year they were researched for, never re-anchored to another year.
+  lunarCalendar: boolean;
   source: string;
   confidence: string;
 }

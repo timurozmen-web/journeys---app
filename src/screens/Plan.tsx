@@ -134,8 +134,17 @@ function GuideTileGrid({ blended, heading }: { blended: BlendedMonthGuide; headi
 function PointsValueCard({ country, city, rates, programmes }: { country: string; city: string | null; rates: CityCashRate[]; programmes: PointsValueProgramme[] }) {
   const { format, fromUsd, currency, isLive } = useCurrency();
   const cq = city?.trim().toLowerCase();
-  const matched = rates.filter((r) => r.country.toLowerCase() === country.toLowerCase() && (!cq || r.city.toLowerCase().includes(cq) || cq.includes(r.city.toLowerCase())));
-  if (matched.length === 0) return null;
+  const candidates = rates.filter((r) => r.country.toLowerCase() === country.toLowerCase() && (!cq || r.city.toLowerCase().includes(cq) || cq.includes(r.city.toLowerCase())));
+  if (candidates.length === 0) return null;
+  // With no city chosen (or a loose match), several cities can match.
+  // Tiers must all come from ONE city -- previously each tier was taken
+  // from whichever row came first, so a card headed "Amalfi" could show
+  // Rome's mid-range and Venice's luxury price. Pick the city with the
+  // most complete tier set (then alphabetical, for a stable choice).
+  const byCity = new Map<string, CityCashRate[]>();
+  for (const r of candidates) byCity.set(r.city, [...(byCity.get(r.city) ?? []), r]);
+  const bestCity = [...byCity.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))[0][0];
+  const matched = byCity.get(bestCity)!;
   const tierOrder: Array<'budget' | 'mid' | 'luxury'> = ['budget', 'mid', 'luxury'];
   const tierLabel = { budget: 'Budget', mid: 'Mid-range', luxury: 'Luxury' };
   const priorityOrder = ['Marriott Bonvoy', 'Hilton Honors', 'World of Hyatt', 'IHG One Rewards', 'Accor ALL'];
@@ -153,7 +162,7 @@ function PointsValueCard({ country, city, rates, programmes }: { country: string
           const midCashUsd = (rate.priceLowUsd + rate.priceHighUsd) / 2;
           return (
             <div key={tier}>
-              <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)' }}>{tierLabel[tier]}: {format(fromUsd(rate.priceLowUsd))}–{format(fromUsd(rate.priceHighUsd))}/night</div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)' }}>{tierLabel[tier]}: {rate.priceLowUsd === rate.priceHighUsd ? `~${format(fromUsd(rate.priceLowUsd))}` : `${format(fromUsd(rate.priceLowUsd))}–${format(fromUsd(rate.priceHighUsd))}`}/night</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginTop: 4 }}>
                 {mainProgrammes.map((p) => (
                   <div key={p.programme} style={{ fontSize: 10.5, color: 'var(--ink2)' }}>

@@ -355,9 +355,10 @@ function nearestOccurrence(driverStart: string, driverEnd: string, tripStart: st
   // every year, so it's placed in whichever year is actually close to
   // the trip -- trying the trip's own year and its neighbours, not the
   // stored template's year, so a trip a decade after the data was
-  // researched still matches correctly. Lunar-calendar dates (Tet, etc.)
-  // drift ~11 days a year and don't recur on a fixed month-day at all,
-  // so they're only ever matched against the exact year they were
+  // researched still matches correctly. Anything flagged lunarCalendar
+  // (really: "exact year only" -- lunar dates, Easter, Thanksgiving,
+  // school terms; see RealCrowdPriceMonth) doesn't recur on a fixed
+  // month-day, so it's only ever matched against the exact year it was
   // actually researched for -- a wrong-year match there would silently
   // show the wrong real date instead of no date.
   const yearShifts = lunarCalendar ? [0] : [-1, 0, 1];
