@@ -1,22 +1,104 @@
 # Journeys
 
-Real React + TypeScript app, structured to replace the HTML prototype.
+A personal travel app: log trips, hotels and flights, track loyalty
+points and status, and plan the next trip. It's a React + TypeScript
+PWA backed by Supabase, deployed on Netlify, with a Capacitor config
+ready for an iOS build.
 
-## Run it
+## What it does
+
+- **Home**: the current or next trip as a photo hero ("Day 2 of 4" /
+  "12 days to go"), the next flight, and loyalty highlights.
+- **Trips / Trip detail**: every trip with its hotels, flights, photos,
+  points earned and savings; flags trips missing an outbound or return
+  flight.
+- **Wallet**: loyalty programmes, payment cards, vouchers and
+  promotions, with points valued in £.
+- **Profile**: status progress per programme and travel stats.
+- **Logging**: add a hotel, flight, trip or loyalty programme by hand,
+  or **scan a booking email / screenshot** (Claude extracts the
+  bookings) and **scan a promotion**. Likely duplicates are flagged.
+  Works offline: entries queue locally and sync when back online.
+- **Bank sync**: links a bank account through Enable Banking and
+  suggests travel transactions to log.
+- **Plan a trip**: season and weather guide, crowd and price levels
+  around holidays, annual leave needed (UK bank holidays), budget
+  estimate, map, rail connections, and points-vs-cash comparisons.
+- **Credit advisor**: which programme (BA, Qatar, Qantas, KrisFlyer) a
+  flight should be credited to.
+- **Discover**: card offers and loyalty news.
+
+## Project layout
+
+| Path | What's there |
+| --- | --- |
+| `src/screens/` | One file per screen; routes are in `src/App.tsx` |
+| `src/components/` | Shared UI: trip cards, maps, logos, tab bar, auth gate |
+| `src/lib/` | App logic: points and status maths, planning, formatting, offline cache/queue, Supabase queries (`queries.ts`) and data hooks (`useLiveData.ts`) |
+| `src/data/` | Static data: airports, world cities, rail links, hotel brands, card definitions, and the mock data used as a fallback |
+| `src/types/index.ts` | Core types, mapping onto the Supabase tables |
+| `netlify/functions/` | Server-side functions: Claude-powered extraction and suggestions, bank linking, and two daily scheduled jobs (bank sync 06:00 UTC, promotion scan 07:00 UTC) |
+| `supabase/` | SQL for the schema, storage bucket and sample data |
+
+## How data loads
+
+Each screen reads through a hook in `src/lib/useLiveData.ts`. It shows
+the last cached copy instantly, then fetches from Supabase. If Supabase
+returns nothing or fails, it keeps whatever it already had, falling back
+to `src/data/mock.ts`. Profile and Wallet show a "sample data" notice
+when that fallback is in use. Sign-in is enforced by `AuthGate`.
+
+## Running locally
 
     npm install
+    cp .env.example .env   # then fill in the values below
     npm run dev
 
-## What's real vs. stubbed right now
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Local dev server |
+| `npm test` | Runs the tests once (`npm run test:watch` to re-run on save) |
+| `npm run lint` | Lint with oxlint |
+| `npm run build` | Typecheck and production build into `dist/` |
 
-- **Home** — fully wired to typed data (`src/data/mock.ts`), computes trip day/span live rather than hardcoding it
-- **Wallet** — data loads and is typed correctly, visual layer not yet ported
-- **Trips / Profile / Action sheets** — routing works, screens are placeholders
+## Configuration
 
-## Next steps, in order
+**App (`.env`, also set in Netlify):**
 
-1. **Port Trips, Wallet, Profile screens fully** — same visual code as the prototype, now against typed data instead of a JSON blob
-2. **Create a Supabase project** (you do this — needs your account) and run the schema generated from `src/types/index.ts`
-3. **Replace `src/data/mock.ts` with real Supabase queries** — the types are already shaped for this
-4. **`npx cap add ios`** — needs Xcode on a Mac; this step can't happen in a sandbox
-5. **Wire Capture to a vision-model API** once real photo/document upload exists
+- `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`: required; the app
+  won't start without them.
+- `VITE_UNSPLASH_ACCESS_KEY`: optional; destination photos. Without it
+  the app draws a generated scene instead.
+
+**Server-side only (Netlify environment variables, never in `.env`
+with a `VITE_` prefix):**
+
+- `ANTHROPIC_API_KEY`: email/promotion scanning and the smart
+  suggestion functions.
+- `SUPABASE_SERVICE_ROLE_KEY`: scheduled jobs and bank linking.
+- `ENABLE_BANKING_APP_ID`, `ENABLE_BANKING_PRIVATE_KEY`: bank linking.
+
+## Database
+
+Run `supabase/schema.sql`, then `supabase/storage.sql`, in the Supabase
+SQL editor. `supabase/seed.sql` adds sample data.
+
+**Known gap:** the app also reads six tables that were created directly
+in the live Supabase project and aren't in `schema.sql` yet:
+`climate_data`, `crowd_price_data`, `points_value_data`,
+`city_cash_rates`, `discover_items` and `user_preferences`. A fresh
+database built from this repo won't have them.
+
+## Tests
+
+Tests live next to the code they cover (`src/lib/*.test.ts`) and use
+Vitest. They cover the calculation logic: trip dates, points, status,
+the crediting engine, currency, annual leave, duplicate detection and
+formatting. Shared test data builders are in `src/test/fixtures.ts`.
+Tests run with the timezone set to Europe/London, where the date bugs
+this project has had actually showed up.
+
+## iOS
+
+`capacitor.config.ts` is set up (`com.timur.journeys`). Building needs a
+Mac with Xcode: `npm run build && npx cap add ios && npx cap open ios`.
