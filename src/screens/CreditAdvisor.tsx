@@ -164,9 +164,9 @@ function Results({ advisor }: { advisor: ReturnType<typeof runAdvisor> }) {
   return (
     <div style={{ padding: '4px 20px 32px', display: 'grid', gap: 12 }}>
       {bestValue && (
-        <div style={{ background: 'var(--brand)', borderRadius: 'var(--r-md)', padding: '14px 16px', color: 'var(--on-dark)' }}>
+        <div style={{ background: 'var(--brand)', borderRadius: 'var(--r-md)', padding: '14px 16px', color: 'var(--on-brand)' }}>
           <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '.05em' }}>Best value</div>
-          <div style={{ fontSize: 'var(--fs-title)', fontWeight: 800, marginTop: 2 }}>{bestValue.name}</div>
+          <div style={{ fontSize: 'var(--fs-title)', fontWeight: 600, marginTop: 2 }}>{bestValue.name}</div>
           <div style={{ fontSize: 'var(--fs-body)', opacity: 0.9, marginTop: 2 }}>
             {bestValue.redeemable?.amount.toLocaleString()} {bestValue.redeemable?.name} · roughly £{bestValueGBP.toFixed(0)} of value
           </div>
@@ -201,13 +201,13 @@ function ProgramCard({ r, isBest }: { r: ProgramResult; isBest: boolean }) {
       <div style={{ display: 'flex', gap: 18, marginTop: 8 }}>
         {r.redeemable && (
           <div>
-            <div style={{ fontSize: 'var(--fs-title)', fontWeight: 800, color: 'var(--ink)' }}>{r.redeemable.amount.toLocaleString()}</div>
+            <div style={{ fontSize: 'var(--fs-title)', fontWeight: 600, color: 'var(--ink)' }}>{r.redeemable.amount.toLocaleString()}</div>
             <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)' }}>{r.redeemable.name}</div>
           </div>
         )}
         {r.status && (
           <div>
-            <div style={{ fontSize: 'var(--fs-title)', fontWeight: 800, color: 'var(--ink)' }}>{r.status.amount.toLocaleString()}</div>
+            <div style={{ fontSize: 'var(--fs-title)', fontWeight: 600, color: 'var(--ink)' }}>{r.status.amount.toLocaleString()}</div>
             <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)' }}>{r.status.name}</div>
           </div>
         )}

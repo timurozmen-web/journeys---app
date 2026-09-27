@@ -148,7 +148,7 @@ export function ReviewTrip() {
         <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, marginBottom: 16, textAlign: 'center' }}>
           {step + 1} of {categories.length}
         </div>
-        <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 800, marginBottom: 28, textAlign: 'center', color: 'var(--brand)' }}>{category.label}</div>
+        <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 600, marginBottom: 28, textAlign: 'center', color: 'var(--brand)' }}>{category.label}</div>
 
         {phase === 'sentiment' && (
           <div>
@@ -183,7 +183,7 @@ export function ReviewTrip() {
 
         {phase === 'comparing' && comparisonCandidate && (
           <div>
-            <div style={{ fontSize: 'var(--fs-input)', fontWeight: 800, textAlign: 'center', marginBottom: 16, color: 'var(--brand)' }}>
+            <div style={{ fontSize: 'var(--fs-input)', fontWeight: 600, textAlign: 'center', marginBottom: 16, color: 'var(--brand)' }}>
               Which do you prefer?
             </div>
             <div style={{ position: 'relative', display: 'flex', gap: 10 }}>
@@ -191,10 +191,10 @@ export function ReviewTrip() {
                 onClick={() => answerComparison(true)}
                 style={{
                   flex: 1, minHeight: 150, padding: '18px 12px', borderRadius: 'var(--r-md)', border: '2px solid var(--brand)',
-                  background: 'rgba(19,34,71,.05)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'rgba(217,183,124,.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
               >
-                <div style={{ fontSize: 'var(--fs-input)', fontWeight: 800, textAlign: 'center' }}>{hotel.hotelName}</div>
+                <div style={{ fontSize: 'var(--fs-input)', fontWeight: 600, textAlign: 'center' }}>{hotel.hotelName}</div>
               </button>
               <button
                 onClick={() => answerComparison(false)}
@@ -203,14 +203,14 @@ export function ReviewTrip() {
                   background: 'var(--card)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
                 }}
               >
-                <div style={{ fontSize: 'var(--fs-input)', fontWeight: 800, textAlign: 'center' }}>{comparisonCandidate.hotelName}</div>
+                <div style={{ fontSize: 'var(--fs-input)', fontWeight: 600, textAlign: 'center' }}>{comparisonCandidate.hotelName}</div>
                 <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)' }}>{comparisonCandidate.score.toFixed(1)}</div>
               </button>
               <span
                 style={{
                   position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-                  width: 34, height: 34, borderRadius: '50%', background: 'var(--brand)', color: 'var(--on-dark)',
-                  fontSize: 'var(--fs-micro)', fontWeight: 800, display: 'grid', placeItems: 'center', boxShadow: '0 2px 8px rgba(0,0,0,.25)',
+                  width: 34, height: 34, borderRadius: '50%', background: 'var(--brand)', color: 'var(--on-brand)',
+                  fontSize: 'var(--fs-micro)', fontWeight: 600, display: 'grid', placeItems: 'center', boxShadow: '0 2px 8px rgba(0,0,0,.25)',
                 }}
               >
                 OR
@@ -237,7 +237,7 @@ export function ReviewTrip() {
               <div style={{ fontSize: 'var(--fs-input)', color: 'var(--ink3)', fontWeight: 600 }}>Skipped</div>
             ) : (
               <>
-                <div style={{ fontSize: 'var(--fs-hero)', fontWeight: 800, color: 'var(--brand)' }}>{current.score!.toFixed(1)}</div>
+                <div style={{ fontSize: 'var(--fs-hero)', fontWeight: 600, color: 'var(--brand)' }}>{current.score!.toFixed(1)}</div>
                 <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink3)', marginTop: 4 }}>
                   {current.sameBand.length === 0 ? 'First rating in this category' : 'Ranked against your other stays'}
                 </div>
@@ -254,7 +254,7 @@ export function ReviewTrip() {
             disabled={saving}
             style={{
               width: '100%', marginTop: 28, padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none', fontSize: 'var(--fs-input)', fontWeight: 700,
-              background: saving ? 'var(--card2)' : 'var(--brand)', color: saving ? 'var(--ink3)' : 'var(--on-dark)',
+              background: saving ? 'var(--card2)' : 'var(--brand)', color: saving ? 'var(--ink3)' : 'var(--on-brand)',
               cursor: saving ? 'default' : 'pointer',
             }}
           >

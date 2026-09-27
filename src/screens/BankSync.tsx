@@ -167,7 +167,7 @@ function TransactionRow({
         <button
           disabled={!selected}
           onClick={() => onAssign(selected)}
-          style={{ padding: '7px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: selected ? 'var(--brand)' : 'var(--card2)', color: selected ? 'var(--on-dark)' : 'var(--ink3)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: selected ? 'pointer' : 'default' }}
+          style={{ padding: '7px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: selected ? 'var(--brand)' : 'var(--card2)', color: selected ? 'var(--on-brand)' : 'var(--ink3)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: selected ? 'pointer' : 'default' }}
         >
           Add
         </button>

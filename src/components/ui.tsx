@@ -4,6 +4,7 @@
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BackIcon } from './Icons';
+import { dayMonth } from '../lib/format';
 
 // Back arrow + title at the top of every pushed screen.
 export function ScreenHeader({ title, right, onBack }: { title: ReactNode; right?: ReactNode; onBack?: () => void }) {
@@ -123,4 +124,17 @@ export function PhotoHero({
 // tone is a solid brand-blue badge for something that needs attention.
 export function Eyebrow({ children, tone }: { children: ReactNode; tone?: 'alert' }) {
   return <span className={tone === 'alert' ? 'ph-eyebrow alert' : 'ph-eyebrow'}>{children}</span>;
+}
+
+// Gold day-over-month date for itinerary rows. Plain text, deliberately
+// not in a box or circle -- the colour alone marks it out.
+export function DateStack({ date }: { date: string | null }) {
+  if (!date) return <span className="datestack" aria-hidden="true" />;
+  const { day, month } = dayMonth(date);
+  return (
+    <span className="datestack">
+      <span className="ds-day">{day}</span>
+      <span className="ds-month">{month}</span>
+    </span>
+  );
 }

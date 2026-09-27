@@ -225,7 +225,7 @@ export function Home() {
           >
             <span className="ph-top" style={{ right: 60 }}>
               <span style={{ display: 'block', fontSize: 'var(--fs-micro)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', opacity: 0.85 }}>{fmtFullDate(TODAY)}</span>
-              <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-title)', fontWeight: 800, letterSpacing: '-.2px', marginTop: 2 }}>Good {timeOfDay()}, Timur</span>
+              <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-title)', fontWeight: 600, letterSpacing: '-.2px', marginTop: 2 }}>Good {timeOfDay()}, Timur</span>
             </span>
 
             <span style={{ position: 'absolute', right: 16, top: 16, width: 34, height: 34, borderRadius: '50%', background: 'var(--on-dark-fill)', border: '1px solid var(--on-dark-line)', display: 'grid', placeItems: 'center' }}>
@@ -238,7 +238,7 @@ export function Home() {
                   {heroIsCurrent ? `Current trip · Day ${heroDayInfo!.dayIndex} of ${heroDayInfo!.totalDays}` : `Upcoming · ${heroDaysToGo} day${heroDaysToGo === 1 ? '' : 's'} to go`}
                 </Eyebrow>
                 {isTripIncomplete(heroTrip) && !flightExemptTripIds.has(heroTrip.id) && (
-                  <Eyebrow tone="alert"><AlertIcon size={12} color="var(--on-dark)" /> Trip incomplete</Eyebrow>
+                  <Eyebrow tone="alert"><AlertIcon size={12} color="var(--on-brand)" /> Trip incomplete</Eyebrow>
                 )}
               </span>
               <span className="ph-title" style={{ fontSize: 'var(--fs-hero)' }}>{heroTrip.title}</span>
@@ -259,7 +259,7 @@ export function Home() {
         ) : (
           <div style={{ padding: '10px 2px 4px' }}>
             <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)' }}>{fmtFullDate(TODAY)}</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-h1)', fontWeight: 800, letterSpacing: '-.4px', color: 'var(--ink)', marginTop: 3 }}>Good {timeOfDay()}, Timur</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-h1)', fontWeight: 600, letterSpacing: '-.4px', color: 'var(--ink)', marginTop: 3 }}>Good {timeOfDay()}, Timur</div>
           </div>
         )}
       </div>
@@ -278,8 +278,8 @@ export function Home() {
               border: '1px solid rgba(255,255,255,.6)', boxShadow: '0 8px 28px rgba(21,22,27,.1), inset 0 1px 0 rgba(255,255,255,.8)',
             }}
           >
-            <span style={{ position: 'absolute', top: -40, right: -30, width: 140, height: 140, borderRadius: '50%', background: 'radial-gradient(circle, rgba(30,58,143,.14), rgba(30,58,143,0) 70%)' }} />
-            <span style={{ position: 'absolute', bottom: -50, left: -20, width: 130, height: 130, borderRadius: '50%', background: 'radial-gradient(circle, rgba(156,111,40,.12), rgba(156,111,40,0) 70%)' }} />
+            <span style={{ position: 'absolute', top: -40, right: -30, width: 140, height: 140, borderRadius: '50%', background: 'radial-gradient(circle, rgba(217,183,124,.14), rgba(217,183,124,0) 70%)' }} />
+            <span style={{ position: 'absolute', bottom: -50, left: -20, width: 130, height: 130, borderRadius: '50%', background: 'radial-gradient(circle, rgba(217,183,124,.12), rgba(217,183,124,0) 70%)' }} />
 
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
@@ -288,7 +288,7 @@ export function Home() {
                   {nextFlight.airline}{nextFlight.flightNo ? ` · ${nextFlight.flightNo}` : ''}
                 </span>
               </div>
-              <span style={{ fontSize: 'var(--fs-micro)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: nextFlight.status === 'Booked' ? 'var(--brand)' : 'var(--ink2)', background: 'rgba(255,255,255,.7)', border: '1px solid rgba(255,255,255,.8)', borderRadius: 'var(--r-pill)', padding: '3px 9px' }}>
+              <span style={{ fontSize: 'var(--fs-micro)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: nextFlight.status === 'Booked' ? 'var(--brand)' : 'var(--ink2)', background: 'rgba(255,255,255,.7)', border: '1px solid rgba(255,255,255,.8)', borderRadius: 'var(--r-pill)', padding: '3px 9px' }}>
                 {nextFlight.status}
               </span>
             </div>
@@ -309,7 +309,7 @@ export function Home() {
 
             <div style={{ position: 'relative', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 10 }}>
               <span style={{ fontSize: 'var(--fs-small)', fontWeight: 600, color: 'var(--ink2)' }}>{fmtDate(nextFlight.date!)} · {nextFlight.cabin}</span>
-              {nextFlight.cost != null && <span style={{ fontSize: 'var(--fs-body)', fontWeight: 800, color: 'var(--ink)' }}>£{nextFlight.cost}</span>}
+              {nextFlight.cost != null && <span style={{ fontSize: 'var(--fs-body)', fontWeight: 600, color: 'var(--ink)' }}>£{nextFlight.cost}</span>}
             </div>
           </div>
         </div>
@@ -325,7 +325,7 @@ export function Home() {
           <span style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, padding: '17px 18px' }}>
             <span>
               <span style={{ display: 'block', fontSize: 'var(--fs-caption)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--ink2)' }}>Travel wallet</span>
-              <span style={{ display: 'block', fontSize: 'var(--fs-display)', fontWeight: 800, letterSpacing: '-1px', color: 'var(--ink)', marginTop: 3 }}>£{Math.round(walletValue).toLocaleString()}</span>
+              <span style={{ display: 'block', fontSize: 'var(--fs-display)', fontWeight: 600, letterSpacing: '-1px', color: 'var(--ink)', marginTop: 3 }}>£{Math.round(walletValue).toLocaleString()}</span>
               <span style={{ display: 'block', fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600, marginTop: 3 }}>
                 across {programmeCount} programme{programmeCount === 1 ? '' : 's'}
               </span>
@@ -361,14 +361,14 @@ export function Home() {
               >
                 <span style={{ width: 5, background: item.color, flexShrink: 0 }} />
                 <span style={{ flex: 1, minWidth: 0, padding: '13px 14px' }}>
-                  <span style={{ display: 'block', fontSize: 'var(--fs-body-lg)', fontWeight: 800, letterSpacing: '-.2px' }}>{item.title}</span>
+                  <span style={{ display: 'block', fontSize: 'var(--fs-body-lg)', fontWeight: 600, letterSpacing: '-.2px' }}>{item.title}</span>
                   <span style={{ display: 'block', fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 3, fontWeight: 500 }}>{item.subtitle}</span>
                   {item.progressPct != null && (
                     <span style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 9 }}>
                       <span style={{ flex: 1, height: 6, borderRadius: 'var(--r-pill)', background: 'var(--card2)', overflow: 'hidden', display: 'block' }}>
                         <i style={{ display: 'block', height: '100%', width: `${item.progressPct}%`, background: item.color, borderRadius: 'var(--r-pill)' }} />
                       </span>
-                      <span style={{ fontSize: 'var(--fs-caption)', fontWeight: 800, color: item.color }}>{Math.round(item.progressPct)}%</span>
+                      <span style={{ fontSize: 'var(--fs-caption)', fontWeight: 600, color: item.color }}>{Math.round(item.progressPct)}%</span>
                     </span>
                   )}
                 </span>

@@ -183,7 +183,7 @@ export function LogFlight() {
           </div>
         )}
         {dupWarning && (
-          <div style={{ background: 'var(--amber-soft)', border: '1px solid rgba(156,95,8,.25)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
+          <div style={{ background: 'var(--amber-soft)', border: '1px solid rgba(232,176,75,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
             <div style={{ fontSize: 'var(--fs-small)', color: 'var(--amber)', fontWeight: 600, marginBottom: 8 }}>
               This looks like it might already be logged as {dupWarning}: same route and date. Save anyway?
             </div>
@@ -224,7 +224,7 @@ export function LogFlight() {
           </button>
         )}
         {editing && confirmingDelete && (
-          <div style={{ background: 'var(--red-soft)', border: '1px solid rgba(210,60,60,.25)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
+          <div style={{ background: 'var(--red-soft)', border: '1px solid rgba(240,138,126,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
             <div style={{ fontSize: 'var(--fs-small)', color: 'var(--red)', fontWeight: 600, marginBottom: 8 }}>
               Delete this {editing.from} → {editing.to} flight permanently? This can't be undone.
             </div>

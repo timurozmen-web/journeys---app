@@ -5,6 +5,7 @@ import { useVouchers } from '../lib/useLiveData';
 import { setVoucherRedeemed } from '../lib/queries';
 import { computeStatusProgress } from '../lib/statusProgress';
 import { computeLoyaltyInsights } from '../lib/loyaltyInsights';
+import { cardBackground, luminance, textOn, tierFinish } from '../lib/cardTheme';
 import type { LoyaltyProgramme, Hotel, Promotion, PaymentCard } from '../types';
 
 type Category = 'hotel' | 'airline';
@@ -26,14 +27,11 @@ export function LoyaltyTab({
   const [open, setOpen] = useState<string | null>(null);
 
   const filtered = programmes.filter((p) => p.category === category);
-  const topByValue = new Set(
-    [...filtered].sort((a, b) => (b.points * b.ptValue) - (a.points * a.ptValue)).slice(0, 3).map((p) => p.name)
-  );
   const insights = computeLoyaltyInsights(hotels, programmes, new Date().getFullYear());
 
   return (
-    <div style={{ display: 'grid', gap: 10 }}>
-      <div className="catchip" style={{ margin: '0 0 4px' }}>
+    <div style={{ display: 'grid', gap: 12, padding: '0 16px' }}>
+      <div className="catchip" style={{ margin: '0 0 4px', padding: '0 4px 4px' }}>
         {(['hotel', 'airline'] as Category[]).map((c) => (
           <button key={c} className={category === c ? 'won' : ''} onClick={() => { setCategory(c); setOpen(null); }}>
             {c === 'hotel' ? 'Hotels' : 'Airlines'}
@@ -51,8 +49,9 @@ export function LoyaltyTab({
         const isOpen = open === p.name;
         const value = (p.points * p.ptValue) / 100;
         const hasStatus = !!p.nextTier && p.nights != null;
-        const isDeckCard = hasStatus && topByValue.has(p.name);
         const progress = hasStatus ? computeStatusProgress(p, hotels, promotions, cardResults) : null;
+        const tier = progress?.effectiveTier ?? p.tier;
+        const ink = textOn(p.color);
         const brandInsight = insights.byBrand.find((b) => b.brand === p.name);
 
         // card's own programme brand where possible (auto-synced
@@ -64,55 +63,43 @@ export function LoyaltyTab({
         );
 
         return (
-          <div key={p.name} style={{ borderRadius: 'var(--r-md)', overflow: 'hidden', border: isDeckCard ? 'none' : '1px solid var(--line)', background: isDeckCard ? p.color : 'var(--card)' }}>
+          <div key={p.name} className="brandcard" style={{ background: cardBackground(p.color), color: ink }}>
             <button
               onClick={() => setOpen(isOpen ? null : p.name)}
-              style={{
-                width: '100%', display: 'block', padding: isDeckCard ? '16px' : '13px 14px',
-                background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: isDeckCard ? 'var(--on-dark)' : 'var(--ink)',
-              }}
+              aria-expanded={isOpen}
+              style={{ width: '100%', display: 'block', padding: '16px 16px 18px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'inherit' }}
             >
-              {isDeckCard ? (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0, flex: 1 }}>
-                      <BrandLogo name={p.name} shape={p.shape} color={p.color} accent={p.accent} size={32} />
-                      <span style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, color: 'var(--on-dark2)' }}>{progress?.effectiveTier ?? p.tier ?? '—'}</span>
-                    </div>
-                    <span style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, color: 'rgba(255,255,255,.8)', flexShrink: 0 }}>{isOpen ? '⌃' : '⌄'}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 16, gap: 10 }}>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 800, letterSpacing: '-.6px' }}>{p.points.toLocaleString()}</div>
-                      <div style={{ fontSize: 'var(--fs-micro)', fontWeight: 600, color: 'rgba(255,255,255,.75)', marginTop: 1 }}>points · {p.ptValue}p each</div>
-                    </div>
-                    <div style={{ flexShrink: 0, textAlign: 'right' }}>
-                      <div style={{ fontSize: 'var(--fs-title)', fontWeight: 800 }}>{moneyPrecise(value)}</div>
-                      {progress?.targetTier && progress.total > progress.currentNights && (
-                        <div style={{ fontSize: 'var(--fs-micro)', color: 'rgba(255,255,255,.75)', marginTop: 1 }}>
-                          {progress.total - progress.currentNights} nights to {progress.targetTier}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <BrandLogo name={p.name} shape={p.shape} color={p.color} accent={p.accent} size={38} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    {!hasWordmarkLogo(p.name) && <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 700 }}>{p.name}</div>}
-                    <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 1 }}>{progress?.effectiveTier ?? p.tier ?? '—'}</div>
-                  </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 700 }}>{p.points.toLocaleString()} pts</div>
-                    <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 1 }}>{moneyPrecise(value)}</div>
-                  </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0, flex: 1 }}>
+                  <BrandLogo name={p.name} shape={p.shape} color={p.color} accent={p.accent} size={32} />
+                  {!hasWordmarkLogo(p.name) && <span style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>}
                 </div>
-              )}
+                {tier && <span className={`tierchip ${tierFinish(tier)}`}>{tier}</span>}
+                <span aria-hidden="true" style={{ fontSize: 'var(--fs-caption)', opacity: 0.7, flexShrink: 0 }}>{isOpen ? '⌃' : '⌄'}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 18, gap: 10 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 'var(--fs-h1)', fontWeight: 400, letterSpacing: '-.5px', lineHeight: 1 }}>{p.points.toLocaleString()}</div>
+                  <div style={{ fontSize: 'var(--fs-caption)', opacity: 0.72, marginTop: 4 }}>points · {p.ptValue}p each</div>
+                </div>
+                <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                  <div style={{ fontSize: 'var(--fs-title)', fontWeight: 500 }}>{moneyPrecise(value)}</div>
+                  {progress?.targetTier && progress.total > progress.currentNights && (
+                    <div style={{ fontSize: 'var(--fs-caption)', opacity: 0.72, marginTop: 2 }}>
+                      {progress.total - progress.currentNights} nights to {progress.targetTier}
+                    </div>
+                  )}
+                </div>
+              </div>
             </button>
+            {progress && (
+              <div className="bc-progress" aria-hidden="true">
+                <i style={{ width: `${Math.max(0, Math.min(100, progress.pct ?? 0))}%`, background: p.accent && luminance(p.accent) > 0.05 ? p.accent : 'var(--brand)' }} />
+              </div>
+            )}
 
             {isOpen && (
-              <div style={{ padding: '0 14px 16px', background: isDeckCard ? 'var(--on-dark)' : 'none', display: 'grid', gap: 14 }}>
+              <div style={{ padding: '14px 14px 16px', background: 'var(--card)', color: 'var(--ink)', display: 'grid', gap: 14 }}>
                 <div className="dd-row">
                   <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Rate</span>
                   <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{p.ptValue}p per point</span>
@@ -151,7 +138,7 @@ export function LoyaltyTab({
                       {progress.pendingPct != null && (
                         <i
                           style={{
-                            width: `${Math.max(0, Math.min(100, progress.pendingPct))}%`, background: 'rgba(156,95,8,.4)',
+                            width: `${Math.max(0, Math.min(100, progress.pendingPct))}%`, background: 'rgba(232,176,75,.45)',
                             position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 'var(--r-pill)',
                           }}
                         />
@@ -181,7 +168,7 @@ export function LoyaltyTab({
                           {progress.spendProgress.pendingPct != null && (
                             <i
                               style={{
-                                width: `${progress.spendProgress.pendingPct}%`, background: 'rgba(156,95,8,.4)',
+                                width: `${progress.spendProgress.pendingPct}%`, background: 'rgba(232,176,75,.45)',
                                 position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 'var(--r-pill)',
                               }}
                             />
@@ -214,7 +201,7 @@ export function LoyaltyTab({
                 )}
 
                 {progress && progress.appliedPromoNights > 0 && (
-                  <div style={{ padding: '10px 12px', borderRadius: 'var(--r-control)', background: 'rgba(58,168,94,.1)', border: '1px solid rgba(58,168,94,.25)' }}>
+                  <div style={{ padding: '10px 12px', borderRadius: 'var(--r-control)', background: 'rgba(111,207,151,.12)', border: '1px solid rgba(111,207,151,.3)' }}>
                     <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--green)' }}>
                       ✓ {progress.appliedPromoNights} promotion night{progress.appliedPromoNights === 1 ? '' : 's'} marked applied
                     </div>

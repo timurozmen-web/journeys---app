@@ -63,7 +63,7 @@ export function Discover() {
           return (
             <div key={item.id} style={{ position: 'relative', border: '1px solid var(--line)', background: 'var(--card)', borderRadius: 'var(--r-md)', padding: '14px 14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 'var(--fs-micro)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--brand)', background: 'var(--brand-soft)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>
+                <span style={{ fontSize: 'var(--fs-micro)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--brand)', background: 'var(--brand-soft)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>
                   {CATEGORY_LABEL[item.category]}
                 </span>
                 {item.relatedProgramme && (
@@ -78,7 +78,7 @@ export function Discover() {
               {item.detail && <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', lineHeight: 1.6, margin: '8px 0 0' }}>{item.detail}</p>}
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
-                {item.headlineStat && <span style={{ fontSize: 'var(--fs-body)', fontWeight: 800, color: 'var(--ink)' }}>{item.headlineStat}</span>}
+                {item.headlineStat && <span style={{ fontSize: 'var(--fs-body)', fontWeight: 600, color: 'var(--ink)' }}>{item.headlineStat}</span>}
                 {item.annualFee && <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)' }}>Cost: {item.annualFee}</span>}
                 {item.deadline && (
                   <span style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, color: deadlinePassed ? 'var(--ink3)' : 'var(--amber)' }}>
@@ -99,7 +99,7 @@ export function Discover() {
               <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                 <button
                   onClick={() => onKeep(item.id)}
-                  style={{ flex: 1, padding: '9px 0', borderRadius: 'var(--r-control)', border: 'none', background: 'var(--brand)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ flex: 1, padding: '9px 0', borderRadius: 'var(--r-control)', border: 'none', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
                 >
                   Keep
                 </button>
@@ -218,7 +218,7 @@ export function Discover() {
                 <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                   <button
                     onClick={async () => { await acceptPromotionCandidate(c); refetchCandidates(); }}
-                    style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--brand)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
+                    style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
                   >
                     Add
                   </button>

@@ -144,7 +144,7 @@ export function ScanPromotion() {
               disabled={loading || (!text.trim() && images.length === 0)}
               style={{
                 width: '100%', marginTop: 14, padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none',
-                background: loading ? 'var(--card2)' : 'var(--brand)', color: loading ? 'var(--ink3)' : 'var(--on-dark)',
+                background: loading ? 'var(--card2)' : 'var(--brand)', color: loading ? 'var(--ink3)' : 'var(--on-brand)',
                 fontSize: 'var(--fs-input)', fontWeight: 700, cursor: 'pointer',
               }}
             >
@@ -223,7 +223,7 @@ export function ScanPromotion() {
           </div>
 
           {result.promoType === 'multiplier' && (
-            <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', background: 'rgba(19,34,71,.06)', padding: '10px 12px', borderRadius: 'var(--r-control)' }}>
+            <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', background: 'rgba(217,183,124,.1)', padding: '10px 12px', borderRadius: 'var(--r-control)' }}>
               This one actually affects your points: any matching, active stay at this brand will show the multiplier applied in Trip Detail.
             </div>
           )}
@@ -237,7 +237,7 @@ export function ScanPromotion() {
           <button
             onClick={handleSave}
             disabled={saving || !result.title}
-            style={{ padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none', background: saving ? 'var(--card2)' : 'var(--brand)', color: saving ? 'var(--ink3)' : 'var(--on-dark)', fontSize: 'var(--fs-input)', fontWeight: 700, cursor: 'pointer' }}
+            style={{ padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none', background: saving ? 'var(--card2)' : 'var(--brand)', color: saving ? 'var(--ink3)' : 'var(--on-brand)', fontSize: 'var(--fs-input)', fontWeight: 700, cursor: 'pointer' }}
           >
             {saving ? 'Saving…' : 'Save promotion'}
           </button>

@@ -150,7 +150,7 @@ export function ScanEmail() {
                 onClick={() => openBooking(b, i)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10, padding: '13px 14px', borderRadius: 'var(--r-md)',
-                  background: saved ? 'rgba(12,122,66,.06)' : 'var(--card)', border: `1px solid ${saved ? 'rgba(12,122,66,.25)' : 'var(--line)'}`,
+                  background: saved ? 'var(--green-soft)' : 'var(--card)', border: `1px solid ${saved ? 'rgba(111,207,151,.3)' : 'var(--line)'}`,
                   cursor: 'pointer', textAlign: 'left', font: 'inherit', color: 'var(--ink)',
                 }}
               >
@@ -174,7 +174,7 @@ export function ScanEmail() {
           <div style={{ padding: '16px 20px' }}>
             <button
               onClick={() => navigate('/trips')}
-              style={{ width: '100%', padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none', background: 'var(--brand)', color: 'var(--on-dark)', fontSize: 'var(--fs-input)', fontWeight: 700, cursor: 'pointer' }}
+              style={{ width: '100%', padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 'var(--fs-input)', fontWeight: 700, cursor: 'pointer' }}
             >
               Done, go to trips
             </button>
@@ -264,7 +264,7 @@ export function ScanEmail() {
           style={{
             width: '100%', marginTop: 14, padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none',
             background: canSubmit ? 'var(--brand)' : 'var(--card2)',
-            color: canSubmit ? 'var(--on-dark)' : 'var(--ink3)',
+            color: canSubmit ? 'var(--on-brand)' : 'var(--ink3)',
             fontSize: 'var(--fs-input)', fontWeight: 700, cursor: canSubmit ? 'pointer' : 'default',
           }}
         >

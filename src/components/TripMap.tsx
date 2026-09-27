@@ -4,6 +4,7 @@ import { worldGeo } from '../data/worldGeo';
 import { AIRPORTS } from '../data/airports';
 import type { Hotel, Flight } from '../types';
 import type { TripPhoto } from '../lib/queries';
+import { MAP } from '../data/mapTheme';
 
 const WIDTH = 360;
 const HEIGHT = 220;
@@ -150,27 +151,27 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
 
   return (
     <div style={{ position: 'relative' }}>
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block', background: '#DCE7F5', borderRadius: 'var(--r-md)' }}>
+      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block', background: 'var(--map-bg)', borderRadius: 'var(--r-md)' }}>
         {countryPaths.map((c) => (
-          <path key={c.name} d={c.d} fill="#B9CEEC" stroke="#DCE7F5" strokeWidth={0.5} />
+          <path key={c.name} d={c.d} fill={MAP.land} stroke={MAP.landBorder} strokeWidth={0.5} />
         ))}
         {routeLines.map((r) => (
-          <path key={r.key} d={r.d} fill="none" stroke="#1E3A8F" strokeWidth={1.1} strokeDasharray="3 2.2" opacity={0.85} />
+          <path key={r.key} d={r.d} fill="none" stroke={MAP.route} strokeWidth={1.1} strokeDasharray="3 2.2" opacity={0.85} />
         ))}
         {markers.map((m, i) => (
-          <circle key={`h${i}`} cx={m.x} cy={m.y} r={3.2} fill="#1E3A8F" stroke="#fff" strokeWidth={1} />
+          <circle key={`h${i}`} cx={m.x} cy={m.y} r={3.2} fill={MAP.stop} stroke={MAP.stopRing} strokeWidth={1} />
         ))}
         {photoMarkers.map((p, i) => (
           <g key={`p${i}`}>
-            <circle cx={p.x} cy={p.y} r={4} fill="#FF9962" stroke="#fff" strokeWidth={1} />
-            <circle cx={p.x} cy={p.y} r={1.4} fill="#fff" />
+            <circle cx={p.x} cy={p.y} r={4} fill={MAP.home} stroke={MAP.stopRing} strokeWidth={1} />
+            <circle cx={p.x} cy={p.y} r={1.4} fill={MAP.stopRing} />
           </g>
         ))}
         {playing && traveledPath && (
-          <path d={traveledPath} fill="none" stroke="#1E3A8F" strokeWidth={2} strokeLinecap="round" opacity={0.9} />
+          <path d={traveledPath} fill="none" stroke={MAP.route} strokeWidth={2} strokeLinecap="round" opacity={0.9} />
         )}
         {playing && activeStop && (
-          <circle cx={activeStop.x} cy={activeStop.y} r={5.5} fill="#1E3A8F" stroke="#fff" strokeWidth={1.6}>
+          <circle cx={activeStop.x} cy={activeStop.y} r={5.5} fill={MAP.stop} stroke={MAP.stopRing} strokeWidth={1.6}>
             <animate attributeName="r" values="5.5;8;5.5" dur="1.2s" repeatCount="indefinite" />
           </circle>
         )}
@@ -181,8 +182,8 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
           onClick={togglePlay}
           style={{
             position: 'absolute', top: 8, right: 8, display: 'flex', alignItems: 'center', gap: 5,
-            padding: '5px 11px', borderRadius: 'var(--r-pill)', border: 'none', background: 'rgba(255,255,255,.92)',
-            color: 'var(--brand)', fontSize: 'var(--fs-caption)', fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(23,23,28,.18)',
+            padding: '5px 11px', borderRadius: 'var(--r-pill)', border: 'none', background: 'rgba(20,23,30,.9)',
+            color: 'var(--brand)', fontSize: 'var(--fs-caption)', fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,.4)',
           }}
         >
           {playing ? '⏸ Pause' : '▶ Play trip'}
@@ -194,7 +195,7 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
           style={{
             position: 'absolute', left: 10, right: 10, bottom: 10, background: 'var(--card)', borderRadius: 'var(--r-control)',
             border: '1px solid var(--line)', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 8,
-            boxShadow: '0 4px 14px rgba(23,23,28,.15)',
+            boxShadow: '0 4px 14px rgba(0,0,0,.4)',
           }}
         >
           {activeStop.photoUrl && (

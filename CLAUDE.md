@@ -37,6 +37,13 @@ Run all three; all must be clean:
   Use those first. Any remaining inline style should reference tokens
   (`fontSize: 'var(--fs-body)'`), never raw px sizes or hex colours.
   Form controls take `className="input"` inside a `Field`.
+- **The theme is Night Flight:** near-black ground, warm white text,
+  champagne gold (`--brand`) as the single accent, font Jost. Anything
+  on a gold fill uses `--on-brand` (dark), never white. Photos fade
+  into the page via the scrim tokens. Wallet cards take each
+  programme's own brand colour (`src/lib/cardTheme.ts`); map colours
+  live in `src/data/mapTheme.ts` because Leaflet and SVG attributes
+  can't read CSS variables.
 - Routing uses `HashRouter`; routes are listed in `src/App.tsx`.
 
 ## Data layer

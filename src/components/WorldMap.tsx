@@ -3,6 +3,7 @@ import { geoNaturalEarth1, geoPath } from 'd3-geo';
 import { worldGeo } from '../data/worldGeo';
 import { AIRPORTS, COUNTRY_NAME_MAP } from '../data/airports';
 import type { Hotel, Flight, Review } from '../types';
+import { MAP } from '../data/mapTheme';
 
 const WIDTH = 360;
 const HEIGHT = 200;
@@ -197,7 +198,7 @@ export function WorldMap({
           onClick={() => setShowRoutes((v) => !v)}
           style={{
             padding: '6px 12px', borderRadius: 'var(--r-pill)', border: '1px solid var(--line)',
-            background: showRoutes ? 'var(--brand)' : 'var(--card2)', color: showRoutes ? 'var(--on-dark)' : 'var(--ink2)',
+            background: showRoutes ? 'var(--brand)' : 'var(--card2)', color: showRoutes ? 'var(--on-brand)' : 'var(--ink2)',
             fontSize: 'var(--fs-caption)', fontWeight: 700, cursor: 'pointer',
           }}
         >
@@ -208,7 +209,7 @@ export function WorldMap({
       <div style={{ position: 'relative' }}>
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-          style={{ width: '100%', height: 'auto', display: 'block', background: '#DCE7F5', borderRadius: 'var(--r-sm)', overflow: 'hidden', touchAction: 'none', cursor: 'grab' }}
+          style={{ width: '100%', height: 'auto', display: 'block', background: 'var(--map-bg)', borderRadius: 'var(--r-sm)', overflow: 'hidden', touchAction: 'none', cursor: 'grab' }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -217,12 +218,12 @@ export function WorldMap({
           <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
             {countryPaths.map((c) => {
               const nights = nightsByCountry.get(c.name);
-              const fill = nights ? shadeFor(nights, maxNights) : '#B9CEEC';
+              const fill = nights ? shadeFor(nights, maxNights) : MAP.land;
               const isSelected = selected === c.name;
               return (
                 <path
                   key={c.name} d={c.d} fill={fill}
-                  stroke={isSelected ? '#fff' : '#DCE7F5'} strokeWidth={isSelected ? 1.2 / zoom : 0.4 / zoom}
+                  stroke={isSelected ? MAP.text : MAP.landBorder} strokeWidth={isSelected ? 1.2 / zoom : 0.4 / zoom}
                   onClick={() => selectCountry(c.name)}
                   style={{ cursor: nights ? 'pointer' : 'default' }}
                 />
@@ -230,10 +231,10 @@ export function WorldMap({
             })}
             {showRoutes &&
               routeLines.map((r) => (
-                <path key={r.key} d={r.d} fill="none" stroke="#1E3A8F" strokeWidth={0.7 / zoom} strokeDasharray={`${2 / zoom} ${1.5 / zoom}`} opacity={0.75} />
+                <path key={r.key} d={r.d} fill="none" stroke={MAP.route} strokeWidth={0.7 / zoom} strokeDasharray={`${2 / zoom} ${1.5 / zoom}`} opacity={0.75} />
               ))}
             {showRoutes &&
-              airportDots.map((a) => <circle key={a.code} cx={a.x} cy={a.y} r={1.6 / zoom} fill="#1E3A8F" stroke="#fff" strokeWidth={0.5 / zoom} />)}
+              airportDots.map((a) => <circle key={a.code} cx={a.x} cy={a.y} r={1.6 / zoom} fill={MAP.stop} stroke={MAP.stopRing} strokeWidth={0.5 / zoom} />)}
           </g>
         </svg>
 
@@ -247,11 +248,11 @@ export function WorldMap({
           <div
             style={{
               position: 'absolute', left: 10, right: 10, bottom: 10, background: 'var(--card)', borderRadius: 'var(--r-sm)',
-              border: '1.5px solid var(--brand)', padding: '10px 12px', boxShadow: '0 6px 16px rgba(23,23,28,.18)',
+              border: '1.5px solid var(--brand)', padding: '10px 12px', boxShadow: '0 6px 16px rgba(0,0,0,.4)',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ fontSize: 'var(--fs-body)', fontWeight: 800, color: 'var(--ink)' }}>{selected}</div>
+              <div style={{ fontSize: 'var(--fs-body)', fontWeight: 600, color: 'var(--ink)' }}>{selected}</div>
               <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--ink3)', cursor: 'pointer', fontSize: 'var(--fs-body)', padding: 0, lineHeight: 1 }}>✕</button>
             </div>
             <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--brand)', fontWeight: 700, marginTop: 2 }}>
@@ -283,7 +284,7 @@ function ZoomBtn({ children, onClick }: { children: React.ReactNode; onClick: ()
       style={{
         width: 26, height: 26, borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card)',
         color: 'var(--ink)', fontSize: 'var(--fs-body-lg)', fontWeight: 700, cursor: 'pointer', display: 'grid', placeItems: 'center',
-        boxShadow: '0 1px 4px rgba(23,23,28,.15)',
+        boxShadow: '0 1px 4px rgba(0,0,0,.4)',
       }}
     >
       {children}
@@ -293,7 +294,7 @@ function ZoomBtn({ children, onClick }: { children: React.ReactNode; onClick: ()
 
 function shadeFor(nights: number, max: number) {
   const t = Math.min(1, nights / max);
-  const shades = ['#8797BC', '#5F71A0', '#3E5FCB', '#1E3A8F'];
+  const shades = MAP.visitedShades;
   const idx = Math.min(shades.length - 1, Math.floor(t * shades.length));
   return shades[idx];
 }

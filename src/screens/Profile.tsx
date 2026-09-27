@@ -145,9 +145,9 @@ export function Profile() {
       <div style={{ background: 'var(--bg)', height: 'env(safe-area-inset-top, 0px)' }} />
       <div style={{ padding: '20px 20px 4px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 54, height: 54, borderRadius: 'var(--r-md)', background: 'var(--brand)', display: 'grid', placeItems: 'center', fontSize: 'var(--fs-title)', fontWeight: 700, flexShrink: 0, color: 'var(--on-dark)', fontFamily: 'var(--font-display)' }}>T</div>
+          <div style={{ width: 54, height: 54, borderRadius: 'var(--r-md)', background: 'var(--brand)', display: 'grid', placeItems: 'center', fontSize: 'var(--fs-title)', fontWeight: 700, flexShrink: 0, color: 'var(--on-brand)', fontFamily: 'var(--font-display)' }}>T</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-heading)', fontWeight: 800, letterSpacing: '-.5px', color: 'var(--ink)' }}>Timur</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-heading)', fontWeight: 600, letterSpacing: '-.5px', color: 'var(--ink)' }}>Timur</div>
             <div style={{ fontSize: 'var(--fs-small)', fontWeight: 600, color: 'var(--ink2)', marginTop: 2 }}>
               {firstYear ? `Travelling since ${firstYear}` : 'Traveller'} · {reviews.filter((r) => r.category === 'overall').length} reviews
             </div>
@@ -161,7 +161,7 @@ export function Profile() {
           </button>
         </div>
         {showingMockData && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, padding: '10px 12px', borderRadius: 'var(--r-control)', background: 'var(--red-soft)', border: '1px solid rgba(210,60,60,.2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, padding: '10px 12px', borderRadius: 'var(--r-control)', background: 'var(--red-soft)', border: '1px solid rgba(240,138,126,.3)' }}>
             <span style={{ fontSize: 'var(--fs-small)', color: 'var(--red)', fontWeight: 700, lineHeight: 1.4 }}>
               Showing sample data, not your real account — the live connection didn't load. Try closing and reopening the app.
             </span>
@@ -169,19 +169,19 @@ export function Profile() {
         )}
         <div style={{ display: 'flex', marginTop: 20, paddingBottom: 16, borderBottom: '1px solid var(--line)' }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 800, letterSpacing: '-.6px', color: 'var(--ink)' }}>{visitedCountries.size}</div>
+            <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 600, letterSpacing: '-.6px', color: 'var(--ink)' }}>{visitedCountries.size}</div>
             <div style={{ fontSize: 'var(--fs-micro)', fontWeight: 700, color: 'var(--ink2)', textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 1 }}>countries</div>
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 800, letterSpacing: '-.6px', color: 'var(--ink)' }}>{totalNights}</div>
+            <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 600, letterSpacing: '-.6px', color: 'var(--ink)' }}>{totalNights}</div>
             <div style={{ fontSize: 'var(--fs-micro)', fontWeight: 700, color: 'var(--ink2)', textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 1 }}>nights</div>
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 800, letterSpacing: '-.6px', color: 'var(--ink)' }}>{totalDistanceKm >= 1000 ? `${Math.round(totalDistanceKm / 1000)}k` : totalDistanceKm}</div>
+            <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 600, letterSpacing: '-.6px', color: 'var(--ink)' }}>{totalDistanceKm >= 1000 ? `${Math.round(totalDistanceKm / 1000)}k` : totalDistanceKm}</div>
             <div style={{ fontSize: 'var(--fs-micro)', fontWeight: 700, color: 'var(--ink2)', textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 1 }}>km flown</div>
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 800, letterSpacing: '-.6px', color: 'var(--ink)' }}>
+            <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 600, letterSpacing: '-.6px', color: 'var(--ink)' }}>
               {(() => {
                 const overall = reviews.filter((r) => r.category === 'overall');
                 return overall.length ? (overall.reduce((s, r) => s + r.score, 0) / overall.length).toFixed(1) : '—';
@@ -205,17 +205,17 @@ export function Profile() {
                 style={{
                   flex: '0 0 100%', width: '100%', scrollSnapAlign: 'start', textAlign: 'left', cursor: 'pointer', font: 'inherit',
                   display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px', borderRadius: 'var(--r-md)',
-                  border: '1px solid var(--line)', background: 'var(--card)', boxShadow: '0 4px 14px rgba(23,23,28,.06)',
+                  border: '1px solid var(--line)', background: 'var(--card)', boxShadow: '0 4px 14px rgba(0,0,0,.4)',
                 }}
               >
                 <span style={{ width: 42, height: 42, borderRadius: 'var(--r-sm)', background: 'var(--brand)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                  <StarIcon size={20} color="#fff" />
+                  <StarIcon size={20} color="var(--on-brand)" />
                 </span>
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 'var(--fs-body-lg)', fontWeight: 800, color: 'var(--ink)' }}>Rate your stay at {h.hotelName}</span>
+                  <span style={{ display: 'block', fontSize: 'var(--fs-body-lg)', fontWeight: 600, color: 'var(--ink)' }}>Rate your stay at {h.hotelName}</span>
                   <span style={{ display: 'block', fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 2 }}>{h.tripTitle} · {h.date}</span>
                 </span>
-                <span style={{ flexShrink: 0, fontSize: 'var(--fs-small)', fontWeight: 800, color: 'var(--on-dark)', background: 'var(--brand)', borderRadius: 'var(--r-pill)', padding: '7px 14px' }}>Rate</span>
+                <span style={{ flexShrink: 0, fontSize: 'var(--fs-small)', fontWeight: 600, color: 'var(--on-brand)', background: 'var(--brand)', borderRadius: 'var(--r-pill)', padding: '7px 14px' }}>Rate</span>
               </button>
             ))}
           </div>
@@ -251,12 +251,12 @@ export function Profile() {
                 }}
               >
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 'var(--fs-body)', fontWeight: 800, color: 'var(--ink)' }}>{m.hotelName}</span>
+                  <span style={{ display: 'block', fontSize: 'var(--fs-body)', fontWeight: 600, color: 'var(--ink)' }}>{m.hotelName}</span>
                   <span style={{ display: 'block', fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 2 }}>
                     Missing: {m.missing.map(categoryLabel).join(', ')}
                   </span>
                 </span>
-                <span style={{ flexShrink: 0, fontSize: 'var(--fs-small)', fontWeight: 800, color: 'var(--brand)' }}>Complete ›</span>
+                <span style={{ flexShrink: 0, fontSize: 'var(--fs-small)', fontWeight: 600, color: 'var(--brand)' }}>Complete ›</span>
               </button>
             ))}
           </div>
@@ -296,12 +296,12 @@ export function Profile() {
       </div>
 
       <div className="stack" style={{ marginTop: 18 }}>
-        <div className="card" style={{ padding: 0, overflow: 'hidden', boxShadow: '0 6px 18px rgba(23,23,28,.12)' }}>
+        <div className="card" style={{ padding: 0, overflow: 'hidden', boxShadow: '0 6px 18px rgba(0,0,0,.4)' }}>
           <div style={{ padding: '16px 16px 4px' }}>
             <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Countries visited</div>
-            <div style={{ fontSize: 'var(--fs-h1)', fontWeight: 800 }}>{visitedCountries.size}</div>
+            <div style={{ fontSize: 'var(--fs-h1)', fontWeight: 600 }}>{visitedCountries.size}</div>
           </div>
-          <Suspense fallback={<div style={{ height: 200, background: '#DCE7F5' }} />}>
+          <Suspense fallback={<div style={{ height: 200, background: 'var(--map-bg)' }} />}>
             <WorldMap hotels={filteredHotels} flights={filteredFlights} reviews={filteredReviews} focusCountries={focusCountries} />
           </Suspense>
         </div>
@@ -338,7 +338,7 @@ export function Profile() {
                       <span style={{ color: 'var(--ink2)' }}>{r.nights}n</span>
                     </div>
                     <div className="hbar" style={{ background: 'var(--card2)' }}>
-                      <i style={{ width: `${(r.nights / maxRegion) * 100}%`, background: active ? 'var(--brand)' : 'rgba(30,58,143,.45)' }} />
+                      <i style={{ width: `${(r.nights / maxRegion) * 100}%`, background: active ? 'var(--brand)' : 'rgba(217,183,124,.45)' }} />
                     </div>
                   </button>
                 );
@@ -371,7 +371,7 @@ export function Profile() {
               padding: '6px 14px', borderRadius: 'var(--r-pill)', fontSize: 'var(--fs-caption)', fontWeight: 700, cursor: 'pointer',
               border: sortMode === mode ? 'none' : '1px solid var(--line)',
               background: sortMode === mode ? 'var(--brand)' : 'var(--card)',
-              color: sortMode === mode ? 'var(--on-dark)' : 'var(--ink2)',
+              color: sortMode === mode ? 'var(--on-brand)' : 'var(--ink2)',
             }}
           >
             {label}
@@ -407,7 +407,7 @@ export function Profile() {
                     <div
                       style={{
                         width: 24, height: 24, borderRadius: '50%', flexShrink: 0, display: 'grid', placeItems: 'center',
-                        fontSize: 'var(--fs-caption)', fontWeight: 800,
+                        fontSize: 'var(--fs-caption)', fontWeight: 600,
                         background: badge ? badge.bg : 'var(--card2)', color: badge ? badge.fg : 'var(--ink3)',
                       }}
                     >
@@ -424,7 +424,7 @@ export function Profile() {
                   </div>
                   <div
                     style={{
-                      fontSize: 'var(--fs-body-lg)', fontWeight: 800, flexShrink: 0,
+                      fontSize: 'var(--fs-body-lg)', fontWeight: 600, flexShrink: 0,
                       color: r.avgScore >= 6.7 ? 'var(--green)' : r.avgScore >= 3.4 ? 'var(--amber)' : 'var(--red)',
                     }}
                   >
@@ -479,7 +479,7 @@ function StatTile({ label, value }: { label: string; value: string }) {
   return (
     <div className="card" style={{ padding: '14px 16px' }}>
       <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 800, marginTop: 2 }}>{value}</div>
+      <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 600, marginTop: 2 }}>{value}</div>
     </div>
   );
 }

@@ -3,12 +3,12 @@
 // mean sourcing copyrighted images), just a way to make the list feel
 // alive until a real photo is added via the camera icon on Trip Detail.
 const PALETTES = [
-  ['#7DD3FC', '#FDE9C8', '#0369A1'], // coastal
-  ['#FBBF77', '#F472B6', '#4C1D3D'], // dusk city
-  ['#5EEAD4', '#0891B2', '#155E75'], // tropical
-  ['#C7D2FE', '#E0F2FE', '#334155'], // mountains
-  ['#FDBA74', '#FB923C', '#7C2D12'], // desert
-  ['#A7F3D0', '#34D399', '#065F46'], // forest
+  ['#2B3A67', '#F0B27A', '#1D2F4A'], // coastal, golden hour
+  ['#1A1F3A', '#C77D5A', '#141522'], // dusk city
+  ['#12344A', '#E7B98F', '#0E2A33'], // tropical, sunset
+  ['#0F1D3A', '#B88FA8', '#26304A'], // mountains, blue hour
+  ['#3A2A3F', '#F0B27A', '#5A3320'], // desert, late sun
+  ['#1C2B33', '#D9B77C', '#1E3328'], // forest, dusk
 ];
 
 function hashString(s: string) {
@@ -29,7 +29,7 @@ export function HeroScene({ seed, height = 120 }: { seed: string; height?: numbe
         </linearGradient>
       </defs>
       <rect width="390" height="120" fill={`url(#${gradId})`} />
-      <circle cx={70 + (hashString(seed) % 250)} cy="30" r="13" fill="#FFF7ED" opacity="0.85" />
+      <circle cx={70 + (hashString(seed) % 250)} cy="30" r="13" fill="#FFE9C4" opacity="0.9" />
       <path
         d={`M0 84 Q98 ${62 + (hashString(seed) % 20)} 196 84 T390 82 V120 H0Z`}
         fill={palette[2]}

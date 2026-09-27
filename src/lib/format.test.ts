@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { formatDate, formatDateRange, formatMoney, formatMoneyHeadline } from './format';
+import { dayMonth, formatDate, formatDateRange, formatMoney, formatMoneyHeadline } from './format';
 
 describe('formatDate / formatDateRange', () => {
   test('single date', () => {
@@ -28,5 +28,12 @@ describe('formatMoney', () => {
   test('headline figures always round to whole pounds', () => {
     expect(formatMoneyHeadline(1234.6)).toBe('£1,235');
     expect(formatMoneyHeadline(-40.2)).toBe('−£40');
+  });
+});
+
+describe('dayMonth', () => {
+  test('splits a date into a padded day and short month', () => {
+    expect(dayMonth('2026-07-25')).toEqual({ day: '25', month: 'JUL' });
+    expect(dayMonth('2026-08-04')).toEqual({ day: '04', month: 'AUG' });
   });
 });

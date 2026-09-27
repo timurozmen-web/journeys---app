@@ -91,8 +91,8 @@ export function Settings() {
             onClick={saveHome}
             disabled={homeSaving || !cityInput.trim() || cityInput.trim() === home.city}
             style={{
-              padding: '0 18px', borderRadius: 'var(--r-control)', border: 'none', fontSize: 'var(--fs-body)', fontWeight: 800, cursor: 'pointer', flexShrink: 0,
-              background: 'var(--brand)', color: 'var(--on-dark)', opacity: homeSaving || !cityInput.trim() || cityInput.trim() === home.city ? 0.5 : 1,
+              padding: '0 18px', borderRadius: 'var(--r-control)', border: 'none', fontSize: 'var(--fs-body)', fontWeight: 600, cursor: 'pointer', flexShrink: 0,
+              background: 'var(--brand)', color: 'var(--on-brand)', opacity: homeSaving || !cityInput.trim() || cityInput.trim() === home.city ? 0.5 : 1,
             }}
           >
             {homeSaving ? 'Saving…' : 'Save'}

@@ -141,7 +141,7 @@ export function LogTrip() {
           </button>
         )}
         {editing && confirmingDelete && (
-          <div style={{ background: 'var(--red-soft)', border: '1px solid rgba(210,60,60,.25)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
+          <div style={{ background: 'var(--red-soft)', border: '1px solid rgba(240,138,126,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
             <div style={{ fontSize: 'var(--fs-small)', color: 'var(--red)', fontWeight: 600, marginBottom: 8 }}>
               Delete "{editing.title}" permanently? This also removes {editing.hotels.length} stay{editing.hotels.length === 1 ? '' : 's'} and {editing.flights.length} flight{editing.flights.length === 1 ? '' : 's'} logged under it. This can't be undone.
             </div>

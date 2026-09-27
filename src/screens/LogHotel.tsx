@@ -393,7 +393,7 @@ export function LogHotel() {
           </div>
         )}
         {overlapWarning && (
-          <div style={{ background: 'var(--amber-soft)', border: '1px solid rgba(156,95,8,.25)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
+          <div style={{ background: 'var(--amber-soft)', border: '1px solid rgba(232,176,75,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
             <div style={{ fontSize: 'var(--fs-small)', color: 'var(--amber)', fontWeight: 600, marginBottom: 8 }}>
               These dates overlap with "{overlapWarning}", already logged on this trip. Save anyway?
             </div>
@@ -418,7 +418,7 @@ export function LogHotel() {
           </div>
         )}
         {dupWarning && (
-          <div style={{ background: 'var(--amber-soft)', border: '1px solid rgba(156,95,8,.25)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
+          <div style={{ background: 'var(--amber-soft)', border: '1px solid rgba(232,176,75,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
             <div style={{ fontSize: 'var(--fs-small)', color: 'var(--amber)', fontWeight: 600, marginBottom: 8 }}>
               This looks like it might already be logged as "{dupWarning}": same brand, similar date. Save anyway?
             </div>
@@ -459,7 +459,7 @@ export function LogHotel() {
           </button>
         )}
         {editing && confirmingDelete && (
-          <div style={{ background: 'var(--red-soft)', border: '1px solid rgba(210,60,60,.25)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
+          <div style={{ background: 'var(--red-soft)', border: '1px solid rgba(240,138,126,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
             <div style={{ fontSize: 'var(--fs-small)', color: 'var(--red)', fontWeight: 600, marginBottom: 8 }}>
               Delete "{editing.name}" permanently? This can't be undone.
             </div>

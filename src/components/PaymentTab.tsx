@@ -3,6 +3,7 @@ import { BrandLogo } from './BrandLogo';
 import { updateManualSpendAdjustment, updateCardClosedDate } from '../lib/queries';
 import type { CardResult } from '../lib/cardMath';
 import type { LoyaltyProgramme } from '../types';
+import { cardBackground, textOn } from '../lib/cardTheme';
 
 function money(n: number) {
   const sign = n < 0 ? '−' : '';
@@ -37,35 +38,44 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
     return (
       <div
         key={r.card.id}
+        className="brandcard"
         style={{
-          borderRadius: 'var(--r-md)', background: 'var(--card)', border: '1px solid var(--line)', overflow: 'hidden',
+          background: cardBackground(prog?.color ?? ''), color: textOn(prog?.color ?? '#14171E'),
           opacity: muted ? 0.55 : 1, filter: muted ? 'grayscale(0.6)' : undefined,
         }}
       >
         <button
           onClick={() => setOpen(isOpen ? null : r.card.id)}
+          aria-expanded={isOpen}
           style={{
-            width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px',
-            background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'var(--ink)',
+            width: '100%', display: 'flex', flexDirection: 'column', gap: 18, padding: '16px 16px 18px',
+            background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'inherit',
           }}
         >
-          <BrandLogo name={prog?.name ?? ''} shape={prog?.shape} color={prog?.color} accent={prog?.accent} size={38} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.card.id}</div>
-            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 1 }}>
-              {r.cardRow?.closedDate
-                ? `Closed ${r.cardRow.closedDate}`
-                : r.cardRow?.openDate ? `Opened ${r.cardRow.openDate}` : 'Open date not set'}
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, width: '100%' }}>
+            <BrandLogo name={prog?.name ?? ''} shape={prog?.shape} color={prog?.color} accent={prog?.accent} size={32} />
+            <span style={{ fontSize: 'var(--fs-caption)', opacity: 0.75 }}>{r.card.feeLabel}</span>
           </div>
-          <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 700 }}>{money(r.net)}</div>
-            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 1 }}>{r.card.feeLabel}</div>
+          {/* The card's chip -- purely decorative, it's what makes the pane read as a payment card. */}
+          <span aria-hidden="true" className="cardchip" />
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, width: '100%' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 600, letterSpacing: '.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.card.id}</div>
+              <div style={{ fontSize: 'var(--fs-caption)', opacity: 0.72, marginTop: 2 }}>
+                {r.cardRow?.closedDate
+                  ? `Closed ${r.cardRow.closedDate}`
+                  : r.cardRow?.openDate ? `Opened ${r.cardRow.openDate}` : 'Open date not set'}
+              </div>
+            </div>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ fontSize: 'var(--fs-title)', fontWeight: 500 }}>{money(r.net)}</div>
+              <div style={{ fontSize: 'var(--fs-caption)', opacity: 0.72, marginTop: 2 }}>net value</div>
+            </div>
           </div>
         </button>
 
         {isOpen && (
-          <div style={{ padding: '0 14px 16px', display: 'grid', gap: 4 }}>
+          <div style={{ padding: '12px 14px 16px', display: 'grid', gap: 4, background: 'var(--card)', color: 'var(--ink)' }}>
             <div className="dd-row">
               <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Spend this card-year</span>
               <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{moneyPrecise(r.autoSpend)}</span>
@@ -98,7 +108,7 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
                           setSpendSaveError(message);
                         }
                       }}
-                      style={{ padding: '6px 10px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--brand)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
+                      style={{ padding: '6px 10px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
                     >
                       Save
                     </button>
@@ -195,7 +205,7 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
                           setClosedSaveError(message);
                         }
                       }}
-                      style={{ padding: '6px 10px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--brand)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
+                      style={{ padding: '6px 10px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
                     >
                       Save
                     </button>
@@ -222,7 +232,7 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
   }
 
   return (
-    <div style={{ display: 'grid', gap: 10 }}>
+    <div style={{ display: 'grid', gap: 12, padding: '0 16px' }}>
       {active.map((r) => renderCard(r, false))}
 
       {archived.length > 0 && (

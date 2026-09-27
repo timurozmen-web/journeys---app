@@ -40,7 +40,7 @@ export function TabBar() {
           style={{
             position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 'calc(74px + env(safe-area-inset-bottom, 0px))',
             zIndex: 94, display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 'var(--r-pill)', border: 'none',
-            background: 'var(--ink)', color: 'var(--on-dark)', fontSize: 'var(--fs-caption)', fontWeight: 700, boxShadow: '0 4px 14px rgba(23,23,28,.25)', cursor: 'pointer',
+            background: 'var(--ink)', color: 'var(--on-dark)', fontSize: 'var(--fs-caption)', fontWeight: 700, boxShadow: '0 4px 14px rgba(0,0,0,.4)', cursor: 'pointer',
           }}
         >
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--amber)' }} />
@@ -51,13 +51,13 @@ export function TabBar() {
       <div
         style={{
           position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 96, background: 'var(--card)',
-          borderTopLeftRadius: 24, borderTopRightRadius: 24, boxShadow: '0 -8px 30px rgba(23,23,28,.18)',
+          borderTopLeftRadius: 24, borderTopRightRadius: 24, boxShadow: '0 -8px 30px rgba(0,0,0,.4)',
           padding: '18px 20px calc(20px + env(safe-area-inset-bottom, 0px))',
           transform: pendingOpen ? 'translateY(0)' : 'translateY(110%)', transition: 'transform .3s cubic-bezier(.2,1.1,.3,1)',
         }}
       >
         <div style={{ width: 36, height: 4, borderRadius: 'var(--r-pill)', background: 'var(--line)', margin: '0 auto 14px' }} />
-        <div style={{ fontSize: 'var(--fs-title)', fontWeight: 800, color: 'var(--ink)', marginBottom: 4 }}>Waiting to sync</div>
+        <div style={{ fontSize: 'var(--fs-title)', fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>Waiting to sync</div>
         <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
           These will save automatically as soon as you're back online.
         </p>
@@ -74,7 +74,7 @@ export function TabBar() {
         <button
           onClick={retryNow}
           disabled={retrying}
-          style={{ width: '100%', marginTop: 14, padding: '12px 0', borderRadius: 'var(--r-sm)', border: 'none', background: 'var(--brand)', color: 'var(--on-dark)', fontSize: 'var(--fs-body-lg)', fontWeight: 700, cursor: 'pointer', opacity: retrying ? 0.6 : 1 }}
+          style={{ width: '100%', marginTop: 14, padding: '12px 0', borderRadius: 'var(--r-sm)', border: 'none', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 'var(--fs-body-lg)', fontWeight: 700, cursor: 'pointer', opacity: retrying ? 0.6 : 1 }}
         >
           {retrying ? 'Trying now…' : 'Try syncing now'}
         </button>
@@ -83,7 +83,7 @@ export function TabBar() {
       <div
         style={{
           position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 95, background: 'var(--card)',
-          borderTopLeftRadius: 24, borderTopRightRadius: 24, boxShadow: '0 -8px 30px rgba(23,23,28,.18)',
+          borderTopLeftRadius: 24, borderTopRightRadius: 24, boxShadow: '0 -8px 30px rgba(0,0,0,.4)',
           padding: '10px 20px calc(20px + env(safe-area-inset-bottom, 0px))',
           transform: open ? 'translateY(0)' : 'translateY(110%)', transition: 'transform .3s cubic-bezier(.2,1.1,.3,1)',
         }}
@@ -103,7 +103,7 @@ export function TabBar() {
               <span style={{ width: 38, height: 38, borderRadius: 'var(--r-sm)', background: 'var(--card2)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                 <r.Icon size={20} color={r.color} />
               </span>
-              <span style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 800, color: 'var(--ink)' }}>{r.label}</span>
+              <span style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 600, color: 'var(--ink)' }}>{r.label}</span>
             </button>
           ))}
         </div>

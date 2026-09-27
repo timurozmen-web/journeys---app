@@ -85,7 +85,7 @@ function GuideTile({ icon, label, value, color, bg }: { icon: React.ReactNode; l
       <span style={{ flexShrink: 0, color: color ?? 'var(--ink3)' }}>{icon}</span>
       <div>
         <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</div>
-        <div style={{ fontSize: 'var(--fs-input)', fontWeight: 800, color: color ?? 'var(--ink)', marginTop: 1 }}>{value}</div>
+        <div style={{ fontSize: 'var(--fs-input)', fontWeight: 600, color: color ?? 'var(--ink)', marginTop: 1 }}>{value}</div>
       </div>
     </div>
   );
@@ -652,7 +652,7 @@ export function Plan() {
         {startDate && leaveEstimateEndDate && (() => {
           const leave = calculateLeaveNeeded(startDate, leaveEstimateEndDate);
           return (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 'var(--r-sm)', background: 'rgba(30,58,143,.05)', border: '1px solid rgba(30,58,143,.15)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 'var(--r-sm)', background: 'rgba(217,183,124,.1)', border: '1px solid rgba(217,183,124,.25)' }}>
               <TripsIcon size={18} color="var(--brand)" style={{ flexShrink: 0 }} />
               <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink)', lineHeight: 1.45 }}>
                 <b>{leave.leaveDaysNeeded} day{leave.leaveDaysNeeded === 1 ? '' : 's'} annual leave</b>
@@ -667,7 +667,7 @@ export function Plan() {
           disabled={loading}
           style={{
             padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none', fontSize: 'var(--fs-input)', fontWeight: 700,
-            background: loading ? 'var(--card2)' : 'var(--brand)', color: loading ? 'var(--ink2)' : 'var(--on-dark)',
+            background: loading ? 'var(--card2)' : 'var(--brand)', color: loading ? 'var(--ink2)' : 'var(--on-brand)',
             cursor: loading ? 'default' : 'pointer',
           }}
         >
@@ -692,7 +692,7 @@ export function Plan() {
                 ))}
               </div>
             )}
-            <Suspense fallback={<div style={{ height: 220, background: '#DCE7F5', borderRadius: 'var(--r-md)' }} />}>
+            <Suspense fallback={<div style={{ height: 220, background: 'var(--map-bg)', borderRadius: 'var(--r-md)' }} />}>
               <PlanMap
                 home={mapHome}
                 cities={mapCities}
@@ -834,7 +834,7 @@ export function Plan() {
                     </button>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                        <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 800 }}>{c.city}</div>
+                        <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 600 }}>{c.city}</div>
                         <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--brand)' }}>{c.nights}n</div>
                       </div>
                       <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 4, lineHeight: 1.5 }}>{c.why}</div>
@@ -916,7 +916,7 @@ export function Plan() {
                   if (!g) return null;
                   return (
                     <div key={dest.country} className="card">
-                      <div style={{ fontSize: 'var(--fs-body)', fontWeight: 800, marginBottom: 8 }}>{dest.country}</div>
+                      <div style={{ fontSize: 'var(--fs-body)', fontWeight: 600, marginBottom: 8 }}>{dest.country}</div>
                       <div style={{ display: 'flex', gap: 3 }}>
                         {g.months.map((m) => (
                           <div key={m.month} style={{ flex: 1, textAlign: 'center' }} title={m.note}>
@@ -960,7 +960,7 @@ export function Plan() {
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                      <div style={{ fontSize: 'var(--fs-body)', fontWeight: 800 }}>
+                      <div style={{ fontSize: 'var(--fs-body)', fontWeight: 600 }}>
                         {o.programme}
                         {i === 0 && <span style={{ color: 'var(--brand)', fontSize: 'var(--fs-caption)', marginLeft: 6 }}>BEST VALUE</span>}
                       </div>
@@ -1026,7 +1026,7 @@ export function Plan() {
                     disabled={!startDate || cities.length === 0}
                     style={{
                       padding: '11px 0', borderRadius: 'var(--r-control)', border: 'none', fontSize: 'var(--fs-body)', fontWeight: 700, cursor: 'pointer',
-                      background: 'var(--brand)', color: 'var(--on-dark)', opacity: !startDate || cities.length === 0 ? 0.5 : 1,
+                      background: 'var(--brand)', color: 'var(--on-brand)', opacity: !startDate || cities.length === 0 ? 0.5 : 1,
                     }}
                   >
                     Get budget estimate
@@ -1083,7 +1083,7 @@ export function Plan() {
                 disabled={!startDate || saving}
                 style={{
                   width: '100%', padding: '12px 0', borderRadius: 'var(--r-control)', border: 'none', fontSize: 'var(--fs-body-lg)', fontWeight: 700,
-                  background: !startDate || saving ? 'var(--card2)' : 'var(--brand)', color: !startDate || saving ? 'var(--ink2)' : 'var(--on-dark)',
+                  background: !startDate || saving ? 'var(--card2)' : 'var(--brand)', color: !startDate || saving ? 'var(--ink2)' : 'var(--on-brand)',
                   cursor: !startDate || saving ? 'default' : 'pointer',
                 }}
               >

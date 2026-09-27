@@ -56,7 +56,7 @@ export function Trips() {
                   {isUnderway ? `Under way · Day ${daysDone} of ${totalNights}` : `Upcoming · ${daysOut} day${daysOut === 1 ? '' : 's'} to go`}
                 </Eyebrow>
                 {isTripIncomplete(t) && !flightExemptTripIds.has(t.id) && (
-                  <Eyebrow tone="alert"><AlertIcon size={12} color="var(--on-dark)" /> Trip incomplete</Eyebrow>
+                  <Eyebrow tone="alert"><AlertIcon size={12} color="var(--on-brand)" /> Trip incomplete</Eyebrow>
                 )}
               </span>
               <span className="ph-bottom">

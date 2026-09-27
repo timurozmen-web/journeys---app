@@ -26,7 +26,7 @@ export function PastTripCard({ trip }: { trip: Trip }) {
       )}
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,.62) 100%)' }} />
       <div style={{ position: 'absolute', left: 9, right: 9, bottom: 9, color: 'var(--on-dark)' }}>
-        <div style={{ fontSize: 'var(--fs-small)', fontWeight: 800, letterSpacing: '-.1px', lineHeight: 1.15, textShadow: '0 2px 6px rgba(0,0,0,.4)' }}>{trip.title}</div>
+        <div style={{ fontSize: 'var(--fs-small)', fontWeight: 600, letterSpacing: '-.1px', lineHeight: 1.15, textShadow: '0 2px 6px rgba(0,0,0,.4)' }}>{trip.title}</div>
         <div style={{ fontSize: 'var(--fs-micro)', fontWeight: 600, opacity: 0.9, marginTop: 2, textShadow: '0 1px 4px rgba(0,0,0,.4)' }}>{nights} night{nights === 1 ? '' : 's'}</div>
       </div>
     </div>
@@ -61,7 +61,7 @@ export function TripCard({ trip }: { trip: Trip }) {
         />
         <div style={{ position: 'absolute', left: 16, right: 16, bottom: 12, color: 'var(--on-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 10 }}>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 'var(--fs-title)', fontWeight: 800, letterSpacing: '-.3px', textShadow: '0 2px 8px rgba(0,0,0,.4)' }}>
+            <div style={{ fontSize: 'var(--fs-title)', fontWeight: 600, letterSpacing: '-.3px', textShadow: '0 2px 8px rgba(0,0,0,.4)' }}>
               {trip.title}
             </div>
             <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 600, opacity: 0.95, marginTop: 2, textShadow: '0 1px 6px rgba(0,0,0,.4)' }}>
@@ -70,7 +70,7 @@ export function TripCard({ trip }: { trip: Trip }) {
           </div>
           {hotel && (
             <div style={{ textAlign: 'right', flexShrink: 0, maxWidth: '45%' }}>
-              <div style={{ fontSize: 'var(--fs-small)', fontWeight: 800, textShadow: '0 2px 8px rgba(0,0,0,.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: 'var(--fs-small)', fontWeight: 600, textShadow: '0 2px 8px rgba(0,0,0,.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {hotel.name}
               </div>
               <div style={{ fontSize: 'var(--fs-micro)', fontWeight: 600, opacity: 0.9, marginTop: 1, textShadow: '0 1px 6px rgba(0,0,0,.4)' }}>

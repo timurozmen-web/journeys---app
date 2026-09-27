@@ -223,7 +223,7 @@ export function PromotionsTab() {
             <button
               onClick={handleAdd}
               disabled={saving || !form.title}
-              style={{ flex: 1, padding: '9px 0', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--brand)', color: 'var(--on-dark)', fontSize: 'var(--fs-body)', fontWeight: 700, cursor: 'pointer' }}
+              style={{ flex: 1, padding: '9px 0', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 'var(--fs-body)', fontWeight: 700, cursor: 'pointer' }}
             >
               {saving ? 'Saving…' : 'Save'}
             </button>

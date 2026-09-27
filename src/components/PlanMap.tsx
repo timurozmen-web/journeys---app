@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { getDestinationPhoto } from '../lib/unsplash';
 import type { PlanningAirport } from '../data/planningAirports';
 import type { TransportMode } from '../lib/tripPlanner';
+import { MAP } from '../data/mapTheme';
 
 interface PlanCity {
   city: string;
@@ -47,9 +48,9 @@ function legBadgeIcon(info: MapLegInfo): L.DivIcon {
   return L.divIcon({
     className: '',
     html: `
-      <div style="display:flex;align-items:center;gap:4px;background:#fff;border:1.5px solid #1E3A8F;border-radius:99px;padding:4px 9px;box-shadow:0 3px 8px rgba(23,23,28,.18);white-space:nowrap;font-family:inherit;">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1E3A8F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${MODE_ICON_SVG[info.mode]}</svg>
-        <span style="font-size:11.5px;font-weight:700;color:#17171C;">${label}</span>
+      <div style="display:flex;align-items:center;gap:4px;background:${MAP.panel};border:1.5px solid ${MAP.route};border-radius:99px;padding:4px 9px;box-shadow:0 3px 8px rgba(0,0,0,.4);white-space:nowrap;font-family:inherit;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${MAP.route}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${MODE_ICON_SVG[info.mode]}</svg>
+        <span style="font-size:11.5px;font-weight:700;color:${MAP.text};">${label}</span>
       </div>`,
     iconSize: undefined,
     iconAnchor: [30, 12],
@@ -61,9 +62,9 @@ function cityMarkerIcon(rank: number, active: boolean): L.DivIcon {
   return L.divIcon({
     className: '',
     html: `
-      <div style="width:${size}px;height:${size}px;border-radius:50%;background:#1E3A8F;border:2.5px solid #fff;
-        box-shadow:0 2px 6px rgba(23,23,28,.3);display:flex;align-items:center;justify-content:center;
-        color:#fff;font-weight:800;font-size:${active ? 13 : 11.5}px;font-family:inherit;">
+      <div style="width:${size}px;height:${size}px;border-radius:50%;background:${MAP.stop};border:2.5px solid ${MAP.stopRing};
+        box-shadow:0 2px 6px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;
+        color:${MAP.stopRing};font-weight:700;font-size:${active ? 13 : 11.5}px;font-family:inherit;">
         ${rank}
       </div>`,
     iconSize: [size, size],
@@ -102,7 +103,7 @@ export function PlanMap({
     // limitation of free pre-rendered raster tiles generally (the label
     // language is baked in by whoever renders the tile), not something
     // fixable by picking a different free style.
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       maxZoom: 19,
       subdomains: 'abcd',
@@ -134,16 +135,16 @@ export function PlanMap({
     const allPoints = homePoint ? [...points, homePoint] : points;
 
     if (homePoint && cities.length > 0) {
-      const line = L.polyline([homePoint, points[0]], { color: '#1E3A8F', weight: 2.5, dashArray: '2 8', opacity: 0.75 });
+      const line = L.polyline([homePoint, points[0]], { color: MAP.route, weight: 2.5, dashArray: '2 8', opacity: 0.8 });
       layerGroup.addLayer(line);
-      L.circleMarker(homePoint, { radius: 6, color: '#1E3A8F', weight: 2, fillColor: '#fff', fillOpacity: 1 }).addTo(layerGroup);
+      L.circleMarker(homePoint, { radius: 6, color: MAP.stopRing, weight: 2, fillColor: MAP.home, fillOpacity: 1 }).addTo(layerGroup);
       if (internationalLeg) {
         L.marker(midpoint(homePoint, points[0]), { icon: legBadgeIcon(internationalLeg), interactive: false }).addTo(layerGroup);
       }
     }
 
     for (let i = 0; i < points.length - 1; i++) {
-      const line = L.polyline([points[i], points[i + 1]], { color: '#1E3A8F', weight: 3, dashArray: '2 8', opacity: 0.85 });
+      const line = L.polyline([points[i], points[i + 1]], { color: MAP.route, weight: 3, dashArray: '2 8', opacity: 0.9 });
       layerGroup.addLayer(line);
       if (domesticLegs[i]) {
         L.marker(midpoint(points[i], points[i + 1]), { icon: legBadgeIcon(domesticLegs[i]), interactive: false }).addTo(layerGroup);
@@ -155,9 +156,9 @@ export function PlanMap({
       const buildPopupHtml = (photoUrl?: string) => `
         <div style="font-family:inherit;min-width:170px;">
           ${photoUrl ? `<img src="${photoUrl}" alt="${c.city}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:6px;display:block;" />` : ''}
-          <div style="font-size:13px;font-weight:800;color:#17171C;">${i + 1}. ${c.city}</div>
-          ${c.nights != null ? `<div style="font-size:11px;font-weight:700;color:#1E3A8F;margin-top:2px;">${c.nights} nights</div>` : ''}
-          ${c.why ? `<div style="font-size:11px;color:#5C5C6E;margin-top:3px;line-height:1.4;">${c.why}</div>` : ''}
+          <div style="font-size:13px;font-weight:700;color:${MAP.text};">${i + 1}. ${c.city}</div>
+          ${c.nights != null ? `<div style="font-size:11px;font-weight:700;color:${MAP.route};margin-top:2px;">${c.nights} nights</div>` : ''}
+          ${c.why ? `<div style="font-size:11px;color:${MAP.textSub};margin-top:3px;line-height:1.4;">${c.why}</div>` : ''}
         </div>`;
       marker.bindPopup(buildPopupHtml(), { closeButton: true, className: 'planmap-popup', maxWidth: 200 });
 
@@ -187,7 +188,7 @@ export function PlanMap({
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', height: 320, borderRadius: 'var(--r-md)', overflow: 'hidden', background: '#DCE7F5' }}
+      style={{ width: '100%', height: 320, borderRadius: 'var(--r-md)', overflow: 'hidden', background: 'var(--map-bg)' }}
     />
   );
 }
