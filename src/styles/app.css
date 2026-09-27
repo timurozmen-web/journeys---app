@@ -214,7 +214,7 @@
 /* Leaflet's own controls and popups, re-skinned for the dark theme. */
 .leaflet-container{background:var(--map-bg);font-family:var(--font-body)}
 .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--card);color:var(--ink);box-shadow:var(--shadow-raised)}
-.leaflet-bar a,.leaflet-bar a:hover{background:var(--card);color:var(--ink);border-bottom-color:var(--line)}
-.leaflet-bar{border:1px solid var(--line)!important}
+.leaflet-container .leaflet-bar a,.leaflet-container .leaflet-bar a:hover{background:var(--card);color:var(--ink);border-bottom-color:var(--line)}
+.leaflet-container .leaflet-bar{border:1px solid var(--line)}
 .leaflet-control-attribution{background:rgba(11,13,18,.72)!important;color:var(--ink3)}
 .leaflet-control-attribution a{color:var(--ink2)}

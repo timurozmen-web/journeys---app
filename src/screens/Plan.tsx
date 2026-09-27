@@ -420,7 +420,10 @@ export function Plan() {
               body: JSON.stringify({ country: dest.country }),
             });
             const data = await res.json();
-            return res.ok ? ([dest.country, data] as const) : null;
+            // A reply without a months list (e.g. the model returned
+            // something unexpected) used to crash the whole screen when
+            // rendered -- treat it like a failed fetch instead.
+            return res.ok && Array.isArray(data?.months) ? ([dest.country, data] as const) : null;
           } catch {
             return null;
           }
@@ -696,6 +699,8 @@ export function Plan() {
               <PlanMap
                 home={mapHome}
                 cities={mapCities}
+                departDate={startDate || null}
+                returnDate={tripEndDate}
                 domesticLegs={mapLegs.map((l) => ({ mode: l.recommendedMode, distanceKm: l.distanceKm, hours: l.estimatedTravelHours }))}
                 internationalLeg={
                   !mapFocus && home && cities.length > 0

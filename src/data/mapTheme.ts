@@ -2,8 +2,11 @@
 // can't reach: Leaflet layer options, marker HTML strings and SVG
 // attributes. Keep in step with --map-* and --brand in tokens.css.
 export const MAP = {
-  sea: '#11141A',
+  sea: '#0D1016',
+  seaLight: '#161B24',
   land: '#252A35',
+  landLight: '#2E3440',
+  graticule: 'rgba(244,242,238,.05)',
   landBorder: '#11141A',
   route: '#D9B77C',
   stop: '#D9B77C',

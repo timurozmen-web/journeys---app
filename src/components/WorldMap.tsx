@@ -1,7 +1,10 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { geoNaturalEarth1, geoPath } from 'd3-geo';
 import { worldGeo } from '../data/worldGeo';
-import { AIRPORTS, COUNTRY_NAME_MAP } from '../data/airports';
+import { COUNTRY_NAME_MAP } from '../data/airports';
+import { flightLegs, projectLegs } from '../lib/flightPath';
+import { useGlobalAirports } from '../lib/useGlobalAirports';
+import { MapBackdrop, RouteLayer, type DrawnLeg } from './MapLayers';
 import type { Hotel, Flight, Review } from '../types';
 import { MAP } from '../data/mapTheme';
 
@@ -89,39 +92,14 @@ export function WorldMap({
 
   const maxNights = Math.max(1, ...nightsByCountry.values());
 
-  const routeLines = useMemo(() => {
-    const lines: { d: string; key: string }[] = [];
-    for (const f of flights) {
-      if (!f.date) continue;
-      const a = AIRPORTS[f.from];
-      const b = AIRPORTS[f.to];
-      if (!a || !b) continue;
-      const p1 = project(a.lat, a.lng);
-      const p2 = project(b.lat, b.lng);
-      if (!p1 || !p2) continue;
-      const mx = (p1[0] + p2[0]) / 2;
-      const my = (p1[1] + p2[1]) / 2 - Math.min(30, Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) * 0.15);
-      lines.push({ d: `M${p1[0]},${p1[1]} Q${mx},${my} ${p2[0]},${p2[1]}`, key: `${f.id}` });
-    }
-    return lines;
-  }, [flights]);
-
-  const airportDots = useMemo(() => {
-    const used = new Set<string>();
-    for (const f of flights) {
-      if (!f.date) continue;
-      used.add(f.from);
-      used.add(f.to);
-    }
-    const dots: { x: number; y: number; code: string }[] = [];
-    for (const code of used) {
-      const a = AIRPORTS[code];
-      if (!a) continue;
-      const p = project(a.lat, a.lng);
-      if (p) dots.push({ x: p[0], y: p[1], code });
-    }
-    return dots;
-  }, [flights]);
+  const globalAirports = useGlobalAirports();
+  const routeLegs: DrawnLeg[] = useMemo(
+    () => projectLegs(
+      flights.filter((f) => f.date).flatMap((f) => flightLegs(f, globalAirports)),
+      (lng, lat) => project(lat, lng), WIDTH,
+    ),
+    [flights, globalAirports],
+  );
 
   // Top-rated place logged in the selected country, from real review
   // scores -- not a separate estimate, the same ranking already used on
@@ -216,25 +194,20 @@ export function WorldMap({
           onPointerCancel={handlePointerUp}
         >
           <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
-            {countryPaths.map((c) => {
-              const nights = nightsByCountry.get(c.name);
-              const fill = nights ? shadeFor(nights, maxNights) : MAP.land;
-              const isSelected = selected === c.name;
-              return (
-                <path
-                  key={c.name} d={c.d} fill={fill}
-                  stroke={isSelected ? MAP.text : MAP.landBorder} strokeWidth={isSelected ? 1.2 / zoom : 0.4 / zoom}
-                  onClick={() => selectCountry(c.name)}
-                  style={{ cursor: nights ? 'pointer' : 'default' }}
-                />
-              );
-            })}
-            {showRoutes &&
-              routeLines.map((r) => (
-                <path key={r.key} d={r.d} fill="none" stroke={MAP.route} strokeWidth={0.7 / zoom} strokeDasharray={`${2 / zoom} ${1.5 / zoom}`} opacity={0.75} />
-              ))}
-            {showRoutes &&
-              airportDots.map((a) => <circle key={a.code} cx={a.x} cy={a.y} r={1.6 / zoom} fill={MAP.stop} stroke={MAP.stopRing} strokeWidth={0.5 / zoom} />)}
+            <MapBackdrop
+              projection={projection} width={WIDTH} height={HEIGHT}
+              countries={countryPaths.map((c) => {
+                const nights = nightsByCountry.get(c.name);
+                const isSelected = selected === c.name;
+                return {
+                  key: c.name, d: c.d,
+                  fill: nights ? shadeFor(nights, maxNights) : undefined,
+                  stroke: isSelected ? MAP.text : MAP.landBorder, strokeWidth: isSelected ? 1.2 / zoom : 0.4 / zoom,
+                  onClick: () => selectCountry(c.name),
+                };
+              })}
+            />
+            {showRoutes && <RouteLayer legs={routeLegs} k={zoom} showPlanes={zoom >= 2} showDates={false} showCodes={zoom >= 2} />}
           </g>
         </svg>
 
