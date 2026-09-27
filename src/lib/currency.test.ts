@@ -31,3 +31,14 @@ describe('formatCurrency', () => {
     expect(formatCurrency(15000, 'JPY')).toBe('¥15,000');
   });
 });
+
+describe('convertCurrency with a missing rate', () => {
+  test('uses the approximate rate rather than treating the currency as equal to £1', () => {
+    expect(convertCurrency(191, 'JPY', 'GBP', { GBP: 1 })).toBeCloseTo(1);
+    expect(convertCurrency(1, 'GBP', 'JPY', {})).toBeCloseTo(191);
+  });
+
+  test('a live rate, when present, still wins', () => {
+    expect(convertCurrency(200, 'JPY', 'GBP', { JPY: 200 })).toBeCloseTo(1);
+  });
+});

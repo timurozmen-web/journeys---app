@@ -83,11 +83,10 @@ with a `VITE_` prefix):**
 Run `supabase/schema.sql`, then `supabase/storage.sql`, in the Supabase
 SQL editor. `supabase/seed.sql` adds sample data.
 
-**Known gap:** the app also reads six tables that were created directly
-in the live Supabase project and aren't in `schema.sql` yet:
-`climate_data`, `crowd_price_data`, `points_value_data`,
-`city_cash_rates`, `discover_items` and `user_preferences`. A fresh
-database built from this repo won't have them.
+`schema.sql` matches the live Supabase project, including the tables
+and columns that were first added there directly. The shared reference
+tables (climate, crowd/price, points value, city cash rates) are
+created empty; their rows are loaded separately.
 
 ## Tests
 

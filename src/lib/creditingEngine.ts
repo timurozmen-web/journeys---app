@@ -404,7 +404,7 @@ const KF_PARTNER: Record<string, (number | null)[]> = {
   OZ: [70, 100, 100, 100, 125, 135, 135],
   NZ: [50, 100, 110, 110, 125, 125, null],
   VA: [50, 100, 100, null, 200, 200, null],
-  AS: [100, 100, 100, 100, 100, 150, 150],
+  // No AS (Alaska): its KrisFlyer partnership ended at the end of 2025.
   OU: [50, 100, 100, null, 125, 125, null], CM: [50, 100, 100, null, 125, 125, null],
 };
 const KF_GENERIC: (number | null)[] = [25, 50, 100, 100, 125, 150, 150];

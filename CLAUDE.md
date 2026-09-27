@@ -43,9 +43,9 @@ Run all three; all must be clean:
 - Adding a DB column: update `src/types/index.ts`, the mapping in
   `queries.ts`, and `supabase/schema.sql` (as an `alter table ... add
   column if not exists` at the end).
-- Six tables (`climate_data`, `crowd_price_data`, `points_value_data`,
-  `city_cash_rates`, `discover_items`, `user_preferences`) exist only in
-  the live Supabase project, not in `schema.sql`.
+- Keep `schema.sql` in step with the live database: if a table or
+  column is added live, add it to the file too. The two drifted apart
+  once, and a column the app writes was missing live as a result.
 - Don't change the live Supabase database without the user's explicit
   go-ahead.
 

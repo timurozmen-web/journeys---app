@@ -108,8 +108,9 @@ describe('KrisFlyer', () => {
     expect(r.redeemable?.amount).toBe(1000);
   });
 
-  test('oneworld carriers earn nothing', () => {
+  test('oneworld carriers earn nothing, including Alaska since its partnership ended in 2025', () => {
     expect(computeKF(input({ operatingCarrier: 'BA' })).relationship).toBe('none');
+    expect(computeKF(input({ operatingCarrier: 'AS' })).relationship).toBe('none');
   });
 });
 
