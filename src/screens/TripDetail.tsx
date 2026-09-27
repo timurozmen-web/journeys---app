@@ -9,7 +9,7 @@ import { AirlineLogo } from '../components/AirlineLogo';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
 import { DestinationPhoto } from '../components/DestinationPhoto';
 const TripMap = lazyWithRetry(() => import('../components/TripMap').then((m) => ({ default: m.TripMap })));
-import { destinationQuery } from '../components/TripCard';
+import { destinationQuery } from '../lib/tripHotels';
 import { TripMemories } from '../components/TripMemories';
 import { formatDateRange, formatMoney } from '../lib/format';
 import { computeTripPoints, computeTripSavings, groupDestinations, findGaps, suggestTripSplit } from '../lib/tripStats';

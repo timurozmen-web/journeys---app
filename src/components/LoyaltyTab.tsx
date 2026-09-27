@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { BrandLogo, hasWordmarkLogo } from './BrandLogo';
+import { BrandLogo } from './BrandLogo';
+import { hasWordmarkLogo } from '../data/brandLogos';
 import { useVouchers } from '../lib/useLiveData';
 import { setVoucherRedeemed } from '../lib/queries';
 import { computeStatusProgress } from '../lib/statusProgress';
