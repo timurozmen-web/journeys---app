@@ -63,13 +63,15 @@ textarea.input{resize:vertical;line-height:1.45}
 .photohero > .ph-scrim{position:absolute;inset:0;pointer-events:none}
 .photohero.scrim-bottom > .ph-scrim{background:var(--scrim-bottom)}
 .photohero.scrim-full > .ph-scrim{background:var(--scrim-full)}
+.photohero.scrim-dissolve > .ph-scrim{background:var(--scrim-dissolve)}
 .photohero > .ph-content{position:relative;height:100%;display:flex;flex-direction:column;text-shadow:var(--text-on-photo-shadow)}
 .photohero.rounded{border-radius:var(--r-xl);box-shadow:var(--shadow-hero)}
 .photohero:focus-visible{outline:2px solid var(--brand2);outline-offset:2px}
-.ph-eyebrow{display:inline-block;align-self:flex-start;font-size:var(--fs-micro);font-weight:700;text-transform:uppercase;
-  letter-spacing:.1em;background:var(--on-dark-fill);border:1px solid var(--on-dark-line);border-radius:var(--r-pill);
-  padding:5px 11px;backdrop-filter:blur(6px);text-shadow:none}
-.ph-eyebrow.alert{display:inline-flex;align-items:center;gap:4px;background:var(--brand);color:var(--on-brand);border-color:transparent;padding:5px 10px 5px 8px;flex-shrink:0}
+/* Gold uppercase line on a photo -- plain text, no pill, as in the
+   Night Flight concept. */
+.ph-eyebrow{display:inline-block;align-self:flex-start;font-size:var(--fs-caption);font-weight:600;text-transform:uppercase;
+  letter-spacing:.2em;color:var(--brand)}
+.ph-eyebrow.alert{display:inline-flex;align-items:center;gap:4px;color:var(--ink);flex-shrink:0}
 /* Positioned text blocks inside a hero. */
 .ph-top{position:absolute;top:var(--s4);left:var(--s5);right:var(--s5)}
 .ph-bottom{position:absolute;left:var(--s5);right:var(--s5);bottom:var(--s6)}
@@ -104,3 +106,7 @@ textarea.input{resize:vertical;line-height:1.45}
 .datestack .ds-month{font-size:var(--fs-micro);font-weight:600;letter-spacing:.16em;margin-top:3px}
 .legrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
 .legrow:last-child{border-bottom:0}
+
+/* Night Flight basics used across screens. */
+.nf-eyebrow{display:block;font-size:var(--fs-caption);font-weight:600;letter-spacing:.2em;text-transform:uppercase}
+.glass{display:block;font:inherit;border-radius:var(--r-lg);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}

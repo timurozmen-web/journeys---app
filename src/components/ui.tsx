@@ -96,7 +96,7 @@ export function PhotoHero({
   src?: string | null;
   alt?: string;
   fallback?: ReactNode;
-  scrim?: 'bottom' | 'full' | 'none';
+  scrim?: 'bottom' | 'full' | 'dissolve' | 'none';
   height: number | string;
   rounded?: boolean;
   onClick?: () => void;

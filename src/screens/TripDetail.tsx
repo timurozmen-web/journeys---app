@@ -132,9 +132,9 @@ export function TripDetail() {
   return (
     <div>
       <PhotoHero
-        scrim="full" height={340}
+        scrim="dissolve" height={380}
         src={heroImage}
-        fallback={<DestinationPhoto query={destinationQuery(trip)} seed={trip.id} height={340} />}
+        fallback={<DestinationPhoto query={destinationQuery(trip)} seed={trip.id} height={380} />}
       >
         <button className="tdback" onClick={() => navigate('/trips')}>
           <BackIcon size={18} color="var(--on-dark)" />
@@ -156,7 +156,7 @@ export function TripDetail() {
         </button>
         <input ref={fileInput} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
         <div className="ph-bottom" style={{ bottom: 16 }}>
-          <div style={{ marginBottom: 12 }}><Eyebrow>{heroBadge}</Eyebrow></div>
+          <div style={{ marginBottom: 8 }}><Eyebrow>{heroBadge}</Eyebrow></div>
           <h1 className="ph-title" style={{ fontSize: 'var(--fs-display)', margin: 0 }}>{trip.title}</h1>
           <span className="ph-sub">{formatDateRange(trip.start, trip.end)}</span>
           {stayingNow && (

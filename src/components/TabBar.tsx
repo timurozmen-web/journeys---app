@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { HomeIcon, TripsIcon, WalletIcon, ProfileIcon, PlanIcon, CaptureIcon, DiscoverIcon, CreditIcon } from './Icons';
+import { HomeIcon, TripsIcon, WalletIcon, ProfileIcon, PlusIcon, PlanIcon, CaptureIcon, DiscoverIcon, CreditIcon } from './Icons';
 import { getQueuedWrites, onQueueChange, processQueue } from '../lib/offlineQueue';
 
 const RADIAL = [
@@ -38,7 +38,7 @@ export function TabBar() {
         <button
           onClick={() => setPendingOpen(true)}
           style={{
-            position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 'calc(74px + env(safe-area-inset-bottom, 0px))',
+            position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 'calc(86px + env(safe-area-inset-bottom, 0px))',
             zIndex: 94, display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 'var(--r-pill)', border: 'none',
             background: 'var(--ink)', color: 'var(--on-dark)', fontSize: 'var(--fs-caption)', fontWeight: 700, boxShadow: '0 4px 14px rgba(0,0,0,.4)', cursor: 'pointer',
           }}
@@ -110,40 +110,20 @@ export function TabBar() {
       </div>
 
       <nav className="tabs" role="tablist">
-        <NavLink to="/" end className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
-          {({ isActive }) => (
-            <>
-              <span className="tab-ic"><HomeIcon strokeWidth={isActive ? 2.3 : 1.7} /></span>
-              <span>Home</span>
-            </>
-          )}
+        <NavLink to="/" end aria-label="Home" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
+          {({ isActive }) => <HomeIcon size={22} strokeWidth={isActive ? 1.9 : 1.5} />}
         </NavLink>
-        <NavLink to="/trips" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
-          {({ isActive }) => (
-            <>
-              <span className="tab-ic"><TripsIcon strokeWidth={isActive ? 2.3 : 1.7} /></span>
-              <span>Trips</span>
-            </>
-          )}
+        <NavLink to="/trips" aria-label="Trips" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
+          {({ isActive }) => <TripsIcon size={22} strokeWidth={isActive ? 1.9 : 1.5} />}
         </NavLink>
         <button className={`fab ${open ? 'open' : ''}`} onClick={() => setOpen((v) => !v)} aria-label="Actions">
-          +
+          <PlusIcon size={20} strokeWidth={2.2} />
         </button>
-        <NavLink to="/wallet" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
-          {({ isActive }) => (
-            <>
-              <span className="tab-ic"><WalletIcon strokeWidth={isActive ? 2.3 : 1.7} /></span>
-              <span>Wallet</span>
-            </>
-          )}
+        <NavLink to="/wallet" aria-label="Wallet" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
+          {({ isActive }) => <WalletIcon size={22} strokeWidth={isActive ? 1.9 : 1.5} />}
         </NavLink>
-        <NavLink to="/profile" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
-          {({ isActive }) => (
-            <>
-              <span className="tab-ic"><ProfileIcon strokeWidth={isActive ? 2.3 : 1.7} /></span>
-              <span>Profile</span>
-            </>
-          )}
+        <NavLink to="/profile" aria-label="Profile" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
+          {({ isActive }) => <ProfileIcon size={22} strokeWidth={isActive ? 1.9 : 1.5} />}
         </NavLink>
       </nav>
     </>

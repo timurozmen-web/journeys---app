@@ -144,25 +144,15 @@
 .dd-row+.dd-row{border-top:1px solid var(--line)}
 .dd-lab{font-size:var(--fs-micro);color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px}
 
-.tabs{position:fixed;left:14px;right:14px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;align-items:center;
-  padding:6px 6px;border-radius:34px;
-  background:rgba(24,27,35,.86);backdrop-filter:saturate(160%) blur(20px);border:1px solid rgba(255,255,255,.08);
+.tabs{position:fixed;left:20px;right:20px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:60;height:62px;
+  display:flex;align-items:center;justify-content:space-around;padding:0 8px;border-radius:31px;
+  background:rgba(28,30,38,.86);backdrop-filter:saturate(160%) blur(18px);border:1px solid rgba(255,255,255,.08);
   box-shadow:var(--shadow-raised)}
-.tab{flex:1;border:0;background:none;color:var(--ink3);font:inherit;cursor:pointer;text-decoration:none;
-  padding:5px 0 6px;display:flex;flex-direction:column;align-items:center;gap:4px;transition:color .18s ease}
-.tab svg{width:21px;height:21px;display:block;transition:stroke-width .18s ease}
-.tab span{font-size:var(--fs-micro);font-weight:700;transition:font-weight .18s ease}
-.tab-ic{width:32px;height:26px;display:grid;place-items:center}
-.tab.active{color:var(--brand)}
-.tab.active span{font-weight:600}
-.fab{width:52px;height:52px;border-radius:50%;border:0;flex-shrink:0;margin:0 var(--s1);
-  background:linear-gradient(140deg,var(--gold2),var(--gold));color:var(--on-brand);font-size:var(--fs-h1);font-weight:400;
-  cursor:pointer;box-shadow:0 6px 20px rgba(217,183,124,.35);display:grid;place-items:center;line-height:1;
-  position:relative;z-index:82}
-.fab::before{content:"";position:absolute;inset:-6px;border-radius:50%;
-  background:radial-gradient(circle,rgba(217,183,124,.3) 0%,rgba(217,183,124,0) 70%);
-  animation:fabpulse 2.6s ease-in-out infinite;z-index:-1}
-@keyframes fabpulse{0%,100%{opacity:.5;transform:scale(.92)}50%{opacity:1;transform:scale(1.08)}}
+.tab{width:48px;height:48px;border:0;background:none;color:rgba(244,242,238,.55);cursor:pointer;text-decoration:none;
+  display:grid;place-items:center;border-radius:24px;transition:color .18s ease}
+.tab.active{color:var(--ink)}
+.fab{width:46px;height:46px;border-radius:50%;border:0;flex-shrink:0;background:var(--brand);color:var(--on-brand);
+  cursor:pointer;display:grid;place-items:center;position:relative;z-index:82}
 
 /* ---- radial action menu ---- */
 .scrim{position:fixed;inset:0;z-index:70;background:rgba(5,6,9,.6);
