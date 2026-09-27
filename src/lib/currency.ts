@@ -21,6 +21,13 @@ const CACHE_MS = 60 * 60 * 1000; // an hour is plenty fresh for planning-money, 
 // value) rather than silently pretending it's live.
 const FALLBACK_RATES: Record<string, number> = { VND: 31800, IDR: 20200 };
 
+// Conservative fixed rates (1 GBP = X), used whenever a live rate isn't
+// available: before the first fetch finishes, offline, or if the API
+// leaves a currency out. Anything using these is shown as not live.
+const APPROX_RATES: Record<CurrencyCode, number> = {
+  GBP: 1, USD: 1.27, EUR: 1.17, JPY: 191, AUD: 1.94, THB: 44.5, SGD: 1.71, MYR: 5.6, VND: 31800, IDR: 20200,
+};
+
 export interface RatesResult {
   rates: Record<string, number>; // 1 GBP = X <currency>
   isLive: boolean;
@@ -46,7 +53,7 @@ export async function fetchExchangeRates(): Promise<RatesResult> {
     // still shows *a* number rather than breaking, clearly marked as
     // not live.
     return {
-      rates: cachedRates ?? { GBP: 1, USD: 1.27, EUR: 1.17, JPY: 191, AUD: 1.94, THB: 44.5, SGD: 1.71, MYR: 5.6, VND: 31800, IDR: 20200 },
+      rates: cachedRates ?? APPROX_RATES,
       isLive: false,
       fetchedAt: cachedAt || null,
     };
@@ -57,8 +64,10 @@ export async function fetchExchangeRates(): Promise<RatesResult> {
 // via GBP as the common base (matching how rates are fetched).
 export function convertCurrency(amount: number, from: CurrencyCode, to: CurrencyCode, rates: Record<string, number>): number {
   if (from === to) return amount;
-  const amountInGbp = from === 'GBP' ? amount : amount / (rates[from] ?? 1);
-  return to === 'GBP' ? amountInGbp : amountInGbp * (rates[to] ?? 1);
+  // A missing rate falls back to the approximate one, never to 1 --
+  // treating ¥100 as £100 is far worse than a slightly stale rate.
+  const amountInGbp = from === 'GBP' ? amount : amount / (rates[from] ?? APPROX_RATES[from]);
+  return to === 'GBP' ? amountInGbp : amountInGbp * (rates[to] ?? APPROX_RATES[to]);
 }
 
 export function formatCurrency(amount: number, currency: CurrencyCode): string {
@@ -78,7 +87,7 @@ import { useCurrencyPreference } from './useLiveData';
 
 export function useCurrency() {
   const { data: currencyPref } = useCurrencyPreference();
-  const [rates, setRates] = useState<Record<string, number>>({ GBP: 1 });
+  const [rates, setRates] = useState<Record<string, number>>(APPROX_RATES);
   const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {

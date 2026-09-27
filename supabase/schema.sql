@@ -290,3 +290,177 @@ create table trip_photos (
 );
 alter table trip_photos enable row level security;
 create policy "own photos only" on trip_photos for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ---------------------------------------------------------------------
+-- Everything below was added directly in the live Supabase project and
+-- copied back here (27 Sep 2026) so a fresh database matches it.
+-- The tables and columns are "if not exists", but the create policy
+-- lines aren't, so on an existing database run only what's missing.
+-- ---------------------------------------------------------------------
+
+alter table hotels add column if not exists city text;
+alter table hotels add column if not exists benefit_value numeric;
+alter table hotels add column if not exists benefit_note text;
+alter table hotels add column if not exists booking_channel text;
+alter table hotels add column if not exists room_type text;
+alter table hotels add column if not exists rate_type text default 'Standard';
+
+alter table flights add column if not exists overnight boolean not null default false;
+alter table flights add column if not exists departure_time text;
+alter table flights add column if not exists arrival_time text;
+
+alter table trips add column if not exists trip_type text not null default 'leisure' check (trip_type in ('work', 'leisure'));
+
+alter table loyalty_programmes add column if not exists status_points_override numeric;
+
+-- Per-user settings: home city (for planning) and display currency.
+create table if not exists user_preferences (
+  user_id uuid primary key,
+  home_city text,
+  home_country text,
+  currency text not null default 'GBP',
+  updated_at timestamptz not null default now()
+);
+alter table user_preferences enable row level security;
+create policy "own rows only" on user_preferences for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Discover tab: card offers, card bonuses and loyalty news, per user.
+create table if not exists discover_items (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  category text not null check (category in ('new_card', 'card_bonus', 'loyalty_news')),
+  title text not null,
+  summary text not null,
+  detail text,
+  source text not null,
+  source_url text,
+  deadline date,
+  related_programme text,
+  annual_fee text,
+  headline_stat text,
+  dismissed boolean not null default false,
+  created_at timestamptz not null default now(),
+  status text not null default 'new' check (status in ('new', 'kept', 'dismissed')),
+  requires_registration boolean not null default false,
+  registered boolean not null default false,
+  registered_at timestamptz,
+  new_bookings_only boolean not null default false,
+  promo_start date,
+  promo_end date,
+  min_nights int,
+  bonus_points int,
+  bonus_description text
+);
+alter table discover_items enable row level security;
+create policy "own rows only" on discover_items for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Reference data below is shared (not per user) and read-only to
+-- signed-in users. Rows are loaded separately, not seeded from this file.
+
+-- Monthly climate per region, used by Plan a trip's season guide.
+create table if not exists climate_data (
+  id uuid primary key default gen_random_uuid(),
+  country text not null,
+  region text not null,
+  hub_station text not null,
+  month text not null,
+  temp_high_c numeric,
+  temp_low_c numeric,
+  temp_mean_c numeric,
+  humidity_pct numeric,
+  feels_like_c numeric,
+  rain_mm numeric,
+  rainy_days numeric,
+  sunshine_hours numeric,
+  sea_temp_c numeric,
+  source text,
+  confidence text,
+  source_note text,
+  created_at timestamptz not null default now()
+);
+create index if not exists climate_data_country_region_idx on climate_data (country, region);
+alter table climate_data enable row level security;
+create policy "readable by authenticated" on climate_data for select using (auth.role() = 'authenticated');
+
+-- Crowd and price levels by month, driven by holidays and events.
+create table if not exists crowd_price_data (
+  id uuid primary key default gen_random_uuid(),
+  country text not null,
+  region text,
+  month text not null,
+  crowd_level text not null check (crowd_level in ('low', 'medium', 'high')),
+  price_level text not null check (price_level in ('low', 'medium', 'high')),
+  driver text not null,
+  driver_dates text,
+  source text not null,
+  confidence text not null,
+  notes text,
+  created_at timestamptz not null default now(),
+  driver_start_date date,
+  driver_end_date date,
+  lunar_calendar boolean not null default false
+);
+create index if not exists crowd_price_data_country_idx on crowd_price_data (country, region);
+alter table crowd_price_data enable row level security;
+create policy "readable by authenticated" on crowd_price_data for select using (auth.role() = 'authenticated');
+
+-- What a point is worth when redeemed, per loyalty programme.
+create table if not exists points_value_data (
+  id uuid primary key default gen_random_uuid(),
+  programme text not null,
+  avg_cents_per_point numeric not null,
+  sweet_spot_cents_per_point numeric,
+  redemption_low_points int,
+  redemption_high_points int,
+  pricing_model text not null,
+  fifth_night_free boolean not null default false,
+  notes text,
+  source text not null,
+  confidence text not null,
+  created_at timestamptz not null default now()
+);
+alter table points_value_data enable row level security;
+create policy "readable by authenticated" on points_value_data for select using (auth.role() = 'authenticated');
+
+-- Typical cash hotel rates per city and tier, for points-vs-cash.
+create table if not exists city_cash_rates (
+  id uuid primary key default gen_random_uuid(),
+  country text not null,
+  city text not null,
+  tier text not null check (tier in ('budget', 'mid', 'luxury')),
+  price_low_usd numeric not null,
+  price_high_usd numeric not null,
+  source text not null,
+  confidence text not null,
+  notes text,
+  created_at timestamptz not null default now()
+);
+alter table city_cash_rates enable row level security;
+create policy "readable by authenticated" on city_cash_rates for select using (auth.role() = 'authenticated');
+
+-- Climate table the app doesn't read (it uses climate_data). Kept here
+-- only so this file matches the live project.
+create table if not exists climate_normals (
+  id uuid primary key default gen_random_uuid(),
+  tier text not null check (tier in ('regional', 'backbone')),
+  country text not null,
+  region text,
+  station text not null,
+  month smallint not null check (month between 1 and 12),
+  high_c numeric,
+  low_c numeric,
+  mean_c numeric,
+  humidity_pct numeric,
+  feels_like_c numeric,
+  rain_mm numeric,
+  rainy_days numeric,
+  sunshine_hours numeric,
+  sea_temp_c numeric,
+  source text,
+  confidence text,
+  source_note text
+);
+create index if not exists climate_normals_lookup on climate_normals (country, region, month);
+create index if not exists climate_normals_station on climate_normals (station, month);
+alter table climate_normals enable row level security;
+create policy "public read" on climate_normals for select using (true);

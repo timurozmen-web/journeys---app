@@ -6,7 +6,7 @@ import { computeStatusProgress } from '../lib/statusProgress';
 import { findHotelsNeedingReview } from '../lib/reviewScoring';
 import { ChevronDownIcon, HotelIcon, PlaneIcon, AlertIcon } from '../components/Icons';
 import { getDestinationPhoto } from '../lib/unsplash';
-import { destinationQuery } from '../components/TripCard';
+import { destinationQuery } from '../lib/tripHotels';
 import { HeroScene } from '../components/HeroScene';
 import { withLiveOverrides } from '../lib/walletValue';
 import { tripDayInfo, addDays } from '../lib/tripDay';
@@ -190,16 +190,19 @@ export function Home() {
   // stay resolves to Faro's own photo rather than a generic Portugal
   // one. No key configured, or no match: falls back to the same generated
   // scene Trips uses rather than a flat gradient.
+  // Keyed on plain strings rather than the heroTrip object itself, which
+  // is rebuilt on every render and would re-run the lookup each time.
   const [heroPhoto, setHeroPhoto] = useState<string | null>(null);
+  const heroImageUrl = heroTrip?.heroImageUrl ?? null;
+  const heroQuery = heroTrip ? destinationQuery(heroTrip) : null;
   useEffect(() => {
-    if (!heroTrip) { setHeroPhoto(null); return; }
-    if (heroTrip.heroImageUrl) { setHeroPhoto(heroTrip.heroImageUrl); return; }
+    if (!heroQuery) { setHeroPhoto(null); return; }
+    if (heroImageUrl) { setHeroPhoto(heroImageUrl); return; }
     setHeroPhoto(null);
     let cancelled = false;
-    getDestinationPhoto(destinationQuery(heroTrip)).then((p) => { if (!cancelled) setHeroPhoto(p?.url ?? null); });
+    getDestinationPhoto(heroQuery).then((p) => { if (!cancelled) setHeroPhoto(p?.url ?? null); });
     return () => { cancelled = true; };
-
-  }, [heroTrip?.id, heroTrip?.heroImageUrl]);
+  }, [heroQuery, heroImageUrl]);
 
   return (
     <div>

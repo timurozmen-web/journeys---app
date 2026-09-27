@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTrips } from '../lib/useLiveData';
-import { TripCard, PastTripCard, destinationQuery } from '../components/TripCard';
+import { TripCard, PastTripCard } from '../components/TripCard';
+import { destinationQuery } from '../lib/tripHotels';
 import { DestinationPhoto } from '../components/DestinationPhoto';
 import { tripDayInfo } from '../lib/tripDay';
 import { formatDateRange } from '../lib/format';

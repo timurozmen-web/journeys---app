@@ -94,7 +94,7 @@ const AIRLINE_COLORS: Record<string, string> = {
   AZ: '#009B48', FR: '#073590',
 };
 
-export function airlineCode(flightNo: string | null, airline: string): string {
+function airlineCode(flightNo: string | null, airline: string): string {
   const byName = AIRLINE_CODES[airline.trim().toLowerCase()];
   if (byName) return byName;
   const fromNo = flightNo?.trim().split(/\s+/)[0]?.replace(/[0-9]/g, '').slice(0, 2);
