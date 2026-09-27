@@ -187,7 +187,7 @@ export function PlanMap({
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', height: 320, borderRadius: 16, overflow: 'hidden', background: '#DCE7F5' }}
+      style={{ width: '100%', height: 320, borderRadius: 'var(--r-md)', overflow: 'hidden', background: '#DCE7F5' }}
     />
   );
 }

@@ -1,15 +1,11 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BackIcon, CameraIcon } from '../components/Icons';
+import { CameraIcon } from '../components/Icons';
 import { addPromotion, type NewPromotionInput } from '../lib/queries';
 import { useLoyaltyProgrammes } from '../lib/useLiveData';
 import { normalizeBrand } from '../data/brandMap';
+import { ErrorText, ScreenHeader } from '../components/ui';
 
-const inputStyle: React.CSSProperties = {
-  padding: '9px 11px', borderRadius: 8, border: '1px solid var(--line)', fontSize: 13.5,
-  width: '100%', boxSizing: 'border-box', minWidth: 0,
-};
-const labelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: 'var(--ink3)', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 5, display: 'block' };
 
 const TYPE_LABELS: Record<string, string> = {
   multiplier: 'Rate multiplier', threshold_bonus: 'Spend threshold bonus', fixed_discount: 'Fixed discount',
@@ -97,27 +93,22 @@ export function ScanPromotion() {
 
   return (
     <div>
-      <div className="head" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0 }}>
-          <BackIcon size={20} color="var(--ink)" />
-        </button>
-        <div className="h1" style={{ fontSize: 21 }}>Scan a promotion</div>
-      </div>
+      <ScreenHeader title="Scan a promotion" />
 
       {!result ? (
         <>
-          <p style={{ padding: '0 20px 4px', fontSize: 13, color: 'var(--ink2)', lineHeight: 1.5 }}>
+          <p style={{ padding: '0 20px 4px', fontSize: 'var(--fs-body)', color: 'var(--ink2)', lineHeight: 1.5 }}>
             Screenshot a promotion (a rate boost, bonus offer, status boost, or airline partnership) and it'll be classified automatically.
           </p>
           <div style={{ padding: '14px 20px 0' }}>
-            <label style={labelStyle}>Screenshots</label>
+            <label className="field-label">Screenshots</label>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {images.map((img, i) => (
                 <div key={i} style={{ position: 'relative', width: 72, height: 72 }}>
-                  <img src={img.previewUrl} alt="" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 10, border: '1px solid var(--line)' }} />
+                  <img src={img.previewUrl} alt="" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 'var(--r-control)', border: '1px solid var(--line)' }} />
                   <button
                     onClick={() => setImages((prev) => prev.filter((_, idx) => idx !== i))}
-                    style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: 'var(--ink)', color: '#fff', border: '2px solid var(--bg)', fontSize: 12, fontWeight: 700, display: 'grid', placeItems: 'center', cursor: 'pointer' }}
+                    style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: 'var(--ink)', color: 'var(--on-dark)', border: '2px solid var(--bg)', fontSize: 'var(--fs-small)', fontWeight: 700, display: 'grid', placeItems: 'center', cursor: 'pointer' }}
                   >
                     ×
                   </button>
@@ -126,7 +117,7 @@ export function ScanPromotion() {
               {images.length < 4 && (
                 <button
                   onClick={() => fileInput.current?.click()}
-                  style={{ width: 72, height: 72, borderRadius: 10, border: '1px dashed var(--line)', background: 'var(--card)', display: 'grid', placeItems: 'center', cursor: 'pointer' }}
+                  style={{ width: 72, height: 72, borderRadius: 'var(--r-control)', border: '1px dashed var(--line)', background: 'var(--card)', display: 'grid', placeItems: 'center', cursor: 'pointer' }}
                 >
                   <CameraIcon size={22} color="var(--ink3)" />
                 </button>
@@ -136,7 +127,7 @@ export function ScanPromotion() {
           </div>
           <div style={{ padding: '18px 20px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
-            <span style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700 }}>OR PASTE TEXT</span>
+            <span style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700 }}>OR PASTE TEXT</span>
             <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
           </div>
           <div style={{ padding: '10px 20px' }}>
@@ -145,16 +136,16 @@ export function ScanPromotion() {
               onChange={(e) => setText(e.target.value)}
               placeholder="Paste the promotion text here…"
               rows={5}
-              style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
+              className="input compact" style={{ resize: 'vertical', fontFamily: 'inherit' }}
             />
-            {error && <div style={{ color: 'var(--red)', fontSize: 12.5, marginTop: 10 }}>{error}</div>}
+            {error && <div style={{ color: 'var(--red)', fontSize: 'var(--fs-small)', marginTop: 10 }}>{error}</div>}
             <button
               onClick={handleExtract}
               disabled={loading || (!text.trim() && images.length === 0)}
               style={{
-                width: '100%', marginTop: 14, padding: '13px 0', borderRadius: 12, border: 'none',
-                background: loading ? 'var(--card2)' : 'var(--brand)', color: loading ? 'var(--ink3)' : '#fff',
-                fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                width: '100%', marginTop: 14, padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none',
+                background: loading ? 'var(--card2)' : 'var(--brand)', color: loading ? 'var(--ink3)' : 'var(--on-dark)',
+                fontSize: 'var(--fs-input)', fontWeight: 700, cursor: 'pointer',
               }}
             >
               {loading ? 'Reading…' : 'Extract & classify'}
@@ -164,18 +155,18 @@ export function ScanPromotion() {
       ) : (
         <div style={{ padding: '10px 20px', display: 'grid', gap: 14 }}>
           <div>
-            <label style={labelStyle}>Classified as</label>
-            <select style={inputStyle} value={result.promoType ?? 'other'} onChange={(e) => set('promoType', e.target.value as NewPromotionInput['promoType'])}>
+            <label className="field-label">Classified as</label>
+            <select className="input compact" value={result.promoType ?? 'other'} onChange={(e) => set('promoType', e.target.value as NewPromotionInput['promoType'])}>
               {Object.entries(TYPE_LABELS).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
             </select>
           </div>
           <div>
-            <label style={labelStyle}>Title</label>
-            <input style={inputStyle} value={result.title} onChange={(e) => set('title', e.target.value)} />
+            <label className="field-label">Title</label>
+            <input className="input compact" value={result.title} onChange={(e) => set('title', e.target.value)} />
           </div>
           <div>
-            <label style={labelStyle}>Brand</label>
-            <select style={inputStyle} value={result.brand ?? ''} onChange={(e) => set('brand', e.target.value || null)}>
+            <label className="field-label">Brand</label>
+            <select className="input compact" value={result.brand ?? ''} onChange={(e) => set('brand', e.target.value || null)}>
               <option value="">No specific brand</option>
               {loyaltyProgrammes.map((p) => (
                 <option key={p.name} value={p.name}>{p.name}</option>
@@ -185,68 +176,68 @@ export function ScanPromotion() {
 
           {result.promoType === 'multiplier' && (
             <div>
-              <label style={labelStyle}>Multiplier (e.g. 2 for 2x points)</label>
-              <input style={inputStyle} type="number" step="0.1" value={result.multiplier ?? ''} onChange={(e) => set('multiplier', e.target.value ? parseFloat(e.target.value) : null)} />
+              <label className="field-label">Multiplier (e.g. 2 for 2x points)</label>
+              <input className="input compact" type="number" step="0.1" value={result.multiplier ?? ''} onChange={(e) => set('multiplier', e.target.value ? parseFloat(e.target.value) : null)} />
             </div>
           )}
           {result.promoType === 'threshold_bonus' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
               <div>
-                <label style={labelStyle}>Spend threshold (£)</label>
-                <input style={inputStyle} type="number" value={result.thresholdSpend ?? ''} onChange={(e) => set('thresholdSpend', e.target.value ? parseFloat(e.target.value) : null)} />
+                <label className="field-label">Spend threshold (£)</label>
+                <input className="input compact" type="number" value={result.thresholdSpend ?? ''} onChange={(e) => set('thresholdSpend', e.target.value ? parseFloat(e.target.value) : null)} />
               </div>
               <div>
-                <label style={labelStyle}>Bonus points</label>
-                <input style={inputStyle} type="number" value={result.bonusPoints ?? ''} onChange={(e) => set('bonusPoints', e.target.value ? parseFloat(e.target.value) : null)} />
+                <label className="field-label">Bonus points</label>
+                <input className="input compact" type="number" value={result.bonusPoints ?? ''} onChange={(e) => set('bonusPoints', e.target.value ? parseFloat(e.target.value) : null)} />
               </div>
             </div>
           )}
           {result.promoType === 'fixed_discount' && (
             <div>
-              <label style={labelStyle}>Discount value (£)</label>
-              <input style={inputStyle} type="number" step="0.01" value={result.discountValue ?? ''} onChange={(e) => set('discountValue', e.target.value ? parseFloat(e.target.value) : null)} />
+              <label className="field-label">Discount value (£)</label>
+              <input className="input compact" type="number" step="0.01" value={result.discountValue ?? ''} onChange={(e) => set('discountValue', e.target.value ? parseFloat(e.target.value) : null)} />
             </div>
           )}
           {result.promoType === 'status_boost' && (
             <div>
-              <label style={labelStyle}>Bonus status nights</label>
-              <input style={inputStyle} type="number" value={result.statusNightsBonus ?? ''} onChange={(e) => set('statusNightsBonus', e.target.value ? parseInt(e.target.value, 10) : null)} />
+              <label className="field-label">Bonus status nights</label>
+              <input className="input compact" type="number" value={result.statusNightsBonus ?? ''} onChange={(e) => set('statusNightsBonus', e.target.value ? parseInt(e.target.value, 10) : null)} />
             </div>
           )}
           {result.promoType === 'airline_partner' && (
             <div>
-              <label style={labelStyle}>Partner airline programme</label>
-              <input style={inputStyle} value={result.partnerAirline ?? ''} onChange={(e) => set('partnerAirline', e.target.value || null)} />
+              <label className="field-label">Partner airline programme</label>
+              <input className="input compact" value={result.partnerAirline ?? ''} onChange={(e) => set('partnerAirline', e.target.value || null)} />
             </div>
           )}
 
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
             <div>
-              <label style={labelStyle}>Start date</label>
-              <input style={inputStyle} type="date" value={result.startDate ?? ''} onChange={(e) => set('startDate', e.target.value || null)} />
+              <label className="field-label">Start date</label>
+              <input className="input compact" type="date" value={result.startDate ?? ''} onChange={(e) => set('startDate', e.target.value || null)} />
             </div>
             <div>
-              <label style={labelStyle}>End date</label>
-              <input style={inputStyle} type="date" value={result.endDate ?? ''} onChange={(e) => set('endDate', e.target.value || null)} />
+              <label className="field-label">End date</label>
+              <input className="input compact" type="date" value={result.endDate ?? ''} onChange={(e) => set('endDate', e.target.value || null)} />
             </div>
           </div>
 
           {result.promoType === 'multiplier' && (
-            <div style={{ fontSize: 11.5, color: 'var(--ink3)', background: 'rgba(19,34,71,.06)', padding: '10px 12px', borderRadius: 10 }}>
+            <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', background: 'rgba(19,34,71,.06)', padding: '10px 12px', borderRadius: 'var(--r-control)' }}>
               This one actually affects your points: any matching, active stay at this brand will show the multiplier applied in Trip Detail.
             </div>
           )}
           {result.promoType !== 'multiplier' && result.promoType !== 'other' && (
-            <div style={{ fontSize: 11.5, color: 'var(--ink3)', background: 'rgba(156,95,8,.08)', padding: '10px 12px', borderRadius: 10 }}>
+            <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', background: 'var(--amber-soft)', padding: '10px 12px', borderRadius: 'var(--r-control)' }}>
               This is tracked and shown in Promotions, but isn't yet applied automatically to your points or status calculations.
             </div>
           )}
 
-          {error && <div style={{ color: 'var(--red)', fontSize: 13 }}>{error}</div>}
+          {error && <ErrorText>{error}</ErrorText>}
           <button
             onClick={handleSave}
             disabled={saving || !result.title}
-            style={{ padding: '13px 0', borderRadius: 12, border: 'none', background: saving ? 'var(--card2)' : 'var(--brand)', color: saving ? 'var(--ink3)' : '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
+            style={{ padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none', background: saving ? 'var(--card2)' : 'var(--brand)', color: saving ? 'var(--ink3)' : 'var(--on-dark)', fontSize: 'var(--fs-input)', fontWeight: 700, cursor: 'pointer' }}
           >
             {saving ? 'Saving…' : 'Save promotion'}
           </button>

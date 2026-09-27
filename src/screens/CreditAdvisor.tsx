@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { BackIcon } from '../components/Icons';
 import { useLoyaltyProgrammes } from '../lib/useLiveData';
 import { distanceMilesBetween } from '../lib/creditingDistance';
 import {
@@ -8,15 +6,8 @@ import {
   suggestFareLevel, runAdvisor,
   type Cabin, type FareLevel, type ProgramId, type CreditInput, type ProgramResult,
 } from '../lib/creditingEngine';
+import { ScreenHeader } from '../components/ui';
 
-const inputStyle: React.CSSProperties = {
-  background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 10,
-  color: 'var(--ink)', fontSize: 15, padding: '11px 12px', width: '100%', outline: 'none', minWidth: 0, boxSizing: 'border-box',
-};
-const labelStyle: React.CSSProperties = {
-  fontSize: 11, color: 'var(--ink2)', fontWeight: 700, textTransform: 'uppercase',
-  letterSpacing: '.05em', marginBottom: 5, display: 'block',
-};
 const CABINS: Cabin[] = ['Economy', 'Premium Economy', 'Business', 'First'];
 const PROGRAM_TIERS: Record<ProgramId, readonly string[]> = { BA: BA_TIERS, QR: QR_TIERS, QF: QF_TIERS, KF: KF_TIERS };
 const PROGRAM_WALLET_NAME: Record<ProgramId, string> = {
@@ -31,7 +22,6 @@ const UK_AIRPORTS = new Set([
 ]);
 
 export function CreditAdvisor() {
-  const navigate = useNavigate();
   const { data: programmes } = useLoyaltyProgrammes();
 
   const [from, setFrom] = useState('');
@@ -93,40 +83,35 @@ export function CreditAdvisor() {
 
   return (
     <div>
-      <div className="head" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0 }}>
-          <BackIcon size={20} color="var(--ink)" />
-        </button>
-        <div className="h1" style={{ fontSize: 21 }}>Where to credit</div>
-      </div>
-      <p style={{ padding: '0 20px', fontSize: 13.5, color: 'var(--ink2)', lineHeight: 1.5, marginTop: -4 }}>
+      <ScreenHeader title="Where to credit" />
+      <p style={{ padding: '0 20px', fontSize: 'var(--fs-body)', color: 'var(--ink2)', lineHeight: 1.5, marginTop: -4 }}>
         British Airways, Qatar, Qantas and KrisFlyer for now. More programmes are coming in groups.
       </p>
 
       <div style={{ padding: '10px 20px', display: 'grid', gap: 14 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
-            <label style={labelStyle}>From *</label>
-            <input style={inputStyle} value={from} onChange={(e) => setFrom(e.target.value.toUpperCase())} placeholder="LHR" maxLength={3} />
+            <label className="field-label">From *</label>
+            <input className="input" value={from} onChange={(e) => setFrom(e.target.value.toUpperCase())} placeholder="LHR" maxLength={3} />
           </div>
           <div>
-            <label style={labelStyle}>To *</label>
-            <input style={inputStyle} value={to} onChange={(e) => setTo(e.target.value.toUpperCase())} placeholder="SYD" maxLength={3} />
+            <label className="field-label">To *</label>
+            <input className="input" value={to} onChange={(e) => setTo(e.target.value.toUpperCase())} placeholder="SYD" maxLength={3} />
           </div>
         </div>
         {from.length === 3 && to.length === 3 && !distanceLoading && distanceMiles == null && (
           <div>
-            <label style={labelStyle}>Couldn't find one of those airports — distance (miles) *</label>
-            <input style={inputStyle} type="number" value={manualDistance} onChange={(e) => setManualDistance(e.target.value)} placeholder="e.g. 6890" />
+            <label className="field-label">Couldn't find one of those airports — distance (miles) *</label>
+            <input className="input" type="number" value={manualDistance} onChange={(e) => setManualDistance(e.target.value)} placeholder="e.g. 6890" />
           </div>
         )}
         {distanceMiles != null && (
-          <div style={{ fontSize: 12.5, color: 'var(--ink2)' }}>{distanceMiles.toLocaleString()} miles, great-circle</div>
+          <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)' }}>{distanceMiles.toLocaleString()} miles, great-circle</div>
         )}
 
         <div>
-          <label style={labelStyle}>Operating carrier *</label>
-          <select style={inputStyle} value={carrier} onChange={(e) => setCarrier(e.target.value)}>
+          <label className="field-label">Operating carrier *</label>
+          <select className="input" value={carrier} onChange={(e) => setCarrier(e.target.value)}>
             <optgroup label="Oneworld">
               {CARRIERS.filter((c) => c.alliance === 'oneworld').map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
             </optgroup>
@@ -139,20 +124,20 @@ export function CreditAdvisor() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
-            <label style={labelStyle}>Cabin</label>
-            <select style={inputStyle} value={cabin} onChange={(e) => { setCabin(e.target.value as Cabin); setFareLevelTouched(false); }}>
+            <label className="field-label">Cabin</label>
+            <select className="input" value={cabin} onChange={(e) => { setCabin(e.target.value as Cabin); setFareLevelTouched(false); }}>
               {CABINS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label style={labelStyle}>Booking class</label>
-            <input style={inputStyle} value={bookingClass} onChange={(e) => onBookingClassChange(e.target.value.toUpperCase())} placeholder="e.g. K" maxLength={1} />
+            <label className="field-label">Booking class</label>
+            <input className="input" value={bookingClass} onChange={(e) => onBookingClassChange(e.target.value.toUpperCase())} placeholder="e.g. K" maxLength={1} />
           </div>
         </div>
 
         <div>
-          <label style={labelStyle}>Fare level {bookingClass && <span style={{ textTransform: 'none', fontWeight: 400 }}>(suggested from booking class, adjust if it's off)</span>}</label>
-          <select style={inputStyle} value={fareLevel} onChange={(e) => { setFareLevel(e.target.value as FareLevel); setFareLevelTouched(true); }}>
+          <label className="field-label">Fare level {bookingClass && <span style={{ textTransform: 'none', fontWeight: 400 }}>(suggested from booking class, adjust if it's off)</span>}</label>
+          <select className="input" value={fareLevel} onChange={(e) => { setFareLevel(e.target.value as FareLevel); setFareLevelTouched(true); }}>
             <option value="lowest">Lowest / deep discount</option>
             <option value="standard">Standard</option>
             <option value="flex">Flexible / full fare</option>
@@ -160,11 +145,11 @@ export function CreditAdvisor() {
         </div>
 
         <div>
-          <label style={labelStyle}>Price paid (£, optional)</label>
-          <input style={inputStyle} type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Only needed for BA's spend-based earning" />
+          <label className="field-label">Price paid (£, optional)</label>
+          <input className="input" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Only needed for BA's spend-based earning" />
         </div>
 
-        <p style={{ fontSize: 12, color: 'var(--ink2)', lineHeight: 1.5, margin: 0 }}>
+        <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', lineHeight: 1.5, margin: 0 }}>
           Elite tiers come from your programmes in the wallet. Keep those current and this stays accurate on its own.
         </p>
       </div>
@@ -179,16 +164,16 @@ function Results({ advisor }: { advisor: ReturnType<typeof runAdvisor> }) {
   return (
     <div style={{ padding: '4px 20px 32px', display: 'grid', gap: 12 }}>
       {bestValue && (
-        <div style={{ background: 'var(--brand)', borderRadius: 14, padding: '14px 16px', color: '#fff' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '.05em' }}>Best value</div>
-          <div style={{ fontSize: 17, fontWeight: 800, marginTop: 2 }}>{bestValue.name}</div>
-          <div style={{ fontSize: 13.5, opacity: 0.9, marginTop: 2 }}>
+        <div style={{ background: 'var(--brand)', borderRadius: 'var(--r-md)', padding: '14px 16px', color: 'var(--on-dark)' }}>
+          <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '.05em' }}>Best value</div>
+          <div style={{ fontSize: 'var(--fs-title)', fontWeight: 800, marginTop: 2 }}>{bestValue.name}</div>
+          <div style={{ fontSize: 'var(--fs-body)', opacity: 0.9, marginTop: 2 }}>
             {bestValue.redeemable?.amount.toLocaleString()} {bestValue.redeemable?.name} · roughly £{bestValueGBP.toFixed(0)} of value
           </div>
         </div>
       )}
       {results.map((r) => <ProgramCard key={r.program} r={r} isBest={r.program === bestValue?.program} />)}
-      <p style={{ fontSize: 11.5, color: 'var(--ink2)', lineHeight: 1.5 }}>
+      <p style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', lineHeight: 1.5 }}>
         Value estimates use rough per-point rates ({(['BA', 'QR', 'QF', 'KF'] as ProgramId[]).map((p) => `${p} ${REDEEMABLE_VALUE_PENCE[p]}p`).join(' · ')}),
         useful for comparing options here, not a guarantee of redemption value.
       </p>
@@ -199,37 +184,37 @@ function Results({ advisor }: { advisor: ReturnType<typeof runAdvisor> }) {
 function ProgramCard({ r, isBest }: { r: ProgramResult; isBest: boolean }) {
   if (r.relationship === 'none') {
     return (
-      <div style={{ border: '1px solid var(--line)', borderRadius: 14, padding: '12px 14px', opacity: 0.6 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--ink)' }}>{r.name}</div>
-        <div style={{ fontSize: 12.5, color: 'var(--ink2)', marginTop: 2 }}>{r.notes[0]}</div>
+      <div style={{ border: '1px solid var(--line)', borderRadius: 'var(--r-md)', padding: '12px 14px', opacity: 0.6 }}>
+        <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 700, color: 'var(--ink)' }}>{r.name}</div>
+        <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 2 }}>{r.notes[0]}</div>
       </div>
     );
   }
   return (
-    <div style={{ border: isBest ? '1.5px solid var(--brand)' : '1px solid var(--line)', borderRadius: 14, padding: '12px 14px' }}>
+    <div style={{ border: isBest ? '1.5px solid var(--brand)' : '1px solid var(--line)', borderRadius: 'var(--r-md)', padding: '12px 14px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--ink)' }}>{r.name}</div>
-        <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--ink2)', textTransform: 'uppercase' }}>
+        <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 700, color: 'var(--ink)' }}>{r.name}</div>
+        <span style={{ fontSize: 'var(--fs-micro)', fontWeight: 700, color: 'var(--ink2)', textTransform: 'uppercase' }}>
           {r.relationship === 'own' ? 'Own metal' : 'Partner'}{r.estimated ? ' · estimated' : ''}
         </span>
       </div>
       <div style={{ display: 'flex', gap: 18, marginTop: 8 }}>
         {r.redeemable && (
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)' }}>{r.redeemable.amount.toLocaleString()}</div>
-            <div style={{ fontSize: 11.5, color: 'var(--ink2)' }}>{r.redeemable.name}</div>
+            <div style={{ fontSize: 'var(--fs-title)', fontWeight: 800, color: 'var(--ink)' }}>{r.redeemable.amount.toLocaleString()}</div>
+            <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)' }}>{r.redeemable.name}</div>
           </div>
         )}
         {r.status && (
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)' }}>{r.status.amount.toLocaleString()}</div>
-            <div style={{ fontSize: 11.5, color: 'var(--ink2)' }}>{r.status.name}</div>
+            <div style={{ fontSize: 'var(--fs-title)', fontWeight: 800, color: 'var(--ink)' }}>{r.status.amount.toLocaleString()}</div>
+            <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)' }}>{r.status.name}</div>
           </div>
         )}
       </div>
       {r.notes.length > 0 && (
         <div style={{ marginTop: 8, display: 'grid', gap: 3 }}>
-          {r.notes.map((n, i) => <div key={i} style={{ fontSize: 11.5, color: 'var(--ink2)', lineHeight: 1.4 }}>{n}</div>)}
+          {r.notes.map((n, i) => <div key={i} style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', lineHeight: 1.4 }}>{n}</div>)}
         </div>
       )}
     </div>

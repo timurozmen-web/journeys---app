@@ -8,6 +8,7 @@ import { syncCardVouchers } from '../lib/queries';
 import { LoyaltyTab } from '../components/LoyaltyTab';
 import { PaymentTab } from '../components/PaymentTab';
 import { PromotionsTab } from '../components/PromotionsTab';
+import { Segmented } from '../components/ui';
 
 type Seg = 'loyalty' | 'payment' | 'promotions';
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -52,17 +53,17 @@ export function Wallet() {
       <div style={{ padding: '20px 20px 18px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)' }}>Wallet value {!isLive && '· sample data'}</div>
+            <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)' }}>Wallet value {!isLive && '· sample data'}</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 38, fontWeight: 800, letterSpacing: '-1.5px', marginTop: 2, lineHeight: 1, color: 'var(--ink)' }}>£{Math.round(totalValue).toLocaleString()}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-hero)', fontWeight: 800, letterSpacing: '-1.5px', marginTop: 2, lineHeight: 1, color: 'var(--ink)' }}>£{Math.round(totalValue).toLocaleString()}</div>
               {valueChange.hasData && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 3, color: valueChange.deltaValue >= 0 ? 'var(--green)' : 'var(--red)', fontSize: 13, fontWeight: 800 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 3, color: valueChange.deltaValue >= 0 ? 'var(--green)' : 'var(--red)', fontSize: 'var(--fs-body)', fontWeight: 800 }}>
                   <span>{valueChange.deltaValue >= 0 ? '▲' : '▼'}</span>
                   <span>£{Math.round(Math.abs(valueChange.deltaValue)).toLocaleString()}</span>
                 </div>
               )}
             </div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink2)', marginTop: 6 }}>
+            <div style={{ fontSize: 'var(--fs-small)', fontWeight: 600, color: 'var(--ink2)', marginTop: 6 }}>
               {loyaltyProgrammes.reduce((s, p) => s + p.points, 0).toLocaleString()} points across {loyaltyProgrammes.length} programmes
               {valueChange.hasData && <span> · vs last 30 days from stays</span>}
             </div>
@@ -70,22 +71,16 @@ export function Wallet() {
           <button
             onClick={() => navigate('/log-loyalty-programme')}
             aria-label="Add a loyalty scheme"
-            style={{ width: 34, height: 34, borderRadius: '50%', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink)', fontSize: 20, fontWeight: 600, display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0 }}
+            style={{ width: 34, height: 34, borderRadius: '50%', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink)', fontSize: 'var(--fs-title)', fontWeight: 600, display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0 }}
           >
             +
           </button>
         </div>
-        <div style={{ display: 'flex', gap: 6, marginTop: 18 }}>
-          {(['loyalty', 'payment', 'promotions'] as Seg[]).map((s) => (
-            <button
-              key={s}
-              onClick={() => setSeg(s)}
-              style={{ flex: 1, padding: '9px 0', borderRadius: 99, border: seg === s ? 'none' : '1px solid var(--line)', cursor: 'pointer', background: seg === s ? 'var(--ink)' : 'var(--card)', color: seg === s ? '#fff' : 'var(--ink2)', fontSize: 13, fontWeight: 800 }}
-            >
-              {s === 'loyalty' ? 'Points' : s === 'payment' ? 'Cards' : 'Promos'}
-            </button>
-          ))}
-        </div>
+        <Segmented<Seg>
+          variant="pills" style={{ marginTop: 18 }}
+          options={[{ value: 'loyalty', label: 'Points' }, { value: 'payment', label: 'Cards' }, { value: 'promotions', label: 'Promos' }]}
+          value={seg} onChange={setSeg}
+        />
       </div>
 
       <div style={{ paddingTop: 18 }}>
@@ -93,7 +88,7 @@ export function Wallet() {
           <div style={{ padding: '0 20px 4px' }}>
             <button
               onClick={() => navigate('/bank-sync')}
-              style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', padding: 0 }}
+              style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer', padding: 0 }}
             >
               🏦 Sync spend from your bank
             </button>

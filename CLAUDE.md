@@ -29,8 +29,14 @@ Run all three; all must be clean:
 - **Keep logic out of component files.** Pure helpers go in `src/lib/`,
   static tables in `src/data/`; component files export only components
   (lint enforces this for fast refresh).
-- Styling is mostly inline `style={{}}` using CSS variables from
-  `src/styles/tokens.css`.
+- **Styling has one master copy.** Every colour, font size, radius,
+  shadow and photo scrim is a token in `src/styles/tokens.css`; shared
+  pieces (`ScreenHeader`, `Field`, `Button`, `Segmented`, `PhotoHero`,
+  `Eyebrow`, `SectionLabel`, `ErrorText`, `EmptyState`) live in
+  `src/components/ui.tsx` with their CSS in `src/styles/components.css`.
+  Use those first. Any remaining inline style should reference tokens
+  (`fontSize: 'var(--fs-body)'`), never raw px sizes or hex colours.
+  Form controls take `className="input"` inside a `Field`.
 - Routing uses `HashRouter`; routes are listed in `src/App.tsx`.
 
 ## Data layer

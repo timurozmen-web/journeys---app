@@ -150,7 +150,7 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
 
   return (
     <div style={{ position: 'relative' }}>
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block', background: '#DCE7F5', borderRadius: 16 }}>
+      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block', background: '#DCE7F5', borderRadius: 'var(--r-md)' }}>
         {countryPaths.map((c) => (
           <path key={c.name} d={c.d} fill="#B9CEEC" stroke="#DCE7F5" strokeWidth={0.5} />
         ))}
@@ -181,8 +181,8 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
           onClick={togglePlay}
           style={{
             position: 'absolute', top: 8, right: 8, display: 'flex', alignItems: 'center', gap: 5,
-            padding: '5px 11px', borderRadius: 99, border: 'none', background: 'rgba(255,255,255,.92)',
-            color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(23,23,28,.18)',
+            padding: '5px 11px', borderRadius: 'var(--r-pill)', border: 'none', background: 'rgba(255,255,255,.92)',
+            color: 'var(--brand)', fontSize: 'var(--fs-caption)', fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(23,23,28,.18)',
           }}
         >
           {playing ? '⏸ Pause' : '▶ Play trip'}
@@ -192,19 +192,19 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
       {playing && activeStop && (
         <div
           style={{
-            position: 'absolute', left: 10, right: 10, bottom: 10, background: '#fff', borderRadius: 10,
+            position: 'absolute', left: 10, right: 10, bottom: 10, background: 'var(--card)', borderRadius: 'var(--r-control)',
             border: '1px solid var(--line)', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 8,
             boxShadow: '0 4px 14px rgba(23,23,28,.15)',
           }}
         >
           {activeStop.photoUrl && (
-            <img src={activeStop.photoUrl} alt="" style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
+            <img src={activeStop.photoUrl} alt="" style={{ width: 36, height: 36, borderRadius: 'var(--r-xs)', objectFit: 'cover', flexShrink: 0 }} />
           )}
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {activeStop.label}
             </div>
-            <div style={{ fontSize: 10.5, color: 'var(--ink3)' }}>{activeStop.date.slice(0, 10)}</div>
+            <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)' }}>{activeStop.date.slice(0, 10)}</div>
           </div>
         </div>
       )}

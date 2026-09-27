@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { BackIcon, MailIcon, PlusCircleIcon, BedIcon, PlaneIcon } from '../components/Icons';
+import { MailIcon, PlusCircleIcon, BedIcon, PlaneIcon } from '../components/Icons';
+import { ScreenHeader } from '../components/ui';
 
 const CONTENT: Record<string, { title: string; body: string; actions?: { label: string; to: string; Icon: typeof MailIcon }[] }> = {
   capture: {
@@ -21,13 +22,8 @@ export function Action() {
 
   return (
     <div>
-      <div className="head" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0 }}>
-          <BackIcon size={20} color="var(--ink)" />
-        </button>
-        <div className="h1" style={{ fontSize: 21 }}>{c.title}</div>
-      </div>
-      <p style={{ padding: '0 20px', fontSize: 13.5, color: 'var(--ink2)', lineHeight: 1.6 }}>{c.body}</p>
+      <ScreenHeader title={c.title} />
+      <p style={{ padding: '0 20px', fontSize: 'var(--fs-body)', color: 'var(--ink2)', lineHeight: 1.6 }}>{c.body}</p>
       {c.actions && (
         <div style={{ padding: '10px 20px', display: 'grid', gap: 10 }}>
           {c.actions.map((a) => (
@@ -35,14 +31,14 @@ export function Action() {
               key={a.to}
               onClick={() => navigate(a.to)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: '14px', borderRadius: 16, border: '1px solid var(--line)',
+                display: 'flex', alignItems: 'center', gap: 12, padding: '14px', borderRadius: 'var(--r-md)', border: '1px solid var(--line)',
                 background: 'var(--card)', cursor: 'pointer', textAlign: 'left', font: 'inherit',
               }}
             >
-              <span style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--card2)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+              <span style={{ width: 38, height: 38, borderRadius: 'var(--r-sm)', background: 'var(--card2)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                 <a.Icon size={19} color="var(--brand)" />
               </span>
-              <span style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--ink)' }}>{a.label}</span>
+              <span style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 700, color: 'var(--ink)' }}>{a.label}</span>
             </button>
           ))}
         </div>

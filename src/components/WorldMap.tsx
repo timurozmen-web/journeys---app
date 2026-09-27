@@ -196,9 +196,9 @@ export function WorldMap({
         <button
           onClick={() => setShowRoutes((v) => !v)}
           style={{
-            padding: '6px 12px', borderRadius: 99, border: '1px solid var(--line)',
-            background: showRoutes ? 'var(--brand)' : 'var(--card2)', color: showRoutes ? '#fff' : 'var(--ink2)',
-            fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
+            padding: '6px 12px', borderRadius: 'var(--r-pill)', border: '1px solid var(--line)',
+            background: showRoutes ? 'var(--brand)' : 'var(--card2)', color: showRoutes ? 'var(--on-dark)' : 'var(--ink2)',
+            fontSize: 'var(--fs-caption)', fontWeight: 700, cursor: 'pointer',
           }}
         >
           Routes
@@ -208,7 +208,7 @@ export function WorldMap({
       <div style={{ position: 'relative' }}>
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-          style={{ width: '100%', height: 'auto', display: 'block', background: '#DCE7F5', borderRadius: 12, overflow: 'hidden', touchAction: 'none', cursor: 'grab' }}
+          style={{ width: '100%', height: 'auto', display: 'block', background: '#DCE7F5', borderRadius: 'var(--r-sm)', overflow: 'hidden', touchAction: 'none', cursor: 'grab' }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -246,28 +246,28 @@ export function WorldMap({
         {selected && selectedDetail && (
           <div
             style={{
-              position: 'absolute', left: 10, right: 10, bottom: 10, background: '#fff', borderRadius: 12,
+              position: 'absolute', left: 10, right: 10, bottom: 10, background: 'var(--card)', borderRadius: 'var(--r-sm)',
               border: '1.5px solid var(--brand)', padding: '10px 12px', boxShadow: '0 6px 16px rgba(23,23,28,.18)',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink)' }}>{selected}</div>
-              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--ink3)', cursor: 'pointer', fontSize: 13, padding: 0, lineHeight: 1 }}>✕</button>
+              <div style={{ fontSize: 'var(--fs-body)', fontWeight: 800, color: 'var(--ink)' }}>{selected}</div>
+              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--ink3)', cursor: 'pointer', fontSize: 'var(--fs-body)', padding: 0, lineHeight: 1 }}>✕</button>
             </div>
-            <div style={{ fontSize: 11.5, color: 'var(--brand)', fontWeight: 700, marginTop: 2 }}>
+            <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--brand)', fontWeight: 700, marginTop: 2 }}>
               {selectedDetail.nights} nights · {selectedDetail.stayCount} stay{selectedDetail.stayCount === 1 ? '' : 's'}
             </div>
             {selectedDetail.topPlaces.length > 0 ? (
               <div style={{ marginTop: 6, display: 'grid', gap: 3 }}>
                 {selectedDetail.topPlaces.map((r) => (
-                  <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5 }}>
+                  <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-caption)' }}>
                     <span style={{ color: 'var(--ink)' }}>{r.hotelName}</span>
                     <span style={{ fontWeight: 700, color: 'var(--ink2)' }}>{r.score.toFixed(1)}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 4 }}>No reviews logged here yet.</div>
+              <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 4 }}>No reviews logged here yet.</div>
             )}
           </div>
         )}
@@ -281,8 +281,8 @@ function ZoomBtn({ children, onClick }: { children: React.ReactNode; onClick: ()
     <button
       onClick={onClick}
       style={{
-        width: 26, height: 26, borderRadius: 8, border: '1px solid var(--line)', background: '#fff',
-        color: 'var(--ink)', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'grid', placeItems: 'center',
+        width: 26, height: 26, borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card)',
+        color: 'var(--ink)', fontSize: 'var(--fs-body-lg)', fontWeight: 700, cursor: 'pointer', display: 'grid', placeItems: 'center',
         boxShadow: '0 1px 4px rgba(23,23,28,.15)',
       }}
     >

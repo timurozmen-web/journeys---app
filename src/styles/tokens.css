@@ -43,24 +43,72 @@
   --font-body: 'Geist Variable', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
   --font-display: var(--font-body);
 
+  /* Tints of the colours above, for soft backgrounds behind a label or
+     icon in that colour. */
+  --brand-soft: rgba(30,58,143,.08);
+  --gold-soft: rgba(156,111,40,.1);
+  --amber-soft: rgba(156,95,8,.1);
+  --red-soft: rgba(210,60,60,.08);
+  --green-soft: rgba(12,122,66,.1);
+
+  /* Text and lines sitting on a photo, the brand colour, or any dark
+     surface. */
+  --on-dark: #FFFFFF;
+  --on-dark2: rgba(255,255,255,.85);
+  --on-dark-line: rgba(255,255,255,.3);
+  --on-dark-fill: rgba(255,255,255,.16);
+
+  /* Type scale. Every font size in the app is one of these -- pick by
+     role, not by pixel. */
+  --fs-micro: 10px;     /* tiny uppercase tags, chart axis labels */
+  --fs-caption: 11.5px; /* field labels, secondary lines under a title */
+  --fs-small: 12.5px;   /* dense UI text, chips, meta lines */
+  --fs-body: 13.5px;    /* default reading text */
+  --fs-body-lg: 14.5px; /* list-row titles */
+  --fs-input: 15px;     /* primary buttons, prominent UI text */
+  --fs-field: 16px;     /* text inputs -- iOS zooms the page into any input under 16px */
+  --fs-title: 18px;     /* card and sheet titles */
+  --fs-heading: 22px;   /* screen titles */
+  --fs-h1: 26px;        /* large headline numbers */
+  --fs-display: 33px;   /* wallet total, hero titles */
+  --fs-hero: 38px;      /* the biggest photo-hero headline */
+
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s7: 32px;
-  --r-lg: 20px; --r-md: 16px; --r-sm: 12px; --r-xs: 8px;
+
+  /* Corner radii. */
+  --r-xs: 8px;       /* icon squares, small chips */
+  --r-control: 10px; /* inputs, selects, buttons */
+  --r-sm: 12px;      /* tiles, inner panels */
+  --r-md: 16px;      /* cards */
+  --r-lg: 20px;      /* heroes */
+  --r-xl: 24px;      /* sheets, oversized heroes */
+  --r-pill: 99px;
+
+  /* Photo scrims: the gradient laid over a hero image so text on it
+     stays readable. */
+  --scrim-bottom: linear-gradient(180deg, rgba(21,22,27,0) 40%, rgba(21,22,27,.55) 75%, rgba(21,22,27,.9) 100%);
+  --scrim-full: linear-gradient(180deg, rgba(21,22,27,.5) 0%, rgba(21,22,27,.05) 30%, rgba(21,22,27,.05) 45%, rgba(21,22,27,.6) 70%, rgba(21,22,27,.94) 100%);
+  --text-on-photo-shadow: 0 1px 10px rgba(0,0,0,.45);
+
+  --shadow-card: 0 1px 2px rgba(0,0,0,.04);
+  --shadow-raised: 0 10px 30px rgba(21,22,27,.18);
+  --shadow-hero: 0 14px 32px rgba(21,22,27,.28);
 }
 
 html {
-  background-color: #F7F6F2 !important;
+  background-color: var(--bg) !important;
   color-scheme: light only;
 }
 html {
-  background-color: #F7F6F2 !important;
+  background-color: var(--bg) !important;
   height: 100%;
   min-height: 100%;
 }
 body {
-  background-color: #F7F6F2 !important;
+  background-color: var(--bg) !important;
 }
 #root {
-  background-color: #F7F6F2 !important;
+  background-color: var(--bg) !important;
 }
 * { box-sizing: border-box; }
 input, select, button, textarea { font-family: inherit; font-size: inherit; }

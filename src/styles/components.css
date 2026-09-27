@@ -1,0 +1,77 @@
+/* Shared building blocks. Each class here is used through a component
+   in src/components/ui.tsx -- change a look here and it changes on
+   every screen that uses it. Values come from tokens.css only. */
+
+/* Screen header: back arrow + title, used by every pushed screen. */
+.screenhead{display:flex;align-items:center;gap:var(--s3)}
+.screenhead .back{background:none;border:none;padding:0;cursor:pointer;display:grid;place-items:center;color:var(--ink)}
+.screenhead .title{font-family:var(--font-display);font-size:var(--fs-heading);font-weight:800;letter-spacing:-.4px;line-height:1.2}
+.screenhead .right{margin-left:auto}
+.screenintro{padding:0 var(--s5);font-size:var(--fs-body);color:var(--ink2);line-height:1.5;margin:calc(var(--s1) * -1) 0 0}
+
+/* Forms */
+.form{padding:0 var(--s5);display:grid;gap:14px}
+.field-label{display:block;font-size:var(--fs-caption);color:var(--ink3);font-weight:700;text-transform:uppercase;
+  letter-spacing:.05em;margin-bottom:5px}
+.input{background:var(--card);border:1px solid var(--line);border-radius:var(--r-control);color:var(--ink);
+  font-size:var(--fs-field);padding:11px 12px;width:100%;outline:none;min-width:0;box-sizing:border-box}
+.input:focus{border-color:var(--brand2)}
+textarea.input{resize:vertical;line-height:1.45}
+.input.compact{font-size:var(--fs-body);padding:9px 11px;border-radius:var(--r-xs)}
+.field-hint{font-size:var(--fs-caption);color:var(--ink3);margin-top:5px;line-height:1.45}
+.field-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);border:1px solid transparent;
+  border-radius:var(--r-sm);padding:13px 16px;font:inherit;font-size:var(--fs-input);font-weight:700;cursor:pointer;
+  text-decoration:none;transition:opacity .15s,background .15s}
+.btn:disabled{opacity:.55;cursor:default}
+.btn.block{width:100%}
+.btn.small{padding:8px 14px;font-size:var(--fs-small);border-radius:var(--r-xs)}
+.btn.primary{background:var(--brand);color:var(--on-dark)}
+.btn.secondary{background:var(--card);color:var(--ink);border-color:var(--line)}
+.btn.soft{background:var(--brand-soft);color:var(--brand)}
+.btn.ghost{background:none;color:var(--brand);padding-left:0;padding-right:0}
+.btn.danger{background:var(--card);color:var(--red);border-color:var(--red-soft)}
+.btn.onphoto{background:var(--on-dark-fill);color:var(--on-dark);border-color:var(--on-dark-line);backdrop-filter:blur(8px)}
+
+/* Section label: the small uppercase heading above a group. */
+.sectionlabel{font-size:var(--fs-caption);font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2)}
+
+/* Messages */
+.errortext{color:var(--red);font-size:var(--fs-body)}
+.emptystate{padding:20px 4px;text-align:center;color:var(--ink3);font-size:var(--fs-body)}
+
+/* Segmented control: one row of mutually exclusive options. */
+.segmented{display:flex;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);padding:3px}
+.segmented button{flex:1;padding:8px 0;border:0;border-radius:9px;background:none;color:var(--ink3);
+  font:inherit;font-size:var(--fs-small);font-weight:700;cursor:pointer;transition:background .18s,color .18s}
+.segmented.dark button.on{background:var(--ink);color:var(--on-dark)}
+.segmented.soft button.on{background:var(--card2);color:var(--ink)}
+.segmented.brand button.on{background:var(--brand);color:var(--on-dark)}
+/* Pills variant: separate rounded buttons rather than tabs in a track. */
+.segmented.pills{background:none;border:0;padding:0;gap:6px}
+.segmented.pills button{padding:9px 0;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--card);
+  color:var(--ink2);font-size:var(--fs-body);font-weight:800}
+.segmented.pills button.on{border-color:transparent}
+
+/* Photo hero: an image with a scrim and text laid over it. The one
+   component every big photo moment goes through. */
+.photohero{position:relative;overflow:hidden;color:var(--on-dark);background:var(--scrim)}
+.photohero > .ph-media{position:absolute;inset:0}
+.photohero > .ph-media img{width:100%;height:100%;object-fit:cover;display:block}
+.photohero > .ph-scrim{position:absolute;inset:0;pointer-events:none}
+.photohero.scrim-bottom > .ph-scrim{background:var(--scrim-bottom)}
+.photohero.scrim-full > .ph-scrim{background:var(--scrim-full)}
+.photohero > .ph-content{position:relative;height:100%;display:flex;flex-direction:column;text-shadow:var(--text-on-photo-shadow)}
+.photohero.rounded{border-radius:var(--r-xl);box-shadow:var(--shadow-hero)}
+.photohero:focus-visible{outline:2px solid var(--brand2);outline-offset:2px}
+.ph-eyebrow{display:inline-block;align-self:flex-start;font-size:var(--fs-micro);font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;background:var(--on-dark-fill);border:1px solid var(--on-dark-line);border-radius:var(--r-pill);
+  padding:5px 11px;backdrop-filter:blur(6px);text-shadow:none}
+.ph-eyebrow.alert{display:inline-flex;align-items:center;gap:4px;background:var(--brand);border-color:transparent;padding:5px 10px 5px 8px;flex-shrink:0}
+/* Positioned text blocks inside a hero. */
+.ph-top{position:absolute;top:var(--s4);left:var(--s5);right:var(--s5)}
+.ph-bottom{position:absolute;left:var(--s5);right:var(--s5);bottom:var(--s6)}
+.ph-title{display:block;font-family:var(--font-display);font-weight:800;letter-spacing:-.6px;line-height:1.05}
+.ph-sub{display:block;font-size:var(--fs-body);font-weight:600;opacity:.9;margin-top:6px}

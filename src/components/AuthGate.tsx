@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { Button, ErrorText } from './ui';
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null | 'loading'>('loading');
@@ -28,7 +29,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         </div>
         <div style={{ display: 'grid', gap: 10 }}>
           <input
-            style={{ background: 'var(--card)', color: 'var(--ink)', border: '1px solid var(--line)', padding: 12, borderRadius: 12, fontSize: 16 }}
+            className="input"
             placeholder="you@example.com"
             autoCapitalize="none"
             autoCorrect="off"
@@ -37,15 +38,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             onChange={(e) => setEmail(e.target.value)}
           />
           <input
-            style={{ background: 'var(--card)', color: 'var(--ink)', border: '1px solid var(--line)', padding: 12, borderRadius: 12, fontSize: 16 }}
+            className="input"
             placeholder="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          {error && <div style={{ color: 'var(--red)', fontSize: 13 }}>{error}</div>}
-          <button
-            style={{ background: 'var(--brand)', color: '#fff', border: 0, padding: 13, borderRadius: 12, fontWeight: 700, fontSize: 15 }}
+          {error && <ErrorText>{error}</ErrorText>}
+          <Button
+            block
             disabled={busy}
             onClick={async () => {
               setBusy(true);
@@ -56,7 +57,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             }}
           >
             {busy ? 'Signing in…' : 'Sign in'}
-          </button>
+          </Button>
         </div>
       </div>
     );

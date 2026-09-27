@@ -90,7 +90,7 @@ export function TripMemories({ tripId }: { tripId: string }) {
         <button
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+          style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
         >
           <CameraIcon size={14} color="var(--brand)" />
           {uploading ? `Uploading ${uploadProgress?.done ?? 0}/${uploadProgress?.total ?? 0}…` : 'Add photos'}
@@ -99,32 +99,32 @@ export function TripMemories({ tripId }: { tripId: string }) {
       </div>
 
       {error && (
-        <div style={{ padding: '0 20px 8px', fontSize: 12, color: 'var(--red)' }}>{error}</div>
+        <div style={{ padding: '0 20px 8px', fontSize: 'var(--fs-small)', color: 'var(--red)' }}>{error}</div>
       )}
 
       {photos.length === 0 ? (
-        <div style={{ padding: '4px 20px 16px', fontSize: 12.5, color: 'var(--ink3)' }}>
+        <div style={{ padding: '4px 20px 16px', fontSize: 'var(--fs-small)', color: 'var(--ink3)' }}>
           No photos added yet. Photos with location data will automatically appear on the trip map.
         </div>
       ) : (
         <div className="stack">
           {geotaggedCount > 0 && geotaggedCount < photos.length && (
-            <div style={{ fontSize: 11.5, color: 'var(--ink3)', marginBottom: 8 }}>
+            <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginBottom: 8 }}>
               {geotaggedCount} of {photos.length} photos have location data and will show on the map.
             </div>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
             {photos.map((p) => (
-              <div key={p.id} style={{ position: 'relative', aspectRatio: '1', borderRadius: 8, overflow: 'hidden', background: 'var(--card2)' }}>
+              <div key={p.id} style={{ position: 'relative', aspectRatio: '1', borderRadius: 'var(--r-xs)', overflow: 'hidden', background: 'var(--card2)' }}>
                 <img src={p.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 {p.lat != null && (
-                  <div style={{ position: 'absolute', bottom: 3, left: 3, background: 'rgba(0,0,0,.55)', borderRadius: 6, padding: '3px 5px', display: 'flex', alignItems: 'center' }}>
+                  <div style={{ position: 'absolute', bottom: 3, left: 3, background: 'rgba(0,0,0,.55)', borderRadius: 'var(--r-xs)', padding: '3px 5px', display: 'flex', alignItems: 'center' }}>
                     <PinIcon size={10} color="#fff" />
                   </div>
                 )}
                 <button
                   onClick={() => handleDelete(p.id)}
-                  style={{ position: 'absolute', top: 3, right: 3, width: 18, height: 18, borderRadius: '50%', background: 'rgba(0,0,0,.55)', border: 'none', color: '#fff', fontSize: 11, cursor: 'pointer', display: 'grid', placeItems: 'center', padding: 0 }}
+                  style={{ position: 'absolute', top: 3, right: 3, width: 18, height: 18, borderRadius: '50%', background: 'rgba(0,0,0,.55)', border: 'none', color: 'var(--on-dark)', fontSize: 'var(--fs-caption)', cursor: 'pointer', display: 'grid', placeItems: 'center', padding: 0 }}
                 >
                   ✕
                 </button>
