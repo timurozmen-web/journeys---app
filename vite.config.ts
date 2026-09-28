@@ -14,8 +14,8 @@ export default defineConfig({
         name: 'Journeys',
         short_name: 'Journeys',
         description: 'Travel, loyalty points and card tracking',
-        theme_color: '#132247',
-        background_color: '#F4F6FA',
+        theme_color: '#0B0D12',
+        background_color: '#0B0D12',
         display: 'standalone',
         start_url: '/',
         icons: [

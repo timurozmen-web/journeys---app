@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { BackIcon } from '../components/Icons';
 import { addReview } from '../lib/queries';
 import { withOfflineFallback } from '../lib/offlineQueue';
 import { useReviews } from '../lib/useLiveData';
@@ -10,6 +9,7 @@ import {
   type Sentiment, type RankedItem,
 } from '../lib/reviewRanking';
 import type { HotelNeedingReview } from '../lib/reviewScoring';
+import { ScreenHeader } from '../components/ui';
 
 type Phase = 'sentiment' | 'comparing' | 'done';
 
@@ -49,7 +49,7 @@ export function ReviewTrip() {
   if (!hotel) {
     return (
       <div style={{ padding: 20 }}>
-        <p style={{ color: 'var(--ink3)', fontSize: 13.5 }}>No stay selected to review.</p>
+        <p style={{ color: 'var(--ink3)', fontSize: 'var(--fs-body)' }}>No stay selected to review.</p>
         <button onClick={() => navigate('/profile')} style={{ color: 'var(--brand)', background: 'none', border: 'none', fontWeight: 700 }}>
           Back to Profile
         </button>
@@ -142,18 +142,13 @@ export function ReviewTrip() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
-      <div className="head" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0 }}>
-          <BackIcon size={20} color="var(--ink)" />
-        </button>
-        <div className="h1" style={{ fontSize: 21 }}>Rate {hotel.hotelName}</div>
-      </div>
+      <ScreenHeader title={<>Rate {hotel.hotelName}</>} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 20px 100px' }}>
-        <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, marginBottom: 16, textAlign: 'center' }}>
+        <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, marginBottom: 16, textAlign: 'center' }}>
           {step + 1} of {categories.length}
         </div>
-        <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 28, textAlign: 'center', color: 'var(--brand)' }}>{category.label}</div>
+        <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 600, marginBottom: 28, textAlign: 'center', color: 'var(--brand)' }}>{category.label}</div>
 
         {phase === 'sentiment' && (
           <div>
@@ -170,7 +165,7 @@ export function ReviewTrip() {
                       display: 'grid', placeItems: 'center', boxShadow: '0 6px 16px rgba(0,0,0,.15)',
                     }}
                   />
-                  <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>{s.label}</span>
+                  <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>{s.label}</span>
                 </button>
               ))}
             </div>
@@ -178,7 +173,7 @@ export function ReviewTrip() {
               onClick={skipCategory}
               style={{
                 display: 'block', margin: '28px auto 0', background: 'none', border: 'none',
-                color: 'var(--ink3)', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                color: 'var(--ink3)', fontSize: 'var(--fs-body)', fontWeight: 700, cursor: 'pointer',
               }}
             >
               N/A for this stay
@@ -188,34 +183,34 @@ export function ReviewTrip() {
 
         {phase === 'comparing' && comparisonCandidate && (
           <div>
-            <div style={{ fontSize: 15, fontWeight: 800, textAlign: 'center', marginBottom: 16, color: 'var(--brand)' }}>
+            <div style={{ fontSize: 'var(--fs-input)', fontWeight: 600, textAlign: 'center', marginBottom: 16, color: 'var(--brand)' }}>
               Which do you prefer?
             </div>
             <div style={{ position: 'relative', display: 'flex', gap: 10 }}>
               <button
                 onClick={() => answerComparison(true)}
                 style={{
-                  flex: 1, minHeight: 150, padding: '18px 12px', borderRadius: 14, border: '2px solid var(--brand)',
-                  background: 'rgba(19,34,71,.05)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flex: 1, minHeight: 150, padding: '18px 12px', borderRadius: 'var(--r-md)', border: '2px solid var(--brand)',
+                  background: 'rgba(217,183,124,.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
               >
-                <div style={{ fontSize: 15, fontWeight: 800, textAlign: 'center' }}>{hotel.hotelName}</div>
+                <div style={{ fontSize: 'var(--fs-input)', fontWeight: 600, textAlign: 'center' }}>{hotel.hotelName}</div>
               </button>
               <button
                 onClick={() => answerComparison(false)}
                 style={{
-                  flex: 1, minHeight: 150, padding: '18px 12px', borderRadius: 14, border: '1px solid var(--line)',
+                  flex: 1, minHeight: 150, padding: '18px 12px', borderRadius: 'var(--r-md)', border: '1px solid var(--line)',
                   background: 'var(--card)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
                 }}
               >
-                <div style={{ fontSize: 15, fontWeight: 800, textAlign: 'center' }}>{comparisonCandidate.hotelName}</div>
-                <div style={{ fontSize: 11, color: 'var(--ink3)' }}>{comparisonCandidate.score.toFixed(1)}</div>
+                <div style={{ fontSize: 'var(--fs-input)', fontWeight: 600, textAlign: 'center' }}>{comparisonCandidate.hotelName}</div>
+                <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)' }}>{comparisonCandidate.score.toFixed(1)}</div>
               </button>
               <span
                 style={{
                   position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-                  width: 34, height: 34, borderRadius: '50%', background: 'var(--brand)', color: '#fff',
-                  fontSize: 10.5, fontWeight: 800, display: 'grid', placeItems: 'center', boxShadow: '0 2px 8px rgba(0,0,0,.25)',
+                  width: 34, height: 34, borderRadius: '50%', background: 'var(--brand)', color: 'var(--on-brand)',
+                  fontSize: 'var(--fs-micro)', fontWeight: 600, display: 'grid', placeItems: 'center', boxShadow: '0 2px 8px rgba(0,0,0,.25)',
                 }}
               >
                 OR
@@ -223,13 +218,13 @@ export function ReviewTrip() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 18 }}>
-              <button onClick={undo} style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>
+              <button onClick={undo} style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}>
                 ‹ Undo
               </button>
-              <button onClick={tooTough} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 99, padding: '7px 16px', color: 'var(--ink)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>
+              <button onClick={tooTough} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 'var(--r-pill)', padding: '7px 16px', color: 'var(--ink)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}>
                 Too tough
               </button>
-              <button onClick={skipCategory} style={{ background: 'none', border: 'none', color: 'var(--ink3)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>
+              <button onClick={skipCategory} style={{ background: 'none', border: 'none', color: 'var(--ink3)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}>
                 Skip ›
               </button>
             </div>
@@ -239,11 +234,11 @@ export function ReviewTrip() {
         {phase === 'done' && (
           <div style={{ textAlign: 'center' }}>
             {current.skipped ? (
-              <div style={{ fontSize: 15, color: 'var(--ink3)', fontWeight: 600 }}>Skipped</div>
+              <div style={{ fontSize: 'var(--fs-input)', color: 'var(--ink3)', fontWeight: 600 }}>Skipped</div>
             ) : (
               <>
-                <div style={{ fontSize: 40, fontWeight: 800, color: 'var(--brand)' }}>{current.score!.toFixed(1)}</div>
-                <div style={{ fontSize: 12.5, color: 'var(--ink3)', marginTop: 4 }}>
+                <div style={{ fontSize: 'var(--fs-hero)', fontWeight: 600, color: 'var(--brand)' }}>{current.score!.toFixed(1)}</div>
+                <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink3)', marginTop: 4 }}>
                   {current.sameBand.length === 0 ? 'First rating in this category' : 'Ranked against your other stays'}
                 </div>
               </>
@@ -251,15 +246,15 @@ export function ReviewTrip() {
           </div>
         )}
 
-        {error && <div style={{ color: 'var(--red)', fontSize: 13, margin: '16px 0 0', textAlign: 'center' }}>{error}</div>}
+        {error && <div style={{ color: 'var(--red)', fontSize: 'var(--fs-body)', margin: '16px 0 0', textAlign: 'center' }}>{error}</div>}
 
         {phase === 'done' && (
           <button
             onClick={handleNext}
             disabled={saving}
             style={{
-              width: '100%', marginTop: 28, padding: '13px 0', borderRadius: 12, border: 'none', fontSize: 15, fontWeight: 700,
-              background: saving ? 'var(--card2)' : 'var(--brand)', color: saving ? 'var(--ink3)' : '#fff',
+              width: '100%', marginTop: 28, padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none', fontSize: 'var(--fs-input)', fontWeight: 700,
+              background: saving ? 'var(--card2)' : 'var(--brand)', color: saving ? 'var(--ink3)' : 'var(--on-brand)',
               cursor: saving ? 'default' : 'pointer',
             }}
           >

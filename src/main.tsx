@@ -1,8 +1,10 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
+import '@fontsource-variable/jost';
 import './styles/tokens.css';
 import './styles/app.css';
+import './styles/components.css';
 import App from './App';
 import { initOfflineQueue } from './lib/offlineQueue';
 import { addHotel, addFlight, addTrip, updateTrip, addReview } from './lib/queries';

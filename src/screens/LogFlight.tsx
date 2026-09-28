@@ -5,18 +5,10 @@ import { withOfflineFallback } from '../lib/offlineQueue';
 import type { Flight } from '../types';
 import { useTrips, useAllFlights } from '../lib/useLiveData';
 import { findLikelyDuplicateFlight } from '../lib/duplicateDetection';
-import { BackIcon } from '../components/Icons';
+import { Button, ErrorText, ScreenHeader } from '../components/ui';
 
 const CABINS = ['Economy', 'Premium Economy', 'Business', 'First'] as const;
 const STATUSES = ['Completed', 'Booked'] as const;
-const inputStyle: React.CSSProperties = {
-  background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 10,
-  color: 'var(--ink)', fontSize: 15, padding: '11px 12px', width: '100%', outline: 'none', minWidth: 0, boxSizing: 'border-box',
-};
-const labelStyle: React.CSSProperties = {
-  fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase',
-  letterSpacing: '.05em', marginBottom: 5, display: 'block',
-};
 
 export function LogFlight() {
   const navigate = useNavigate();
@@ -99,18 +91,13 @@ export function LogFlight() {
 
   return (
     <div>
-      <div className="head" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0 }}>
-          <BackIcon size={20} color="var(--ink)" />
-        </button>
-        <div className="h1" style={{ fontSize: 21 }}>{editing ? 'Edit flight' : 'Log a flight'}</div>
-      </div>
+      <ScreenHeader title={editing ? 'Edit flight' : 'Log a flight'} />
 
       <form onSubmit={handleSubmit} style={{ padding: '0 20px', display: 'grid', gap: 14 }}>
         <div>
-          <label style={labelStyle}>Date *</label>
+          <label className="field-label">Date *</label>
           <input
-            style={inputStyle} type="date" value={form.date}
+            className="input" type="date" value={form.date}
             onChange={(e) => {
               const date = e.target.value;
               setForm((f) => ({ ...f, date, status: statusTouched ? f.status : date > TODAY ? 'Booked' : 'Completed' }));
@@ -119,85 +106,85 @@ export function LogFlight() {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
-            <label style={labelStyle}>From *</label>
-            <input style={inputStyle} list="known-from" value={form.from} onChange={(e) => set('from', e.target.value.toUpperCase())} placeholder="LHR" maxLength={3} />
+            <label className="field-label">From *</label>
+            <input className="input" list="known-from" value={form.from} onChange={(e) => set('from', e.target.value.toUpperCase())} placeholder="LHR" maxLength={3} />
             <datalist id="known-from">{knownFrom.map((c) => <option key={c} value={c} />)}</datalist>
           </div>
           <div>
-            <label style={labelStyle}>To *</label>
-            <input style={inputStyle} list="known-to" value={form.to} onChange={(e) => set('to', e.target.value.toUpperCase())} placeholder="JFK" maxLength={3} />
+            <label className="field-label">To *</label>
+            <input className="input" list="known-to" value={form.to} onChange={(e) => set('to', e.target.value.toUpperCase())} placeholder="JFK" maxLength={3} />
             <datalist id="known-to">{knownTo.map((c) => <option key={c} value={c} />)}</datalist>
           </div>
         </div>
         <div style={{ display: 'grid', gap: 10 }}>
           <div>
-            <label style={labelStyle}>Departs (optional)</label>
-            <input style={inputStyle} type="time" value={form.departureTime} onChange={(e) => set('departureTime', e.target.value)} />
+            <label className="field-label">Departs (optional)</label>
+            <input className="input" type="time" value={form.departureTime} onChange={(e) => set('departureTime', e.target.value)} />
           </div>
           <div>
-            <label style={labelStyle}>Arrives (optional)</label>
-            <input style={inputStyle} type="time" value={form.arrivalTime} onChange={(e) => set('arrivalTime', e.target.value)} />
+            <label className="field-label">Arrives (optional)</label>
+            <input className="input" type="time" value={form.arrivalTime} onChange={(e) => set('arrivalTime', e.target.value)} />
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
-            <label style={labelStyle}>Airline *</label>
-            <input style={inputStyle} list="known-airlines" value={form.airline} onChange={(e) => set('airline', e.target.value)} placeholder="British Airways" />
+            <label className="field-label">Airline *</label>
+            <input className="input" list="known-airlines" value={form.airline} onChange={(e) => set('airline', e.target.value)} placeholder="British Airways" />
             <datalist id="known-airlines">{knownAirlines.map((a) => <option key={a} value={a} />)}</datalist>
           </div>
           <div>
-            <label style={labelStyle}>Flight no.</label>
-            <input style={inputStyle} value={form.flightNo} onChange={(e) => set('flightNo', e.target.value)} placeholder="Optional" />
+            <label className="field-label">Flight no.</label>
+            <input className="input" value={form.flightNo} onChange={(e) => set('flightNo', e.target.value)} placeholder="Optional" />
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
-            <label style={labelStyle}>Cabin</label>
-            <select style={inputStyle} value={form.cabin} onChange={(e) => set('cabin', e.target.value as (typeof CABINS)[number])}>
+            <label className="field-label">Cabin</label>
+            <select className="input" value={form.cabin} onChange={(e) => set('cabin', e.target.value as (typeof CABINS)[number])}>
               {CABINS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label style={labelStyle}>Status</label>
-            <select style={inputStyle} value={form.status} onChange={(e) => set('status', e.target.value as (typeof STATUSES)[number])}>
+            <label className="field-label">Status</label>
+            <select className="input" value={form.status} onChange={(e) => set('status', e.target.value as (typeof STATUSES)[number])}>
               {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
-            <label style={labelStyle}>Cost (£)</label>
-            <input style={inputStyle} type="number" step="0.01" value={form.cost} onChange={(e) => set('cost', e.target.value)} placeholder="Optional" />
+            <label className="field-label">Cost (£)</label>
+            <input className="input" type="number" step="0.01" value={form.cost} onChange={(e) => set('cost', e.target.value)} placeholder="Optional" />
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 11 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--ink2)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--fs-body-lg)', color: 'var(--ink2)' }}>
               <input type="checkbox" checked={form.award} onChange={(e) => set('award', e.target.checked)} />
               Award / points redemption
             </label>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--ink2)' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--fs-body-lg)', color: 'var(--ink2)' }}>
             <input type="checkbox" checked={form.overnight} onChange={(e) => set('overnight', e.target.checked)} />
             Overnight or long-haul flight, covers the night before and of this date. No hotel needed either night.
           </label>
         </div>
         <div>
-          <label style={labelStyle}>Attach to trip</label>
-          <select style={inputStyle} value={form.tripId} onChange={(e) => set('tripId', e.target.value)}>
+          <label className="field-label">Attach to trip</label>
+          <select className="input" value={form.tripId} onChange={(e) => set('tripId', e.target.value)}>
             <option value="">No trip — standalone</option>
             {trips.map((t) => <option key={t.id} value={t.id}>{t.title} ({t.start})</option>)}
           </select>
         </div>
 
         {extractNote && (
-          <div style={{ background: 'rgba(156,95,8,.1)', color: 'var(--amber)', fontSize: 12.5, padding: '10px 14px', borderRadius: 10, fontWeight: 600 }}>
+          <div style={{ background: 'var(--amber-soft)', color: 'var(--amber)', fontSize: 'var(--fs-small)', padding: '10px 14px', borderRadius: 'var(--r-control)', fontWeight: 600 }}>
             {extractNote}
           </div>
         )}
         {dupWarning && (
-          <div style={{ background: 'rgba(156,95,8,.1)', border: '1px solid rgba(156,95,8,.25)', borderRadius: 10, padding: '12px 14px' }}>
-            <div style={{ fontSize: 12.5, color: 'var(--amber)', fontWeight: 600, marginBottom: 8 }}>
+          <div style={{ background: 'var(--amber-soft)', border: '1px solid rgba(232,176,75,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
+            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--amber)', fontWeight: 600, marginBottom: 8 }}>
               This looks like it might already be logged as {dupWarning}: same route and date. Save anyway?
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -207,42 +194,38 @@ export function LogFlight() {
                   setConfirmedDup(true);
                   setDupWarning(null);
                 }}
-                style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--amber)', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--amber)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
               >
                 Save anyway
               </button>
               <button
                 type="button"
                 onClick={() => setDupWarning(null)}
-                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
               >
                 Let me check
               </button>
             </div>
           </div>
         )}
-        {error && <div style={{ color: 'var(--red)', fontSize: 13 }}>{error}</div>}
+        {error && <ErrorText>{error}</ErrorText>}
 
-        <button type="submit" disabled={saving} style={{
-          background: 'var(--brand)', color: '#fff', border: 'none', borderRadius: 12,
-          padding: '13px 0', fontSize: 15, fontWeight: 700, cursor: 'pointer', marginTop: 6,
-          opacity: saving ? 0.6 : 1,
-        }}>
+        <Button type="submit" block disabled={saving} style={{ marginTop: 6 }}>
           {saving ? 'Saving…' : editing ? 'Save changes' : 'Save flight'}
-        </button>
+        </Button>
 
         {editing && !confirmingDelete && (
           <button
             type="button"
             onClick={() => setConfirmingDelete(true)}
-            style={{ background: 'none', border: 'none', color: 'var(--red)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', padding: '6px 0' }}
+            className="btn ghost" style={{ color: 'var(--red)', fontSize: 'var(--fs-body)', fontWeight: 600, padding: '6px 0', justifyContent: 'flex-start' }}
           >
             Delete this flight
           </button>
         )}
         {editing && confirmingDelete && (
-          <div style={{ background: 'rgba(210,60,60,.08)', border: '1px solid rgba(210,60,60,.25)', borderRadius: 10, padding: '12px 14px' }}>
-            <div style={{ fontSize: 12.5, color: 'var(--red)', fontWeight: 600, marginBottom: 8 }}>
+          <div style={{ background: 'var(--red-soft)', border: '1px solid rgba(240,138,126,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
+            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--red)', fontWeight: 600, marginBottom: 8 }}>
               Delete this {editing.from} → {editing.to} flight permanently? This can't be undone.
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -259,14 +242,14 @@ export function LogFlight() {
                     setDeleting(false);
                   }
                 }}
-                style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--red)', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--red)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
               >
                 {deleting ? 'Deleting…' : 'Yes, delete it'}
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(false)}
-                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
               >
                 Cancel
               </button>

@@ -26,7 +26,7 @@ export function DestinationPhoto({ query, seed, height }: { query: string; seed:
       <a
         href={photo.photographerUrl} onClick={(e) => e.stopPropagation()}
         style={{
-          position: 'absolute', right: 6, bottom: 4, fontSize: 8.5, color: 'rgba(255,255,255,.85)',
+          position: 'absolute', right: 6, bottom: 4, fontSize: 'var(--fs-micro)', color: 'var(--on-dark2)',
           textShadow: '0 1px 3px rgba(0,0,0,.6)', textDecoration: 'none',
         }}
       >

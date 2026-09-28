@@ -12,7 +12,7 @@ export function BrandLogo({
   return (
     <div
       style={{
-        width, height: size, borderRadius: 10, background: color || '#1E3A8F',
+        width, height: size, borderRadius: 'var(--r-control)', background: color || 'var(--brand)',
         display: 'grid', placeItems: 'center', flexShrink: 0, overflow: 'hidden',
         border: logo?.aspect === 'wide' ? '1px solid var(--line)' : undefined,
       }}
@@ -25,11 +25,11 @@ export function BrandLogo({
             width: '100%', height: '100%', display: 'block',
             objectFit: logo.aspect === 'wide' ? 'contain' : 'cover',
             padding: logo.aspect === 'wide' ? '6px 8px' : 0, boxSizing: 'border-box',
-            background: logo.aspect === 'wide' ? '#fff' : 'transparent',
+            background: logo.aspect === 'wide' ? 'var(--on-dark)' : 'transparent',
           }}
         />
       ) : (
-        shape && <BrandMark shape={shape} color={accent || '#fff'} size={Math.round(size * 0.47)} />
+        shape && <BrandMark shape={shape} color={accent || 'var(--on-dark)'} size={Math.round(size * 0.47)} />
       )}
     </div>
   );

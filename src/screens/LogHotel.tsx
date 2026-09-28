@@ -7,19 +7,11 @@ import { normalizeBrand } from '../data/brandMap';
 import type { Hotel } from '../types';
 import { useTrips, useAllHotels, useAllFlights } from '../lib/useLiveData';
 import { findLikelyDuplicateHotel } from '../lib/duplicateDetection';
-import { BackIcon } from '../components/Icons';
+import { Button, ErrorText, ScreenHeader } from '../components/ui';
 
 const CATEGORIES = ['Luxury', 'Premium', 'Midscale', 'Budget'] as const;
 const STATUSES = ['Completed', 'Booked', 'needs-confirm'] as const;
 const RATE_TYPES = ['Standard', 'Member', 'Promotional', 'Non-refundable', 'Other'] as const;
-const inputStyle: React.CSSProperties = {
-  background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 10,
-  color: 'var(--ink)', fontSize: 15, padding: '11px 12px', width: '100%', outline: 'none', minWidth: 0, boxSizing: 'border-box',
-};
-const labelStyle: React.CSSProperties = {
-  fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase',
-  letterSpacing: '.05em', marginBottom: 5, display: 'block',
-};
 
 export function LogHotel() {
   const navigate = useNavigate();
@@ -196,18 +188,13 @@ export function LogHotel() {
 
   return (
     <div>
-      <div className="head" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0 }}>
-          <BackIcon size={20} color="var(--ink)" />
-        </button>
-        <div className="h1" style={{ fontSize: 21 }}>{editing ? 'Edit stay' : 'Log a stay'}</div>
-      </div>
+      <ScreenHeader title={editing ? 'Edit stay' : 'Log a stay'} />
 
       <form onSubmit={handleSubmit} style={{ padding: '0 20px', display: 'grid', gap: 14 }}>
         <div>
-          <label style={labelStyle}>Hotel name *</label>
+          <label className="field-label">Hotel name *</label>
           <input
-            style={inputStyle}
+            className="input"
             list="known-hotels"
             value={form.name}
             onChange={(e) => {
@@ -233,18 +220,18 @@ export function LogHotel() {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
-            <label style={labelStyle}>Country *</label>
-            <input style={inputStyle} value={form.country} onChange={(e) => set('country', e.target.value)} placeholder="United Kingdom" />
+            <label className="field-label">Country *</label>
+            <input className="input" value={form.country} onChange={(e) => set('country', e.target.value)} placeholder="United Kingdom" />
           </div>
           <div>
-            <label style={labelStyle}>City</label>
-            <input style={inputStyle} value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="London" />
+            <label className="field-label">City</label>
+            <input className="input" value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="London" />
           </div>
         </div>
         <div>
-          <label style={labelStyle}>Brand</label>
+          <label className="field-label">Brand</label>
           <input
-            style={inputStyle}
+            className="input"
             value={form.brand}
             onChange={(e) => set('brand', e.target.value)}
             onBlur={(e) => e.target.value && set('brand', normalizeBrand(e.target.value))}
@@ -252,9 +239,9 @@ export function LogHotel() {
           />
         </div>
         <div>
-          <label style={labelStyle}>Check-in date *</label>
+          <label className="field-label">Check-in date *</label>
           <input
-            style={inputStyle}
+            className="input"
             type="date"
             value={form.date}
             onChange={(e) => {
@@ -266,46 +253,46 @@ export function LogHotel() {
           />
         </div>
         <div>
-          <label style={labelStyle}>Nights</label>
-          <input style={inputStyle} type="number" min="1" value={form.nights} onChange={(e) => set('nights', e.target.value)} />
+          <label className="field-label">Nights</label>
+          <input className="input" type="number" min="1" value={form.nights} onChange={(e) => set('nights', e.target.value)} />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
-            <label style={labelStyle}>Status</label>
-            <select style={inputStyle} value={form.status} onChange={(e) => { setStatusTouched(true); set('status', e.target.value as (typeof STATUSES)[number]); }}>
+            <label className="field-label">Status</label>
+            <select className="input" value={form.status} onChange={(e) => { setStatusTouched(true); set('status', e.target.value as (typeof STATUSES)[number]); }}>
               {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div>
-            <label style={labelStyle}>Category</label>
-            <select style={inputStyle} value={form.category} onChange={(e) => set('category', e.target.value as (typeof CATEGORIES)[number])}>
+            <label className="field-label">Category</label>
+            <select className="input" value={form.category} onChange={(e) => set('category', e.target.value as (typeof CATEGORIES)[number])}>
               {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
-            <label style={labelStyle}>Total cost (£)</label>
-            <input style={inputStyle} type="number" step="0.01" value={form.total} onChange={(e) => set('total', e.target.value)} placeholder="Optional" />
+            <label className="field-label">Total cost (£)</label>
+            <input className="input" type="number" step="0.01" value={form.total} onChange={(e) => set('total', e.target.value)} placeholder="Optional" />
           </div>
           <div>
-            <label style={labelStyle}>Card used</label>
-            <input style={inputStyle} value={form.card} onChange={(e) => set('card', e.target.value)} placeholder="Optional" />
+            <label className="field-label">Card used</label>
+            <input className="input" value={form.card} onChange={(e) => set('card', e.target.value)} placeholder="Optional" />
           </div>
         </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--ink)', cursor: 'pointer' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--fs-body)', color: 'var(--ink)', cursor: 'pointer' }}>
           <input type="checkbox" checked={form.award} onChange={(e) => set('award', e.target.checked)} />
           Booked with points/certificate (award stay -- doesn't earn elite night credit)
         </label>
         <div>
-          <label style={labelStyle}>Room type</label>
-          <input style={inputStyle} value={form.roomType} onChange={(e) => set('roomType', e.target.value)} placeholder="e.g. Deluxe King, City View" />
+          <label className="field-label">Room type</label>
+          <input className="input" value={form.roomType} onChange={(e) => set('roomType', e.target.value)} placeholder="e.g. Deluxe King, City View" />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
-            <label style={labelStyle}>Rate type</label>
+            <label className="field-label">Rate type</label>
             <select
-              style={inputStyle}
+              className="input"
               value={form.rateType}
               onChange={(e) => {
                 const rateType = e.target.value as (typeof RATE_TYPES)[number];
@@ -319,9 +306,9 @@ export function LogHotel() {
             </select>
           </div>
           <div>
-            <label style={labelStyle}>Standard rate (£/night)</label>
+            <label className="field-label">Standard rate (£/night)</label>
             <input
-              style={{ ...inputStyle, opacity: form.rateType === 'Standard' ? 0.6 : 1 }}
+              className="input" style={{ opacity: form.rateType === 'Standard' ? 0.6 : 1 }}
               type="number"
               step="0.01"
               value={form.rateType === 'Standard' && form.total ? (parseFloat(form.total) / (parseInt(form.nights, 10) || 1)).toFixed(2) : form.avgRate}
@@ -333,12 +320,12 @@ export function LogHotel() {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
-            <label style={labelStyle}>Benefit value (£)</label>
-            <input style={inputStyle} type="number" step="0.01" value={form.benefitValue} onChange={(e) => set('benefitValue', e.target.value)} placeholder="e.g. upgrade, breakfast" />
+            <label className="field-label">Benefit value (£)</label>
+            <input className="input" type="number" step="0.01" value={form.benefitValue} onChange={(e) => set('benefitValue', e.target.value)} placeholder="e.g. upgrade, breakfast" />
           </div>
           <div>
-            <label style={labelStyle}>Benefit type</label>
-            <select style={inputStyle} value={form.benefitType} onChange={(e) => set('benefitType', e.target.value)}>
+            <label className="field-label">Benefit type</label>
+            <select className="input" value={form.benefitType} onChange={(e) => set('benefitType', e.target.value)}>
               <option value="">Not set</option>
               <option value="breakfast">Free breakfast</option>
               <option value="upgrade">Room/suite upgrade</option>
@@ -348,42 +335,42 @@ export function LogHotel() {
             </select>
           </div>
           <div>
-            <label style={labelStyle}>What was it</label>
-            <input style={inputStyle} value={form.benefitNote} onChange={(e) => set('benefitNote', e.target.value)} placeholder="Suite upgrade, breakfast…" />
+            <label className="field-label">What was it</label>
+            <input className="input" value={form.benefitNote} onChange={(e) => set('benefitNote', e.target.value)} placeholder="Suite upgrade, breakfast…" />
           </div>
         </div>
         <div>
-          <label style={labelStyle}>Booked via (leave blank if direct)</label>
-          <input style={inputStyle} value={form.bookingChannel} onChange={(e) => set('bookingChannel', e.target.value)} placeholder="e.g. Expedia" />
+          <label className="field-label">Booked via (leave blank if direct)</label>
+          <input className="input" value={form.bookingChannel} onChange={(e) => set('bookingChannel', e.target.value)} placeholder="e.g. Expedia" />
         </div>
         <div>
-          <label style={labelStyle}>Trip</label>
+          <label className="field-label">Trip</label>
           {!manualTripOverride ? (
-            <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 10, padding: '11px 12px' }}>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>
+            <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 'var(--r-control)', padding: '11px 12px' }}>
+              <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 700 }}>
                 {autoSuggestion.tripId ? autoSuggestion.suggestedTitle : `New trip: ${autoSuggestion.suggestedTitle}`}
                 <span
                   style={{
-                    marginLeft: 8, fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 99,
-                    background: autoSuggestion.tripType === 'work' ? 'rgba(19,34,71,.09)' : 'rgba(12,122,66,.1)',
+                    marginLeft: 8, fontSize: 'var(--fs-micro)', fontWeight: 700, padding: '2px 7px', borderRadius: 'var(--r-pill)',
+                    background: autoSuggestion.tripType === 'work' ? 'var(--brand-soft)' : 'var(--green-soft)',
                     color: autoSuggestion.tripType === 'work' ? 'var(--brand)' : 'var(--green)',
                   }}
                 >
                   {autoSuggestion.tripType}
                 </span>
               </div>
-              <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 3 }}>{autoSuggestion.reason}</div>
+              <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 3 }}>{autoSuggestion.reason}</div>
               <button
                 type="button"
                 onClick={() => setManualTripOverride(true)}
-                style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: '6px 0 0' }}
+                style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer', padding: '6px 0 0' }}
               >
                 Choose a different trip
               </button>
             </div>
           ) : (
             <>
-              <select style={inputStyle} value={form.tripId} onChange={(e) => set('tripId', e.target.value)}>
+              <select className="input" value={form.tripId} onChange={(e) => set('tripId', e.target.value)}>
                 <option value="">No trip — standalone</option>
                 {trips.map((t) => <option key={t.id} value={t.id}>{t.title} ({t.start})</option>)}
               </select>
@@ -391,7 +378,7 @@ export function LogHotel() {
                 <button
                   type="button"
                   onClick={() => setManualTripOverride(false)}
-                  style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: '6px 0 0' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer', padding: '6px 0 0' }}
                 >
                   Use automatic detection instead
                 </button>
@@ -401,13 +388,13 @@ export function LogHotel() {
         </div>
 
         {extractNote && (
-          <div style={{ background: 'rgba(156,95,8,.1)', color: 'var(--amber)', fontSize: 12.5, padding: '10px 14px', borderRadius: 10, fontWeight: 600 }}>
+          <div style={{ background: 'var(--amber-soft)', color: 'var(--amber)', fontSize: 'var(--fs-small)', padding: '10px 14px', borderRadius: 'var(--r-control)', fontWeight: 600 }}>
             {extractNote}
           </div>
         )}
         {overlapWarning && (
-          <div style={{ background: 'rgba(156,95,8,.1)', border: '1px solid rgba(156,95,8,.25)', borderRadius: 10, padding: '12px 14px' }}>
-            <div style={{ fontSize: 12.5, color: 'var(--amber)', fontWeight: 600, marginBottom: 8 }}>
+          <div style={{ background: 'var(--amber-soft)', border: '1px solid rgba(232,176,75,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
+            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--amber)', fontWeight: 600, marginBottom: 8 }}>
               These dates overlap with "{overlapWarning}", already logged on this trip. Save anyway?
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -417,13 +404,13 @@ export function LogHotel() {
                   setConfirmedOverlap(true);
                   setOverlapWarning(null);
                 }}
-                style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--amber)', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--amber)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
               >
                 Save anyway
               </button>
               <button
                 type="button"
-                onClick={() => setOverlapWarning(null)}                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                onClick={() => setOverlapWarning(null)}                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
               >
                 Let me fix it
               </button>
@@ -431,8 +418,8 @@ export function LogHotel() {
           </div>
         )}
         {dupWarning && (
-          <div style={{ background: 'rgba(156,95,8,.1)', border: '1px solid rgba(156,95,8,.25)', borderRadius: 10, padding: '12px 14px' }}>
-            <div style={{ fontSize: 12.5, color: 'var(--amber)', fontWeight: 600, marginBottom: 8 }}>
+          <div style={{ background: 'var(--amber-soft)', border: '1px solid rgba(232,176,75,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
+            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--amber)', fontWeight: 600, marginBottom: 8 }}>
               This looks like it might already be logged as "{dupWarning}": same brand, similar date. Save anyway?
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -442,42 +429,38 @@ export function LogHotel() {
                   setConfirmedDup(true);
                   setDupWarning(null);
                 }}
-                style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--amber)', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--amber)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
               >
                 Save anyway
               </button>
               <button
                 type="button"
                 onClick={() => setDupWarning(null)}
-                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
               >
                 Let me check
               </button>
             </div>
           </div>
         )}
-        {error && <div style={{ color: 'var(--red)', fontSize: 13 }}>{error}</div>}
+        {error && <ErrorText>{error}</ErrorText>}
 
-        <button type="submit" disabled={saving} style={{
-          background: 'var(--brand)', color: '#fff', border: 'none', borderRadius: 12,
-          padding: '13px 0', fontSize: 15, fontWeight: 700, cursor: 'pointer', marginTop: 6,
-          opacity: saving ? 0.6 : 1,
-        }}>
+        <Button type="submit" block disabled={saving} style={{ marginTop: 6 }}>
           {saving ? 'Saving…' : editing ? 'Save changes' : 'Save stay'}
-        </button>
+        </Button>
 
         {editing && !confirmingDelete && (
           <button
             type="button"
             onClick={() => setConfirmingDelete(true)}
-            style={{ background: 'none', border: 'none', color: 'var(--red)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', padding: '6px 0' }}
+            className="btn ghost" style={{ color: 'var(--red)', fontSize: 'var(--fs-body)', fontWeight: 600, padding: '6px 0', justifyContent: 'flex-start' }}
           >
             Delete this stay
           </button>
         )}
         {editing && confirmingDelete && (
-          <div style={{ background: 'rgba(210,60,60,.08)', border: '1px solid rgba(210,60,60,.25)', borderRadius: 10, padding: '12px 14px' }}>
-            <div style={{ fontSize: 12.5, color: 'var(--red)', fontWeight: 600, marginBottom: 8 }}>
+          <div style={{ background: 'var(--red-soft)', border: '1px solid rgba(240,138,126,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
+            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--red)', fontWeight: 600, marginBottom: 8 }}>
               Delete "{editing.name}" permanently? This can't be undone.
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -494,14 +477,14 @@ export function LogHotel() {
                     setDeleting(false);
                   }
                 }}
-                style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--red)', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--red)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
               >
                 {deleting ? 'Deleting…' : 'Yes, delete it'}
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(false)}
-                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
               >
                 Cancel
               </button>

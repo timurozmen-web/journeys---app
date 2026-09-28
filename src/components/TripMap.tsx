@@ -1,9 +1,12 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { geoNaturalEarth1, geoPath } from 'd3-geo';
 import { worldGeo } from '../data/worldGeo';
-import { AIRPORTS } from '../data/airports';
+import { flightLegs, greatCircle, projectLegs } from '../lib/flightPath';
+import { useGlobalAirports } from '../lib/useGlobalAirports';
+import { MapBackdrop, RouteLayer, type DrawnLeg } from './MapLayers';
 import type { Hotel, Flight } from '../types';
 import type { TripPhoto } from '../lib/queries';
+import { MAP } from '../data/mapTheme';
 
 const WIDTH = 360;
 const HEIGHT = 220;
@@ -28,6 +31,12 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
   const [stepIndex, setStepIndex] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const globalAirports = useGlobalAirports();
+  const legs = useMemo(
+    () => [...flights].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')).flatMap((f) => flightLegs(f, globalAirports)),
+    [flights, globalAirports],
+  );
+
   const points = useMemo(() => {
     const pts: [number, number][] = [];
     for (const h of hotels) {
@@ -36,18 +45,15 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
     for (const p of photos) {
       if (p.lat != null && p.lng != null) pts.push([p.lng, p.lat]);
     }
-    for (const f of flights) {
-      const a = AIRPORTS[f.from];
-      const b = AIRPORTS[f.to];
-      if (a) pts.push([a.lng, a.lat]);
-      if (b) pts.push([b.lng, b.lat]);
-    }
+    // Every point along each flight's real path, not just its ends, so a
+    // route that bows north (e.g. to North America) isn't cut off.
+    for (const l of legs) pts.push(...greatCircle(l.from, l.to, 12));
     return pts;
-  }, [hotels, flights, photos]);
+  }, [hotels, legs, photos]);
 
-  const { countryPaths, routeLines, markers, photoMarkers, stops } = useMemo(() => {
+  const { projection, countryPaths, routeLegs, markers, photoMarkers, stops } = useMemo(() => {
     if (points.length === 0) {
-      return { countryPaths: [], routeLines: [], markers: [], photoMarkers: [], stops: [] as Stop[] };
+      return { projection: null, countryPaths: [], routeLegs: [] as DrawnLeg[], markers: [], photoMarkers: [], stops: [] as Stop[] };
     }
 
     const lngs = points.map((pt) => pt[0]);
@@ -71,18 +77,7 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
       .map((f: any) => ({ name: f.properties.name as string, d: pathGen(f) || '' }))
       .filter((c: { d: string }) => c.d);
 
-    const routeLines: { d: string; key: string }[] = [];
-    for (const f of flights) {
-      const a = AIRPORTS[f.from];
-      const b = AIRPORTS[f.to];
-      if (!a || !b) continue;
-      const p1 = project(a.lat, a.lng);
-      const p2 = project(b.lat, b.lng);
-      if (!p1 || !p2) continue;
-      const mx = (p1[0] + p2[0]) / 2;
-      const my = (p1[1] + p2[1]) / 2 - Math.min(30, Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) * 0.18);
-      routeLines.push({ d: `M${p1[0]},${p1[1]} Q${mx},${my} ${p2[0]},${p2[1]}`, key: f.id });
-    }
+    const routeLegs: DrawnLeg[] = projectLegs(legs, (lng, lat) => projection([lng, lat]) as [number, number] | null, WIDTH);
 
     const markers: { x: number; y: number; label: string }[] = [];
     for (const h of hotels) {
@@ -115,8 +110,8 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
     }
     stops.sort((a, b) => a.date.localeCompare(b.date));
 
-    return { countryPaths, routeLines, markers, photoMarkers, stops };
-  }, [points, flights, hotels, photos]);
+    return { projection, countryPaths, routeLegs, markers, photoMarkers, stops };
+  }, [points, legs, hotels, photos]);
 
   // Advance through stops on a timer while playing, stopping cleanly at
   // the end rather than looping unexpectedly.
@@ -150,27 +145,23 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
 
   return (
     <div style={{ position: 'relative' }}>
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block', background: '#DCE7F5', borderRadius: 16 }}>
-        {countryPaths.map((c) => (
-          <path key={c.name} d={c.d} fill="#B9CEEC" stroke="#DCE7F5" strokeWidth={0.5} />
-        ))}
-        {routeLines.map((r) => (
-          <path key={r.key} d={r.d} fill="none" stroke="#1E3A8F" strokeWidth={1.1} strokeDasharray="3 2.2" opacity={0.85} />
-        ))}
+      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block', background: 'var(--map-bg)', borderRadius: 'var(--r-md)', overflow: 'hidden' }}>
+        {projection && <MapBackdrop projection={projection} width={WIDTH} height={HEIGHT} countries={countryPaths.map((c) => ({ key: c.name, d: c.d }))} />}
         {markers.map((m, i) => (
-          <circle key={`h${i}`} cx={m.x} cy={m.y} r={3.2} fill="#1E3A8F" stroke="#fff" strokeWidth={1} />
+          <circle key={`h${i}`} cx={m.x} cy={m.y} r={2.4} fill={MAP.home} opacity={0.75} />
         ))}
+        <RouteLayer legs={routeLegs} />
         {photoMarkers.map((p, i) => (
           <g key={`p${i}`}>
-            <circle cx={p.x} cy={p.y} r={4} fill="#FF9962" stroke="#fff" strokeWidth={1} />
-            <circle cx={p.x} cy={p.y} r={1.4} fill="#fff" />
+            <circle cx={p.x} cy={p.y} r={4} fill={MAP.home} stroke={MAP.stopRing} strokeWidth={1} />
+            <circle cx={p.x} cy={p.y} r={1.4} fill={MAP.stopRing} />
           </g>
         ))}
         {playing && traveledPath && (
-          <path d={traveledPath} fill="none" stroke="#1E3A8F" strokeWidth={2} strokeLinecap="round" opacity={0.9} />
+          <path d={traveledPath} fill="none" stroke={MAP.route} strokeWidth={2} strokeLinecap="round" opacity={0.9} />
         )}
         {playing && activeStop && (
-          <circle cx={activeStop.x} cy={activeStop.y} r={5.5} fill="#1E3A8F" stroke="#fff" strokeWidth={1.6}>
+          <circle cx={activeStop.x} cy={activeStop.y} r={5.5} fill={MAP.stop} stroke={MAP.stopRing} strokeWidth={1.6}>
             <animate attributeName="r" values="5.5;8;5.5" dur="1.2s" repeatCount="indefinite" />
           </circle>
         )}
@@ -181,8 +172,8 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
           onClick={togglePlay}
           style={{
             position: 'absolute', top: 8, right: 8, display: 'flex', alignItems: 'center', gap: 5,
-            padding: '5px 11px', borderRadius: 99, border: 'none', background: 'rgba(255,255,255,.92)',
-            color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(23,23,28,.18)',
+            padding: '5px 11px', borderRadius: 'var(--r-pill)', border: 'none', background: 'rgba(20,23,30,.9)',
+            color: 'var(--brand)', fontSize: 'var(--fs-caption)', fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,.4)',
           }}
         >
           {playing ? '⏸ Pause' : '▶ Play trip'}
@@ -192,19 +183,19 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
       {playing && activeStop && (
         <div
           style={{
-            position: 'absolute', left: 10, right: 10, bottom: 10, background: '#fff', borderRadius: 10,
+            position: 'absolute', left: 10, right: 10, bottom: 10, background: 'var(--card)', borderRadius: 'var(--r-control)',
             border: '1px solid var(--line)', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 8,
-            boxShadow: '0 4px 14px rgba(23,23,28,.15)',
+            boxShadow: '0 4px 14px rgba(0,0,0,.4)',
           }}
         >
           {activeStop.photoUrl && (
-            <img src={activeStop.photoUrl} alt="" style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
+            <img src={activeStop.photoUrl} alt="" style={{ width: 36, height: 36, borderRadius: 'var(--r-xs)', objectFit: 'cover', flexShrink: 0 }} />
           )}
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {activeStop.label}
             </div>
-            <div style={{ fontSize: 10.5, color: 'var(--ink3)' }}>{activeStop.date.slice(0, 10)}</div>
+            <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)' }}>{activeStop.date.slice(0, 10)}</div>
           </div>
         </div>
       )}

@@ -4,7 +4,7 @@ import { addDays } from '../lib/tripDay';
 import { calculateLeaveNeeded } from '../lib/annualLeave';
 import { blendedGuideForMonth, dominantMonth, PRICE_COLOR, PRICE_TINT, CROWD_COLOR, CROWD_TINT, MONTH_NAMES, type BlendedMonthGuide } from '../lib/destinationGuide';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
-import { BackIcon, PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon, TripsIcon, ThermometerIcon, DropletIcon, CloudRainIcon, TagIcon, UsersIcon } from '../components/Icons';
+import { PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon, TripsIcon, ThermometerIcon, DropletIcon, CloudRainIcon, TagIcon, UsersIcon } from '../components/Icons';
 import { googleFlightsSearchUrl, googleHotelsSearchUrl, brandHotelSearchUrl, ALLIANCE_LABELS, type StopsFilter, type CabinFilter, type AllianceFilter } from '../lib/externalSearchLinks';
 import { planningCountries, PLANNING_AIRPORTS_BY_IATA } from '../data/planningAirports';
 import { allPlanningCountries } from '../data/globalAirportsLoader';
@@ -18,6 +18,7 @@ import { useCurrency } from '../lib/currency';
 import { getBudgetEstimate, type BudgetEstimate } from '../lib/budgetEstimate';
 import { CitySearchInput } from '../components/CitySearchInput';
 import type { WorldCity } from '../data/worldCitiesLoader';
+import { ErrorText, ScreenHeader } from '../components/ui';
 
 const PlanMap = lazyWithRetry(() => import('../components/PlanMap').then((m) => ({ default: m.PlanMap })));
 
@@ -45,14 +46,6 @@ interface Destination {
   cities: WorldCity[];
 }
 
-const inputStyle: React.CSSProperties = {
-  background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 10,
-  color: 'var(--ink)', fontSize: 15, padding: '11px 12px', width: '100%', outline: 'none', boxSizing: 'border-box',
-};
-const labelStyle: React.CSSProperties = {
-  fontSize: 11, color: 'var(--ink2)', fontWeight: 700, textTransform: 'uppercase',
-  letterSpacing: '.05em', marginBottom: 5, display: 'block',
-};
 
 // Anything over an hour rounds to the nearest 15 minutes -- a formula
 // estimate has no business claiming false precision like "12h 46m";
@@ -88,11 +81,11 @@ function formatHours(h: number): string {
 
 function GuideTile({ icon, label, value, color, bg }: { icon: React.ReactNode; label: string; value: string; color?: string; bg?: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: bg ?? 'var(--card2)', borderRadius: 10, padding: '8px 10px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: bg ?? 'var(--card2)', borderRadius: 'var(--r-control)', padding: '8px 10px' }}>
       <span style={{ flexShrink: 0, color: color ?? 'var(--ink3)' }}>{icon}</span>
       <div>
-        <div style={{ fontSize: 9.5, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</div>
-        <div style={{ fontSize: 15, fontWeight: 800, color: color ?? 'var(--ink)', marginTop: 1 }}>{value}</div>
+        <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</div>
+        <div style={{ fontSize: 'var(--fs-input)', fontWeight: 600, color: color ?? 'var(--ink)', marginTop: 1 }}>{value}</div>
       </div>
     </div>
   );
@@ -109,7 +102,7 @@ function GuideTileGrid({ blended, heading }: { blended: BlendedMonthGuide; headi
   const crowdLabel = blended.crowd ? blended.crowd[0].toUpperCase() + blended.crowd.slice(1) : '—';
   return (
     <div style={{ marginTop: 8 }}>
-      {heading && <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>{heading}</div>}
+      {heading && <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>{heading}</div>}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
         <GuideTile icon={<ThermometerIcon size={16} />} label="Avg high" value={`${Math.round(blended.tempHigh)}°C`} />
         <GuideTile icon={<ThermometerIcon size={16} />} label="Avg low" value={`${Math.round(blended.tempLow)}°C`} />
@@ -119,7 +112,7 @@ function GuideTileGrid({ blended, heading }: { blended: BlendedMonthGuide; headi
         <GuideTile icon={<UsersIcon size={16} />} label="Crowds" value={crowdLabel} color={blended.crowd ? CROWD_COLOR[blended.crowd] : undefined} bg={blended.crowd ? CROWD_TINT[blended.crowd] : undefined} />
       </div>
       {blended.crowdDriver && (
-        <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 6, lineHeight: 1.4 }}>
+        <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', marginTop: 6, lineHeight: 1.4 }}>
           Watch out: {blended.crowdDriver}{blended.crowdDriverDates ? `, ${blended.crowdDriverDates}` : ''}
         </div>
       )}
@@ -153,8 +146,8 @@ function PointsValueCard({ country, city, rates, programmes }: { country: string
     .sort((a, b) => priorityOrder.indexOf(a.programme) - priorityOrder.indexOf(b.programme));
 
   return (
-    <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 12, background: 'var(--card2)' }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>{matched[0].city}: cash vs. points value</div>
+    <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 'var(--r-sm)', background: 'var(--card2)' }}>
+      <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>{matched[0].city}: cash vs. points value</div>
       <div style={{ display: 'grid', gap: 10 }}>
         {tierOrder.map((tier) => {
           const rate = matched.find((r) => r.tier === tier);
@@ -162,10 +155,10 @@ function PointsValueCard({ country, city, rates, programmes }: { country: string
           const midCashUsd = (rate.priceLowUsd + rate.priceHighUsd) / 2;
           return (
             <div key={tier}>
-              <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)' }}>{tierLabel[tier]}: {rate.priceLowUsd === rate.priceHighUsd ? `~${format(fromUsd(rate.priceLowUsd))}` : `${format(fromUsd(rate.priceLowUsd))}–${format(fromUsd(rate.priceHighUsd))}`}/night</div>
+              <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, color: 'var(--ink)' }}>{tierLabel[tier]}: {rate.priceLowUsd === rate.priceHighUsd ? `~${format(fromUsd(rate.priceLowUsd))}` : `${format(fromUsd(rate.priceLowUsd))}–${format(fromUsd(rate.priceHighUsd))}`}/night</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginTop: 4 }}>
                 {mainProgrammes.map((p) => (
-                  <div key={p.programme} style={{ fontSize: 10.5, color: 'var(--ink2)' }}>
+                  <div key={p.programme} style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink2)' }}>
                     {p.programme.replace('World of ', '').replace(' Bonvoy', '').replace(' Honors', '').replace(' One Rewards', '').replace(' ALL', '')}: {roundPointsEstimate(Math.round((midCashUsd * 100) / p.avgCentsPerPoint)).toLocaleString()} pts
                   </div>
                 ))}
@@ -174,7 +167,7 @@ function PointsValueCard({ country, city, rates, programmes }: { country: string
           );
         })}
       </div>
-      <div style={{ fontSize: 10, color: 'var(--ink3)', marginTop: 8, lineHeight: 1.4 }}>
+      <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', marginTop: 8, lineHeight: 1.4 }}>
         Based on estimated fair value.
         {currency !== 'USD' && ` Converted at ${isLive ? 'live' : 'cached'} rates.`}
       </div>
@@ -200,7 +193,7 @@ function SeasonHeatmap({ country, city, climateData, crowdPriceData, highlightMo
   if (months.every((m) => m === null)) return null;
   return (
     <div style={{ marginTop: 8 }}>
-      <div style={{ fontSize: 10, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 4 }}>Season at a glance</div>
+      <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 4 }}>Season at a glance</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3 }}>
         {months.map((m, i) => (
           <div
@@ -214,7 +207,7 @@ function SeasonHeatmap({ country, city, climateData, crowdPriceData, highlightMo
           />
         ))}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 8.5, color: 'var(--ink3)', marginTop: 3 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-micro)', color: 'var(--ink3)', marginTop: 3 }}>
         <span>J</span><span>F</span><span>M</span><span>A</span><span>M</span><span>J</span><span>J</span><span>A</span><span>S</span><span>O</span><span>N</span><span>D</span>
       </div>
     </div>
@@ -427,7 +420,10 @@ export function Plan() {
               body: JSON.stringify({ country: dest.country }),
             });
             const data = await res.json();
-            return res.ok ? ([dest.country, data] as const) : null;
+            // A reply without a months list (e.g. the model returned
+            // something unexpected) used to crash the whole screen when
+            // rendered -- treat it like a failed fetch instead.
+            return res.ok && Array.isArray(data?.months) ? ([dest.country, data] as const) : null;
           } catch {
             return null;
           }
@@ -572,21 +568,16 @@ export function Plan() {
 
   return (
     <div>
-      <div className="head" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0 }}>
-          <BackIcon size={20} color="var(--ink)" />
-        </button>
-        <div className="h1" style={{ fontSize: 21 }}>Plan a trip</div>
-      </div>
+      <ScreenHeader title="Plan a trip" />
 
       <div style={{ padding: '0 20px', display: 'grid', gap: 10 }}>
         {destinations.map((dest, i) => (
           <div key={dest.id}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 30px', gap: 8, alignItems: 'end' }}>
               <div>
-                {i === 0 && <label style={labelStyle}>Destination</label>}
+                {i === 0 && <label className="field-label">Destination</label>}
                 <select
-                  style={inputStyle}
+                  className="input"
                   value={dest.country}
                   onChange={(e) => { updateDestination(dest.id, { country: e.target.value, cities: [] }); setCities([]); }}
                 >
@@ -596,16 +587,16 @@ export function Plan() {
                 </select>
               </div>
               <div>
-                {i === 0 && <label style={labelStyle}>Nights</label>}
+                {i === 0 && <label className="field-label">Nights</label>}
                 <input
-                  type="number" style={inputStyle} value={dest.nights}
+                  type="number" className="input" value={dest.nights}
                   onChange={(e) => updateDestination(dest.id, { nights: e.target.value })}
                 />
               </div>
               {destinations.length > 1 ? (
                 <button
                   onClick={() => { removeDestination(dest.id); setCities([]); }}
-                  style={{ height: 42, background: 'var(--card2)', border: 'none', borderRadius: 8, color: 'var(--ink3)', fontSize: 15, cursor: 'pointer' }}
+                  style={{ height: 42, background: 'var(--card2)', border: 'none', borderRadius: 'var(--r-xs)', color: 'var(--ink3)', fontSize: 'var(--fs-input)', cursor: 'pointer' }}
                 >
                   ✕
                 </button>
@@ -641,14 +632,14 @@ export function Plan() {
 
         <button
           onClick={addDestination}
-          style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', padding: '2px 0', textAlign: 'left' }}
+          style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer', padding: '2px 0', textAlign: 'left' }}
         >
           + Add another country
         </button>
 
         <div>
-          <label style={labelStyle}>Flying from</label>
-          <select style={inputStyle} value={homeAirport} onChange={(e) => setHomeAirport(e.target.value)}>
+          <label className="field-label">Flying from</label>
+          <select className="input" value={homeAirport} onChange={(e) => setHomeAirport(e.target.value)}>
             {HOME_AIRPORTS.map((code) => {
               const a = PLANNING_AIRPORTS_BY_IATA[code];
               return <option key={code} value={code}>{a ? `${a.city} ${civilianAirportName(a.name)} (${code})` : code}</option>;
@@ -657,16 +648,16 @@ export function Plan() {
         </div>
 
         <div>
-          <label style={labelStyle}>Departure date</label>
-          <input type="date" style={inputStyle} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <label className="field-label">Departure date</label>
+          <input type="date" className="input" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </div>
 
         {startDate && leaveEstimateEndDate && (() => {
           const leave = calculateLeaveNeeded(startDate, leaveEstimateEndDate);
           return (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 12, background: 'rgba(30,58,143,.05)', border: '1px solid rgba(30,58,143,.15)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 'var(--r-sm)', background: 'rgba(217,183,124,.1)', border: '1px solid rgba(217,183,124,.25)' }}>
               <TripsIcon size={18} color="var(--brand)" style={{ flexShrink: 0 }} />
-              <div style={{ fontSize: 12.5, color: 'var(--ink)', lineHeight: 1.45 }}>
+              <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink)', lineHeight: 1.45 }}>
                 <b>{leave.leaveDaysNeeded} day{leave.leaveDaysNeeded === 1 ? '' : 's'} annual leave</b>
                 {leave.bankHolidays > 0 && ` (${leave.bankHolidays} bank holiday${leave.bankHolidays === 1 ? '' : 's'})`}
               </div>
@@ -678,15 +669,15 @@ export function Plan() {
           onClick={suggest}
           disabled={loading}
           style={{
-            padding: '13px 0', borderRadius: 12, border: 'none', fontSize: 15, fontWeight: 700,
-            background: loading ? 'var(--card2)' : 'var(--brand)', color: loading ? 'var(--ink2)' : '#fff',
+            padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none', fontSize: 'var(--fs-input)', fontWeight: 700,
+            background: loading ? 'var(--card2)' : 'var(--brand)', color: loading ? 'var(--ink2)' : 'var(--on-brand)',
             cursor: loading ? 'default' : 'pointer',
           }}
         >
           {loading ? 'Planning…' : cities.length > 0 ? 'Suggest again' : 'Plan this trip'}
         </button>
 
-        {error && <div style={{ color: 'var(--red)', fontSize: 13 }}>{error}</div>}
+        {error && <ErrorText>{error}</ErrorText>}
       </div>
 
       {cities.length > 0 && (
@@ -704,10 +695,12 @@ export function Plan() {
                 ))}
               </div>
             )}
-            <Suspense fallback={<div style={{ height: 220, background: '#DCE7F5', borderRadius: 16 }} />}>
+            <Suspense fallback={<div style={{ height: 220, background: 'var(--map-bg)', borderRadius: 'var(--r-md)' }} />}>
               <PlanMap
                 home={mapHome}
                 cities={mapCities}
+                departDate={startDate || null}
+                returnDate={tripEndDate}
                 domesticLegs={mapLegs.map((l) => ({ mode: l.recommendedMode, distanceKm: l.distanceKm, hours: l.estimatedTravelHours }))}
                 internationalLeg={
                   !mapFocus && home && cities.length > 0
@@ -720,7 +713,7 @@ export function Plan() {
 
           <div className="sect"><h2>Route</h2></div>
           {cities.length > 1 && (
-            <div style={{ padding: '0 20px 8px', fontSize: 11.5, color: 'var(--ink3)' }}>
+            <div style={{ padding: '0 20px 8px', fontSize: 'var(--fs-caption)', color: 'var(--ink3)' }}>
               Drag the grip to reorder stops
             </div>
           )}
@@ -732,9 +725,9 @@ export function Plan() {
                   key={s}
                   onClick={() => setStopsFilter(s)}
                   style={{
-                    padding: '5px 12px', borderRadius: 99, fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
+                    padding: '5px 12px', borderRadius: 'var(--r-pill)', fontSize: 'var(--fs-caption)', fontWeight: 700, cursor: 'pointer',
                     border: stopsFilter === s ? '1px solid var(--brand)' : '1px solid var(--line)',
-                    background: stopsFilter === s ? 'rgba(30,58,143,.08)' : 'var(--card)',
+                    background: stopsFilter === s ? 'var(--brand-soft)' : 'var(--card)',
                     color: stopsFilter === s ? 'var(--brand)' : 'var(--ink2)',
                   }}
                 >
@@ -746,13 +739,13 @@ export function Plan() {
               value={airlineFilter}
               onChange={(e) => setAirlineFilter(e.target.value)}
               placeholder="Preferred airline (optional)"
-              style={{ ...inputStyle, fontSize: 12.5, padding: '8px 11px' }}
+              className="input" style={{ fontSize: 'var(--fs-small)', padding: '8px 11px' }}
             />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <select
                 value={cabinFilter}
                 onChange={(e) => setCabinFilter(e.target.value as CabinFilter)}
-                style={{ ...inputStyle, fontSize: 12.5, padding: '8px 9px' }}
+                className="input" style={{ fontSize: 'var(--fs-small)', padding: '8px 9px' }}
               >
                 <option value="any">Any cabin</option>
                 <option value="economy">Economy</option>
@@ -763,7 +756,7 @@ export function Plan() {
               <select
                 value={allianceFilter}
                 onChange={(e) => setAllianceFilter(e.target.value as AllianceFilter)}
-                style={{ ...inputStyle, fontSize: 12.5, padding: '8px 9px' }}
+                className="input" style={{ fontSize: 'var(--fs-small)', padding: '8px 9px' }}
               >
                 <option value="any">Any alliance</option>
                 <option value="star-alliance">Star Alliance</option>
@@ -772,7 +765,7 @@ export function Plan() {
               </select>
             </div>
             {allianceFilter !== 'any' && (
-              <div style={{ fontSize: 10.5, color: 'var(--ink3)', lineHeight: 1.4 }}>
+              <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', lineHeight: 1.4 }}>
                 Google Flights doesn't support pre-selecting an alliance via a link -- once the search opens, use its own "Airlines" filter and choose {ALLIANCE_LABELS[allianceFilter]} there to see every carrier in the alliance together.
               </div>
             )}
@@ -780,7 +773,7 @@ export function Plan() {
               <select
                 value={hotelBrandFilter}
                 onChange={(e) => setHotelBrandFilter(e.target.value)}
-                style={{ ...inputStyle, fontSize: 12.5, padding: '8px 9px' }}
+                className="input" style={{ fontSize: 'var(--fs-small)', padding: '8px 9px' }}
               >
                 <option value="any">Search hotels generally</option>
                 {loyaltyProgrammes.filter((p) => p.category === 'hotel').map((p) => (
@@ -792,19 +785,19 @@ export function Plan() {
 
           <div className="stack" style={{ display: 'grid', gap: 10 }}>
             {home && cities.length > 0 && (
-              <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)' }}>
+              <div style={{ padding: '12px 14px', borderRadius: 'var(--r-sm)', background: 'var(--card)', border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>{home.city} → {cities[0].city}</div>
+                  <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700 }}>{home.city} → {cities[0].city}</div>
                   <a
                     href={smartFlightUrl(
                       home?.city ?? 'London', cities[0].city, startDate || null,
                       uniqueCountries.length === 1 ? tripEndDate : null
-                    )} style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
+                    )} style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 'var(--fs-caption)', fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
                   >
                     Search <ExternalLinkIcon size={12} color="var(--brand)" />
                   </a>
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 3 }}>
+                <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 3 }}>
                   {Math.round(outboundKm).toLocaleString()} km · flight · est. {formatHours(estimateTravelHours(outboundKm, 'flight'))} flying + ~{formatHours(estimateOverheadHours('flight'))} airports
                 </div>
               </div>
@@ -817,14 +810,14 @@ export function Plan() {
               return (
                 <div key={`${c.city}-${i}`}>
                   {showCountry && (
-                    <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', margin: '10px 0 6px' }}>
+                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', margin: '10px 0 6px' }}>
                       {c.country}
                     </div>
                   )}
                   <div
                     ref={(el) => { rowRefs.current[i] = el; }}
                     style={{
-                      padding: '12px 14px', borderRadius: 12, background: 'var(--card)',
+                      padding: '12px 14px', borderRadius: 'var(--r-sm)', background: 'var(--card)',
                       border: dragOverIndex === i && draggedIndex !== null && draggedIndex !== i ? '2px solid var(--brand)' : '1px solid var(--line)',
                       display: 'flex', alignItems: 'flex-start', gap: 8,
                       opacity: draggedIndex === i ? 0.4 : 1,
@@ -846,17 +839,17 @@ export function Plan() {
                     </button>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                        <div style={{ fontSize: 14, fontWeight: 800 }}>{c.city}</div>
-                        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--brand)' }}>{c.nights}n</div>
+                        <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 600 }}>{c.city}</div>
+                        <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--brand)' }}>{c.nights}n</div>
                       </div>
-                      <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 4, lineHeight: 1.5 }}>{c.why}</div>
+                      <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 4, lineHeight: 1.5 }}>{c.why}</div>
                       {transfer && (
-                        <div style={{ fontSize: 11.5, color: 'var(--ink3)', marginTop: 6 }}>
+                        <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 6 }}>
                           {civilianAirportName(transfer.airport.name || transfer.airport.city)} ({transfer.airport.iata}) · {Math.round(transfer.distanceKm)} km to centre · ~{Math.round((transfer.distanceKm / 45) * 60 + 10)} min transfer
                         </div>
                       )}
                       <a
-                        href={smartHotelUrl(c.city, c.country, cityDates[i]?.checkIn ?? null, c.nights)} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', marginTop: 8 }}
+                        href={smartHotelUrl(c.city, c.country, cityDates[i]?.checkIn ?? null, c.nights)} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--brand)', fontSize: 'var(--fs-caption)', fontWeight: 700, textDecoration: 'none', marginTop: 8 }}
                       >
                         Search {hotelBrandFilter !== 'any' ? hotelBrandFilter : 'hotels'} <ExternalLinkIcon size={11} color="var(--brand)" />
                       </a>
@@ -881,14 +874,14 @@ export function Plan() {
                       ) : (
                         <CarIcon size={16} color="var(--ink3)" />
                       )}
-                      <div style={{ fontSize: 11.5, color: 'var(--ink2)', flex: 1 }}>
+                      <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', flex: 1 }}>
                         {Math.round(leg.distanceKm)} km · est. {formatHours(leg.estimatedTravelHours)}
                         {leg.estimatedOverheadHours > 0 && ` + ~${formatHours(leg.estimatedOverheadHours)} ${leg.recommendedMode === 'flight' ? 'airports' : 'station'}`}
                         · ~£{Math.round(leg.estimatedCostGBP)}
                       </div>
                       {leg.recommendedMode === 'flight' && (
                         <a
-                          href={smartFlightUrl(cities[i].city, cities[i + 1].city, cityDates[i + 1]?.checkIn ?? null, null)} style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'var(--brand)', fontSize: 11, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
+                          href={smartFlightUrl(cities[i].city, cities[i + 1].city, cityDates[i + 1]?.checkIn ?? null, null)} style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'var(--brand)', fontSize: 'var(--fs-caption)', fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
                         >
                           Search <ExternalLinkIcon size={11} color="var(--brand)" />
                         </a>
@@ -900,16 +893,16 @@ export function Plan() {
             })}
 
             {home && cities.length > 0 && uniqueCountries.length > 1 && (
-              <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)' }}>
+              <div style={{ padding: '12px 14px', borderRadius: 'var(--r-sm)', background: 'var(--card)', border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>{cities[cities.length - 1].city} → {home.city}</div>
+                  <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700 }}>{cities[cities.length - 1].city} → {home.city}</div>
                   <a
-                    href={smartFlightUrl(cities[cities.length - 1].city, home.city, tripEndDate, null)} style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 11.5, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
+                    href={smartFlightUrl(cities[cities.length - 1].city, home.city, tripEndDate, null)} style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 'var(--fs-caption)', fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
                   >
                     Search <ExternalLinkIcon size={12} color="var(--brand)" />
                   </a>
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 3 }}>
+                <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 3 }}>
                   {Math.round(returnKm).toLocaleString()} km · flight · est. {formatHours(estimateTravelHours(returnKm, 'flight'))} flying + ~{formatHours(estimateOverheadHours('flight'))} airports
                 </div>
               </div>
@@ -921,35 +914,35 @@ export function Plan() {
               <div className="sect"><h2>Best time to go</h2></div>
               <div className="stack" style={{ display: 'grid', gap: 12 }}>
                 {loadingSeasonal && Object.keys(seasonalGuidance).length === 0 && (
-                  <div style={{ fontSize: 12.5, color: 'var(--ink3)' }}>Checking seasonal patterns…</div>
+                  <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink3)' }}>Checking seasonal patterns…</div>
                 )}
                 {destinations.map((dest) => {
                   const g = seasonalGuidance[dest.country];
                   if (!g) return null;
                   return (
                     <div key={dest.country} className="card">
-                      <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 8 }}>{dest.country}</div>
+                      <div style={{ fontSize: 'var(--fs-body)', fontWeight: 600, marginBottom: 8 }}>{dest.country}</div>
                       <div style={{ display: 'flex', gap: 3 }}>
                         {g.months.map((m) => (
                           <div key={m.month} style={{ flex: 1, textAlign: 'center' }} title={m.note}>
                             <div
                               style={{
-                                height: 28, borderRadius: 5,
+                                height: 28, borderRadius: 'var(--r-xs)',
                                 background: m.priceLevel === 'high' ? 'var(--red)' : m.priceLevel === 'medium' ? 'var(--amber)' : 'var(--green)',
                                 opacity: m.priceLevel === 'high' ? 0.85 : m.priceLevel === 'medium' ? 0.6 : 0.5,
                               }}
                             />
-                            <div style={{ fontSize: 8.5, color: 'var(--ink3)', marginTop: 3, fontWeight: 700 }}>{m.month}</div>
+                            <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', marginTop: 3, fontWeight: 700 }}>{m.month}</div>
                           </div>
                         ))}
                       </div>
-                      <div style={{ display: 'flex', gap: 12, marginTop: 8, fontSize: 10, color: 'var(--ink3)' }}>
+                      <div style={{ display: 'flex', gap: 12, marginTop: 8, fontSize: 'var(--fs-micro)', color: 'var(--ink3)' }}>
                         <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: 'var(--green)', opacity: 0.5, marginRight: 4 }} />Lower</span>
                         <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: 'var(--amber)', opacity: 0.6, marginRight: 4 }} />Medium</span>
                         <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: 'var(--red)', opacity: 0.85, marginRight: 4 }} />Higher</span>
                       </div>
-                      <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 10, lineHeight: 1.5 }}>{g.summary}</div>
-                      <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 8, fontStyle: 'italic' }}>
+                      <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 10, lineHeight: 1.5 }}>{g.summary}</div>
+                      <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', marginTop: 8, fontStyle: 'italic' }}>
                         General seasonal guidance, not live pricing. Real fares vary by route and booking time.
                       </div>
                     </div>
@@ -967,29 +960,29 @@ export function Plan() {
                   <div
                     key={o.programme}
                     style={{
-                      padding: '12px 14px', borderRadius: 12, background: 'var(--card)',
+                      padding: '12px 14px', borderRadius: 'var(--r-sm)', background: 'var(--card)',
                       border: i === 0 ? '2px solid var(--brand)' : '1px solid var(--line)',
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                      <div style={{ fontSize: 13.5, fontWeight: 800 }}>
+                      <div style={{ fontSize: 'var(--fs-body)', fontWeight: 600 }}>
                         {o.programme}
-                        {i === 0 && <span style={{ color: 'var(--brand)', fontSize: 11, marginLeft: 6 }}>BEST VALUE</span>}
+                        {i === 0 && <span style={{ color: 'var(--brand)', fontSize: 'var(--fs-caption)', marginLeft: 6 }}>BEST VALUE</span>}
                       </div>
-                      <div style={{ fontSize: 13, fontWeight: 700 }}>~£{Math.round(o.estimatedNightlyGBP)}/night</div>
+                      <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700 }}>~£{Math.round(o.estimatedNightlyGBP)}/night</div>
                     </div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink3)', marginTop: 3 }}>
+                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 3 }}>
                       {o.tier ? `${o.tier} · ` : ''}
                       {o.rateSource === 'history'
                         ? `rate from your ${o.historyCount} past stay${o.historyCount === 1 ? '' : 's'}`
                         : 'no stay history, generic estimate'}
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 6 }}>
+                    <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 6 }}>
                       Earns ~{Math.round(o.pointsEarned).toLocaleString()} pts (~£{Math.round(o.pointsValueGBP)})
                       · effective ~£{Math.round(o.effectiveNightlyGBP)}/night
                     </div>
                     {o.benefits.length > 0 && (
-                      <div style={{ fontSize: 11.5, color: 'var(--ink2)', marginTop: 6, lineHeight: 1.6 }}>
+                      <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 6, lineHeight: 1.6 }}>
                         {o.benefits.map((b) => `• ${b}`).join('  ')}
                       </div>
                     )}
@@ -1018,7 +1011,7 @@ export function Plan() {
                   value={`~${Math.round(bestHotel.pointsEarned).toLocaleString()} pts`}
                 />
               )}
-              <div style={{ fontSize: 11, color: 'var(--ink3)', lineHeight: 1.5, marginTop: 4 }}>
+              <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', lineHeight: 1.5, marginTop: 4 }}>
                 Distances are exact great-circle calculations. Durations and costs are rough planning
                 estimates, not live fares. Real journey times vary by route and service.
               </div>
@@ -1030,15 +1023,15 @@ export function Plan() {
             <div className="card" style={{ display: 'grid', gap: 10 }}>
               {!budgetEstimate && !budgetLoading && (
                 <>
-                  <p style={{ fontSize: 12, color: 'var(--ink2)', lineHeight: 1.5, margin: 0 }}>
+                  <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', lineHeight: 1.5, margin: 0 }}>
                     Current flight, hotel, and food prices for this route and these dates. Takes 10–30 seconds.
                   </p>
                   <button
                     onClick={fetchBudgetEstimate}
                     disabled={!startDate || cities.length === 0}
                     style={{
-                      padding: '11px 0', borderRadius: 10, border: 'none', fontSize: 13.5, fontWeight: 700, cursor: 'pointer',
-                      background: 'var(--brand)', color: '#fff', opacity: !startDate || cities.length === 0 ? 0.5 : 1,
+                      padding: '11px 0', borderRadius: 'var(--r-control)', border: 'none', fontSize: 'var(--fs-body)', fontWeight: 700, cursor: 'pointer',
+                      background: 'var(--brand)', color: 'var(--on-brand)', opacity: !startDate || cities.length === 0 ? 0.5 : 1,
                     }}
                   >
                     Get budget estimate
@@ -1046,10 +1039,10 @@ export function Plan() {
                 </>
               )}
               {budgetLoading && (
-                <div style={{ fontSize: 12.5, color: 'var(--ink3)', textAlign: 'center', padding: '8px 0' }}>Researching current prices…</div>
+                <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink3)', textAlign: 'center', padding: '8px 0' }}>Researching current prices…</div>
               )}
               {budgetError && (
-                <div style={{ fontSize: 12.5, color: 'var(--red)' }}>{budgetError}</div>
+                <div style={{ fontSize: 'var(--fs-small)', color: 'var(--red)' }}>{budgetError}</div>
               )}
               {budgetEstimate && (
                 <>
@@ -1062,14 +1055,14 @@ export function Plan() {
                     <Row label="Total estimate" value={`£${budgetEstimate.totalEstimateGBP[0].toLocaleString()}–${budgetEstimate.totalEstimateGBP[1].toLocaleString()}`} />
                   </div>
                   {budgetEstimate.notes && (
-                    <div style={{ fontSize: 11.5, color: 'var(--ink2)', lineHeight: 1.5, fontStyle: 'italic' }}>{budgetEstimate.notes}</div>
+                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', lineHeight: 1.5, fontStyle: 'italic' }}>{budgetEstimate.notes}</div>
                   )}
-                  <div style={{ fontSize: 10.5, color: 'var(--ink3)', lineHeight: 1.5 }}>
+                  <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', lineHeight: 1.5 }}>
                     A rough estimate from a web search, not a live quote. Prices change.
                   </div>
                   <button
                     onClick={fetchBudgetEstimate}
-                    style={{ padding: '9px 0', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                    style={{ padding: '9px 0', borderRadius: 'var(--r-control)', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
                   >
                     Refresh estimate
                   </button>
@@ -1080,13 +1073,13 @@ export function Plan() {
 
           <div className="stack" style={{ marginTop: 4 }}>
             <div className="card">
-              <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 8 }}>Save this plan as a trip</div>
+              <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700, marginBottom: 8 }}>Save this plan as a trip</div>
               {!startDate ? (
-                <div style={{ fontSize: 12.5, color: 'var(--ink2)', marginBottom: 10 }}>
+                <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginBottom: 10 }}>
                   Set a departure date above to save this as a trip.
                 </div>
               ) : (
-                <div style={{ fontSize: 12.5, color: 'var(--ink2)', marginBottom: 10 }}>
+                <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginBottom: 10 }}>
                   Departing {startDate}, returning {tripEndDate}.
                 </div>
               )}
@@ -1094,18 +1087,18 @@ export function Plan() {
                 onClick={saveToTrips}
                 disabled={!startDate || saving}
                 style={{
-                  width: '100%', padding: '12px 0', borderRadius: 10, border: 'none', fontSize: 14, fontWeight: 700,
-                  background: !startDate || saving ? 'var(--card2)' : 'var(--brand)', color: !startDate || saving ? 'var(--ink2)' : '#fff',
+                  width: '100%', padding: '12px 0', borderRadius: 'var(--r-control)', border: 'none', fontSize: 'var(--fs-body-lg)', fontWeight: 700,
+                  background: !startDate || saving ? 'var(--card2)' : 'var(--brand)', color: !startDate || saving ? 'var(--ink2)' : 'var(--on-brand)',
                   cursor: !startDate || saving ? 'default' : 'pointer',
                 }}
               >
                 {saving ? 'Saving…' : 'Save to Trips'}
               </button>
-              <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 8, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 8, lineHeight: 1.5 }}>
                 Creates a real trip with a stay for each city and flights for the international legs,
                 all marked as "needs confirming" until you actually book them.
               </div>
-              {saveError && <div style={{ color: 'var(--red)', fontSize: 12, marginTop: 6 }}>{saveError}</div>}
+              {saveError && <div style={{ color: 'var(--red)', fontSize: 'var(--fs-small)', marginTop: 6 }}>{saveError}</div>}
             </div>
           </div>
         </>
@@ -1117,8 +1110,8 @@ export function Plan() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-      <span style={{ fontSize: 12.5, color: 'var(--ink2)', fontWeight: 600 }}>{label}</span>
-      <span style={{ fontSize: 13, fontWeight: 700 }}>{value}</span>
+      <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>{label}</span>
+      <span style={{ fontSize: 'var(--fs-body)', fontWeight: 700 }}>{value}</span>
     </div>
   );
 }

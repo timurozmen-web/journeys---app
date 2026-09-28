@@ -4,8 +4,8 @@ import { BackIcon, CameraIcon } from '../components/Icons';
 import { normalizeBrand } from '../data/brandMap';
 import { useAllHotels, useAllFlights } from '../lib/useLiveData';
 import { findLikelyDuplicateHotel, findLikelyDuplicateFlight } from '../lib/duplicateDetection';
+import { ScreenHeader } from '../components/ui';
 
-const labelStyle: React.CSSProperties = { fontSize: 11.5, fontWeight: 700, color: 'var(--ink3)', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 6, display: 'block' };
 const MAX_IMAGES = 4;
 
 interface PickedImage {
@@ -133,9 +133,9 @@ export function ScanEmail() {
           <button onClick={() => setBookings(null)} style={{ background: 'none', border: 'none', padding: 0 }}>
             <BackIcon size={20} color="var(--ink)" />
           </button>
-          <div className="h1" style={{ fontSize: 21 }}>Found {bookings.length} bookings</div>
+          <div className="h1" style={{ fontSize: 'var(--fs-heading)' }}>Found {bookings.length} bookings</div>
         </div>
-        <p style={{ padding: '0 20px 4px', fontSize: 13, color: 'var(--ink2)', lineHeight: 1.5 }}>
+        <p style={{ padding: '0 20px 4px', fontSize: 'var(--fs-body)', color: 'var(--ink2)', lineHeight: 1.5 }}>
           Tap each one to review and save it. You can check and correct the details before anything's added.
         </p>
         <div className="stack" style={{ marginTop: 8 }}>
@@ -149,21 +149,21 @@ export function ScanEmail() {
                 key={i}
                 onClick={() => openBooking(b, i)}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 10, padding: '13px 14px', borderRadius: 14,
-                  background: saved ? 'rgba(12,122,66,.06)' : 'var(--card)', border: `1px solid ${saved ? 'rgba(12,122,66,.25)' : 'var(--line)'}`,
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '13px 14px', borderRadius: 'var(--r-md)',
+                  background: saved ? 'var(--green-soft)' : 'var(--card)', border: `1px solid ${saved ? 'rgba(111,207,151,.3)' : 'var(--line)'}`,
                   cursor: 'pointer', textAlign: 'left', font: 'inherit', color: 'var(--ink)',
                 }}
               >
-                <span style={{ fontSize: 18, flexShrink: 0 }}>{b.type === 'hotel' ? '🏨' : '✈️'}</span>
+                <span style={{ fontSize: 'var(--fs-title)', flexShrink: 0 }}>{b.type === 'hotel' ? '🏨' : '✈️'}</span>
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>{summarize(b)}</span>
+                  <span style={{ display: 'block', fontSize: 'var(--fs-body)', fontWeight: 700 }}>{summarize(b)}</span>
                   {dup && !saved && (
-                    <span style={{ display: 'block', fontSize: 11, color: 'var(--amber)', fontWeight: 600, marginTop: 2 }}>
+                    <span style={{ display: 'block', fontSize: 'var(--fs-caption)', color: 'var(--amber)', fontWeight: 600, marginTop: 2 }}>
                       ⚠ Might already be logged, worth checking before saving again
                     </span>
                   )}
                 </span>
-                <span style={{ fontSize: 11.5, fontWeight: 700, color: saved ? 'var(--green)' : 'var(--brand)', flexShrink: 0 }}>
+                <span style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, color: saved ? 'var(--green)' : 'var(--brand)', flexShrink: 0 }}>
                   {saved ? '✓ Saved' : 'Review →'}
                 </span>
               </button>
@@ -174,7 +174,7 @@ export function ScanEmail() {
           <div style={{ padding: '16px 20px' }}>
             <button
               onClick={() => navigate('/trips')}
-              style={{ width: '100%', padding: '13px 0', borderRadius: 12, border: 'none', background: 'var(--brand)', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
+              style={{ width: '100%', padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 'var(--fs-input)', fontWeight: 700, cursor: 'pointer' }}
             >
               Done, go to trips
             </button>
@@ -186,27 +186,22 @@ export function ScanEmail() {
 
   return (
     <div>
-      <div className="head" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0 }}>
-          <BackIcon size={20} color="var(--ink)" />
-        </button>
-        <div className="h1" style={{ fontSize: 21 }}>Scan an email</div>
-      </div>
-      <p style={{ padding: '0 20px 4px', fontSize: 13, color: 'var(--ink2)', lineHeight: 1.5 }}>
+      <ScreenHeader title="Scan an email" />
+      <p style={{ padding: '0 20px 4px', fontSize: 'var(--fs-body)', color: 'var(--ink2)', lineHeight: 1.5 }}>
         Easiest way: screenshot the confirmation and attach it below, no need to copy any text. Multiple bookings in one confirmation (a flight plus a hotel, say) all get picked up together, and you'll get a chance to review and correct everything before it's saved.
       </p>
 
       <div style={{ padding: '14px 20px 0' }}>
-        <label style={labelStyle}>Screenshots</label>
+        <label className="field-label">Screenshots</label>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {images.map((img, i) => (
             <div key={i} style={{ position: 'relative', width: 72, height: 72 }}>
-              <img src={img.previewUrl} alt="" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 10, border: '1px solid var(--line)' }} />
+              <img src={img.previewUrl} alt="" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 'var(--r-control)', border: '1px solid var(--line)' }} />
               <button
                 onClick={() => removeImage(i)}
                 style={{
                   position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%',
-                  background: 'var(--ink)', color: '#fff', border: '2px solid var(--bg)', fontSize: 12, fontWeight: 700,
+                  background: 'var(--ink)', color: 'var(--on-dark)', border: '2px solid var(--bg)', fontSize: 'var(--fs-small)', fontWeight: 700,
                   display: 'grid', placeItems: 'center', cursor: 'pointer', lineHeight: 1,
                 }}
               >
@@ -218,7 +213,7 @@ export function ScanEmail() {
             <button
               onClick={() => fileInput.current?.click()}
               style={{
-                width: 72, height: 72, borderRadius: 10, border: '1px dashed var(--line)', background: 'var(--card)',
+                width: 72, height: 72, borderRadius: 'var(--r-control)', border: '1px dashed var(--line)', background: 'var(--card)',
                 display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--ink3)',
               }}
             >
@@ -238,7 +233,7 @@ export function ScanEmail() {
           }}
         />
         {images.length > 0 && (
-          <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 6 }}>
+          <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', marginTop: 6 }}>
             Long email? Attach a few screenshots covering different parts of it, up to {MAX_IMAGES}.
           </div>
         )}
@@ -246,7 +241,7 @@ export function ScanEmail() {
 
       <div style={{ padding: '18px 20px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
-        <span style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700 }}>OR PASTE TEXT</span>
+        <span style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700 }}>OR PASTE TEXT</span>
         <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
       </div>
 
@@ -257,20 +252,20 @@ export function ScanEmail() {
           placeholder="Paste the confirmation email here…"
           rows={6}
           style={{
-            width: '100%', background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 10,
-            color: 'var(--ink)', fontSize: 13.5, padding: '11px 12px', outline: 'none', resize: 'vertical',
+            width: '100%', background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 'var(--r-control)',
+            color: 'var(--ink)', fontSize: 'var(--fs-body)', padding: '11px 12px', outline: 'none', resize: 'vertical',
             fontFamily: 'inherit', boxSizing: 'border-box',
           }}
         />
-        {error && <div style={{ color: 'var(--red)', fontSize: 12.5, marginTop: 10 }}>{error}</div>}
+        {error && <div style={{ color: 'var(--red)', fontSize: 'var(--fs-small)', marginTop: 10 }}>{error}</div>}
         <button
           onClick={handleExtract}
           disabled={!canSubmit}
           style={{
-            width: '100%', marginTop: 14, padding: '13px 0', borderRadius: 12, border: 'none',
+            width: '100%', marginTop: 14, padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none',
             background: canSubmit ? 'var(--brand)' : 'var(--card2)',
-            color: canSubmit ? '#fff' : 'var(--ink3)',
-            fontSize: 15, fontWeight: 700, cursor: canSubmit ? 'pointer' : 'default',
+            color: canSubmit ? 'var(--on-brand)' : 'var(--ink3)',
+            fontSize: 'var(--fs-input)', fontWeight: 700, cursor: canSubmit ? 'pointer' : 'default',
           }}
         >
           {loading ? 'Reading…' : 'Extract details'}

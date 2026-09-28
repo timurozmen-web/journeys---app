@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { BackIcon } from '../components/Icons';
 import { useBankConnections, useUnreviewedBankTransactions, usePaymentCards } from '../lib/useLiveData';
 import { assignBankTransactionToCard, dismissBankTransaction } from '../lib/queries';
 import { supabase } from '../lib/supabase';
+import { ScreenHeader } from '../components/ui';
 
 interface Bank {
   name: string;
@@ -12,7 +11,6 @@ interface Bank {
 }
 
 export function BankSync() {
-  const navigate = useNavigate();
   const { data: connections } = useBankConnections();
   const { data: transactions, refetch: refetchTransactions } = useUnreviewedBankTransactions();
   const { data: cards, refetch: refetchCards } = usePaymentCards();
@@ -64,21 +62,16 @@ export function BankSync() {
 
   return (
     <div>
-      <div className="head" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0 }}>
-          <BackIcon size={20} color="var(--ink)" />
-        </button>
-        <div className="h1" style={{ fontSize: 21 }}>Bank sync</div>
-      </div>
+      <ScreenHeader title="Bank sync" />
 
       <div style={{ padding: '0 20px' }}>
         {connections.length === 0 ? (
           <>
-            <p style={{ fontSize: 13, color: 'var(--ink2)', lineHeight: 1.5, marginBottom: 16 }}>
+            <p style={{ fontSize: 'var(--fs-body)', color: 'var(--ink2)', lineHeight: 1.5, marginBottom: 16 }}>
               Connect your bank and new spend gets pulled in once a day. You still review and assign each transaction to a card yourself, so nothing's added to your totals without your say.
             </p>
-            {loadingBanks && <div style={{ color: 'var(--ink3)', fontSize: 13 }}>Loading banks…</div>}
-            {error && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+            {loadingBanks && <div style={{ color: 'var(--ink3)', fontSize: 'var(--fs-body)' }}>Loading banks…</div>}
+            {error && <div style={{ color: 'var(--red)', fontSize: 'var(--fs-body)', marginBottom: 12 }}>{error}</div>}
             <div style={{ display: 'grid', gap: 8 }}>
               {banks.map((bank) => (
                 <button
@@ -86,8 +79,8 @@ export function BankSync() {
                   onClick={() => handleConnect(bank)}
                   disabled={connecting}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 10,
-                    border: '1px solid var(--line)', background: 'var(--card)', fontSize: 13.5, fontWeight: 700,
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 'var(--r-control)',
+                    border: '1px solid var(--line)', background: 'var(--card)', fontSize: 'var(--fs-body)', fontWeight: 700,
                     color: 'var(--ink)', cursor: connecting ? 'default' : 'pointer', textAlign: 'left',
                   }}
                 >
@@ -99,19 +92,19 @@ export function BankSync() {
         ) : (
           <>
             {connections.map((c) => (
-              <div key={c.id} style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)', marginBottom: 10 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700 }}>{c.aspspName}</div>
-                <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 3 }}>
+              <div key={c.id} style={{ padding: '12px 14px', borderRadius: 'var(--r-sm)', background: 'var(--card)', border: '1px solid var(--line)', marginBottom: 10 }}>
+                <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700 }}>{c.aspspName}</div>
+                <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 3 }}>
                   {c.accountName ?? 'Account'} · last synced {c.lastSyncedAt ? new Date(c.lastSyncedAt).toLocaleDateString() : 'not yet'}
                 </div>
               </div>
             ))}
 
-            <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', margin: '16px 0 8px' }}>
+            <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', margin: '16px 0 8px' }}>
               To review ({transactions.length})
             </div>
             {transactions.length === 0 && (
-              <div style={{ padding: '20px 4px', textAlign: 'center', color: 'var(--ink3)', fontSize: 13 }}>
+              <div style={{ padding: '20px 4px', textAlign: 'center', color: 'var(--ink3)', fontSize: 'var(--fs-body)' }}>
                 Nothing new since the last sync.
               </div>
             )}
@@ -152,19 +145,19 @@ function TransactionRow({
 }) {
   const [selected, setSelected] = useState('');
   return (
-    <div style={{ padding: '11px 14px', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--card)' }}>
+    <div style={{ padding: '11px 14px', borderRadius: 'var(--r-control)', border: '1px solid var(--line)', background: 'var(--card)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-        <div style={{ fontSize: 13, fontWeight: 700 }}>{transaction.description || 'Transaction'}</div>
-        <div style={{ fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
+        <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700 }}>{transaction.description || 'Transaction'}</div>
+        <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700, flexShrink: 0 }}>
           {transaction.currency} {transaction.amount.toFixed(2)}
         </div>
       </div>
-      <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 2 }}>{transaction.date}</div>
+      <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 2 }}>{transaction.date}</div>
       <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
         <select
           value={selected}
           onChange={(e) => setSelected(e.target.value)}
-          style={{ flex: 1, padding: '7px 9px', borderRadius: 8, border: '1px solid var(--line)', fontSize: 12.5 }}
+          style={{ flex: 1, padding: '7px 9px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', fontSize: 'var(--fs-small)' }}
         >
           <option value="">Assign to card…</option>
           {cards.map((c) => (
@@ -174,13 +167,13 @@ function TransactionRow({
         <button
           disabled={!selected}
           onClick={() => onAssign(selected)}
-          style={{ padding: '7px 12px', borderRadius: 8, border: 'none', background: selected ? 'var(--brand)' : 'var(--card2)', color: selected ? '#fff' : 'var(--ink3)', fontSize: 12, fontWeight: 700, cursor: selected ? 'pointer' : 'default' }}
+          style={{ padding: '7px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: selected ? 'var(--brand)' : 'var(--card2)', color: selected ? 'var(--on-brand)' : 'var(--ink3)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: selected ? 'pointer' : 'default' }}
         >
           Add
         </button>
         <button
           onClick={onDismiss}
-          style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card2)', color: 'var(--ink2)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+          style={{ padding: '7px 12px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card2)', color: 'var(--ink2)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
         >
           Dismiss
         </button>

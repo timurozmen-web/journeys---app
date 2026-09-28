@@ -3,16 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { addTrip, updateTrip, deleteTrip } from '../lib/queries';
 import { withOfflineFallback } from '../lib/offlineQueue';
 import type { Trip } from '../types';
-import { BackIcon } from '../components/Icons';
+import { Button, ErrorText, ScreenHeader } from '../components/ui';
 
-const inputStyle: React.CSSProperties = {
-  background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 10,
-  color: 'var(--ink)', fontSize: 15, padding: '11px 12px', width: '100%', outline: 'none', minWidth: 0, boxSizing: 'border-box',
-};
-const labelStyle: React.CSSProperties = {
-  fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase',
-  letterSpacing: '.05em', marginBottom: 5, display: 'block',
-};
 
 export function LogTrip() {
   const navigate = useNavigate();
@@ -73,42 +65,37 @@ export function LogTrip() {
 
   return (
     <div>
-      <div className="head" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0 }}>
-          <BackIcon size={20} color="var(--ink)" />
-        </button>
-        <div className="h1" style={{ fontSize: 21 }}>{editing ? 'Edit trip' : 'New trip'}</div>
-      </div>
+      <ScreenHeader title={editing ? 'Edit trip' : 'New trip'} />
 
       <form onSubmit={handleSubmit} style={{ padding: '0 20px', display: 'grid', gap: 14 }}>
         <div>
-          <label style={labelStyle}>Trip name *</label>
-          <input style={inputStyle} value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. Japan 2027" />
+          <label className="field-label">Trip name *</label>
+          <input className="input" value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. Japan 2027" />
         </div>
         <div>
-          <label style={labelStyle}>Start date *</label>
-          <input style={inputStyle} type="date" value={form.start} onChange={(e) => set('start', e.target.value)} />
+          <label className="field-label">Start date *</label>
+          <input className="input" type="date" value={form.start} onChange={(e) => set('start', e.target.value)} />
         </div>
         <div>
-          <label style={labelStyle}>End date *</label>
-          <input style={inputStyle} type="date" value={form.end} onChange={(e) => set('end', e.target.value)} />
+          <label className="field-label">End date *</label>
+          <input className="input" type="date" value={form.end} onChange={(e) => set('end', e.target.value)} />
         </div>
 
         <div>
-          <label style={labelStyle}>You're travelling for…</label>
+          <label className="field-label">You're travelling for…</label>
           <div
             onClick={() => set('tripType', form.tripType === 'work' ? 'leisure' : 'work')}
             style={{
               display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
-              background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 12, padding: '10px 14px',
+              background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 'var(--r-sm)', padding: '10px 14px',
             }}
           >
-            <span style={{ fontSize: 14, fontWeight: 700, color: form.tripType === 'leisure' ? 'var(--ink)' : 'var(--ink3)', flex: 1 }}>
+            <span style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 700, color: form.tripType === 'leisure' ? 'var(--ink)' : 'var(--ink3)', flex: 1 }}>
               Leisure
             </span>
             <span
               style={{
-                width: 46, height: 26, borderRadius: 99, position: 'relative', flexShrink: 0,
+                width: 46, height: 26, borderRadius: 'var(--r-pill)', position: 'relative', flexShrink: 0,
                 background: form.tripType === 'work' ? 'var(--brand)' : 'var(--line)',
                 transition: 'background .18s ease',
               }}
@@ -116,21 +103,21 @@ export function LogTrip() {
               <span
                 style={{
                   position: 'absolute', top: 3, left: form.tripType === 'work' ? 23 : 3,
-                  width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                  width: 20, height: 20, borderRadius: '50%', background: 'var(--card)',
                   boxShadow: '0 1px 3px rgba(0,0,0,.3)', transition: 'left .18s ease',
                 }}
               />
             </span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: form.tripType === 'work' ? 'var(--ink)' : 'var(--ink3)', flex: 1, textAlign: 'right' }}>
+            <span style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 700, color: form.tripType === 'work' ? 'var(--ink)' : 'var(--ink3)', flex: 1, textAlign: 'right' }}>
               Work
             </span>
           </div>
         </div>
 
         <div>
-          <label style={labelStyle}>Notes</label>
+          <label className="field-label">Notes</label>
           <textarea
-            style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
+            className="input" style={{ resize: 'vertical', fontFamily: 'inherit' }}
             rows={3}
             value={form.notes}
             onChange={(e) => set('notes', e.target.value)}
@@ -138,32 +125,24 @@ export function LogTrip() {
           />
         </div>
 
-        {error && <div style={{ color: 'var(--red)', fontSize: 13 }}>{error}</div>}
+        {error && <ErrorText>{error}</ErrorText>}
 
-        <button
-          type="submit"
-          disabled={saving}
-          style={{
-            padding: '13px 0', borderRadius: 12, border: 'none',
-            background: saving ? 'var(--card2)' : 'var(--brand)', color: saving ? 'var(--ink3)' : '#fff',
-            fontSize: 15, fontWeight: 700, cursor: saving ? 'default' : 'pointer', marginTop: 4,
-          }}
-        >
+        <Button type="submit" block disabled={saving} style={{ marginTop: 4 }}>
           {saving ? 'Saving…' : editing ? 'Save changes' : 'Create trip'}
-        </button>
+        </Button>
 
         {editing && !confirmingDelete && (
           <button
             type="button"
             onClick={() => setConfirmingDelete(true)}
-            style={{ background: 'none', border: 'none', color: 'var(--red)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', padding: '6px 0' }}
+            className="btn ghost" style={{ color: 'var(--red)', fontSize: 'var(--fs-body)', fontWeight: 600, padding: '6px 0', justifyContent: 'flex-start' }}
           >
             Delete this trip
           </button>
         )}
         {editing && confirmingDelete && (
-          <div style={{ background: 'rgba(210,60,60,.08)', border: '1px solid rgba(210,60,60,.25)', borderRadius: 10, padding: '12px 14px' }}>
-            <div style={{ fontSize: 12.5, color: 'var(--red)', fontWeight: 600, marginBottom: 8 }}>
+          <div style={{ background: 'var(--red-soft)', border: '1px solid rgba(240,138,126,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
+            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--red)', fontWeight: 600, marginBottom: 8 }}>
               Delete "{editing.title}" permanently? This also removes {editing.hotels.length} stay{editing.hotels.length === 1 ? '' : 's'} and {editing.flights.length} flight{editing.flights.length === 1 ? '' : 's'} logged under it. This can't be undone.
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -186,14 +165,14 @@ export function LogTrip() {
                     setDeleting(false);
                   }
                 }}
-                style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--red)', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--red)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
               >
                 {deleting ? 'Deleting…' : 'Yes, delete it'}
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(false)}
-                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
               >
                 Cancel
               </button>

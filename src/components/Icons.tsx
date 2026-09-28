@@ -24,18 +24,20 @@ const wrap = (path: string) => ({ size = 21, color = 'currentColor', style, stro
   />
 );
 
+// Tab icons: the thin-stroke Night Flight set from the design concept.
 export const HomeIcon = wrap(
-  '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/><path d="M9.5 21v-3.2h1.4"/>'
+  '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'
 );
 export const TripsIcon = wrap(
-  '<rect x="3" y="5.5" width="18" height="13" rx="3"/><path d="M9.5 5.5v13M14.5 5.5v13" stroke-dasharray="1.6 2.2"/>'
+  '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>'
 );
 export const WalletIcon = wrap(
-  '<rect x="2.5" y="5.5" width="19" height="13" rx="3.2"/><path d="M2.5 10h19"/>'
+  '<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18"/>'
 );
 export const ProfileIcon = wrap(
-  '<circle cx="12" cy="9" r="3.6"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/><circle cx="12" cy="12" r="10" opacity=".35"/>'
+  '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'
 );
+export const PlusIcon = wrap('<path d="M12 5v14M5 12h14"/>');
 export const PlanIcon = wrap(
   '<circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.2 13 13l-3.8 1.8L11 11z"/>'
 );

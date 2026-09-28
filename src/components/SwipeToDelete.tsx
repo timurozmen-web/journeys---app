@@ -54,7 +54,7 @@ export function SwipeToDelete({
   }
 
   return (
-    <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 12, ...wrapperStyle }}>
+    <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--r-sm)', ...wrapperStyle }}>
       <button
         onClick={() => {
           setOffset(0);
@@ -62,7 +62,7 @@ export function SwipeToDelete({
         }}
         style={{
           position: 'absolute', top: 0, right: 0, bottom: 0, width: REVEAL_WIDTH,
-          background: 'var(--red)', color: '#fff', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+          background: 'var(--red)', color: 'var(--on-dark)', border: 'none', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer',
         }}
       >
         {deleteLabel}

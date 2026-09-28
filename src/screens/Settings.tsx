@@ -1,16 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { BackIcon } from '../components/Icons';
 import { useLoyaltyProgrammes, useHomeLocation, useCurrencyPreference } from '../lib/useLiveData';
 import { setProgrammeTier, setHomeLocation, setCurrencyPreference } from '../lib/queries';
 import { SUPPORTED_CURRENCIES, CURRENCY_SYMBOL } from '../lib/currency';
 import { BA_TIERS, QR_TIERS, QF_TIERS, KF_TIERS } from '../lib/creditingEngine';
 import { loadWorldCities, type WorldCity } from '../data/worldCitiesLoader';
+import { ScreenHeader } from '../components/ui';
 
-const inputStyle: React.CSSProperties = {
-  background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 10,
-  color: 'var(--ink)', fontSize: 15, padding: '11px 12px', width: '100%', outline: 'none', minWidth: 0, boxSizing: 'border-box',
-};
 
 const AIRLINE_PROGRAMMES = [
   { name: 'British Airways Executive Club', tiers: BA_TIERS },
@@ -20,7 +15,6 @@ const AIRLINE_PROGRAMMES = [
 ] as const;
 
 export function Settings() {
-  const navigate = useNavigate();
   const { data: programmes, refetch } = useLoyaltyProgrammes();
   const { data: home, refetch: refetchHome } = useHomeLocation();
   const [saving, setSaving] = useState<string | null>(null);
@@ -73,23 +67,18 @@ export function Settings() {
 
   return (
     <div>
-      <div className="head" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0 }}>
-          <BackIcon size={20} color="var(--ink)" />
-        </button>
-        <div className="h1" style={{ fontSize: 21 }}>Settings</div>
-      </div>
+      <ScreenHeader title="Settings" />
 
       <div style={{ padding: '4px 20px 24px' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)', marginBottom: 4 }}>
+        <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)', marginBottom: 4 }}>
           Home location
         </div>
-        <p style={{ fontSize: 12.5, color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
+        <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
           Trips within a short domestic hop of here won't be flagged for missing flights.
         </p>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
-            style={inputStyle}
+            className="input"
             list="settings-cities"
             value={cityInput}
             onChange={(e) => { setCityInput(e.target.value); setHomeSaved(false); }}
@@ -102,39 +91,39 @@ export function Settings() {
             onClick={saveHome}
             disabled={homeSaving || !cityInput.trim() || cityInput.trim() === home.city}
             style={{
-              padding: '0 18px', borderRadius: 10, border: 'none', fontSize: 13.5, fontWeight: 800, cursor: 'pointer', flexShrink: 0,
-              background: 'var(--brand)', color: '#fff', opacity: homeSaving || !cityInput.trim() || cityInput.trim() === home.city ? 0.5 : 1,
+              padding: '0 18px', borderRadius: 'var(--r-control)', border: 'none', fontSize: 'var(--fs-body)', fontWeight: 600, cursor: 'pointer', flexShrink: 0,
+              background: 'var(--brand)', color: 'var(--on-brand)', opacity: homeSaving || !cityInput.trim() || cityInput.trim() === home.city ? 0.5 : 1,
             }}
           >
             {homeSaving ? 'Saving…' : 'Save'}
           </button>
         </div>
-        {homeSaved && <div style={{ fontSize: 11.5, color: 'var(--green)', fontWeight: 700, marginTop: 6 }}>Saved</div>}
+        {homeSaved && <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--green)', fontWeight: 700, marginTop: 6 }}>Saved</div>}
       </div>
 
       <div style={{ padding: '4px 20px 24px', borderTop: '1px solid var(--line)' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)', marginBottom: 4, marginTop: 20 }}>
+        <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)', marginBottom: 4, marginTop: 20 }}>
           Display currency
         </div>
-        <p style={{ fontSize: 12.5, color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
+        <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
           Prices researched in another currency (like Plan a trip's cash-vs-points figures) convert to this using live exchange rates.
         </p>
         <select
-          style={inputStyle}
+          className="input"
           value={currency}
           onChange={(e) => onChangeCurrency(e.target.value)}
           disabled={currencySaving}
         >
           {SUPPORTED_CURRENCIES.map((c) => <option key={c} value={c}>{c} ({CURRENCY_SYMBOL[c]})</option>)}
         </select>
-        {currencySaved && <div style={{ fontSize: 11.5, color: 'var(--green)', fontWeight: 700, marginTop: 6 }}>Saved</div>}
+        {currencySaved && <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--green)', fontWeight: 700, marginTop: 6 }}>Saved</div>}
       </div>
 
       <div style={{ padding: '4px 20px 32px', borderTop: '1px solid var(--line)' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)', marginBottom: 4, marginTop: 20 }}>
+        <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)', marginBottom: 4, marginTop: 20 }}>
           Airline elite status
         </div>
-        <p style={{ fontSize: 12.5, color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
+        <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
           Set once here and Where to Credit picks it up automatically. No need to enter it twice.
         </p>
         <div style={{ display: 'grid', gap: 10 }}>
@@ -142,10 +131,10 @@ export function Settings() {
             const match = programmes.find((pr) => pr.name === p.name);
             const current = match?.tier && (p.tiers as readonly string[]).includes(match.tier) ? match.tier : p.tiers[0];
             return (
-              <div key={p.name} style={{ border: '1px solid var(--line)', background: 'var(--card)', borderRadius: 14, padding: '12px 14px' }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>{p.name}</div>
+              <div key={p.name} style={{ border: '1px solid var(--line)', background: 'var(--card)', borderRadius: 'var(--r-md)', padding: '12px 14px' }}>
+                <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>{p.name}</div>
                 <select
-                  style={inputStyle}
+                  className="input"
                   value={current}
                   disabled={saving === p.name}
                   onChange={(e) => onChange(p.name, e.target.value, 'airline')}

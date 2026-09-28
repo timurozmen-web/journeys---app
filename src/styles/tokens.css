@@ -1,66 +1,113 @@
-/* Self-hosted variable font -- Latin subset only (this app is
-   English-only). One family everywhere, including form controls
-   (browsers don't inherit font onto input/select/button by default) --
-   per explicit feedback that headline/body font-mixing wasn't wanted,
-   hierarchy comes from size and weight only. */
-@font-face {
-  font-family: 'Geist Variable';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 100 900;
-  src: url('/fonts/geist-latin-wght-normal.woff2') format('woff2-variations');
-}
-
-/* Journeys design tokens. Off-white + white two-tone stays; royal
-   blue's role narrows to selection/active state only (toggle pills,
-   the active tab icon, a thin accent bar on "this matters" cards) --
-   it's no longer the default hero/header treatment. Hero photos and
-   section headers use a neutral near-black scrim/ink instead, so blue
-   reads as a deliberate signal rather than base decoration.
-   Contrast (WCAG formula): ink/bg 16.55:1, ink/card 17.9:1, ink2/card
-   6.54:1, brand/card 10.21:1 -- all pass AA for body text. gold/card
-   is 4.45:1 (large/bold text and UI components, not small body copy). */
+/* Night Flight theme. Near-black ground so destination photos glow,
+   warm white text, and champagne gold as the one accent (selection,
+   active state, primary actions). The font is Jost: geometric, round
+   O's and a single-storey "a" in the Century Gothic tradition, but
+   crisper. One family everywhere -- per earlier feedback, hierarchy
+   comes from size and weight, never from mixing typefaces. It's
+   self-hosted via @fontsource-variable/jost (imported in main.tsx) so
+   it works offline in the PWA.
+   Contrast (WCAG) on --card: ink 16.0:1, ink2 8.3:1, ink3 5.3:1,
+   brand (gold) 9.4:1, red 7.4:1, green 9.4:1, amber 9.2:1;
+   on-brand text on gold 10.2:1. All pass AA for body text. */
 :root {
-  color-scheme: light only;
+  color-scheme: dark only;
 
-  --bg: #F7F6F2;
-  --card: #FFFFFF;
-  --card2: #EEF1F8;
-  --line: #E4E4DD;
-  --ink: #16171C;
-  --ink2: #5C5D66;
-  --ink3: #5C5D66;
-  --brand: #1E3A8F;
-  --brand2: #3E5FCB;
-  --scrim: #15161B;     /* neutral near-black for hero/photo gradients -- replaces the old blue-tinted #101B44 */
-  --scrim2: #33353D;    /* lighter neutral stop for gradients */
-  --gold: #9C6F28;
-  --gold2: #C79A46;
-  --green: #0C7A42;
-  --red: #D23C3C;
-  --amber: #9C5F08;
+  --bg: #0B0D12;
+  --card: #14171E;
+  --card2: #1C2029;
+  --line: #262A34;
+  --ink: #F4F2EE;
+  --ink2: #B3B0AA;
+  --ink3: #8F8C86;
+  --brand: #D9B77C;     /* champagne gold: the accent */
+  --brand2: #EBD3A6;    /* lighter gold for focus rings and highlights */
+  --on-brand: #0B0D12;  /* text/icons sitting on a gold fill */
+  --scrim: #0B0D12;
+  --scrim2: #1C2029;
+  --gold: #D9B77C;
+  --gold2: #EBD3A6;
+  --green: #6FCF97;
+  --red: #F08A7E;
+  --amber: #E8B04B;
 
-  --font-body: 'Geist Variable', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+  --font-body: 'Jost Variable', 'Jost', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
   --font-display: var(--font-body);
 
+  /* Tints of the colours above, for soft backgrounds behind a label or
+     icon in that colour. */
+  --brand-soft: rgba(217,183,124,.12);
+  --gold-soft: rgba(217,183,124,.12);
+  --amber-soft: rgba(232,176,75,.12);
+  --red-soft: rgba(240,138,126,.12);
+  --green-soft: rgba(111,207,151,.12);
+
+  /* Text and lines sitting on a photo, the brand colour, or any dark
+     surface. */
+  --on-dark: #FFFFFF;
+  --on-dark2: rgba(255,255,255,.85);
+  --on-dark-line: rgba(255,255,255,.3);
+  --on-dark-fill: rgba(255,255,255,.16);
+
+  /* Type scale. Every font size in the app is one of these -- pick by
+     role, not by pixel. */
+  --fs-micro: 10px;     /* tiny uppercase tags, chart axis labels */
+  --fs-caption: 11.5px; /* field labels, secondary lines under a title */
+  --fs-small: 12.5px;   /* dense UI text, chips, meta lines */
+  --fs-body: 13.5px;    /* default reading text */
+  --fs-body-lg: 14.5px; /* list-row titles */
+  --fs-input: 15px;     /* primary buttons, prominent UI text */
+  --fs-field: 16px;     /* text inputs -- iOS zooms the page into any input under 16px */
+  --fs-title: 18px;     /* card and sheet titles */
+  --fs-heading: 22px;   /* screen titles */
+  --fs-h1: 26px;        /* large headline numbers */
+  --fs-display: 33px;   /* wallet total, hero titles */
+  --fs-hero: 38px;      /* photo-hero headlines */
+  --fs-jumbo: 64px;     /* the Home hero's destination name */
+
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s7: 32px;
-  --r-lg: 20px; --r-md: 16px; --r-sm: 12px; --r-xs: 8px;
+
+  /* Corner radii. */
+  --r-xs: 8px;       /* icon squares, small chips */
+  --r-control: 10px; /* inputs, selects, buttons */
+  --r-sm: 12px;      /* tiles, inner panels */
+  --r-md: 16px;      /* cards */
+  --r-lg: 20px;      /* heroes */
+  --r-xl: 24px;      /* sheets, oversized heroes */
+  --r-pill: 99px;
+
+  /* Photo scrims: the gradient laid over a hero image so text on it
+     stays readable. */
+  --scrim-bottom: linear-gradient(180deg, rgba(11,13,18,0) 40%, rgba(11,13,18,.6) 75%, rgba(11,13,18,.95) 100%);
+  --scrim-full: linear-gradient(180deg, rgba(11,13,18,.55) 0%, rgba(11,13,18,0) 26%, rgba(11,13,18,.08) 48%, rgba(11,13,18,.7) 76%, rgba(11,13,18,.97) 100%);
+  /* Full-bleed hero that melts into the page: dark at the very top for
+     the greeting, clear through the middle, then fading into --bg. */
+  --scrim-dissolve: linear-gradient(180deg, rgba(11,13,18,.55) 0%, rgba(11,13,18,0) 22%, rgba(11,13,18,.08) 48%, rgba(11,13,18,.82) 80%, #0B0D12 100%);
+  --text-on-photo-shadow: 0 1px 10px rgba(0,0,0,.45);
+
+  --shadow-card: 0 1px 2px rgba(0,0,0,.3);
+  --shadow-raised: 0 12px 30px rgba(0,0,0,.45);
+  --shadow-hero: 0 18px 40px rgba(0,0,0,.55);
+
+  /* Maps: dark basemap, gold routes, white stops. */
+  --map-bg: #11141A;
+  --map-land: #1E222B;
+  --map-route: #D9B77C;
 }
 
 html {
-  background-color: #F7F6F2 !important;
-  color-scheme: light only;
+  background-color: var(--bg) !important;
+  color-scheme: dark only;
 }
 html {
-  background-color: #F7F6F2 !important;
+  background-color: var(--bg) !important;
   height: 100%;
   min-height: 100%;
 }
 body {
-  background-color: #F7F6F2 !important;
+  background-color: var(--bg) !important;
 }
 #root {
-  background-color: #F7F6F2 !important;
+  background-color: var(--bg) !important;
 }
 * { box-sizing: border-box; }
 input, select, button, textarea { font-family: inherit; font-size: inherit; }
@@ -70,5 +117,5 @@ body {
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
   font-variant-numeric: tabular-nums;
-  padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
 }

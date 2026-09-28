@@ -3,6 +3,7 @@ import { BrandLogo } from './BrandLogo';
 import { updateManualSpendAdjustment, updateCardClosedDate } from '../lib/queries';
 import type { CardResult } from '../lib/cardMath';
 import type { LoyaltyProgramme } from '../types';
+import { cardBackground, textOn } from '../lib/cardTheme';
 
 function money(n: number) {
   const sign = n < 0 ? '−' : '';
@@ -37,38 +38,47 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
     return (
       <div
         key={r.card.id}
+        className="brandcard"
         style={{
-          borderRadius: 14, background: 'var(--card)', border: '1px solid var(--line)', overflow: 'hidden',
+          background: cardBackground(prog?.color ?? ''), color: textOn(prog?.color ?? '#14171E'),
           opacity: muted ? 0.55 : 1, filter: muted ? 'grayscale(0.6)' : undefined,
         }}
       >
         <button
           onClick={() => setOpen(isOpen ? null : r.card.id)}
+          aria-expanded={isOpen}
           style={{
-            width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px',
-            background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'var(--ink)',
+            width: '100%', display: 'flex', flexDirection: 'column', gap: 18, padding: '16px 16px 18px',
+            background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'inherit',
           }}
         >
-          <BrandLogo name={prog?.name ?? ''} shape={prog?.shape} color={prog?.color} accent={prog?.accent} size={38} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.card.id}</div>
-            <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 1 }}>
-              {r.cardRow?.closedDate
-                ? `Closed ${r.cardRow.closedDate}`
-                : r.cardRow?.openDate ? `Opened ${r.cardRow.openDate}` : 'Open date not set'}
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, width: '100%' }}>
+            <BrandLogo name={prog?.name ?? ''} shape={prog?.shape} color={prog?.color} accent={prog?.accent} size={32} />
+            <span style={{ fontSize: 'var(--fs-caption)', opacity: 0.75 }}>{r.card.feeLabel}</span>
           </div>
-          <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>{money(r.net)}</div>
-            <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 1 }}>{r.card.feeLabel}</div>
+          {/* The card's chip -- purely decorative, it's what makes the pane read as a payment card. */}
+          <span aria-hidden="true" className="cardchip" />
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, width: '100%' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 600, letterSpacing: '.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.card.id}</div>
+              <div style={{ fontSize: 'var(--fs-caption)', opacity: 0.72, marginTop: 2 }}>
+                {r.cardRow?.closedDate
+                  ? `Closed ${r.cardRow.closedDate}`
+                  : r.cardRow?.openDate ? `Opened ${r.cardRow.openDate}` : 'Open date not set'}
+              </div>
+            </div>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ fontSize: 'var(--fs-title)', fontWeight: 500 }}>{money(r.net)}</div>
+              <div style={{ fontSize: 'var(--fs-caption)', opacity: 0.72, marginTop: 2 }}>net value</div>
+            </div>
           </div>
         </button>
 
         {isOpen && (
-          <div style={{ padding: '0 14px 16px', display: 'grid', gap: 4 }}>
+          <div style={{ padding: '12px 14px 16px', display: 'grid', gap: 4, background: 'var(--card)', color: 'var(--ink)' }}>
             <div className="dd-row">
-              <span style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 600 }}>Spend this card-year</span>
-              <span style={{ fontSize: 12.5, fontWeight: 700 }}>{moneyPrecise(r.autoSpend)}</span>
+              <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Spend this card-year</span>
+              <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{moneyPrecise(r.autoSpend)}</span>
             </div>
 
             <div style={{ padding: '8px 0', borderBottom: '1px solid var(--line)', marginBottom: 4 }}>
@@ -79,7 +89,7 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
                       type="number" step="0.01" autoFocus value={spendInput}
                       onChange={(e) => setSpendInput(e.target.value)}
                       placeholder="Other spend not logged here (£)"
-                      style={{ flex: 1, padding: '6px 9px', borderRadius: 7, border: '1px solid var(--line)', fontSize: 12.5 }}
+                      style={{ flex: 1, padding: '6px 9px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', fontSize: 'var(--fs-small)' }}
                     />
                     <button
                       onClick={async () => {
@@ -98,7 +108,7 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
                           setSpendSaveError(message);
                         }
                       }}
-                      style={{ padding: '6px 10px', borderRadius: 7, border: 'none', background: 'var(--brand)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                      style={{ padding: '6px 10px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
                     >
                       Save
                     </button>
@@ -109,9 +119,9 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
                         key={String(opt.v)}
                         onClick={() => setSpendIsUK(opt.v)}
                         style={{
-                          padding: '4px 10px', borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                          padding: '4px 10px', borderRadius: 'var(--r-pill)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer',
                           border: spendIsUK === opt.v ? '1px solid var(--brand)' : '1px solid var(--line)',
-                          background: spendIsUK === opt.v ? 'rgba(30,58,143,.08)' : 'var(--card)',
+                          background: spendIsUK === opt.v ? 'var(--brand-soft)' : 'var(--card)',
                           color: spendIsUK === opt.v ? 'var(--brand)' : 'var(--ink3)',
                         }}
                       >
@@ -119,10 +129,10 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
                       </button>
                     ))}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--ink3)', marginTop: 6 }}>
+                  <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink3)', marginTop: 6 }}>
                     Earning rate differs by region -- this is used to work out the points this spend earns.
                   </div>
-                  {spendSaveError && <div style={{ color: 'var(--red)', fontSize: 12, marginTop: 6 }}>{spendSaveError}</div>}
+                  {spendSaveError && <div style={{ color: 'var(--red)', fontSize: 'var(--fs-small)', marginTop: 6 }}>{spendSaveError}</div>}
                 </div>
               ) : (
                 <button
@@ -132,7 +142,7 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
                     setSpendInput(r.cardRow?.manualSpendAdjustment ? String(r.cardRow.manualSpendAdjustment) : '');
                     setSpendIsUK(r.cardRow?.manualSpendIsUK ?? true);
                   }}
-                  style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                  style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer', padding: 0 }}
                 >
                   {r.cardRow?.manualSpendAdjustment ? `+ ${moneyPrecise(r.cardRow.manualSpendAdjustment)} other spend added — edit` : '+ Add other spend not logged here'}
                 </button>
@@ -140,21 +150,21 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
             </div>
 
             <div className="dd-row">
-              <span style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 600 }}>Points earned</span>
-              <span style={{ fontSize: 12.5, fontWeight: 700 }}>{r.autoPts.toLocaleString()} pts ({moneyPrecise(r.ptsValue)})</span>
+              <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Points earned</span>
+              <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{r.autoPts.toLocaleString()} pts ({moneyPrecise(r.ptsValue)})</span>
             </div>
             {r.totalEliteNights > 0 && (
               <div className="dd-row">
-                <span style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 600 }}>Elite nights</span>
-                <span style={{ fontSize: 12.5, fontWeight: 700 }}>{r.totalEliteNights} ({moneyPrecise(r.eliteNightValue)} at £10/night)</span>
+                <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Elite nights</span>
+                <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{r.totalEliteNights} ({moneyPrecise(r.eliteNightValue)} at £10/night)</span>
               </div>
             )}
             {r.milestoneResults.map((m) => (
               <div className="dd-row" key={m.m.id}>
-                <span style={{ fontSize: 12, color: m.hit ? 'var(--green)' : 'var(--ink3)', fontWeight: 600 }}>
+                <span style={{ fontSize: 'var(--fs-small)', color: m.hit ? 'var(--green)' : 'var(--ink3)', fontWeight: 600 }}>
                   {m.hit ? '✓' : '—'} {m.m.rewardLabel}
                 </span>
-                <span style={{ fontSize: 12.5, fontWeight: 700, opacity: m.superseded ? 0.5 : 1 }}>
+                <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700, opacity: m.superseded ? 0.5 : 1 }}>
                   {m.hit && !m.superseded ? moneyPrecise(m.value) : ''}
                 </span>
               </div>
@@ -163,7 +173,7 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
               <div style={{ marginTop: 8, paddingTop: 10, borderTop: '1px solid var(--line)' }}>
                 <div className="dd-lab">Perks (not valued)</div>
                 {r.card.perks.map((p) => (
-                  <div key={p.id} style={{ fontSize: 12, color: 'var(--ink2)', padding: '3px 0' }}>{p.label}</div>
+                  <div key={p.id} style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', padding: '3px 0' }}>{p.label}</div>
                 ))}
               </div>
             )}
@@ -175,7 +185,7 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
                     <input
                       type="date" autoFocus value={closedInput}
                       onChange={(e) => setClosedInput(e.target.value)}
-                      style={{ flex: 1, padding: '6px 9px', borderRadius: 7, border: '1px solid var(--line)', fontSize: 12.5 }}
+                      style={{ flex: 1, padding: '6px 9px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', fontSize: 'var(--fs-small)' }}
                     />
                     <button
                       onClick={async () => {
@@ -195,12 +205,12 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
                           setClosedSaveError(message);
                         }
                       }}
-                      style={{ padding: '6px 10px', borderRadius: 7, border: 'none', background: 'var(--brand)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                      style={{ padding: '6px 10px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
                     >
                       Save
                     </button>
                   </div>
-                  {closedSaveError && <div style={{ color: 'var(--red)', fontSize: 12, marginTop: 6 }}>{closedSaveError}</div>}
+                  {closedSaveError && <div style={{ color: 'var(--red)', fontSize: 'var(--fs-small)', marginTop: 6 }}>{closedSaveError}</div>}
                 </div>
               ) : (
                 <button
@@ -209,7 +219,7 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
                     setClosedSaveError('');
                     setClosedInput(r.cardRow?.closedDate ?? '');
                   }}
-                  style={{ background: 'none', border: 'none', color: r.cardRow?.closedDate ? 'var(--red)' : 'var(--ink3)', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                  style={{ background: 'none', border: 'none', color: r.cardRow?.closedDate ? 'var(--red)' : 'var(--ink3)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer', padding: 0 }}
                 >
                   {r.cardRow?.closedDate ? `Closed ${r.cardRow.closedDate} — edit` : 'Mark this card as closed'}
                 </button>
@@ -222,12 +232,12 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
   }
 
   return (
-    <div style={{ display: 'grid', gap: 10 }}>
+    <div style={{ display: 'grid', gap: 12, padding: '0 16px' }}>
       {active.map((r) => renderCard(r, false))}
 
       {archived.length > 0 && (
         <>
-          <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginTop: 10 }}>
+          <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginTop: 10 }}>
             Archived
           </div>
           {archived.map((r) => renderCard(r, true))}

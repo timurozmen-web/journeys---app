@@ -75,14 +75,14 @@ export function CitySearchInput({
               key={c.name}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 5px 4px 10px',
-                borderRadius: 99, background: 'rgba(30,58,143,.08)', border: '1px solid var(--brand)',
-                fontSize: 12, fontWeight: 700, color: 'var(--brand)',
+                borderRadius: 'var(--r-pill)', background: 'var(--brand-soft)', border: '1px solid var(--brand)',
+                fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--brand)',
               }}
             >
               {c.name}
               <button
                 onClick={() => removeCity(c.name)}
-                style={{ background: 'none', border: 'none', color: 'var(--brand)', cursor: 'pointer', fontSize: 13, padding: '0 3px', lineHeight: 1 }}
+                style={{ background: 'none', border: 'none', color: 'var(--brand)', cursor: 'pointer', fontSize: 'var(--fs-body)', padding: '0 3px', lineHeight: 1 }}
               >
                 ✕
               </button>
@@ -97,8 +97,8 @@ export function CitySearchInput({
         onFocus={() => setOpen(true)}
         placeholder={selected.length > 0 ? 'Add another city…' : 'Search cities, or leave blank to let us suggest'}
         style={{
-          background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 10,
-          color: 'var(--ink)', fontSize: 13.5, padding: '10px 11px', width: '100%', outline: 'none', boxSizing: 'border-box',
+          background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 'var(--r-control)',
+          color: 'var(--ink)', fontSize: 'var(--fs-body)', padding: '10px 11px', width: '100%', outline: 'none', boxSizing: 'border-box',
         }}
       />
 
@@ -106,7 +106,7 @@ export function CitySearchInput({
         <div
           style={{
             position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 10,
-            background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 10,
+            background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 'var(--r-control)',
             boxShadow: '0 8px 24px rgba(0,0,0,.12)', maxHeight: 260, overflowY: 'auto',
           }}
         >
@@ -117,7 +117,7 @@ export function CitySearchInput({
               style={{
                 display: 'block', width: '100%', textAlign: 'left', padding: '9px 12px',
                 background: 'none', border: 'none', borderBottom: '1px solid var(--line)',
-                fontSize: 13, color: 'var(--ink)', cursor: 'pointer',
+                fontSize: 'var(--fs-body)', color: 'var(--ink)', cursor: 'pointer',
               }}
             >
               {c.name}
@@ -133,15 +133,15 @@ export function CitySearchInput({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 13, color: 'var(--ink)' }}>{l.name}</span>
+                <span style={{ fontSize: 'var(--fs-body)', color: 'var(--ink)' }}>{l.name}</span>
                 <span style={{
-                  fontSize: 9.5, fontWeight: 700, color: 'var(--brand)', background: 'rgba(30,58,143,.1)',
-                  padding: '1px 6px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '.04em',
+                  fontSize: 'var(--fs-micro)', fontWeight: 700, color: 'var(--brand)', background: 'var(--brand-soft)',
+                  padding: '1px 6px', borderRadius: 'var(--r-pill)', textTransform: 'uppercase', letterSpacing: '.04em',
                 }}>
                   {l.category}
                 </span>
               </div>
-              <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 2 }}>{l.description}</div>
+              <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 2 }}>{l.description}</div>
             </button>
           ))}
         </div>

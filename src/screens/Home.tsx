@@ -4,15 +4,18 @@ import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes, usePromoti
 import { computeCardResults } from '../lib/cardMath';
 import { computeStatusProgress } from '../lib/statusProgress';
 import { findHotelsNeedingReview } from '../lib/reviewScoring';
-import { ChevronDownIcon, HotelIcon, PlaneIcon, AlertIcon } from '../components/Icons';
+import { HotelIcon, PlaneIcon, AlertIcon } from '../components/Icons';
 import { getDestinationPhoto } from '../lib/unsplash';
 import { destinationQuery } from '../lib/tripHotels';
 import { HeroScene } from '../components/HeroScene';
 import { withLiveOverrides } from '../lib/walletValue';
 import { tripDayInfo, addDays } from '../lib/tripDay';
-import { AirlineLogo } from '../components/AirlineLogo';
+import { DestinationPhoto } from '../components/DestinationPhoto';
+import { ARC, ARC_PATH, arcPoint, tripProgress } from '../lib/routeArc';
+import { MAP } from '../data/mapTheme';
 import { isTripIncomplete } from '../lib/tripCompleteness';
 import { useFlightExemptTripIds } from '../lib/homeLocation';
+import { PhotoHero } from '../components/ui';
 
 function daysBetween(a: string, b: string) {
   return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000);
@@ -204,154 +207,93 @@ export function Home() {
     return () => { cancelled = true; };
   }, [heroQuery, heroImageUrl]);
 
+  // Route arc on the hero: first departure to final arrival, with a
+  // marker at how far through the trip today is.
+  const heroFlights = heroTrip ? [...heroTrip.flights].filter((f) => f.date).sort((x, y) => (x.date ?? '').localeCompare(y.date ?? '')) : [];
+  const arcFrom = heroFlights[0]?.from ?? null;
+  const arcTo = heroFlights.length > 0 ? heroFlights[heroFlights.length - 1].to : null;
+  const heroNights = heroTrip ? (heroDayInfo?.totalDays ?? Math.max(1, daysBetween(heroTrip.start, heroTrip.end))) : 0;
+  const heroMarker = arcPoint(tripProgress(heroDayInfo?.dayIndex ?? 0, heroNights, heroIsCurrent));
+
+  // "What's next": the next trip after the hero one.
+  const upcomingSorted = trips.filter((t) => t.section === 'upcoming').sort((x, y) => x.start.localeCompare(y.start));
+  const nextTrip = heroIsCurrent ? upcomingSorted[0] ?? null : upcomingSorted[1] ?? null;
+  const nextTripDays = nextTrip ? Math.max(0, daysBetween(TODAY, nextTrip.start)) : 0;
+
   return (
     <div>
-      <div style={{ background: 'var(--bg)', height: 'env(safe-area-inset-top, 0px)' }} />
+      {heroTrip ? (
+        <PhotoHero
+          scrim="dissolve" height={560}
+          src={heroPhoto} alt={heroTrip.title}
+          fallback={<HeroScene seed={heroTrip.id} height={560} />}
+          onClick={() => navigate(`/trips/${heroTrip.id}`)}
+        >
+          <span className="ph-top" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 22px)', left: 24, right: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>
+              <span className="nf-eyebrow" style={{ color: 'var(--on-dark2)' }}>{fmtFullDate(TODAY)}</span>
+              <span style={{ display: 'block', fontSize: 'var(--fs-title)', fontWeight: 400, marginTop: 3 }}>Good {timeOfDay()}, Timur</span>
+            </span>
+            <span
+              role="link" aria-label="Profile"
+              onClick={(e) => { e.stopPropagation(); navigate('/profile'); }}
+              style={{ width: 44, height: 44, borderRadius: '50%', border: '1px solid rgba(217,183,124,.55)', background: 'rgba(11,13,18,.35)', color: 'var(--brand)', display: 'grid', placeItems: 'center', fontWeight: 500, backdropFilter: 'blur(10px)', textShadow: 'none' }}
+            >T</span>
+          </span>
 
-      {/* Greeting lives inside the hero now, not a separate section --
-          and the hero itself is the current trip, or if none, the next
-          upcoming one. Oversized, photo-led: real trip photo if set,
-          else the same licensed photo lookup Trips uses, else the
-          shared generated scene -- never a fabricated or generic stock
-          look. */}
-      <div style={{ padding: '14px 20px 0' }}>
-        {heroTrip ? (
-          <button
-            onClick={() => navigate(`/trips/${heroTrip.id}`)}
-            style={{
-              position: 'relative', display: 'block', width: '100%', height: 400, border: 0, padding: 0, borderRadius: 24,
-              overflow: 'hidden', cursor: 'pointer', textAlign: 'left', font: 'inherit',
-              background: '#15161B', boxShadow: '0 14px 32px rgba(21,22,27,.28)',
-            }}
-          >
-            <span style={{ position: 'absolute', inset: 0 }}>
-              {heroPhoto ? (
-                <img src={heroPhoto} alt={heroTrip.title} style={{ width: '100%', height: 400, objectFit: 'cover', display: 'block' }} />
-              ) : (
-                <HeroScene seed={heroTrip.id} height={400} />
+          <span className="ph-bottom" style={{ left: 24, right: 24, bottom: 18 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span className="nf-eyebrow" style={{ color: 'var(--brand)' }}>
+                {heroIsCurrent ? `In progress · Day ${heroDayInfo!.dayIndex} of ${heroDayInfo!.totalDays}` : `Upcoming · ${heroDaysToGo} day${heroDaysToGo === 1 ? '' : 's'} to go`}
+              </span>
+              {isTripIncomplete(heroTrip) && !flightExemptTripIds.has(heroTrip.id) && (
+                <span className="nf-eyebrow" style={{ color: 'var(--ink)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <AlertIcon size={12} color="var(--brand)" /> Trip incomplete
+                </span>
               )}
             </span>
-            <span style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(21,22,27,.55) 0%,rgba(21,22,27,.05) 22%,rgba(21,22,27,.05) 45%,rgba(21,22,27,.55) 68%,rgba(21,22,27,.92) 100%)' }} />
+            <span className="ph-title" style={{ fontSize: 'var(--fs-jumbo)', fontWeight: 300, letterSpacing: '-2px', marginTop: 8 }}>{heroTrip.title}</span>
 
-            <span style={{ position: 'absolute', top: 16, left: 20, right: 60, color: '#fff' }}>
-              <span style={{ display: 'block', fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', opacity: 0.85 }}>{fmtFullDate(TODAY)}</span>
-              <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 800, letterSpacing: '-.2px', marginTop: 2 }}>Good {timeOfDay()}, Timur</span>
+            <svg viewBox="0 0 342 54" width="100%" height="54" fill="none" aria-hidden="true" style={{ display: 'block', marginTop: 18 }}>
+              <path d={ARC_PATH} stroke={MAP.route} strokeWidth="1.2" strokeDasharray="2 5" strokeLinecap="round" />
+              <circle cx={ARC.x0} cy={ARC.y0} r="4" fill={MAP.route} />
+              <circle cx={ARC.x1} cy={ARC.y1} r="4" fill="none" stroke={MAP.route} strokeWidth="1.4" />
+              <circle cx={heroMarker.x} cy={heroMarker.y} r="3.5" fill={MAP.home} />
+            </svg>
+            <span style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 'var(--fs-body)', color: 'var(--on-dark2)', marginTop: 4 }}>
+              <span>{arcFrom && <strong style={{ color: 'var(--on-dark)', fontWeight: 600, letterSpacing: '.06em' }}>{arcFrom} </strong>}{fmtDate(heroTrip.start)}</span>
+              <span>{heroNights} night{heroNights === 1 ? '' : 's'}{heroTrip.hotels.length > 0 ? ` · ${heroTrip.hotels.length} stay${heroTrip.hotels.length === 1 ? '' : 's'}` : ''}</span>
+              <span>{fmtDate(heroTrip.end)}{arcTo && <strong style={{ color: 'var(--on-dark)', fontWeight: 600, letterSpacing: '.06em' }}> {arcTo}</strong>}</span>
             </span>
-
-            <span style={{ position: 'absolute', right: 16, top: 16, width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,.2)', border: '1px solid rgba(255,255,255,.4)', display: 'grid', placeItems: 'center' }}>
-              <ChevronDownIcon size={16} color="#fff" style={{ transform: 'rotate(-90deg)' }} />
-            </span>
-
-            <span style={{ position: 'absolute', left: 20, right: 20, bottom: 62, color: '#fff' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <span style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '.1em', background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.3)', borderRadius: 99, padding: '5px 11px', backdropFilter: 'blur(6px)' }}>
-                  {heroIsCurrent ? `Current trip · Day ${heroDayInfo!.dayIndex} of ${heroDayInfo!.totalDays}` : `Upcoming · ${heroDaysToGo} day${heroDaysToGo === 1 ? '' : 's'} to go`}
-                </span>
-                {isTripIncomplete(heroTrip) && !flightExemptTripIds.has(heroTrip.id) && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700, color: '#fff', background: 'var(--brand)', borderRadius: 99, padding: '5px 10px 5px 8px' }}>
-                    <AlertIcon size={12} color="#fff" /> Trip incomplete
-                  </span>
-                )}
-              </span>
-              <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 800, letterSpacing: '-.6px', lineHeight: 1.05 }}>{heroTrip.title}</span>
-              <span style={{ display: 'block', fontSize: 13, fontWeight: 600, opacity: 0.9, marginTop: 6 }}>{fmtDate(heroTrip.start)} – {fmtDate(heroTrip.end)}</span>
-            </span>
-
             {heroHotel && (
-              <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '13px 20px', background: 'rgba(12,13,17,.55)', borderTop: '1px solid rgba(255,255,255,.15)', backdropFilter: 'blur(8px)' }}>
-                <span style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                  <HotelIcon size={16} color="#fff" />
-                </span>
-                <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {heroHotel.name}{!heroIsCurrent ? ' · first stay' : ''}
-                </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 12, fontSize: 'var(--fs-small)', color: 'var(--on-dark2)' }}>
+                <HotelIcon size={14} color="var(--brand)" />
+                {heroIsCurrent ? 'Staying at ' : 'First stay: '}{heroHotel.name}
               </span>
             )}
-          </button>
-        ) : (
-          <div style={{ padding: '10px 2px 4px' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)' }}>{fmtFullDate(TODAY)}</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 25, fontWeight: 800, letterSpacing: '-.4px', color: 'var(--ink)', marginTop: 3 }}>Good {timeOfDay()}, Timur</div>
-          </div>
-        )}
-      </div>
-
-      {/* Upcoming activity -- next flight on this trip, styled like an
-          iOS Liquid Glass departure card: frosted/translucent material,
-          big route codes, only real logged fields (no fabricated live
-          gate/status). */}
-      {nextFlight && (
-        <div style={{ padding: '14px 20px 0' }}>
-          <div
-            style={{
-              position: 'relative', borderRadius: 24, padding: '16px 18px', overflow: 'hidden',
-              background: 'linear-gradient(135deg, rgba(255,255,255,.75), rgba(255,255,255,.55))',
-              backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-              border: '1px solid rgba(255,255,255,.6)', boxShadow: '0 8px 28px rgba(21,22,27,.1), inset 0 1px 0 rgba(255,255,255,.8)',
-            }}
-          >
-            <span style={{ position: 'absolute', top: -40, right: -30, width: 140, height: 140, borderRadius: '50%', background: 'radial-gradient(circle, rgba(30,58,143,.14), rgba(30,58,143,0) 70%)' }} />
-            <span style={{ position: 'absolute', bottom: -50, left: -20, width: 130, height: 130, borderRadius: '50%', background: 'radial-gradient(circle, rgba(156,111,40,.12), rgba(156,111,40,0) 70%)' }} />
-
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                <AirlineLogo flightNo={nextFlight.flightNo} airline={nextFlight.airline} size={28} />
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink2)' }}>
-                  {nextFlight.airline}{nextFlight.flightNo ? ` · ${nextFlight.flightNo}` : ''}
-                </span>
-              </div>
-              <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: nextFlight.status === 'Booked' ? 'var(--brand)' : 'var(--ink2)', background: 'rgba(255,255,255,.7)', border: '1px solid rgba(255,255,255,.8)', borderRadius: 99, padding: '3px 9px' }}>
-                {nextFlight.status}
-              </span>
-            </div>
-
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', gap: 14, marginTop: 16 }}>
-              <span style={{ flex: '0 0 auto' }}>
-                <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 600, letterSpacing: '-.5px', color: 'var(--ink)', lineHeight: 1 }}>{nextFlight.from}</span>
-                {nextFlight.departureTime && <span style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink2)', marginTop: 3 }}>{nextFlight.departureTime}</span>}
-              </span>
-              <span style={{ flex: 1, height: 1, background: 'var(--line)', position: 'relative', marginTop: 17 }}>
-                <PlaneIcon size={16} color="var(--ink2)" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%) scaleX(-1)' }} />
-              </span>
-              <span style={{ flex: '0 0 auto', textAlign: 'right' }}>
-                <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 600, letterSpacing: '-.5px', color: 'var(--ink)', lineHeight: 1 }}>{nextFlight.to}</span>
-                {nextFlight.arrivalTime && <span style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink2)', marginTop: 3 }}>{nextFlight.arrivalTime}</span>}
-              </span>
-            </div>
-
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 10 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ink2)' }}>{fmtDate(nextFlight.date!)} · {nextFlight.cabin}</span>
-              {nextFlight.cost != null && <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink)' }}>£{nextFlight.cost}</span>}
-            </div>
-          </div>
+          </span>
+        </PhotoHero>
+      ) : (
+        <div style={{ padding: 'calc(env(safe-area-inset-top, 0px) + 28px) 24px 4px' }}>
+          <div className="nf-eyebrow" style={{ color: 'var(--ink2)' }}>{fmtFullDate(TODAY)}</div>
+          <div style={{ fontSize: 'var(--fs-h1)', fontWeight: 300, color: 'var(--ink)', marginTop: 4 }}>Good {timeOfDay()}, Timur</div>
         </div>
       )}
 
-      {/* Wallet summary -- aggregate only; tap through for the per-programme breakdown */}
-      <div style={{ padding: '16px 20px 0' }}>
-        <button
-          onClick={() => navigate('/wallet')}
-          style={{ display: 'flex', alignItems: 'stretch', gap: 0, width: '100%', textAlign: 'left', font: 'inherit', border: '1px solid var(--line)', background: 'var(--card)', borderRadius: 20, overflow: 'hidden', padding: 0, cursor: 'pointer' }}
-        >
-          <span style={{ width: 4, background: 'var(--brand)', flexShrink: 0 }} />
-          <span style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, padding: '17px 18px' }}>
-            <span>
-              <span style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--ink2)' }}>Travel wallet</span>
-              <span style={{ display: 'block', fontSize: 32, fontWeight: 800, letterSpacing: '-1px', color: 'var(--ink)', marginTop: 3 }}>£{Math.round(walletValue).toLocaleString()}</span>
-              <span style={{ display: 'block', fontSize: 12.5, color: 'var(--ink2)', fontWeight: 600, marginTop: 3 }}>
-                across {programmeCount} programme{programmeCount === 1 ? '' : 's'}
-              </span>
-            </span>
-            <span style={{ flexShrink: 0, display: 'grid', placeItems: 'center' }}>
-              <ChevronDownIcon size={20} color="var(--brand)" style={{ transform: 'rotate(-90deg)' }} />
-            </span>
+      {/* Travel wallet -- aggregate only; tap through for the per-programme breakdown */}
+      <div style={{ padding: '14px 16px 0' }}>
+        <button className="glass" onClick={() => navigate('/wallet')} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', textAlign: 'left', cursor: 'pointer', color: 'var(--ink)' }}>
+          <span>
+            <span className="nf-eyebrow" style={{ color: 'var(--ink2)' }}>Travel wallet</span>
+            <span style={{ display: 'block', fontSize: 'var(--fs-h1)', fontWeight: 300, letterSpacing: '-.6px', marginTop: 2 }}>£{Math.round(walletValue).toLocaleString()}</span>
           </span>
+          <span style={{ fontSize: 'var(--fs-body)', color: 'var(--brand)' }}>{programmeCount} programme{programmeCount === 1 ? '' : 's'} →</span>
         </button>
       </div>
 
       {actionItems.length > 0 && (
-        <div style={{ padding: '22px 20px 0' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)' }}>Worth knowing</div>
+        <div style={{ padding: '26px 16px 0' }}>
+          <div className="nf-eyebrow" style={{ color: 'var(--ink2)', padding: '0 4px' }}>Worth knowing</div>
           <div
             ref={actionScrollRef}
             onScroll={(e) => {
@@ -359,43 +301,31 @@ export function Home() {
               const cardWidth = el.children[0]?.getBoundingClientRect().width || 1;
               setActiveAction(Math.round(el.scrollLeft / cardWidth));
             }}
-            style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', marginTop: 11, scrollbarWidth: 'none' }}
+            style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollSnapType: 'x mandatory', marginTop: 10, scrollbarWidth: 'none' }}
           >
             {actionItems.map((item) => (
               <button
                 key={item.key}
+                className="glass"
                 onClick={item.onClick}
-                style={{
-                  display: 'flex', alignItems: 'stretch', gap: 0, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16,
-                  overflow: 'hidden', padding: 0, cursor: 'pointer', font: 'inherit', color: 'var(--ink)', textAlign: 'left',
-                  flex: '0 0 100%', width: '100%', scrollSnapAlign: 'start',
-                }}
+                style={{ position: 'relative', overflow: 'hidden', padding: '15px 18px 17px', cursor: 'pointer', color: 'var(--ink)', textAlign: 'left', flex: '0 0 100%', width: '100%', scrollSnapAlign: 'start' }}
               >
-                <span style={{ width: 5, background: item.color, flexShrink: 0 }} />
-                <span style={{ flex: 1, minWidth: 0, padding: '13px 14px' }}>
-                  <span style={{ display: 'block', fontSize: 14, fontWeight: 800, letterSpacing: '-.2px' }}>{item.title}</span>
-                  <span style={{ display: 'block', fontSize: 11.5, color: 'var(--ink2)', marginTop: 3, fontWeight: 500 }}>{item.subtitle}</span>
-                  {item.progressPct != null && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 9 }}>
-                      <span style={{ flex: 1, height: 6, borderRadius: 99, background: 'var(--card2)', overflow: 'hidden', display: 'block' }}>
-                        <i style={{ display: 'block', height: '100%', width: `${item.progressPct}%`, background: item.color, borderRadius: 99 }} />
-                      </span>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: item.color }}>{Math.round(item.progressPct)}%</span>
-                    </span>
-                  )}
-                </span>
+                <span style={{ display: 'block', fontSize: 'var(--fs-body-lg)', fontWeight: 500 }}>{item.title}</span>
+                <span style={{ display: 'block', fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 3 }}>{item.subtitle}</span>
+                {item.progressPct != null && (
+                  <span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, background: 'rgba(255,255,255,.08)' }}>
+                    <i style={{ display: 'block', height: '100%', width: `${item.progressPct}%`, background: item.color }} />
+                  </span>
+                )}
               </button>
             ))}
           </div>
           {actionItems.length > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 6 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 10 }}>
               {actionItems.map((item, i) => (
                 <span
                   key={item.key}
-                  style={{
-                    width: i === activeAction ? 16 : 6, height: 6, borderRadius: 99,
-                    background: i === activeAction ? 'var(--brand)' : 'var(--card2)', transition: 'width .2s ease, background .2s ease',
-                  }}
+                  style={{ width: i === activeAction ? 16 : 5, height: 5, borderRadius: 'var(--r-pill)', background: i === activeAction ? 'var(--brand)' : 'var(--line)', transition: 'width .2s ease, background .2s ease' }}
                 />
               ))}
             </div>
@@ -403,7 +333,49 @@ export function Home() {
         </div>
       )}
 
-      <div style={{ height: 12 }} />
+      {(nextFlight || nextTrip) && (
+        <div style={{ padding: '26px 16px 0', display: 'grid', gap: 10 }}>
+          <div className="nf-eyebrow" style={{ color: 'var(--ink2)', padding: '0 4px' }}>What's next</div>
+
+          {nextFlight && (
+            <div className="glass" style={{ padding: '14px 18px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <span className="nf-eyebrow" style={{ color: 'var(--brand)' }}>{fmtDate(nextFlight.date!)} · {nextFlight.airline}{nextFlight.flightNo ? ` ${nextFlight.flightNo}` : ''}</span>
+                {nextFlight.cost != null && <span style={{ fontSize: 'var(--fs-body)', color: 'var(--ink2)' }}>£{nextFlight.cost}</span>}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+                <span style={{ fontSize: 'var(--fs-h1)', fontWeight: 300, letterSpacing: '.02em' }}>{nextFlight.from}</span>
+                <span style={{ flex: 1, borderTop: `1.2px dashed ${MAP.route}`, opacity: 0.7 }} />
+                <PlaneIcon size={16} color="var(--brand)" />
+                <span style={{ flex: 1, borderTop: `1.2px dashed ${MAP.route}`, opacity: 0.7 }} />
+                <span style={{ fontSize: 'var(--fs-h1)', fontWeight: 300, letterSpacing: '.02em' }}>{nextFlight.to}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 4 }}>
+                <span>{nextFlight.departureTime ?? ''}</span>
+                <span>{nextFlight.cabin}</span>
+                <span>{nextFlight.arrivalTime ?? ''}</span>
+              </div>
+            </div>
+          )}
+
+          {nextTrip && (
+            <PhotoHero
+              scrim="none" height={72}
+              style={{ borderRadius: 'var(--r-lg)' }}
+              fallback={<DestinationPhoto query={destinationQuery(nextTrip)} seed={nextTrip.id} height={72} />}
+              onClick={() => navigate(`/trips/${nextTrip.id}`)}
+            >
+              <span style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(11,13,18,.88) 0%, rgba(11,13,18,.3) 100%)' }} />
+              <span style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingLeft: 18, textShadow: 'none' }}>
+                <span className="nf-eyebrow" style={{ color: 'var(--brand)' }}>Next trip · in {nextTripDays} day{nextTripDays === 1 ? '' : 's'}</span>
+                <span style={{ fontSize: 'var(--fs-input)', fontWeight: 500, marginTop: 2 }}>{nextTrip.title}, {fmtDate(nextTrip.start)}</span>
+              </span>
+            </PhotoHero>
+          )}
+        </div>
+      )}
+
+      <div style={{ height: 16 }} />
     </div>
   );
 }

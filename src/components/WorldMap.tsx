@@ -1,8 +1,12 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { geoNaturalEarth1, geoPath } from 'd3-geo';
 import { worldGeo } from '../data/worldGeo';
-import { AIRPORTS, COUNTRY_NAME_MAP } from '../data/airports';
+import { COUNTRY_NAME_MAP } from '../data/airports';
+import { flightLegs, projectLegs } from '../lib/flightPath';
+import { useGlobalAirports } from '../lib/useGlobalAirports';
+import { MapBackdrop, RouteLayer, type DrawnLeg } from './MapLayers';
 import type { Hotel, Flight, Review } from '../types';
+import { MAP } from '../data/mapTheme';
 
 const WIDTH = 360;
 const HEIGHT = 200;
@@ -88,39 +92,14 @@ export function WorldMap({
 
   const maxNights = Math.max(1, ...nightsByCountry.values());
 
-  const routeLines = useMemo(() => {
-    const lines: { d: string; key: string }[] = [];
-    for (const f of flights) {
-      if (!f.date) continue;
-      const a = AIRPORTS[f.from];
-      const b = AIRPORTS[f.to];
-      if (!a || !b) continue;
-      const p1 = project(a.lat, a.lng);
-      const p2 = project(b.lat, b.lng);
-      if (!p1 || !p2) continue;
-      const mx = (p1[0] + p2[0]) / 2;
-      const my = (p1[1] + p2[1]) / 2 - Math.min(30, Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) * 0.15);
-      lines.push({ d: `M${p1[0]},${p1[1]} Q${mx},${my} ${p2[0]},${p2[1]}`, key: `${f.id}` });
-    }
-    return lines;
-  }, [flights]);
-
-  const airportDots = useMemo(() => {
-    const used = new Set<string>();
-    for (const f of flights) {
-      if (!f.date) continue;
-      used.add(f.from);
-      used.add(f.to);
-    }
-    const dots: { x: number; y: number; code: string }[] = [];
-    for (const code of used) {
-      const a = AIRPORTS[code];
-      if (!a) continue;
-      const p = project(a.lat, a.lng);
-      if (p) dots.push({ x: p[0], y: p[1], code });
-    }
-    return dots;
-  }, [flights]);
+  const globalAirports = useGlobalAirports();
+  const routeLegs: DrawnLeg[] = useMemo(
+    () => projectLegs(
+      flights.filter((f) => f.date).flatMap((f) => flightLegs(f, globalAirports)),
+      (lng, lat) => project(lat, lng), WIDTH,
+    ),
+    [flights, globalAirports],
+  );
 
   // Top-rated place logged in the selected country, from real review
   // scores -- not a separate estimate, the same ranking already used on
@@ -196,9 +175,9 @@ export function WorldMap({
         <button
           onClick={() => setShowRoutes((v) => !v)}
           style={{
-            padding: '6px 12px', borderRadius: 99, border: '1px solid var(--line)',
-            background: showRoutes ? 'var(--brand)' : 'var(--card2)', color: showRoutes ? '#fff' : 'var(--ink2)',
-            fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
+            padding: '6px 12px', borderRadius: 'var(--r-pill)', border: '1px solid var(--line)',
+            background: showRoutes ? 'var(--brand)' : 'var(--card2)', color: showRoutes ? 'var(--on-brand)' : 'var(--ink2)',
+            fontSize: 'var(--fs-caption)', fontWeight: 700, cursor: 'pointer',
           }}
         >
           Routes
@@ -208,32 +187,27 @@ export function WorldMap({
       <div style={{ position: 'relative' }}>
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-          style={{ width: '100%', height: 'auto', display: 'block', background: '#DCE7F5', borderRadius: 12, overflow: 'hidden', touchAction: 'none', cursor: 'grab' }}
+          style={{ width: '100%', height: 'auto', display: 'block', background: 'var(--map-bg)', borderRadius: 'var(--r-sm)', overflow: 'hidden', touchAction: 'none', cursor: 'grab' }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
         >
           <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
-            {countryPaths.map((c) => {
-              const nights = nightsByCountry.get(c.name);
-              const fill = nights ? shadeFor(nights, maxNights) : '#B9CEEC';
-              const isSelected = selected === c.name;
-              return (
-                <path
-                  key={c.name} d={c.d} fill={fill}
-                  stroke={isSelected ? '#fff' : '#DCE7F5'} strokeWidth={isSelected ? 1.2 / zoom : 0.4 / zoom}
-                  onClick={() => selectCountry(c.name)}
-                  style={{ cursor: nights ? 'pointer' : 'default' }}
-                />
-              );
-            })}
-            {showRoutes &&
-              routeLines.map((r) => (
-                <path key={r.key} d={r.d} fill="none" stroke="#1E3A8F" strokeWidth={0.7 / zoom} strokeDasharray={`${2 / zoom} ${1.5 / zoom}`} opacity={0.75} />
-              ))}
-            {showRoutes &&
-              airportDots.map((a) => <circle key={a.code} cx={a.x} cy={a.y} r={1.6 / zoom} fill="#1E3A8F" stroke="#fff" strokeWidth={0.5 / zoom} />)}
+            <MapBackdrop
+              projection={projection} width={WIDTH} height={HEIGHT}
+              countries={countryPaths.map((c) => {
+                const nights = nightsByCountry.get(c.name);
+                const isSelected = selected === c.name;
+                return {
+                  key: c.name, d: c.d,
+                  fill: nights ? shadeFor(nights, maxNights) : undefined,
+                  stroke: isSelected ? MAP.text : MAP.landBorder, strokeWidth: isSelected ? 1.2 / zoom : 0.4 / zoom,
+                  onClick: () => selectCountry(c.name),
+                };
+              })}
+            />
+            {showRoutes && <RouteLayer legs={routeLegs} k={zoom} showPlanes={zoom >= 2} showDates={false} showCodes={zoom >= 2} />}
           </g>
         </svg>
 
@@ -246,28 +220,28 @@ export function WorldMap({
         {selected && selectedDetail && (
           <div
             style={{
-              position: 'absolute', left: 10, right: 10, bottom: 10, background: '#fff', borderRadius: 12,
-              border: '1.5px solid var(--brand)', padding: '10px 12px', boxShadow: '0 6px 16px rgba(23,23,28,.18)',
+              position: 'absolute', left: 10, right: 10, bottom: 10, background: 'var(--card)', borderRadius: 'var(--r-sm)',
+              border: '1.5px solid var(--brand)', padding: '10px 12px', boxShadow: '0 6px 16px rgba(0,0,0,.4)',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink)' }}>{selected}</div>
-              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--ink3)', cursor: 'pointer', fontSize: 13, padding: 0, lineHeight: 1 }}>✕</button>
+              <div style={{ fontSize: 'var(--fs-body)', fontWeight: 600, color: 'var(--ink)' }}>{selected}</div>
+              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--ink3)', cursor: 'pointer', fontSize: 'var(--fs-body)', padding: 0, lineHeight: 1 }}>✕</button>
             </div>
-            <div style={{ fontSize: 11.5, color: 'var(--brand)', fontWeight: 700, marginTop: 2 }}>
+            <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--brand)', fontWeight: 700, marginTop: 2 }}>
               {selectedDetail.nights} nights · {selectedDetail.stayCount} stay{selectedDetail.stayCount === 1 ? '' : 's'}
             </div>
             {selectedDetail.topPlaces.length > 0 ? (
               <div style={{ marginTop: 6, display: 'grid', gap: 3 }}>
                 {selectedDetail.topPlaces.map((r) => (
-                  <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5 }}>
+                  <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-caption)' }}>
                     <span style={{ color: 'var(--ink)' }}>{r.hotelName}</span>
                     <span style={{ fontWeight: 700, color: 'var(--ink2)' }}>{r.score.toFixed(1)}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 4 }}>No reviews logged here yet.</div>
+              <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 4 }}>No reviews logged here yet.</div>
             )}
           </div>
         )}
@@ -281,9 +255,9 @@ function ZoomBtn({ children, onClick }: { children: React.ReactNode; onClick: ()
     <button
       onClick={onClick}
       style={{
-        width: 26, height: 26, borderRadius: 8, border: '1px solid var(--line)', background: '#fff',
-        color: 'var(--ink)', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'grid', placeItems: 'center',
-        boxShadow: '0 1px 4px rgba(23,23,28,.15)',
+        width: 26, height: 26, borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card)',
+        color: 'var(--ink)', fontSize: 'var(--fs-body-lg)', fontWeight: 700, cursor: 'pointer', display: 'grid', placeItems: 'center',
+        boxShadow: '0 1px 4px rgba(0,0,0,.4)',
       }}
     >
       {children}
@@ -293,7 +267,7 @@ function ZoomBtn({ children, onClick }: { children: React.ReactNode; onClick: ()
 
 function shadeFor(nights: number, max: number) {
   const t = Math.min(1, nights / max);
-  const shades = ['#8797BC', '#5F71A0', '#3E5FCB', '#1E3A8F'];
+  const shades = MAP.visitedShades;
   const idx = Math.min(shades.length - 1, Math.floor(t * shades.length));
   return shades[idx];
 }

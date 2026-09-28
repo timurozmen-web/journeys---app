@@ -4,8 +4,7 @@ import { useTrips, useLoyaltyProgrammes, usePromotions } from '../lib/useLiveDat
 import { uploadTripPhoto, fetchTripPhotos, splitTrip, deleteHotel, deleteFlight } from '../lib/queries';
 import { SwipeToDelete } from '../components/SwipeToDelete';
 import type { TripPhoto } from '../lib/queries';
-import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, PlaneIcon, EditIcon, AlertIcon } from '../components/Icons';
-import { AirlineLogo } from '../components/AirlineLogo';
+import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, EditIcon, AlertIcon } from '../components/Icons';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
 import { DestinationPhoto } from '../components/DestinationPhoto';
 const TripMap = lazyWithRetry(() => import('../components/TripMap').then((m) => ({ default: m.TripMap })));
@@ -16,6 +15,7 @@ import { computeTripPoints, computeTripSavings, groupDestinations, findGaps, sug
 import { tripDayInfo, addDays } from '../lib/tripDay';
 import { checkTripCompleteness, flightSearchUrl, returnFlightSearchUrl, tripGapDescription } from '../lib/tripCompleteness';
 import { useFlightExemptTripIds } from '../lib/homeLocation';
+import { DateStack, Eyebrow, PhotoHero, Segmented } from '../components/ui';
 
 type Seg = 'overview' | 'itinerary' | 'expenses' | 'notes';
 
@@ -131,25 +131,20 @@ export function TripDetail() {
 
   return (
     <div>
-      <div
-        className="tdhero"
-        style={heroImage ? { backgroundImage: `url(${heroImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+      <PhotoHero
+        scrim="dissolve" height={380}
+        src={heroImage}
+        fallback={<DestinationPhoto query={destinationQuery(trip)} seed={trip.id} height={380} />}
       >
-        {!heroImage && (
-          <div style={{ position: 'absolute', inset: 0 }}>
-            <DestinationPhoto query={destinationQuery(trip)} seed={trip.id} height={340} />
-          </div>
-        )}
-        <div className="grad" />
         <button className="tdback" onClick={() => navigate('/trips')}>
-          <BackIcon size={18} color="#fff" />
+          <BackIcon size={18} color="var(--on-dark)" />
         </button>
         <button
           className="tdback"
           style={{ left: 'auto', right: 64 }}
           onClick={() => navigate('/log-trip', { state: { trip } })}
         >
-          <EditIcon size={17} color="#fff" />
+          <EditIcon size={17} color="var(--on-dark)" />
         </button>
         <button
           className="tdback"
@@ -157,45 +152,45 @@ export function TripDetail() {
           onClick={() => fileInput.current?.click()}
           disabled={uploading}
         >
-          {uploading ? '…' : <CameraIcon size={18} color="#fff" />}
+          {uploading ? '…' : <CameraIcon size={18} color="var(--on-dark)" />}
         </button>
         <input ref={fileInput} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
-        <div className="tdtitle">
-          <span className="tdbadge">{heroBadge}</span>
-          <h1>{trip.title}</h1>
-          <div className="s">{formatDateRange(trip.start, trip.end)}</div>
+        <div className="ph-bottom" style={{ bottom: 16 }}>
+          <div style={{ marginBottom: 8 }}><Eyebrow>{heroBadge}</Eyebrow></div>
+          <h1 className="ph-title" style={{ fontSize: 'var(--fs-display)', margin: 0 }}>{trip.title}</h1>
+          <span className="ph-sub">{formatDateRange(trip.start, trip.end)}</span>
           {stayingNow && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 10, fontSize: 12.5, fontWeight: 700, opacity: 0.95 }}>
-              <BedIcon size={14} color="#fff" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 10, fontSize: 'var(--fs-small)', fontWeight: 700, opacity: 0.95 }}>
+              <BedIcon size={14} color="var(--on-dark)" />
               {stayingNow.name}
             </div>
           )}
         </div>
-      </div>
+      </PhotoHero>
 
-      {uploadError && <div style={{ padding: '8px 20px', color: 'var(--red)', fontSize: 12.5 }}>{uploadError}</div>}
+      {uploadError && <div style={{ padding: '8px 20px', color: 'var(--red)', fontSize: 'var(--fs-small)' }}>{uploadError}</div>}
 
       {showTripGap && tripGap && (
         <div style={{ padding: '18px 20px 0' }}>
-          <div style={{ border: '1px solid rgba(30,58,143,.2)', background: 'rgba(30,58,143,.05)', borderRadius: 16, padding: '14px 16px' }}>
+          <div style={{ border: '1px solid rgba(217,183,124,.3)', background: 'rgba(217,183,124,.1)', borderRadius: 'var(--r-md)', padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
               <span style={{ flexShrink: 0, marginTop: 1 }}><AlertIcon size={18} color="var(--brand)" /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--ink)' }}>Trip incomplete</div>
+                <div style={{ fontSize: 'var(--fs-body)', fontWeight: 600, color: 'var(--ink)' }}>Trip incomplete</div>
                 {tripGapDescription(trip, tripGap).map((note) => (
-                  <div key={note} style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 3 }}>{note}</div>
+                  <div key={note} style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 3 }}>{note}</div>
                 ))}
                 <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
                   {tripGap.missingOutbound && gapDateOut && (
                     <a
-                      href={flightSearchUrl(gapDestination, gapDateOut, tripGap.missingReturn ? gapDateBack : undefined)} style={{ fontSize: 12, fontWeight: 700, color: '#fff', background: 'var(--brand)', borderRadius: 99, padding: '7px 13px', textDecoration: 'none' }}
+                      href={flightSearchUrl(gapDestination, gapDateOut, tripGap.missingReturn ? gapDateBack : undefined)} style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--on-brand)', background: 'var(--brand)', borderRadius: 'var(--r-pill)', padding: '7px 13px', textDecoration: 'none' }}
                     >
                       Find flights
                     </a>
                   )}
                   {!tripGap.missingOutbound && tripGap.missingReturn && gapDateBack && (
                     <a
-                      href={returnFlightSearchUrl(gapDestination, gapDateBack)} style={{ fontSize: 12, fontWeight: 700, color: '#fff', background: 'var(--brand)', borderRadius: 99, padding: '7px 13px', textDecoration: 'none' }}
+                      href={returnFlightSearchUrl(gapDestination, gapDateBack)} style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--on-brand)', background: 'var(--brand)', borderRadius: 'var(--r-pill)', padding: '7px 13px', textDecoration: 'none' }}
                     >
                       Find return flight
                     </a>
@@ -209,37 +204,35 @@ export function TripDetail() {
 
       {(sortedHotels.length > 0 || sortedFlights.length > 0) && (
         <div style={{ padding: '18px 20px 0' }}>
-          <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)', marginBottom: 10 }}>Itinerary</div>
-          <div style={{ display: 'grid', gap: 8 }}>
+          <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)', marginBottom: 10 }}>Itinerary</div>
+          <div>
             {legs.map((leg) =>
               leg.kind === 'hotel' ? (
-                <div key={`h-${leg.data.id}`} onClick={() => navigate('/log-hotel', { state: { hotel: leg.data, tripId: trip.id } })} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, background: 'var(--card)', border: '1px solid var(--line)', cursor: 'pointer' }}>
-                  <span style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--card2)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                    <BedIcon size={17} color="var(--ink2)" />
-                  </span>
+                <div key={`h-${leg.data.id}`} className="legrow" onClick={() => navigate('/log-hotel', { state: { hotel: leg.data, tripId: trip.id } })}>
+                  <DateStack date={leg.data.date} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{leg.data.name}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink2)', marginTop: 2, fontWeight: 500 }}>{fmt(leg.data.date)} · {leg.data.nights} night{leg.data.nights === 1 ? '' : 's'}</div>
+                    <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{leg.data.name}</div>
+                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 2 }}>{leg.data.nights} night{leg.data.nights === 1 ? '' : 's'}{leg.data.brand && leg.data.brand !== 'Independent' ? ` · ${leg.data.brand}` : ''}</div>
                   </div>
-                  {leg.data.total != null && <div style={{ fontSize: 13, fontWeight: 800, flexShrink: 0 }}>£{leg.data.total}</div>}
+                  {leg.data.total != null && <div style={{ fontSize: 'var(--fs-body)', fontWeight: 600, flexShrink: 0 }}>£{leg.data.total}</div>}
                 </div>
               ) : (
-                <div key={`f-${leg.data.id}`} onClick={() => navigate('/log-flight', { state: { flight: leg.data, tripId: trip.id } })} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, background: 'var(--card)', border: '1px solid var(--line)', cursor: 'pointer' }}>
-                  <AirlineLogo flightNo={leg.data.flightNo} airline={leg.data.airline} size={34} />
+                <div key={`f-${leg.data.id}`} className="legrow" onClick={() => navigate('/log-flight', { state: { flight: leg.data, tripId: trip.id } })}>
+                  <DateStack date={leg.data.date} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
                       {leg.data.from}{leg.data.departureTime ? ` ${leg.data.departureTime}` : ''} → {leg.data.to}{leg.data.arrivalTime ? ` ${leg.data.arrivalTime}` : ''}
                       {leg.role && (
-                        <span style={{ fontSize: 9.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--brand)', background: 'rgba(30,58,143,.08)', borderRadius: 99, padding: '2px 7px' }}>
+                        <span style={{ fontSize: 'var(--fs-micro)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--brand)', background: 'var(--brand-soft)', borderRadius: 'var(--r-pill)', padding: '2px 7px' }}>
                           {leg.role}
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink2)', marginTop: 2, fontWeight: 500 }}>
-                      {fmt(leg.data.date)}{leg.data.airline ? ` · ${leg.data.airline}` : ''}{leg.data.flightNo ? ` ${leg.data.flightNo}` : ''} · {leg.data.cabin}
+                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 2, fontWeight: 500 }}>
+                      {[leg.data.airline, leg.data.flightNo].filter(Boolean).join(' ')}{leg.data.airline || leg.data.flightNo ? ' · ' : ''}{leg.data.cabin}
                     </div>
                   </div>
-                  {leg.data.cost != null && <div style={{ fontSize: 13, fontWeight: 800, flexShrink: 0 }}>£{leg.data.cost}</div>}
+                  {leg.data.cost != null && <div style={{ fontSize: 'var(--fs-body)', fontWeight: 600, flexShrink: 0 }}>£{leg.data.cost}</div>}
                 </div>
               )
             )}
@@ -251,9 +244,9 @@ export function TripDetail() {
         const suggestion = suggestTripSplit(trip);
         if (!suggestion) return null;
         return (
-          <div style={{ margin: '14px 20px 0', padding: '12px 14px', borderRadius: 14, background: 'rgba(156,95,8,.08)', border: '1px solid rgba(156,95,8,.25)' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>This looks like two trips</div>
-            <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 3 }}>
+          <div style={{ margin: '14px 20px 0', padding: '12px 14px', borderRadius: 'var(--r-md)', background: 'var(--amber-soft)', border: '1px solid rgba(232,176,75,.3)' }}>
+            <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700, color: 'var(--amber)' }}>This looks like two trips</div>
+            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 3 }}>
               There's a long gap and a country change between {suggestion.beforeCountry} and {suggestion.afterCountry}. Want to split this into two separate trips?
             </div>
             <button
@@ -267,7 +260,7 @@ export function TripDetail() {
                   setSplitting(false);
                 }
               }}
-              style={{ marginTop: 8, padding: '7px 14px', borderRadius: 99, border: 'none', background: 'var(--amber)', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}
+              style={{ marginTop: 8, padding: '7px 14px', borderRadius: 'var(--r-pill)', border: 'none', background: 'var(--amber)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
             >
               {splitting ? 'Splitting…' : `Split at ${suggestion.splitDate}`}
             </button>
@@ -275,19 +268,17 @@ export function TripDetail() {
         );
       })()}
 
-      <div className="tdseg">
-        {(['overview', 'itinerary', 'expenses', 'notes'] as Seg[]).map((k) => (
-          <button key={k} className={seg === k ? 'won' : ''} onClick={() => setSeg(k)}>
-            {k.charAt(0).toUpperCase() + k.slice(1)}
-          </button>
-        ))}
-      </div>
+      <Segmented<Seg>
+        style={{ margin: '20px 20px 0' }}
+        options={(['overview', 'itinerary', 'expenses', 'notes'] as Seg[]).map((k) => ({ value: k, label: k.charAt(0).toUpperCase() + k.slice(1) }))}
+        value={seg} onChange={setSeg}
+      />
 
       <div className="tdpane">
         {seg === 'overview' && (
           <>
             <div style={{ marginBottom: 14 }}>
-              <Suspense fallback={<div style={{ height: 220, background: '#DCE7F5', borderRadius: 16 }} />}>
+              <Suspense fallback={<div style={{ height: 220, background: 'var(--map-bg)', borderRadius: 'var(--r-md)' }} />}>
                 <TripMap hotels={trip.hotels} flights={trip.flights} photos={tripPhotos} />
               </Suspense>
             </div>
@@ -295,7 +286,7 @@ export function TripDetail() {
               <TripMemories tripId={trip.id} />
             </div>
             <div className="card">
-            <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 12 }}>Trip summary</div>
+            <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 600, marginBottom: 12 }}>Trip summary</div>
             <div style={{ display: 'grid', gap: 9 }}>
               <SummaryRow label="Total cash spent" value={formatMoney(spend)} />
               <SummaryRow label="Points earned" value={`${points.totalPoints.toLocaleString()} pts`} />
@@ -304,7 +295,7 @@ export function TripDetail() {
               <SummaryRow label="Pence per point (earned)" value={points.totalPoints > 0 ? `${points.centsPerPoint.toFixed(2)}p` : '—'} />
             </div>
             {trip.flights.some((f) => f.award) && (
-              <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 10 }}>
+              <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', marginTop: 10 }}>
                 This trip includes an award flight. Points redeemed aren't tracked as a value yet.
               </div>
             )}
@@ -334,19 +325,11 @@ export function TripDetail() {
                       refetchTrips();
                     }}
                   >
-                    <div className="itin" style={{ cursor: 'pointer' }}>
-                      <span
-                        style={{
-                          width: 26, height: 26, borderRadius: 8, flexShrink: 0,
-                          background: 'var(--card2)',
-                          display: 'grid', placeItems: 'center',
-                        }}
-                      >
-                        {isHotel ? <BedIcon size={14} color="var(--ink2)" /> : <PlaneIcon size={14} color="var(--ink2)" />}
-                      </span>
+                    <div className="itin" style={{ cursor: 'pointer', alignItems: 'center' }}>
+                      <DateStack date={leg.date} />
                       <div className="line">
                         <div className="t">{isHotel ? leg.name : `${leg.from} → ${leg.to}`}</div>
-                        <div className="s">{fmt(leg.date)}</div>
+                        <div className="s">{isHotel ? 'Stay' : 'Flight'}</div>
                       </div>
                     </div>
                   </SwipeToDelete>
@@ -355,13 +338,13 @@ export function TripDetail() {
             <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
               <button
                 onClick={() => navigate('/log-hotel', { state: { tripId: trip.id } })}
-                style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--card2)', color: 'var(--ink)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                style={{ flex: 1, padding: '10px 0', borderRadius: 'var(--r-control)', border: '1px solid var(--line)', background: 'var(--card2)', color: 'var(--ink)', fontSize: 'var(--fs-body)', fontWeight: 700, cursor: 'pointer' }}
               >
                 + Add hotel
               </button>
               <button
                 onClick={() => navigate('/log-flight', { state: { tripId: trip.id } })}
-                style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--card2)', color: 'var(--ink)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                style={{ flex: 1, padding: '10px 0', borderRadius: 'var(--r-control)', border: '1px solid var(--line)', background: 'var(--card2)', color: 'var(--ink)', fontSize: 'var(--fs-body)', fontWeight: 700, cursor: 'pointer' }}
               >
                 + Add flight
               </button>
@@ -377,7 +360,7 @@ export function TripDetail() {
               </div>
             ) : null
           )}
-        {seg === 'notes' && <p style={{ fontSize: 13.5, color: 'var(--ink2)' }}>{trip.notes || 'No notes yet.'}</p>}
+        {seg === 'notes' && <p style={{ fontSize: 'var(--fs-body)', color: 'var(--ink2)' }}>{trip.notes || 'No notes yet.'}</p>}
       </div>
 
       {trip.tripType === 'leisure' && gaps.length > 0 && (
@@ -394,14 +377,14 @@ export function TripDetail() {
                 key={i}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-                  padding: '12px 14px', borderRadius: 12, background: 'rgba(156,95,8,.08)', border: '1px solid rgba(156,95,8,.2)',
+                  padding: '12px 14px', borderRadius: 'var(--r-sm)', background: 'var(--amber-soft)', border: '1px solid rgba(232,176,75,.3)',
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>
+                  <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700, color: 'var(--amber)' }}>
                     {formatDateRange(g.start, g.end)}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 2 }}>
+                  <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 2 }}>
                     {g.nights} night{g.nights === 1 ? '' : 's'} not accounted for
                   </div>
                 </div>
@@ -412,8 +395,8 @@ export function TripDetail() {
                     })
                   }
                   style={{
-                    flexShrink: 0, padding: '8px 14px', borderRadius: 10, border: 'none',
-                    background: 'var(--amber)', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
+                    flexShrink: 0, padding: '8px 14px', borderRadius: 'var(--r-control)', border: 'none',
+                    background: 'var(--amber)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer',
                   }}
                 >
                   + Add hotel
@@ -435,7 +418,7 @@ export function TripDetail() {
               const isOpen = expandedDest === i;
               const destTotal = d.hotels.reduce((s, h) => s + (h.total ?? 0), 0);
               return (
-                <div key={i} style={{ borderRadius: 14, overflow: 'hidden', background: 'var(--card)', border: '1px solid var(--line)' }}>
+                <div key={i} style={{ borderRadius: 'var(--r-md)', overflow: 'hidden', background: 'var(--card)', border: '1px solid var(--line)' }}>
                   <div
                     style={{ display: 'flex', gap: 12, cursor: 'pointer' }}
                     onClick={() => setExpandedDest(isOpen ? null : i)}
@@ -445,8 +428,8 @@ export function TripDetail() {
                     </div>
                     <div style={{ padding: '10px 12px 10px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1, minWidth: 0 }}>
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 700 }}>{d.place}</div>
-                        <div style={{ fontSize: 11.5, color: 'var(--ink3)', marginTop: 3 }}>
+                        <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 700 }}>{d.place}</div>
+                        <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 3 }}>
                           {formatDateRange(d.start, d.end)} · {d.nights} nights
                         </div>
                       </div>
@@ -457,25 +440,25 @@ export function TripDetail() {
                     <div style={{ padding: '4px 14px 14px', borderTop: '1px solid var(--line)' }}>
                       {d.hotels.map((h) => (
                         <div key={h.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '9px 0' }}>
-                          <span style={{ width: 24, height: 24, borderRadius: 7, background: 'var(--card2)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                          <span style={{ width: 24, height: 24, borderRadius: 'var(--r-xs)', background: 'var(--card2)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                             <BedIcon size={13} color="var(--ink2)" />
                           </span>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 12.5, fontWeight: 700 }}>{h.name}</div>
-                            <div style={{ fontSize: 10.5, color: 'var(--ink3)' }}>
+                            <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{h.name}</div>
+                            <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)' }}>
                               {fmt(h.date)} · {h.nights} night{h.nights === 1 ? '' : 's'}
                             </div>
                           </div>
-                          <div style={{ fontSize: 12.5, fontWeight: 700, flexShrink: 0 }}>{h.total != null ? `£${h.total}` : '—'}</div>
+                          <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700, flexShrink: 0 }}>{h.total != null ? `£${h.total}` : '—'}</div>
                         </div>
                       ))}
                       {d.hotels.length > 1 && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, marginTop: 4, borderTop: '1px solid var(--line)' }}>
-                          <span style={{ fontSize: 11.5, color: 'var(--ink3)', fontWeight: 600 }}>Total</span>
-                          <span style={{ fontSize: 12.5, fontWeight: 800 }}>£{destTotal}</span>
+                          <span style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 600 }}>Total</span>
+                          <span style={{ fontSize: 'var(--fs-small)', fontWeight: 600 }}>£{destTotal}</span>
                         </div>
                       )}
-                      <div style={{ fontSize: 10, color: 'var(--ink3)', marginTop: 8 }}>Other costs (transfers, activities) aren't tracked yet.</div>
+                      <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', marginTop: 8 }}>Other costs (transfers, activities) aren't tracked yet.</div>
                     </div>
                   )}
                 </div>
@@ -490,7 +473,7 @@ export function TripDetail() {
 
 function SummaryRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-body)' }}>
       <span style={{ color: 'var(--ink2)' }}>{label}</span>
       <span style={{ fontWeight: 700, color: valueColor }}>{value}</span>
     </div>

@@ -39,3 +39,11 @@ export function formatMoneyHeadline(n: number) {
   const sign = n < 0 ? '−' : '';
   return `${sign}£${Math.round(Math.abs(n)).toLocaleString()}`;
 }
+
+// Day and short month for the gold date column in itineraries:
+// "2026-07-25" -> { day: '25', month: 'JUL' }. Parsed from the string
+// itself, never via Date, so no timezone can shift it.
+export function dayMonth(iso: string): { day: string; month: string } {
+  const { m, d } = parts(iso);
+  return { day: String(d).padStart(2, '0'), month: MONTHS_SHORT[m].toUpperCase() };
+}

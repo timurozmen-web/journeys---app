@@ -112,14 +112,14 @@ export function AirlineLogo({ flightNo, airline, size = 28 }: { flightNo: string
     const code = airlineCode(flightNo, airline);
     const bg = AIRLINE_COLORS[code] ?? 'var(--ink)';
     return (
-      <span style={{ width: size, height: size, borderRadius: size * 0.3, background: bg, color: '#fff', fontSize: size * 0.36, fontWeight: 800, letterSpacing: '-.2px', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+      <span style={{ width: size, height: size, borderRadius: size * 0.3, background: bg, color: 'var(--on-dark)', fontSize: size * 0.36, fontWeight: 600, letterSpacing: '-.2px', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
         {code || '✈'}
       </span>
     );
   }
 
   return (
-    <span style={{ width: size, height: size, borderRadius: size * 0.3, background: '#fff', border: '1px solid var(--line)', display: 'grid', placeItems: 'center', flexShrink: 0, overflow: 'hidden', padding: size * 0.12 }}>
+    <span style={{ width: size, height: size, borderRadius: size * 0.3, background: 'var(--card)', border: '1px solid var(--line)', display: 'grid', placeItems: 'center', flexShrink: 0, overflow: 'hidden', padding: size * 0.12 }}>
       <img
         src={stage === 'primary' ? entry.primary : entry.fallback}
         alt={airline}

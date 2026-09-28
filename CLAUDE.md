@@ -29,8 +29,21 @@ Run all three; all must be clean:
 - **Keep logic out of component files.** Pure helpers go in `src/lib/`,
   static tables in `src/data/`; component files export only components
   (lint enforces this for fast refresh).
-- Styling is mostly inline `style={{}}` using CSS variables from
-  `src/styles/tokens.css`.
+- **Styling has one master copy.** Every colour, font size, radius,
+  shadow and photo scrim is a token in `src/styles/tokens.css`; shared
+  pieces (`ScreenHeader`, `Field`, `Button`, `Segmented`, `PhotoHero`,
+  `Eyebrow`, `SectionLabel`, `ErrorText`, `EmptyState`) live in
+  `src/components/ui.tsx` with their CSS in `src/styles/components.css`.
+  Use those first. Any remaining inline style should reference tokens
+  (`fontSize: 'var(--fs-body)'`), never raw px sizes or hex colours.
+  Form controls take `className="input"` inside a `Field`.
+- **The theme is Night Flight:** near-black ground, warm white text,
+  champagne gold (`--brand`) as the single accent, font Jost. Anything
+  on a gold fill uses `--on-brand` (dark), never white. Photos fade
+  into the page via the scrim tokens. Wallet cards take each
+  programme's own brand colour (`src/lib/cardTheme.ts`); map colours
+  live in `src/data/mapTheme.ts` because Leaflet and SVG attributes
+  can't read CSS variables.
 - Routing uses `HashRouter`; routes are listed in `src/App.tsx`.
 
 ## Data layer
