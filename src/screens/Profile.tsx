@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useReviews, useAllHotels, useAllFlights, useTrips } from '../lib/useLiveData';
 import { findHotelsNeedingReview, findHotelsMissingCategories, REVIEW_CATEGORIES } from '../lib/reviewScoring';
 import { flightDistanceKm, estimateFlightHours } from '../lib/travelStats';
-import { SettingsIcon, StarIcon } from '../components/Icons';
+import { PlaneIcon, SettingsIcon, StarIcon } from '../components/Icons';
+import { Segmented } from '../components/ui';
+import { averageOverall, completedStays, nightsByCountry, nightsByYear, shareOfWorld, travellingSince, tripsTaken } from '../lib/logbook';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
 const WorldMap = lazyWithRetry(() => import('../components/WorldMap').then((m) => ({ default: m.WorldMap })));
 
@@ -40,7 +42,7 @@ export function Profile() {
   const [expandedHotel, setExpandedHotel] = useState<string | null>(null);
 
   const [sortMode, setSortMode] = useState<SortMode>('score');
-  const [regionFilter, setRegionFilter] = useState<string | null>(null);
+  const [countryFilter, setCountryFilter] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [year, setYear] = useState<'all' | number>('all');
 
@@ -61,7 +63,6 @@ export function Profile() {
     return [...set].sort((a, b) => b - a);
   }, [hotels, flights]);
 
-  const firstYear = years.length > 0 ? Math.min(...years) : null;
 
   const filteredHotels = useMemo(
     () => (year === 'all' ? hotels : hotels.filter((h) => yearOf(h.date) === year)),
@@ -76,37 +77,38 @@ export function Profile() {
     [reviews, year]
   );
 
-  const visitedCountries = new Set(filteredHotels.map((h) => h.country.trim()).filter(Boolean));
-  const totalNights = filteredHotels.reduce((s, h) => s + h.nights, 0);
-  const totalStays = filteredHotels.length;
-  const totalFlights = filteredFlights.length;
+  // The logbook: completed stays and trips already begun (see lib/logbook).
+  // The map shades the same completed stays the count is made from, so
+  // a booked-but-not-taken trip never colours a country the logbook
+  // doesn't count.
+  const loggedStays = useMemo(() => completedStays(filteredHotels), [filteredHotels]);
+  const countryNights = useMemo(() => nightsByCountry(filteredHotels), [filteredHotels]);
+  const yearNights = useMemo(() => nightsByYear(hotels), [hotels]);
+  const countryCount = countryNights.length;
+  const totalNights = countryNights.reduce((s, c) => s + c.nights, 0);
+  const totalStays = countryNights.reduce((s, c) => s + c.stays, 0);
+  const tripCount = tripsTaken(year === 'all' ? trips : trips.filter((t) => yearOf(t.start) === year), today).length;
+  const rating = averageOverall(filteredReviews);
+  const since = travellingSince(hotels);
+  const completedFlights = useMemo(() => filteredFlights.filter((f) => f.status === 'Completed'), [filteredFlights]);
 
   const { totalDistanceKm, totalHours } = useMemo(() => {
     let km = 0, hrs = 0;
-    for (const f of filteredFlights) {
-      if (f.status !== 'Completed') continue;
+    for (const f of completedFlights) {
       km += flightDistanceKm(f);
       hrs += estimateFlightHours(f);
     }
     return { totalDistanceKm: km, totalHours: hrs };
-  }, [filteredFlights]);
+  }, [completedFlights]);
 
-  const regionTotals = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const h of filteredHotels) {
-      const region = regionFor(h.country);
-      m.set(region, (m.get(region) ?? 0) + h.nights);
-    }
-    return [...m.entries()].map(([n, nights]) => ({ n, nights })).sort((a, b) => b.nights - a.nights);
-  }, [filteredHotels]);
-  const maxRegion = Math.max(1, ...regionTotals.map((r) => r.nights));
-  const focusCountries = regionFilter
-    ? [...new Set(filteredHotels.filter((h) => regionFor(h.country) === regionFilter).map((h) => h.country))]
-    : null;
+  const topCountries = countryNights.slice(0, 6);
+  const maxCountryNights = Math.max(1, ...topCountries.map((c) => c.nights));
+  const maxYearNights = Math.max(1, ...yearNights.map((y) => y.nights));
+  const focusCountries = countryFilter ? [countryFilter] : null;
 
   const categoryReviews = filteredReviews
     .filter((r) => r.category === cat)
-    .filter((r) => !regionFilter || regionFor(r.country) === regionFilter);
+    .filter((r) => !countryFilter || r.country.trim() === countryFilter);
 
   // Rank by property, not by individual review -- a re-reviewed hotel's
   // score is the average of its (up to 3) reviews, since opinions can
@@ -142,218 +144,154 @@ export function Profile() {
 
   return (
     <div>
-      <div style={{ background: 'var(--bg)', height: 'env(safe-area-inset-top, 0px)' }} />
-      <div style={{ padding: '20px 20px 4px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 54, height: 54, borderRadius: 'var(--r-md)', background: 'var(--brand)', display: 'grid', placeItems: 'center', fontSize: 'var(--fs-title)', fontWeight: 700, flexShrink: 0, color: 'var(--on-brand)', fontFamily: 'var(--font-display)' }}>T</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-heading)', fontWeight: 600, letterSpacing: '-.5px', color: 'var(--ink)' }}>Timur</div>
-            <div style={{ fontSize: 'var(--fs-small)', fontWeight: 600, color: 'var(--ink2)', marginTop: 2 }}>
-              {firstYear ? `Travelling since ${firstYear}` : 'Traveller'} · {reviews.filter((r) => r.category === 'overall').length} reviews
-            </div>
-          </div>
-          <button
-            onClick={() => navigate('/settings')}
-            aria-label="Settings"
-            style={{ width: 38, height: 38, borderRadius: '50%', border: '1px solid var(--line)', background: 'var(--card)', display: 'grid', placeItems: 'center', flexShrink: 0, cursor: 'pointer' }}
-          >
-            <SettingsIcon size={19} color="var(--ink2)" />
-          </button>
+      <div className="lb-head">
+        <div className="lb-avatar" aria-hidden="true">T</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 'var(--fs-title)', fontWeight: 400 }}>Timur</div>
+          <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)' }}>{since ? `Since ${since}` : 'Traveller'}</div>
         </div>
-        {showingMockData && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, padding: '10px 12px', borderRadius: 'var(--r-control)', background: 'var(--red-soft)', border: '1px solid rgba(240,138,126,.3)' }}>
-            <span style={{ fontSize: 'var(--fs-small)', color: 'var(--red)', fontWeight: 700, lineHeight: 1.4 }}>
-              Showing sample data, not your real account — the live connection didn't load. Try closing and reopening the app.
-            </span>
-          </div>
-        )}
-        <div style={{ display: 'flex', marginTop: 20, paddingBottom: 16, borderBottom: '1px solid var(--line)' }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 600, letterSpacing: '-.6px', color: 'var(--ink)' }}>{visitedCountries.size}</div>
-            <div style={{ fontSize: 'var(--fs-micro)', fontWeight: 700, color: 'var(--ink2)', textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 1 }}>countries</div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 600, letterSpacing: '-.6px', color: 'var(--ink)' }}>{totalNights}</div>
-            <div style={{ fontSize: 'var(--fs-micro)', fontWeight: 700, color: 'var(--ink2)', textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 1 }}>nights</div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 600, letterSpacing: '-.6px', color: 'var(--ink)' }}>{totalDistanceKm >= 1000 ? `${Math.round(totalDistanceKm / 1000)}k` : totalDistanceKm}</div>
-            <div style={{ fontSize: 'var(--fs-micro)', fontWeight: 700, color: 'var(--ink2)', textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 1 }}>km flown</div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 600, letterSpacing: '-.6px', color: 'var(--ink)' }}>
-              {(() => {
-                const overall = reviews.filter((r) => r.category === 'overall');
-                return overall.length ? (overall.reduce((s, r) => s + r.score, 0) / overall.length).toFixed(1) : '—';
-              })()}
-            </div>
-            <div style={{ fontSize: 'var(--fs-micro)', fontWeight: 700, color: 'var(--ink2)', textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 1 }}>avg score</div>
-          </div>
-        </div>
+        <button className="lb-iconbtn" onClick={() => navigate('/settings')} aria-label="Settings">
+          <SettingsIcon size={20} color="currentColor" />
+        </button>
       </div>
 
-      {needsReview.length > 0 && (
-        <div style={{ padding: '18px 0 0' }}>
-          <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8, padding: '0 20px' }}>
-            Outstanding
-          </div>
-          <div style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '0 20px', scrollbarWidth: 'none' }}>
-            {needsReview.map((h) => (
-              <button
-                key={h.hotelId}
-                onClick={() => navigate('/review-trip', { state: { hotel: h } })}
-                style={{
-                  flex: '0 0 100%', width: '100%', scrollSnapAlign: 'start', textAlign: 'left', cursor: 'pointer', font: 'inherit',
-                  display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px', borderRadius: 'var(--r-md)',
-                  border: '1px solid var(--line)', background: 'var(--card)', boxShadow: '0 4px 14px rgba(0,0,0,.4)',
-                }}
-              >
-                <span style={{ width: 42, height: 42, borderRadius: 'var(--r-sm)', background: 'var(--brand)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                  <StarIcon size={20} color="var(--on-brand)" />
-                </span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 'var(--fs-body-lg)', fontWeight: 600, color: 'var(--ink)' }}>Rate your stay at {h.hotelName}</span>
-                  <span style={{ display: 'block', fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 2 }}>{h.tripTitle} · {h.date}</span>
-                </span>
-                <span style={{ flexShrink: 0, fontSize: 'var(--fs-small)', fontWeight: 600, color: 'var(--on-brand)', background: 'var(--brand)', borderRadius: 'var(--r-pill)', padding: '7px 14px' }}>Rate</span>
-              </button>
-            ))}
-          </div>
-          {needsReview.length > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 8 }}>
-              {needsReview.map((h) => (
-                <span key={h.hotelId} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--line)' }} />
-              ))}
-            </div>
-          )}
+      {showingMockData && (
+        <div className="lb-notice">
+          <span className="lb-dot" aria-hidden="true" />
+          Showing sample data: the live connection didn't load. Try reopening the app.
         </div>
       )}
 
-      {missingCategories.length > 0 && (
-        <div style={{ padding: '18px 0 0' }}>
-          <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8, padding: '0 20px' }}>
-            Complete your ratings ({missingCategories.length})
+      {/* The world leads: every country visited, shaded by nights. */}
+      <div className="lb-map">
+        <div className="lb-map-count">
+          <span style={{ fontSize: 'var(--fs-display)', fontWeight: 300, lineHeight: 1 }}>{countryCount}</span>
+          <span className="nf-eyebrow" style={{ color: 'var(--brand)' }}>
+            {countryCount === 1 ? 'country' : 'countries'} · {shareOfWorld(countryCount)}% of the world
+          </span>
+        </div>
+        <Suspense fallback={<div style={{ height: 200, background: 'var(--map-bg)' }} />}>
+          <WorldMap hotels={loggedStays} flights={completedFlights} reviews={filteredReviews} focusCountries={focusCountries} />
+        </Suspense>
+      </div>
+
+      {years.length > 1 && (
+        <div style={{ padding: '14px 16px 0' }}>
+          <Segmented<string>
+            variant="pills" tone="brand"
+            options={[{ value: 'all', label: 'All time' }, ...years.map((y) => ({ value: String(y), label: String(y) }))]}
+            value={year === 'all' ? 'all' : String(year)}
+            onChange={(v) => setYear(v === 'all' ? 'all' : Number(v))}
+          />
+        </div>
+      )}
+
+      <div className="nf-eyebrow lb-label">{year === 'all' ? 'The logbook' : `The logbook · ${year}`}</div>
+      <div className="lb-grid">
+        <div className="glass lb-tile"><span className="lb-num">{totalNights}</span><span className="lb-cap">nights away</span></div>
+        <div className="glass lb-tile"><span className="lb-num">{totalStays}</span><span className="lb-cap">hotel stays</span></div>
+        <div className="glass lb-tile"><span className="lb-num">{tripCount}</span><span className="lb-cap">trip{tripCount === 1 ? '' : 's'}</span></div>
+        <div className="glass lb-tile">
+          <span className="lb-num" style={{ color: 'var(--brand)' }}>{rating.avg != null ? rating.avg.toFixed(1) : '—'}</span>
+          <span className="lb-cap">{rating.count > 0 ? `avg of ${rating.count} rating${rating.count === 1 ? '' : 's'}` : 'no ratings yet'}</span>
+        </div>
+      </div>
+      {completedFlights.length > 0 && (
+        <div className="glass lb-air">
+          <PlaneIcon size={18} color="var(--brand)" />
+          <span><strong>{completedFlights.length}</strong> flight{completedFlights.length === 1 ? '' : 's'}</span>
+          <span><strong>{Math.round(totalDistanceKm).toLocaleString()}</strong> km</span>
+          <span><strong>{Math.round(totalHours)}</strong>h in the air</span>
+        </div>
+      )}
+
+      {topCountries.length > 0 && (
+        <>
+          <div className="lb-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span className="nf-eyebrow">Where the nights went</span>
+            {countryFilter && (
+              <button onClick={() => setCountryFilter(null)} className="btn ghost" style={{ padding: 0, fontSize: 'var(--fs-small)' }}>Clear</button>
+            )}
           </div>
-          <div style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '0 20px', scrollbarWidth: 'none' }}>
+          <div className="lb-bars">
+            {topCountries.map((c) => {
+              const active = countryFilter === c.country;
+              return (
+                <button key={c.country} className={`lb-bar${active ? ' on' : ''}`} onClick={() => setCountryFilter(active ? null : c.country)} aria-pressed={active}>
+                  <span className="lb-bar-name">{c.country}</span>
+                  <span className="lb-bar-track"><i style={{ width: `${(c.nights / maxCountryNights) * 100}%` }} /></span>
+                  <span className="lb-bar-val">{c.nights}</span>
+                </button>
+              );
+            })}
+          </div>
+          {countryFilter && (
+            <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', padding: '8px 24px 0' }}>
+              Map and ratings below show {countryFilter} only.
+            </div>
+          )}
+        </>
+      )}
+
+      {year === 'all' && yearNights.length > 1 && (
+        <>
+          <div className="nf-eyebrow lb-label">By year</div>
+          <div className="lb-years">
+            {yearNights.map((y, i) => {
+              const latest = i === yearNights.length - 1;
+              return (
+                <div key={y.year} className="lb-year">
+                  <span className="lb-year-cap" style={{ color: latest ? 'var(--brand)' : 'var(--ink2)' }}>
+                    {y.nights} night{y.nights === 1 ? '' : 's'}{y.countries > 1 ? ` · ${y.countries} countries` : ''}
+                  </span>
+                  <span className={`lb-year-bar${latest ? ' latest' : ''}`} style={{ height: Math.max(4, (y.nights / maxYearNights) * 100) }} />
+                  <span style={{ fontSize: 'var(--fs-body)', fontWeight: latest ? 600 : 400 }}>{y.year}</span>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {(needsReview.length > 0 || missingCategories.length > 0) && (
+        <>
+          <div className="nf-eyebrow lb-label">To rate</div>
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '0 16px', scrollbarWidth: 'none' }}>
+            {needsReview.map((h) => (
+              <button
+                key={h.hotelId} className="glass lb-todo"
+                onClick={() => navigate('/review-trip', { state: { hotel: h } })}
+              >
+                <StarIcon size={18} color="var(--brand)" />
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 'var(--fs-body-lg)', fontWeight: 500 }}>Rate {h.hotelName}</span>
+                  <span style={{ display: 'block', fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 2 }}>{h.tripTitle} · {h.date}</span>
+                </span>
+                <span style={{ color: 'var(--brand)', fontSize: 'var(--fs-small)' }}>Rate ›</span>
+              </button>
+            ))}
             {missingCategories.map((m) => (
               <button
-                key={m.hotelName}
+                key={m.hotelName} className="glass lb-todo"
                 onClick={() => navigate('/review-trip', {
                   state: {
                     hotel: { tripId: '', tripTitle: '', hotelId: m.hotelId, hotelName: m.hotelName, country: m.country, date: m.date },
                     onlyCategories: m.missing,
                   },
                 })}
-                style={{
-                  flex: '0 0 100%', width: '100%', scrollSnapAlign: 'start', textAlign: 'left', cursor: 'pointer', font: 'inherit',
-                  display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 'var(--r-md)',
-                  border: '1px solid var(--line)', background: 'var(--card)',
-                }}
               >
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 'var(--fs-body)', fontWeight: 600, color: 'var(--ink)' }}>{m.hotelName}</span>
-                  <span style={{ display: 'block', fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 2 }}>
-                    Missing: {m.missing.map(categoryLabel).join(', ')}
-                  </span>
+                  <span style={{ display: 'block', fontSize: 'var(--fs-body-lg)', fontWeight: 500 }}>{m.hotelName}</span>
+                  <span style={{ display: 'block', fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 2 }}>Missing: {m.missing.map(categoryLabel).join(', ')}</span>
                 </span>
-                <span style={{ flexShrink: 0, fontSize: 'var(--fs-small)', fontWeight: 600, color: 'var(--brand)' }}>Complete ›</span>
+                <span style={{ color: 'var(--brand)', fontSize: 'var(--fs-small)' }}>Complete ›</span>
               </button>
             ))}
-          </div>
-          {missingCategories.length > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 8 }}>
-              {missingCategories.map((m) => (
-                <span key={m.hotelName} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--line)' }} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="sect" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>{year === 'all' ? 'All time' : year} at a glance</h2>
-        <select
-          value={year === 'all' ? 'all' : String(year)}
-          onChange={(e) => setYear(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-          style={{
-            padding: '6px 11px', borderRadius: 'var(--r-pill)', border: '1px solid var(--line)', background: 'var(--card)',
-            color: 'var(--ink)', fontSize: 'var(--fs-small)', fontWeight: 700, font: 'inherit', cursor: 'pointer',
-          }}
-        >
-          <option value="all">All time</option>
-          {years.map((y) => (
-            <option key={y} value={y}>{y}</option>
-          ))}
-        </select>
-      </div>
-      <div className="stack">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <StatTile label="Stays" value={totalStays.toLocaleString()} />
-          <StatTile label="Flights" value={totalFlights.toLocaleString()} />
-          <StatTile label="Distance flown" value={`${Math.round(totalDistanceKm).toLocaleString()} km`} />
-          <StatTile label="Hours flown" value={`${Math.round(totalHours)}h`} />
-        </div>
-      </div>
-
-      <div className="stack" style={{ marginTop: 18 }}>
-        <div className="card" style={{ padding: 0, overflow: 'hidden', boxShadow: '0 6px 18px rgba(0,0,0,.4)' }}>
-          <div style={{ padding: '16px 16px 4px' }}>
-            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Countries visited</div>
-            <div style={{ fontSize: 'var(--fs-h1)', fontWeight: 600 }}>{visitedCountries.size}</div>
-          </div>
-          <Suspense fallback={<div style={{ height: 200, background: 'var(--map-bg)' }} />}>
-            <WorldMap hotels={filteredHotels} flights={filteredFlights} reviews={filteredReviews} focusCountries={focusCountries} />
-          </Suspense>
-        </div>
-      </div>
-
-      {regionTotals.length > 0 && (
-        <>
-          <div className="sect" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <h2>Time by region</h2>
-            {regionFilter && (
-              <button
-                onClick={() => setRegionFilter(null)}
-                style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer', padding: 0 }}
-              >
-                Clear filter
-              </button>
-            )}
-          </div>
-          <div className="stack">
-            <div className="card">
-              {regionTotals.map((r, i) => {
-                const active = regionFilter === r.n;
-                return (
-                  <button
-                    key={r.n}
-                    onClick={() => setRegionFilter(active ? null : r.n)}
-                    style={{
-                      display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-                      marginBottom: i === regionTotals.length - 1 ? 0 : 10,
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-small)', fontWeight: 700 }}>
-                      <span style={{ color: active ? 'var(--brand)' : 'var(--ink)' }}>{r.n}</span>
-                      <span style={{ color: 'var(--ink2)' }}>{r.nights}n</span>
-                    </div>
-                    <div className="hbar" style={{ background: 'var(--card2)' }}>
-                      <i style={{ width: `${(r.nights / maxRegion) * 100}%`, background: active ? 'var(--brand)' : 'rgba(217,183,124,.45)' }} />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            {regionFilter && (
-              <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', padding: '0 4px' }}>
-                Showing reviews from {regionFilter} only. Tap the region again, or "Clear filter" above, to see everything.
-              </div>
-            )}
           </div>
         </>
       )}
 
-      <div className="sect"><h2>Reviews{regionFilter ? ` · ${regionFilter}` : ''}</h2></div>
+      <div className="nf-eyebrow lb-label">Rated stays{countryFilter ? ` · ${countryFilter}` : ''}</div>
       <div className="catchip">
         {CATEGORIES.map((c) => (
           <button key={c.key} className={cat === c.key ? 'won' : ''} onClick={() => { setCat(c.key); setShowAll(false); }}>
@@ -398,8 +336,8 @@ export function Profile() {
                 key={r.key}
                 onClick={() => setExpandedHotel(expandedHotel === r.key ? null : r.key)}
                 style={{
-                  display: 'flex', flexDirection: 'column', gap: 0, padding: '11px 14px', cursor: 'pointer',
-                  borderRadius: 'var(--r-sm)', background: 'var(--card)', border: '1px solid var(--line)',
+                  display: 'flex', flexDirection: 'column', gap: 0, padding: '12px 16px', cursor: 'pointer',
+                  borderRadius: 'var(--r-md)', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -473,28 +411,4 @@ export function Profile() {
       </div>
     </div>
   );
-}
-
-function StatTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="card" style={{ padding: '14px 16px' }}>
-      <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 600, marginTop: 2 }}>{value}</div>
-    </div>
-  );
-}
-
-const REGION_MAP: Record<string, string> = {
-  Indonesia: 'Oceania & SE Asia', Australia: 'Oceania & SE Asia', Thailand: 'Oceania & SE Asia',
-  Singapore: 'Oceania & SE Asia', Malaysia: 'Oceania & SE Asia', Vietnam: 'Oceania & SE Asia',
-  Turkey: 'Europe & Middle East', Türkiye: 'Europe & Middle East', UAE: 'Europe & Middle East',
-  Qatar: 'Europe & Middle East', France: 'Europe & Middle East', Spain: 'Europe & Middle East',
-  Italy: 'Europe & Middle East', Portugal: 'Europe & Middle East', Greece: 'Europe & Middle East',
-  Germany: 'Europe & Middle East', Austria: 'Europe & Middle East', Czechia: 'Europe & Middle East',
-  Sweden: 'Europe & Middle East', Ireland: 'Europe & Middle East', 'United Kingdom': 'Europe & Middle East',
-  Canada: 'Americas', 'United States': 'Americas', Mexico: 'Americas', Peru: 'Americas', Chile: 'Americas',
-  India: 'South Asia', 'Sri Lanka': 'South Asia', Nepal: 'South Asia', Maldives: 'South Asia',
-};
-function regionFor(country: string): string {
-  return REGION_MAP[country.trim()] ?? 'Other';
 }

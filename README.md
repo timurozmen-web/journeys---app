@@ -14,7 +14,9 @@ ready for an iOS build.
   flight.
 - **Wallet**: loyalty programmes, payment cards, vouchers and
   promotions, with points valued in £.
-- **Profile**: status progress per programme and travel stats.
+- **Profile**: a travel logbook -- world map of countries visited, nights,
+  stays, trips and flights, where the nights went, a by-year view, stays
+  to rate, and every rated stay ranked by category.
 - **Logging**: add a hotel, flight, trip or loyalty programme by hand,
   or **scan a booking email / screenshot** (Claude extracts the
   bookings) and **scan a promotion**. Likely duplicates are flagged.
