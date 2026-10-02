@@ -52,7 +52,7 @@ export function callbackUri(event) {
   const host = header(event, 'x-forwarded-host') || header(event, 'host');
   if (!host) throw new HttpError(400, 'Could not work out this site\'s address.');
   const proto = header(event, 'x-forwarded-proto') || 'https';
-  return `${proto}://${host}/.netlify/functions/bank-link-callback`;
+  return `${proto}://${host}/bank-link-callback`;
 }
 
 export async function handle(fn) {

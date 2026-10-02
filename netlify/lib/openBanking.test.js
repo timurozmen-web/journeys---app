@@ -144,8 +144,8 @@ describe('syncConnection', () => {
 
 describe('request helpers', () => {
   test('callbackUri is built from the request host', () => {
-    expect(callbackUri({ headers: { host: 'journeys.example.app' } })).toBe('https://journeys.example.app/.netlify/functions/bank-link-callback');
-    expect(callbackUri({ headers: { 'X-Forwarded-Host': 'a.test', 'x-forwarded-proto': 'http' } })).toBe('http://a.test/.netlify/functions/bank-link-callback');
+    expect(callbackUri({ headers: { host: 'journeys.example.app' } })).toBe('https://journeys.example.app/bank-link-callback');
+    expect(callbackUri({ headers: { 'X-Forwarded-Host': 'a.test', 'x-forwarded-proto': 'http' } })).toBe('http://a.test/bank-link-callback');
     expect(() => callbackUri({ headers: {} })).toThrow(HttpError);
   });
 

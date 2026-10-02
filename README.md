@@ -85,7 +85,7 @@ with a `VITE_` prefix):**
 - `TRUELAYER_CLIENT_ID`, `TRUELAYER_CLIENT_SECRET`: bank linking.
   `TRUELAYER_ENV=sandbox` switches to TrueLayer's mock bank (default is
   live). In the TrueLayer console, register
-  `https://<your-site>/.netlify/functions/bank-link-callback` as a
+  `https://<your-site>/bank-link-callback` as a
   redirect URI. Bank logins are stored in a table the app's own key
   cannot read.
 

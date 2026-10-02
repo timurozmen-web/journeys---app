@@ -6,6 +6,14 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# The short, tidy address registered with TrueLayer as the redirect URI;
+# it serves the bank-link-callback function. It must stay in step with
+# callbackUri() in netlify/lib/openBanking.js.
+[[redirects]]
+  from = "/bank-link-callback"
+  to = "/.netlify/functions/bank-link-callback"
+  status = 200
+
 # index.html (and the PWA manifest/service-worker files) must never be
 # cached by the browser itself -- they're small, and they're the only
 # thing that tells a returning visitor which hashed JS/CSS files the
