@@ -44,6 +44,9 @@ Run all three; all must be clean:
   programme's own brand colour (`src/lib/cardTheme.ts`); map colours
   live in `src/data/mapTheme.ts` because Leaflet and SVG attributes
   can't read CSS variables.
+- **No explanatory copy in the UI.** Labels, buttons, empty states and
+  errors only. No intro paragraphs, how-it-works blurbs, confirmation
+  banners or hint text unless it is needed to complete the task.
 - Routing uses `HashRouter`; routes are listed in `src/App.tsx`.
 
 ## Data layer

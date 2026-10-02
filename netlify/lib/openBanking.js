@@ -84,8 +84,7 @@ export async function completeLink({ store, cfg, userId, code, redirectUri, fetc
   if (!token.ok) throw new HttpError(400, `The bank connection was not accepted (${token.status}). Try connecting again.`);
 
   const { items, error } = await listItems(cfg, token.accessToken, fetchImpl);
-  if (error) throw new HttpError(502, error);
-  if (items.length === 0) throw new HttpError(400, 'No accounts or cards were shared. Connect again and tick the ones you want tracked.');
+  if (error) throw new HttpError(items.length === 0 && error.startsWith('No accounts') ? 400 : 502, error);
 
   const connectionId = await store.createConnection(userId, items[0].providerName);
   try {

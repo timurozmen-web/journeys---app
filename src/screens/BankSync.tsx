@@ -6,7 +6,7 @@ import type { BankAccount, BankConnection } from '../lib/queries';
 import { disconnectBank, startBankLink, syncBank } from '../lib/bankLink';
 import { suggestCard } from '../lib/cardSuggest';
 import { CARDS_STATIC } from '../data/cardDefs';
-import { Button, EmptyState, ErrorText, Field, ScreenHeader, SectionLabel } from '../components/ui';
+import { Button, EmptyState, ErrorText, Field, ScreenHeader } from '../components/ui';
 
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : 'Something went wrong.');
 
@@ -16,12 +16,11 @@ export function BankSync() {
   const { connections, accounts, loaded, refetch } = useBankLinks();
   const { data: paymentCards, isLive: cardsLive, refetch: refetchCards } = usePaymentCards();
   const [error, setError] = useState('');
-  const [justLinked, setJustLinked] = useState(false);
   const [connecting, setConnecting] = useState(false);
 
   // Back from the bank. The server has already finished the link (so this
   // works whichever browser the bank returned you to); here we just load
-  // it, clear the address so a refresh doesn't repeat this, and say so.
+  // it and clear the address so a refresh doesn't repeat this.
   const handled = useRef(false);
   useEffect(() => {
     const linked = params.get('linked');
@@ -30,7 +29,6 @@ export function BankSync() {
     handled.current = true;
     navigate('/bank-sync', { replace: true });
     if (bankError) { setError(bankError); return; }
-    setJustLinked(true);
     void refetch();
   }, [params, navigate, refetch]);
 
@@ -56,19 +54,6 @@ export function BankSync() {
     <div>
       <ScreenHeader title="Bank sync" />
       <div style={{ padding: '0 20px 24px' }}>
-        {!hasConnection && (
-          <p style={{ fontSize: 'var(--fs-body)', color: 'var(--ink2)', lineHeight: 1.5, marginBottom: 16 }}>
-            Connect the bank or card that pays for your rewards cards. Purchases are added up by each card's own earning
-            categories and tracked against its spending goals, refreshed daily. Individual transactions aren't shown, and
-            accounts you don't point at a rewards card are never read.
-          </p>
-        )}
-        {justLinked && hasConnection && (
-          <div className="card" style={{ marginBottom: 14, borderColor: 'var(--green)' }}>
-            <div style={{ fontWeight: 600, color: 'var(--green)' }}>Bank connected</div>
-            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 4 }}>One last step: choose which rewards card each account pays for.</div>
-          </div>
-        )}
         {error && <ErrorText style={{ marginBottom: 12 }}>{error}</ErrorText>}
         {loaded && !hasConnection && !connecting && <EmptyState>No bank connected yet.</EmptyState>}
 
@@ -87,9 +72,6 @@ export function BankSync() {
         <Button block variant={hasConnection ? 'secondary' : 'primary'} onClick={connect} disabled={connecting} style={{ marginTop: 8 }}>
           {connecting ? 'Opening your bank…' : hasConnection ? 'Connect another bank' : 'Connect a bank'}
         </Button>
-        <p style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 10, lineHeight: 1.5 }}>
-          You'll approve this at your bank. Afterwards you may land in your browser rather than this app; the connection is saved either way, so just reopen the app.
-        </p>
       </div>
     </div>
   );
@@ -177,12 +159,12 @@ function ConnectionCard({ connection, accounts, liveCardIds, onRefresh, onFinish
       </div>
       {connection.error && <ErrorText style={{ marginTop: 8 }}>{connection.error}</ErrorText>}
 
-      <SectionLabel style={{ marginTop: 14, marginBottom: 12 }}>Which rewards card does each one pay for?</SectionLabel>
+      <div style={{ height: 12 }} />
       {accounts.map((a) => {
         const choice = choiceOf(a);
         const suggestion = !choice ? suggestCard(a.displayName, connection.providerName) : null;
         return (
-          <Field key={a.id} label={`${a.displayName}${a.last4 ? ` ····${a.last4}` : ''}`} hint={a.kind === 'card' ? 'Credit card' : 'Current account'}>
+          <Field key={a.id} label={`${a.displayName}${a.last4 ? ` ····${a.last4}` : ''}`}>
             <select className="input" value={choice} disabled={busy} onChange={(e) => setChoices({ ...choices, [a.id]: e.target.value })}>
               <option value="">Not a rewards card</option>
               {CARDS_STATIC.map((c) => <option key={c.id} value={c.id}>{c.id}</option>)}
@@ -197,7 +179,7 @@ function ConnectionCard({ connection, accounts, liveCardIds, onRefresh, onFinish
       })}
 
       {needDate.map((id) => (
-        <Field key={id} label={`When did you open the ${id}?`} hint="Welcome bonus and card-year goals count from this date.">
+        <Field key={id} label={`${id} opened`}>
           <input className="input" type="date" value={openDates[id] ?? ''} disabled={busy} onChange={(e) => setOpenDates({ ...openDates, [id]: e.target.value })} />
         </Field>
       ))}
@@ -205,7 +187,6 @@ function ConnectionCard({ connection, accounts, liveCardIds, onRefresh, onFinish
       <Button block onClick={save} disabled={busy || !changed || chosenCards.length === 0 || missingDate} style={{ marginTop: 6 }}>
         {step === 'saving' ? 'Saving…' : step === 'syncing' ? 'Pulling in your spend…' : tracking ? 'Save and sync' : 'Start tracking'}
       </Button>
-      {!changed && !tracking && <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink3)', marginTop: 8 }}>Choose a card above to start. Nothing is read until you do.</div>}
 
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
         {tracking && <Button variant="secondary" small onClick={syncNow} disabled={busy}>Sync now</Button>}

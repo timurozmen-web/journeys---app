@@ -90,10 +90,24 @@ describe('listItems', () => {
     expect(items[0]).toMatchObject({ kind: 'card', providerName: 'American Express' });
   });
 
+  test('a card-only login may answer "forbidden" for accounts instead; still just no accounts', async () => {
+    const f = routed({ '/data/v1/accounts': res(403, { error: 'access_denied' }), '/data/v1/cards': res(200, cardsBody) });
+    const { items, error } = await listItems(cfg, 'tok', f);
+    expect(error).toBeNull();
+    expect(items.map((i) => i.kind)).toEqual(['card']);
+  });
+
+  test('when nothing at all comes back, the error says what each endpoint answered', async () => {
+    const f = routed({ '/data/v1/accounts': res(403, { error: 'access_denied' }), '/data/v1/cards': res(200, { results: [] }) });
+    const { items, error } = await listItems(cfg, 'tok', f);
+    expect(items).toEqual([]);
+    expect(error).toBe('No accounts or cards were shared (accounts: HTTP 403 access_denied; cards: 0 found).');
+  });
+
   test('a real failure is reported, not mistaken for "no cards"', async () => {
     const f = routed({ '/data/v1/accounts': res(500, { error: 'internal' }), '/data/v1/cards': res(200, cardsBody) });
     const { items, error } = await listItems(cfg, 'tok', f);
     expect(items).toEqual([]);
-    expect(error).toMatch(/accounts/);
+    expect(error).toMatch(/accounts.*HTTP 500/);
   });
 });

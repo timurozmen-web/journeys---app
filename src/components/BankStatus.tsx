@@ -29,8 +29,7 @@ export function BankStatus({ connections, accounts, tracked, onDismiss, onOpen }
     return (
       <div className="card" style={{ margin: '0 16px 14px' }}>
         <div style={{ fontWeight: 600 }}>Finish setting up {unfinished.providerName ?? 'your bank'}</div>
-        <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', margin: '4px 0 10px' }}>Choose which rewards card each account pays for and spend will start to flow in.</div>
-        <Button small onClick={onOpen}>Choose cards</Button>
+        <Button small onClick={onOpen} style={{ marginTop: 10 }}>Choose cards</Button>
       </div>
     );
   }
@@ -40,7 +39,7 @@ export function BankStatus({ connections, accounts, tracked, onDismiss, onOpen }
     <div style={{ padding: '0 20px 12px' }}>
       <button onClick={onOpen} style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
         {connections.length === 0
-          ? 'Connect your bank to track spend automatically'
+          ? 'Connect a bank'
           : `Bank connected${synced ? ` · synced ${new Date(synced).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : ''} — manage`}
       </button>
     </div>
