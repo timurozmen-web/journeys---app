@@ -3,7 +3,7 @@
 // sync writes through. The sync itself only talks to the `store`
 // interface, so it is tested against an in-memory fake (we can't call a
 // real bank from a test).
-import { createClient } from '@supabase/supabase-js';
+import { serviceClient } from './supabaseAdmin.js';
 import { ConfigError, fetchTransactions, listItems, refreshAccessToken, toSpendRow } from './truelayer.js';
 
 export class HttpError extends Error {
@@ -31,7 +31,7 @@ export function adminClient(env = process.env) {
   const url = env.VITE_SUPABASE_URL;
   const key = env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new HttpError(500, 'Server is missing its Supabase credentials.');
-  return createClient(url, key, { auth: { persistSession: false } });
+  return serviceClient(url, key);
 }
 
 // The signed-in user, from the Supabase access token the app sends. The

@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { serviceClient } from '../lib/supabaseAdmin.js';
 import { withLambda } from '@netlify/aws-lambda-compat';
 import crypto from 'crypto';
 
@@ -53,7 +53,7 @@ export default withLambda(async () => {
   if (!supabaseUrl || !serviceKey || !anthropicKey) {
     return { statusCode: 500, body: 'Missing required environment variables' };
   }
-  const supabase = createClient(supabaseUrl, serviceKey);
+  const supabase = serviceClient(supabaseUrl, serviceKey);
 
   // This app is currently single-user; scan runs for every user with any
   // loyalty programme configured, so it naturally extends if that changes.
