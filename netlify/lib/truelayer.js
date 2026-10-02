@@ -96,6 +96,13 @@ export async function getData(url, accessToken, fetchImpl = fetch) {
   return { ok: true, data: parsed };
 }
 
+// A login that only covers cards (an Amex, say) has no current accounts to
+// list, and the bank may say so as "not supported" or as "forbidden"
+// depending on the provider. Either means "none here", not a failure.
+const UNAVAILABLE_CODES = new Set(['endpoint_not_supported', 'access_denied', 'insufficient_permissions', 'scope_not_granted', 'invalid_scope']);
+const isUnavailable = (r) => UNAVAILABLE_CODES.has(r.errorCode) || [403, 404, 501].includes(r.status);
+const describe = (r) => (r.ok ? `${r.data?.results?.length ?? 0} found` : `HTTP ${r.status}${r.errorCode ? ` ${r.errorCode}` : ''}`);
+
 // Every current account and card the user shared, in one shape.
 export async function listItems(cfg, accessToken, fetchImpl = fetch) {
   const [accounts, cards] = await Promise.all([
@@ -103,8 +110,8 @@ export async function listItems(cfg, accessToken, fetchImpl = fetch) {
     getData(`${cfg.api}/data/v1/cards`, accessToken, fetchImpl),
   ]);
   for (const [name, r] of [['accounts', accounts], ['cards', cards]]) {
-    if (!r.ok && r.errorCode !== 'endpoint_not_supported') {
-      return { items: [], error: `Could not read your ${name} (HTTP ${r.status}).` };
+    if (!r.ok && !isUnavailable(r)) {
+      return { items: [], error: `Could not read your ${name} (${describe(r)}).` };
     }
   }
   const items = [];
@@ -132,6 +139,9 @@ export async function listItems(cfg, accessToken, fetchImpl = fetch) {
         currency: c.currency || 'GBP',
       });
     }
+  }
+  if (items.length === 0) {
+    return { items, error: `No accounts or cards were shared (accounts: ${describe(accounts)}; cards: ${describe(cards)}).` };
   }
   return { items, error: null };
 }

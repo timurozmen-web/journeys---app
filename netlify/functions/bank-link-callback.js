@@ -22,6 +22,7 @@ export default withLambda(async (event) => {
     const result = await completeLink({ store: supabaseStore(adminClient()), cfg, userId, code, redirectUri: callbackUri(event) });
     return back({ linked: result.connectionId });
   } catch (err) {
+    console.error('bank-link-callback failed:', err?.message);
     return back({ error: err?.message || 'Could not finish connecting your bank.' });
   }
 });
