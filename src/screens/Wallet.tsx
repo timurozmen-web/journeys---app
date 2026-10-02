@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useLoyaltyProgrammes, usePaymentCards, useBankLinks, useAllHotels, useAllFlights, usePromotions, useVouchers } from '../lib/useLiveData';
 import { useCurrency } from '../lib/currency';
 import { computeCardResults, computeCardVoucherCandidates } from '../lib/cardMath';
@@ -8,6 +8,7 @@ import { withLiveOverrides } from '../lib/walletValue';
 import { syncCardVouchers } from '../lib/queries';
 import { LoyaltyTab } from '../components/LoyaltyTab';
 import { PaymentTab } from '../components/PaymentTab';
+import { BankStatus } from '../components/BankStatus';
 import { PromotionsTab } from '../components/PromotionsTab';
 import { Segmented } from '../components/ui';
 
@@ -16,13 +17,16 @@ const TODAY = new Date().toISOString().slice(0, 10);
 
 export function Wallet() {
   const navigate = useNavigate();
-  const [seg, setSeg] = useState<Seg>('loyalty');
+  // Arriving from bank setup: open on Cards with the new cards in view.
+  const arrival = (useLocation().state ?? null) as { seg?: Seg; tracked?: string[] } | null;
+  const [seg, setSeg] = useState<Seg>(arrival?.seg ?? 'loyalty');
+  const [arrivalDismissed, setArrivalDismissed] = useState(false);
   const { data: rawLoyaltyProgrammes, isLive } = useLoyaltyProgrammes();
   const { data: paymentCards, refetch: refetchCards } = usePaymentCards();
   const { data: hotels } = useAllHotels();
   const { data: promotions } = usePromotions();
   const { data: flights } = useAllFlights();
-  const { bankSpend } = useBankLinks();
+  const { bankSpend, connections, accounts } = useBankLinks();
   const { rates } = useCurrency();
 
   // Card results only need ptValue for the value-lookup, not the points
@@ -88,14 +92,13 @@ export function Wallet() {
 
       <div style={{ paddingTop: 18 }}>
         {seg === 'payment' && (
-          <div style={{ padding: '0 20px 4px' }}>
-            <button
-              onClick={() => navigate('/bank-sync')}
-              style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer', padding: 0 }}
-            >
-              🏦 Sync spend from your bank
-            </button>
-          </div>
+          <BankStatus
+            connections={connections}
+            accounts={accounts}
+            tracked={arrivalDismissed ? [] : cardResults.filter((r) => arrival?.tracked?.includes(r.card.id))}
+            onDismiss={() => setArrivalDismissed(true)}
+            onOpen={() => navigate('/bank-sync')}
+          />
         )}
 
         {seg === 'loyalty' && (
@@ -103,7 +106,7 @@ export function Wallet() {
         )}
 
         {seg === 'payment' && (
-          <PaymentTab cardResults={cardResults} loyaltyProgrammes={loyaltyProgrammes} refetchCards={refetchCards} />
+          <PaymentTab cardResults={cardResults} loyaltyProgrammes={loyaltyProgrammes} refetchCards={refetchCards} initialOpen={arrival?.tracked?.[0] ?? null} />
         )}
 
         {seg === 'promotions' && <PromotionsTab />}

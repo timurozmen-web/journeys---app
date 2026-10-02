@@ -4,7 +4,7 @@
 // interface, so it is tested against an in-memory fake (we can't call a
 // real bank from a test).
 import { serviceClient } from './supabaseAdmin.js';
-import { ConfigError, fetchTransactions, listItems, refreshAccessToken, toSpendRow } from './truelayer.js';
+import { ConfigError, exchangeCode, fetchTransactions, listItems, refreshAccessToken, toSpendRow } from './truelayer.js';
 
 export class HttpError extends Error {
   constructor(status, message) {
@@ -73,6 +73,33 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 const OVERLAP_DAYS = 7;       // re-read a week each sync, so late-settling purchases are caught
 const MAX_HISTORY_DAYS = 730; // the most a first sync asks for
 const FALLBACK_DAYS = 90;     // what a bank will always share without a fresh login
+
+// Finishes a bank link once the user has approved it: swaps the one-time
+// code for tokens (kept server-side only), records the connection and the
+// accounts/cards the bank shared. No transactions are read here; that
+// waits until the user says which rewards card each account pays for.
+export async function completeLink({ store, cfg, userId, code, redirectUri, fetchImpl = fetch }) {
+  if (!code) throw new HttpError(400, 'The bank did not send back an authorisation code. Try connecting again.');
+  const token = await exchangeCode(cfg, code, redirectUri, fetchImpl);
+  if (!token.ok) throw new HttpError(400, `The bank connection was not accepted (${token.status}). Try connecting again.`);
+
+  const { items, error } = await listItems(cfg, token.accessToken, fetchImpl);
+  if (error) throw new HttpError(502, error);
+  if (items.length === 0) throw new HttpError(400, 'No accounts or cards were shared. Connect again and tick the ones you want tracked.');
+
+  const connectionId = await store.createConnection(userId, items[0].providerName);
+  try {
+    await store.saveTokens(connectionId, { accessToken: token.accessToken, refreshToken: token.refreshToken, expiresAt: token.expiresAt });
+    await store.upsertAccounts(connectionId, userId, items);
+    await store.markConnection(connectionId, { status: 'ok', error: null, providerName: items[0].providerName });
+  } catch (err) {
+    // Don't leave a half-made connection behind (it would show as connected
+    // with no login saved).
+    await store.deleteConnection(connectionId).catch(() => {});
+    throw err;
+  }
+  return { connectionId, providerName: items[0].providerName, accounts: items.length };
+}
 
 // Syncs one bank connection: refreshes its login if needed, refreshes the
 // list of accounts/cards, then pulls purchases for the ones mapped to a
@@ -172,6 +199,14 @@ export async function syncConnection({ store, cfg, connection, today = todayISO(
 export function supabaseStore(admin) {
   const check = ({ error }) => { if (error) throw new Error(error.message); };
   return {
+    async createConnection(userId, providerName) {
+      const { data, error } = await admin.from('open_banking_connections').insert({ user_id: userId, provider_name: providerName }).select('id').single();
+      if (error) throw new Error(error.message);
+      return data.id;
+    },
+    async deleteConnection(connectionId) {
+      check(await admin.from('open_banking_connections').delete().eq('id', connectionId));
+    },
     async getTokens(connectionId) {
       const { data, error } = await admin.from('open_banking_tokens').select('access_token, refresh_token, expires_at').eq('connection_id', connectionId).maybeSingle();
       if (error) throw new Error(error.message);

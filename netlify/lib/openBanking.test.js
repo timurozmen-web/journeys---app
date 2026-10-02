@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { addDaysISO, callbackUri, HttpError, requireUser, syncConnection } from './openBanking.js';
+import { addDaysISO, callbackUri, completeLink, HttpError, requireUser, syncConnection } from './openBanking.js';
 import { truelayerConfig } from './truelayer.js';
 
 const cfg = truelayerConfig({ TRUELAYER_CLIENT_ID: 'id', TRUELAYER_CLIENT_SECRET: 's' });
@@ -52,6 +52,8 @@ function fakeStore({ tokens, accounts = [], openDates = {} } = {}) {
     upsertSpend: async (accountId, _u, rows) => { state.spend.push(...rows.map((r) => ({ ...r, accountId }))); },
     setSyncedThrough: async (id, d) => { state.accounts.find((a) => a.id === id).synced_through = d; },
     markConnection: async (_id, m) => { state.marks.push(m); },
+    createConnection: async (userId, providerName) => { state.created = { userId, providerName }; return 'conn-new'; },
+    deleteConnection: async (id) => { state.deleted = id; },
   };
 }
 
@@ -154,5 +156,41 @@ describe('request helpers', () => {
     expect(await requireUser(admin, { headers: { Authorization: 'Bearer good' } })).toEqual({ id: 'u1' });
     await expect(requireUser(admin, { headers: {} })).rejects.toMatchObject({ status: 401 });
     await expect(requireUser(admin, { headers: { authorization: 'Bearer nope' } })).rejects.toMatchObject({ status: 401 });
+  });
+});
+
+describe('completeLink', () => {
+  test('swaps the code, saves the login, and lists what the bank shared without reading any transactions', async () => {
+    const bank = fakeBank({ cards: [amexCard] });
+    const store = fakeStore({ tokens: null });
+    const r = await completeLink({ store, cfg, userId: 'user1', code: 'abc', redirectUri: 'https://x.test/bank-link-callback', fetchImpl: bank.fetchImpl });
+    expect(r).toMatchObject({ connectionId: 'conn-new', accounts: 1 });
+    expect(store.state.created).toEqual({ userId: 'user1', providerName: 'American Express' });
+    expect(store.state.savedTokens[0]).toMatchObject({ accessToken: 'new-at', refreshToken: 'new-rt' });
+    expect(store.state.accounts).toHaveLength(1);
+    expect(bank.txnCalls()).toHaveLength(0);
+  });
+
+  test('a code the bank rejects makes no connection', async () => {
+    const store = fakeStore();
+    await expect(completeLink({ store, cfg, userId: 'u', code: 'bad', redirectUri: 'r', fetchImpl: fakeBank({ tokenOk: false }).fetchImpl })).rejects.toMatchObject({ status: 400 });
+    expect(store.state.created).toBeUndefined();
+  });
+
+  test('no accounts shared: nothing is created', async () => {
+    const store = fakeStore();
+    await expect(completeLink({ store, cfg, userId: 'u', code: 'c', redirectUri: 'r', fetchImpl: fakeBank().fetchImpl })).rejects.toMatchObject({ status: 400 });
+    expect(store.state.created).toBeUndefined();
+  });
+
+  test('a failure after the connection row exists removes it again', async () => {
+    const store = fakeStore();
+    store.saveTokens = async () => { throw new Error('db down'); };
+    await expect(completeLink({ store, cfg, userId: 'u', code: 'c', redirectUri: 'r', fetchImpl: fakeBank({ cards: [amexCard] }).fetchImpl })).rejects.toThrow('db down');
+    expect(store.state.deleted).toBe('conn-new');
+  });
+
+  test('missing code is refused', async () => {
+    await expect(completeLink({ store: fakeStore(), cfg, userId: 'u', code: undefined, redirectUri: 'r' })).rejects.toMatchObject({ status: 400 });
   });
 });
