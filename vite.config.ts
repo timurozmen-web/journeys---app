@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { SW_NAVIGATION_DENYLIST } from './src/data/swDenylist.ts'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -42,6 +43,9 @@ export default defineConfig({
         // -- belt-and-suspenders alongside skipWaiting/clientsClaim, so
         // nothing stale can linger and get served by accident.
         cleanupOutdatedCaches: true,
+        // The bank's return address and the server functions must reach the
+        // server, not be answered with the app shell (see swDenylist.ts).
+        navigateFallbackDenylist: SW_NAVIGATION_DENYLIST,
       },
     }),
   ],
