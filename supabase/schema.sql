@@ -540,3 +540,12 @@ create index if not exists card_spend_account_date on card_spend (account_id, tx
 alter table card_spend enable row level security;
 create policy "read own spend" on card_spend for select using (auth.uid() = user_id);
 revoke insert, update, delete on card_spend from anon, authenticated;
+
+-- Supabase hands anon/authenticated broad default privileges on new
+-- tables (writes, truncate, anon select). The banking tables are
+-- read-only for the app, apart from mapping an account to a card, so
+-- strip the rest. Applied live as open_banking_tighten_grants.
+revoke all on open_banking_connections, open_banking_accounts, card_spend, open_banking_tokens from anon;
+revoke all on open_banking_connections, open_banking_accounts, card_spend from authenticated;
+grant select on open_banking_connections, open_banking_accounts, card_spend to authenticated;
+grant update (payment_card_id) on open_banking_accounts to authenticated;
