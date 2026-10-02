@@ -1,4 +1,4 @@
-import { CARDS_STATIC, defaultCardFor, cardYearWindow } from '../data/cardDefs';
+import { CARDS_STATIC, customCardDef, defaultCardFor, cardYearWindow, milestonesFor } from '../data/cardDefs';
 import type { CardDef, Milestone } from '../data/cardDefs';
 import type { Hotel, Flight, LoyaltyProgramme, PaymentCard } from '../types';
 import { bankRowsToItems, regionOfCountry, summariseSpend } from './earning';
@@ -84,7 +84,10 @@ export function computeCardResults(
 ): CardResult[] {
   const ptValueByBrand = new Map(loyaltyProgrammes.map((p) => [p.name, p.ptValue]));
 
-  return CARDS_STATIC.map((card) => {
+  // The catalogue, plus any card the user added by hand that isn't in it.
+  const defs = [...CARDS_STATIC, ...paymentCards.filter((c) => !CARDS_STATIC.some((d) => d.id === c.id)).map(customCardDef)];
+
+  return defs.map((card) => {
     const cardRow = paymentCards.find((c) => c.id === card.id);
     const ptVal = ptValueByBrand.get(card.programmeBrand) ?? 1;
     const yearWindow = cardYearWindow(cardRow?.openDate ?? null, today);
@@ -97,7 +100,7 @@ export function computeCardResults(
     const autoSpend = summary.totalSpend;
     const autoPts = summary.totalPoints;
 
-    const milestoneResults: MilestoneResult[] = card.milestones.map((m) => {
+    const milestoneResults: MilestoneResult[] = milestonesFor(card, cardRow?.openDate ?? null).map((m) => {
       const value = Math.round((m.rewardPoints * ptVal) / 100);
       if (m.type === 'tick') {
         return { m, hit: true, value, superseded: false, spend: 0, window: null, missed: false, pace: null };

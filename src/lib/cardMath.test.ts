@@ -164,3 +164,49 @@ describe('connected cards (spend from the bank)', () => {
     expect(r.summary.categories.map((c) => [c.category.id, c.spend, c.points])).toEqual([['own', 1000, 6000], ['other', 400, 800]]);
   });
 });
+
+describe('BA Amex cards: sourced rates and offer-dependent welcome bonus', () => {
+  const programmes = [programme('Avios', 1.2)];
+  const spend = (date: string, amount: number, merchant: string | null = 'TESCO') => ({ date, amount, currency: 'GBP', merchant });
+
+  test('Premium Plus earns 1.5 Avios per £1 up to 6 Oct 2026, 3 at British Airways', () => {
+    const cards = [card('BA Amex Premium Plus', 'Avios', '2026-09-01')];
+    const r = result('BA Amex Premium Plus', computeCardResults([], [], cards, programmes, '2026-10-02', {
+      bankSpend: { 'BA Amex Premium Plus': [spend('2026-09-10', 1000), spend('2026-09-12', 1000, 'BRITISH AIRWAYS')] },
+    }));
+    expect(r.autoPts).toBe(1500 + 3000);
+  });
+
+  test('from 7 Oct 2026 Premium Plus general spend earns 1.25', () => {
+    const cards = [card('BA Amex Premium Plus', 'Avios', '2026-09-01')];
+    const r = result('BA Amex Premium Plus', computeCardResults([], [], cards, programmes, '2026-10-20', {
+      bankSpend: { 'BA Amex Premium Plus': [spend('2026-10-10', 1000)] },
+    }));
+    expect(r.autoPts).toBe(1250);
+  });
+
+  test('opened during the promotion: the boosted welcome bonus is tracked over its 3 months', () => {
+    const cards = [card('BA Amex', 'Avios', '2026-09-10')];
+    const r = result('BA Amex', computeCardResults([], [], cards, programmes, '2026-10-02', { bankSpend: { 'BA Amex': [spend('2026-09-15', 800)] } }));
+    const welcome = r.milestoneResults.find((m) => m.m.id === 'welcome')!;
+    expect(welcome.m.rewardPoints).toBe(10000);
+    expect(welcome.m.spendRequired).toBe(2000);
+    expect(welcome.spend).toBe(800);
+    expect(welcome.hit).toBe(false);
+    expect(welcome.window).toEqual({ start: '2026-09-10', end: '2026-12-10' });
+  });
+
+  test('opened outside any known offer: no welcome milestone is invented', () => {
+    const cards = [card('BA Amex Premium Plus', 'Avios', '2025-03-01')];
+    const r = result('BA Amex Premium Plus', computeCardResults([], [], cards, programmes, '2026-10-02'));
+    expect(r.milestoneResults.map((m) => m.m.id)).toEqual(['companion']);
+  });
+
+  test('a card added by hand gets a tile that tracks spend but works out no points', () => {
+    const cards = [card('Amex Gold', 'Other', '2026-01-01', { annualFee: 195, feeLabel: '£195/yr' })];
+    const r = result('Amex Gold', computeCardResults([], [], cards, programmes, '2026-10-02', { bankSpend: { 'Amex Gold': [spend('2026-05-01', 400)] } }));
+    expect(r.card.custom).toBe(true);
+    expect(r.autoSpend).toBe(400);
+    expect(r.autoPts).toBe(0);
+  });
+});

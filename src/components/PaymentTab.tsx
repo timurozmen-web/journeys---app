@@ -33,8 +33,8 @@ function SpendByCategory({ r }: { r: CardResult }) {
       {shown.map((c) => (
         <div key={c.category.id} style={{ padding: '5px 0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 'var(--fs-small)' }}>
-            <span style={{ color: 'var(--ink2)' }}>{c.category.label} <span style={{ color: 'var(--ink3)' }}>· {c.rate}pt/£</span></span>
-            <span style={{ fontWeight: 700, flexShrink: 0 }}>{moneyPrecise(c.spend)} · {c.points.toLocaleString()} pts</span>
+            <span style={{ color: 'var(--ink2)' }}>{c.category.label}{!r.card.custom && <span style={{ color: 'var(--ink3)' }}> · {c.rate}pt/£</span>}</span>
+            <span style={{ fontWeight: 700, flexShrink: 0 }}>{moneyPrecise(c.spend)}{!r.card.custom && ` · ${c.points.toLocaleString()} pts`}</span>
           </div>
           <div className="catbar" style={{ marginTop: 4 }}><i style={{ width: `${(c.spend / summary.totalSpend) * 100}%` }} /></div>
         </div>
@@ -100,8 +100,8 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
               </div>
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <div style={{ fontSize: 'var(--fs-title)', fontWeight: 500 }}>{money(r.net)}</div>
-              <div style={{ fontSize: 'var(--fs-caption)', opacity: 0.72, marginTop: 2 }}>net value</div>
+              <div style={{ fontSize: 'var(--fs-title)', fontWeight: 500 }}>{r.card.custom ? money(r.autoSpend) : money(r.net)}</div>
+              <div style={{ fontSize: 'var(--fs-caption)', opacity: 0.72, marginTop: 2 }}>{r.card.custom ? 'spend this year' : 'net value'}</div>
             </div>
           </div>
         </button>
@@ -189,10 +189,12 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
             </div>
             )}
 
-            <div className="dd-row">
-              <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Points earned</span>
-              <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{r.autoPts.toLocaleString()} pts ({moneyPrecise(r.ptsValue)})</span>
-            </div>
+            {!r.card.custom && (
+              <div className="dd-row">
+                <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Points earned</span>
+                <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{r.autoPts.toLocaleString()} pts ({moneyPrecise(r.ptsValue)})</span>
+              </div>
+            )}
             {r.totalEliteNights > 0 && (
               <div className="dd-row">
                 <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Elite nights</span>

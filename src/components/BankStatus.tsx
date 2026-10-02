@@ -17,7 +17,7 @@ export function BankStatus({ connections, accounts, tracked, onDismiss, onOpen }
         {tracked.map((r) => (
           <div key={r.card.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 'var(--fs-small)', marginTop: 8 }}>
             <span style={{ color: 'var(--ink2)' }}>{r.card.id}</span>
-            <span style={{ fontWeight: 700 }}>£{Math.round(r.autoSpend).toLocaleString()} this card-year · {r.autoPts.toLocaleString()} pts</span>
+            <span style={{ fontWeight: 700 }}>£{Math.round(r.autoSpend).toLocaleString()} this card-year{r.card.custom ? '' : ` · ${r.autoPts.toLocaleString()} pts`}</span>
           </div>
         ))}
       </div>

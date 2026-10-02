@@ -6,6 +6,7 @@ import type { BankAccount, BankConnection } from '../lib/queries';
 import { disconnectBank, startBankLink, syncBank } from '../lib/bankLink';
 import { suggestCard } from '../lib/cardSuggest';
 import { CARDS_STATIC } from '../data/cardDefs';
+import type { PaymentCard } from '../types';
 import { Button, EmptyState, ErrorText, Field, ScreenHeader } from '../components/ui';
 
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : 'Something went wrong.');
@@ -63,6 +64,7 @@ export function BankSync() {
             connection={c}
             accounts={accounts.filter((a) => a.connectionId === c.id)}
             liveCardIds={cardsLive ? paymentCards.map((p) => p.id) : []}
+            customCards={cardsLive ? paymentCards.filter((p) => !CARDS_STATIC.some((d) => d.id === p.id)) : []}
             onRefresh={() => refetch()}
             onFinished={finish}
             onError={setError}
@@ -77,21 +79,28 @@ export function BankSync() {
   );
 }
 
-function ConnectionCard({ connection, accounts, liveCardIds, onRefresh, onFinished, onError }: {
-  connection: BankConnection; accounts: BankAccount[]; liveCardIds: string[];
+const NEW_CARD = '__new__';
+
+function ConnectionCard({ connection, accounts, liveCardIds, customCards, onRefresh, onFinished, onError }: {
+  connection: BankConnection; accounts: BankAccount[]; liveCardIds: string[]; customCards: PaymentCard[];
   onRefresh: () => Promise<void>; onFinished: (cardIds: string[]) => Promise<void>; onError: (m: string) => void;
 }) {
   const [choices, setChoices] = useState<Record<string, string>>({});
   const [openDates, setOpenDates] = useState<Record<string, string>>({});
+  // Details for a card that isn't in the catalogue, keyed by account.
+  const [newCards, setNewCards] = useState<Record<string, { name: string; fee: string; openDate: string }>>({});
   const [step, setStep] = useState<'idle' | 'saving' | 'syncing'>('idle');
   const [confirming, setConfirming] = useState(false);
 
   const choiceOf = (a: BankAccount) => choices[a.id] ?? a.paymentCardId ?? '';
-  const chosenCards = [...new Set(accounts.map(choiceOf).filter(Boolean))];
+  const newCardOf = (a: BankAccount) => newCards[a.id] ?? { name: a.displayName, fee: '', openDate: '' };
+  const addingNew = accounts.filter((a) => choiceOf(a) === NEW_CARD);
+  const newIncomplete = addingNew.some((a) => { const n = newCardOf(a); return !n.name.trim() || n.fee === '' || !n.openDate; });
+  const chosenCards = [...new Set(accounts.map(choiceOf).filter((c) => c && c !== NEW_CARD))];
   // A card that has never been tracked needs its open date: card-year and
   // welcome-bonus goals are counted from it.
   const needDate = chosenCards.filter((id) => !liveCardIds.includes(id));
-  const missingDate = needDate.some((id) => !openDates[id]);
+  const missingDate = needDate.some((id) => !openDates[id]) || newIncomplete;
   const changed = accounts.some((a) => choiceOf(a) !== (a.paymentCardId ?? ''));
   const busy = step !== 'idle';
 
@@ -102,7 +111,13 @@ function ConnectionCard({ connection, accounts, liveCardIds, onRefresh, onFinish
       for (const a of accounts) {
         const choice = choiceOf(a);
         if (choice === (a.paymentCardId ?? '')) continue;
-        await mapAccountToCard(a.id, CARDS_STATIC.find((c) => c.id === choice) ?? null, openDates[choice] ?? null);
+        if (choice === NEW_CARD) {
+          const n = newCardOf(a);
+          const fee = Number(n.fee);
+          await mapAccountToCard(a.id, { id: n.name.trim(), programmeBrand: 'Other', annualFee: fee, feeLabel: fee > 0 ? `£${fee}/yr` : 'Free' }, n.openDate);
+          continue;
+        }
+        await mapAccountToCard(a.id, CARDS_STATIC.find((c) => c.id === choice) ?? customCards.find((c) => c.id === choice) ?? null, openDates[choice] ?? null);
       }
       setStep('syncing');
       const r = await syncBank(connection.id);
@@ -112,7 +127,7 @@ function ConnectionCard({ connection, accounts, liveCardIds, onRefresh, onFinish
         await onRefresh();
         return;
       }
-      await onFinished(chosenCards);
+      await onFinished([...chosenCards, ...addingNew.map((a) => newCardOf(a).name.trim())]);
     } catch (err) {
       onError(errorMessage(err));
       await onRefresh();
@@ -168,7 +183,22 @@ function ConnectionCard({ connection, accounts, liveCardIds, onRefresh, onFinish
             <select className="input" value={choice} disabled={busy} onChange={(e) => setChoices({ ...choices, [a.id]: e.target.value })}>
               <option value="">Not a rewards card</option>
               {CARDS_STATIC.map((c) => <option key={c.id} value={c.id}>{c.id}</option>)}
+              {customCards.map((c) => <option key={c.id} value={c.id}>{c.id}</option>)}
+              <option value={NEW_CARD}>Add a new card…</option>
             </select>
+            {choice === NEW_CARD && (
+              <div style={{ marginTop: 8 }}>
+                <Field label="Card name">
+                  <input className="input" value={newCardOf(a).name} disabled={busy} onChange={(e) => setNewCards({ ...newCards, [a.id]: { ...newCardOf(a), name: e.target.value } })} />
+                </Field>
+                <Field label="Annual fee (£)">
+                  <input className="input" type="number" min="0" step="1" value={newCardOf(a).fee} disabled={busy} onChange={(e) => setNewCards({ ...newCards, [a.id]: { ...newCardOf(a), fee: e.target.value } })} />
+                </Field>
+                <Field label="Opened">
+                  <input className="input" type="date" value={newCardOf(a).openDate} disabled={busy} onChange={(e) => setNewCards({ ...newCards, [a.id]: { ...newCardOf(a), openDate: e.target.value } })} />
+                </Field>
+              </div>
+            )}
             {suggestion && (
               <button type="button" className="btn soft small" style={{ marginTop: 8 }} onClick={() => setChoices({ ...choices, [a.id]: suggestion })}>
                 Looks like your {suggestion} — use it

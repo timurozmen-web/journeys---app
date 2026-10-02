@@ -69,7 +69,9 @@ export function Home() {
   const { bankSpend } = useBankLinks();
   const { rates } = useCurrency();
 
-  const cardResults = computeCardResults(hotels, flights, paymentCards, loyaltyProgrammes, TODAY, { bankSpend, rates });
+  const cardResults = computeCardResults(hotels, flights, paymentCards, loyaltyProgrammes, TODAY, { bankSpend, rates })
+    // Only cards you actually have a record for; the catalogue is bigger.
+    .filter((r) => r.cardRow);
 
   const currentTrip = trips.find((t) => t.section === 'current');
   const nextUpcomingTrip = trips
@@ -156,7 +158,7 @@ export function Home() {
   // card genuinely hasn't earned back its fee this card-year, say so
   // plainly rather than just flagging the date.
   for (const r of cardResults) {
-    if (!r.cardRow || r.cardRow.closedDate || !r.yearWindow || r.card.annualFee <= 0) continue;
+    if (!r.cardRow || r.card.custom || r.cardRow.closedDate || !r.yearWindow || r.card.annualFee <= 0) continue;
     const daysToRenewal = daysBetween(TODAY, r.yearWindow.end);
     if (daysToRenewal < 0 || daysToRenewal > 45) continue;
     const goodValue = r.net >= 0;

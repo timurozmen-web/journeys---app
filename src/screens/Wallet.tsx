@@ -31,7 +31,9 @@ export function Wallet() {
 
   // Card results only need ptValue for the value-lookup, not the points
   // balance itself, so this can run against the raw (pre-override) data.
-  const cardResults = computeCardResults(hotels, flights, paymentCards, rawLoyaltyProgrammes, TODAY, { bankSpend, rates });
+  const cardResults = computeCardResults(hotels, flights, paymentCards, rawLoyaltyProgrammes, TODAY, { bankSpend, rates })
+    // Only cards you actually have a record for; the catalogue is bigger.
+    .filter((r) => r.cardRow);
 
   // Auto-sync any newly-hit card vouchers once real card results are
   // available. Runs here rather than inside a specific tab's component,
