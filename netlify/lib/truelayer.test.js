@@ -20,6 +20,13 @@ describe('truelayerConfig', () => {
   });
 });
 
+describe('truelayerConfig trimming', () => {
+  test('stray whitespace around a pasted key is ignored', () => {
+    const cfg = truelayerConfig({ TRUELAYER_CLIENT_ID: ' id\n', TRUELAYER_CLIENT_SECRET: '\tsecret ' });
+    expect([cfg.clientId, cfg.clientSecret]).toEqual(['id', 'secret']);
+  });
+});
+
 describe('buildAuthUrl', () => {
   const cfg = truelayerConfig({ TRUELAYER_CLIENT_ID: 'id', TRUELAYER_CLIENT_SECRET: 's' });
 

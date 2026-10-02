@@ -177,6 +177,11 @@ describe('completeLink', () => {
     expect(store.state.created).toBeUndefined();
   });
 
+  test('a rejected code reports the reason the bank gave', async () => {
+    const f = async () => res(400, { error: 'invalid_client', error_description: 'bad secret' });
+    await expect(completeLink({ store: fakeStore(), cfg, userId: 'u', code: 'c', redirectUri: 'r', fetchImpl: f })).rejects.toThrow('(400 invalid_client: bad secret)');
+  });
+
   test('no accounts shared: nothing is created', async () => {
     const store = fakeStore();
     await expect(completeLink({ store, cfg, userId: 'u', code: 'c', redirectUri: 'r', fetchImpl: fakeBank().fetchImpl })).rejects.toMatchObject({ status: 400 });
