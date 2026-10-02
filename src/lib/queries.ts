@@ -715,7 +715,7 @@ export async function fetchBankLinks(): Promise<BankLinks> {
 
 // Points an account at a rewards card (or at none). The card row has to
 // exist first, so it is created here if this is the first time it's used.
-export async function mapAccountToCard(accountId: string, card: CardDef | null, openDate: string | null) {
+export async function mapAccountToCard(accountId: string, card: Pick<CardDef, 'id' | 'programmeBrand' | 'annualFee' | 'feeLabel'> | null, openDate: string | null) {
   if (card) {
     const { data: existing, error: e0 } = await supabase.from('payment_cards').select('id').eq('id', card.id);
     if (e0) throw e0;

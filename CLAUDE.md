@@ -79,6 +79,13 @@ Run all three; all must be clean:
 - Each card in `src/data/cardDefs.ts` has its own `earnCategories`; rates
   always come from its `rateFor`. A test checks every own-brand x region
   combination lands in exactly one category, so edit both together.
+- Adding a card: add it to `CARDS_STATIC` with a `detect` rule (matched
+  against the linked account's name, most specific card first), sourced
+  fee/earn rates with a dated comment, and limited-time welcome bonuses as
+  `offers` (only apply when the card was opened inside the offer dates; no
+  welcome milestone otherwise, since standard terms aren't a sourced
+  figure). Cards added by hand in the app are `custom`: spend only, no
+  points, because their earn rate isn't known.
 - Bank spend is totalled per category (`src/lib/earning.ts`), never listed.
   A card with synced bank data uses only that (no double counting with
   logged stays). Spend billed in GBP is assumed UK; say so in the UI.

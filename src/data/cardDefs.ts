@@ -9,6 +9,19 @@ export interface Milestone {
   supersedes?: string;
   rewardLabel: string;
   isVoucher?: boolean; // a discrete certificate/choice reward to track and redeem, not just an automatic points credit
+  // A welcome bonus that only exists as a limited-time offer. It applies
+  // when the card was opened inside an offer's dates, using that offer's
+  // spend and reward; opened outside every offer, there is no welcome
+  // milestone, because the standard terms aren't a published figure we hold.
+  offers?: WelcomeOffer[];
+}
+export interface WelcomeOffer {
+  from: string; // first day (YYYY-MM-DD) an application qualifies
+  to: string;   // last day it qualifies
+  spendRequired: number;
+  rewardPoints: number;
+  windowMonths: number;
+  label: string;
 }
 // Where a purchase happened, at the granularity any card's earn rate cares
 // about. 'premium' is IHG's list of higher-earning countries; for every
@@ -49,6 +62,12 @@ export interface CardDef {
   // Merchant text that counts as this card's own brand when the programme
   // isn't a hotel group (e.g. an airline). Hotel groups use the brand map.
   ownBrandKeywords?: string[];
+  // Whether a linked bank account/card, by its name, looks like this card.
+  // Tried in catalogue order, so a more specific card goes before a general one.
+  detect?: (text: string) => boolean;
+  // A card added by hand (not in the catalogue): spend is tracked but its
+  // earning rate isn't known, so no points are worked out for it.
+  custom?: boolean;
   eliteNights: { auto: number; perSpendAmount: number | null; perSpendCap: number | null };
   milestones: Milestone[];
   perks: { id: string; label: string }[];
@@ -56,6 +75,9 @@ export interface CardDef {
 
 const ALL: Region[] = ['uk', 'europe', 'premium', 'elsewhere'];
 const ABROAD: Region[] = ['europe', 'premium', 'elsewhere'];
+
+const BA_KEYWORDS = ['british airways', 'ba.com', 'ba holidays'];
+const BA_NAME = /british airways|\bba\b|avios/;
 
 const IHG_PROMO_END = '2026-10-31';
 const IHG_PREMIUM_COUNTRIES = new Set(['Canada', 'Japan', 'Singapore', 'Thailand', 'United Arab Emirates', 'United States']);
@@ -75,6 +97,7 @@ export function isIHGPremiumCountry(country: string) {
 export const CARDS_STATIC: CardDef[] = [
   {
     id: 'Marriott Debit', programmeBrand: 'Marriott Bonvoy', annualFee: 165, feeLabel: '£165/yr',
+    detect: (t) => t.includes('marriott') && /debit|currensea/.test(t),
     rateFor: (ctx) => (ctx.ownBrand ? (ctx.isUK ? 4 : 6) : ctx.isUK ? 1 : 3),
     earnCategories: [
       { id: 'own-uk', label: 'Marriott stays in the UK', own: true, regions: ['uk'] },
@@ -92,6 +115,7 @@ export const CARDS_STATIC: CardDef[] = [
   },
   {
     id: 'Marriott Amex', programmeBrand: 'Marriott Bonvoy', annualFee: 95, feeLabel: '£95/yr',
+    detect: (t) => t.includes('marriott') && /amex|american express/.test(t),
     rateFor: (ctx) => (ctx.ownBrand ? 6 : 2),
     earnCategories: [
       { id: 'own', label: 'Marriott stays', own: true, regions: ALL },
@@ -103,6 +127,7 @@ export const CARDS_STATIC: CardDef[] = [
   },
   {
     id: 'Accor Explorer', programmeBrand: 'Accor ALL', annualFee: 0, feeLabel: 'Free',
+    detect: (t) => t.includes('accor'),
     rateFor: () => 1,
     earnCategories: [{ id: 'all', label: 'All spend', regions: ALL }],
     eliteNights: { auto: 30, perSpendAmount: null, perSpendCap: null },
@@ -111,6 +136,7 @@ export const CARDS_STATIC: CardDef[] = [
   },
   {
     id: 'Hilton Debit', programmeBrand: 'Hilton Honors', annualFee: 150, feeLabel: '£150/yr',
+    detect: (t) => t.includes('hilton'),
     rateFor: (ctx) => (ctx.ownBrand ? (ctx.isUK ? 3 : 4.5) : ctx.isUK ? 1.5 : 3),
     earnCategories: [
       { id: 'own-uk', label: 'Hilton stays in the UK', own: true, regions: ['uk'] },
@@ -124,6 +150,7 @@ export const CARDS_STATIC: CardDef[] = [
   },
   {
     id: 'IHG Revolut Elite', programmeBrand: 'IHG One Rewards', annualFee: 216, feeLabel: '£18/mo (£216/yr)',
+    detect: (t) => /\bihg\b/.test(t),
     rateFor: (ctx) => {
       const promo = ctx.date <= IHG_PROMO_END;
       if (ctx.ownBrand) {
@@ -154,6 +181,7 @@ export const CARDS_STATIC: CardDef[] = [
     id: 'Virgin Atlantic Mastercard+', programmeBrand: 'Virgin Points', annualFee: 160, feeLabel: '£160/yr',
     rateFor: (ctx) => (ctx.ownBrand ? 3 : 1.5),
     ownBrandKeywords: ['virgin atlantic'],
+    detect: (t) => t.includes('virgin'),
     earnCategories: [
       { id: 'own', label: 'Virgin Atlantic', own: true, regions: ALL },
       { id: 'other', label: 'Everything else', own: false, regions: ALL },
@@ -165,7 +193,56 @@ export const CARDS_STATIC: CardDef[] = [
     ],
     perks: [],
   },
+  // British Airways American Express cards. Figures as published by Amex and
+  // British Airways and reported by Head for Points (Sept 2026), checked on
+  // 2 Oct 2026: free card 1 Avios/£1, no fee; Premium Plus £300 fee,
+  // 1.5 Avios/£1 (1.25 from 7 Oct 2026) and 3 Avios/£1 on BA and BA Holidays,
+  // 2-4-1 voucher at £15,000 spend in a card year (valid 2 years, any cabin).
+  // The post-7-Oct rate is only announced for general spend; the BA rate is
+  // assumed unchanged because nothing announces otherwise.
+  {
+    id: 'BA Amex Premium Plus', programmeBrand: 'Avios', annualFee: 300, feeLabel: '£300/yr',
+    rateFor: (ctx) => (ctx.ownBrand ? 3 : ctx.date >= BA_PREMIUM_PLUS_RATE_CHANGE ? 1.25 : 1.5),
+    ownBrandKeywords: BA_KEYWORDS,
+    detect: (t) => BA_NAME.test(t) && /premium plus/.test(t),
+    earnCategories: [
+      { id: 'own', label: 'British Airways and BA Holidays', own: true, regions: ALL },
+      { id: 'other', label: 'Everything else', own: false, regions: ALL },
+    ],
+    eliteNights: { auto: 0, perSpendAmount: null, perSpendCap: null },
+    milestones: [
+      {
+        id: 'welcome', type: 'spend', rewardPoints: 0, windowMonths: 3, rewardLabel: 'Welcome bonus',
+        offers: [{ from: '2026-08-26', to: '2026-10-06', spendRequired: 6000, rewardPoints: 60000, windowMonths: 3, label: '60,000 Avios welcome bonus (£6k spend within 3mo)' }],
+      },
+      { id: 'companion', type: 'spend', spendRequired: 15000, rewardPoints: 0, rewardLabel: '2-4-1 companion voucher (£15k spend in a card year)' },
+    ],
+    perks: [],
+  },
+  {
+    id: 'BA Amex', programmeBrand: 'Avios', annualFee: 0, feeLabel: 'Free',
+    rateFor: () => 1,
+    ownBrandKeywords: BA_KEYWORDS,
+    detect: (t) => BA_NAME.test(t) && /amex|american express|credit card/.test(t),
+    earnCategories: [
+      { id: 'own', label: 'British Airways', own: true, regions: ALL },
+      { id: 'other', label: 'Everything else', own: false, regions: ALL },
+    ],
+    eliteNights: { auto: 0, perSpendAmount: null, perSpendCap: null },
+    milestones: [
+      {
+        id: 'welcome', type: 'spend', rewardPoints: 0, windowMonths: 3, rewardLabel: 'Welcome bonus',
+        offers: [{ from: '2026-08-26', to: '2026-10-06', spendRequired: 2000, rewardPoints: 10000, windowMonths: 3, label: '10,000 Avios welcome bonus (£2k spend within 3mo)' }],
+      },
+      { id: 'companion', type: 'spend', spendRequired: 15000, rewardPoints: 0, rewardLabel: '2-4-1 companion voucher, economy only (£15k spend in a card year)' },
+    ],
+    perks: [],
+  },
 ];
+
+// The Premium Plus general earn rate falls from 1.5 to 1.25 Avios per £1 on
+// this date (announced by Amex/BA).
+const BA_PREMIUM_PLUS_RATE_CHANGE = '2026-10-07';
 
 export function defaultCardFor(brand: string): string | null {
   if (brand === 'Hilton Honors') return 'Hilton Debit';
@@ -192,4 +269,28 @@ export function cardYearWindow(openDate: string | null, today: string) {
   }
   const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   return { start: ymd(start), end: ymd(end) };
+}
+
+// The milestones that apply to a card opened on `openDate`: welcome offers
+// resolve to the offer in force when the card was opened (or drop out).
+export function milestonesFor(card: CardDef, openDate: string | null): Milestone[] {
+  return card.milestones.flatMap((m) => {
+    if (!m.offers) return [m];
+    const offer = openDate ? m.offers.find((o) => openDate >= o.from && openDate <= o.to) : undefined;
+    if (!offer) return [];
+    return [{ ...m, spendRequired: offer.spendRequired, rewardPoints: offer.rewardPoints, windowMonths: offer.windowMonths, rewardLabel: offer.label, offers: undefined }];
+  });
+}
+
+// A card that isn't in the catalogue, from the row the user added.
+export function customCardDef(row: { id: string; programmeBrand: string; annualFee: number; feeLabel: string }): CardDef {
+  return {
+    id: row.id, programmeBrand: row.programmeBrand, annualFee: row.annualFee, feeLabel: row.feeLabel,
+    custom: true,
+    rateFor: () => 0,
+    earnCategories: [{ id: 'all', label: 'All spend', regions: ALL }],
+    eliteNights: { auto: 0, perSpendAmount: null, perSpendCap: null },
+    milestones: [],
+    perks: [],
+  };
 }
