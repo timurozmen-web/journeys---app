@@ -1,183 +1,202 @@
-import { useState, useEffect } from 'react';
-import { useBankConnections, useUnreviewedBankTransactions, usePaymentCards } from '../lib/useLiveData';
-import { assignBankTransactionToCard, dismissBankTransaction } from '../lib/queries';
-import { supabase } from '../lib/supabase';
-import { ScreenHeader } from '../components/ui';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useBankLinks, usePaymentCards } from '../lib/useLiveData';
+import { mapAccountToCard } from '../lib/queries';
+import type { BankAccount, BankConnection } from '../lib/queries';
+import { disconnectBank, exchangeBankCode, startBankLink, syncBank, takeState } from '../lib/bankLink';
+import { CARDS_STATIC } from '../data/cardDefs';
+import { Button, EmptyState, ErrorText, Field, ScreenHeader, SectionLabel } from '../components/ui';
 
-interface Bank {
-  name: string;
-  country: string;
-  logo: string;
-}
+const errorMessage = (err: unknown) => (err instanceof Error ? err.message : 'Something went wrong.');
 
 export function BankSync() {
-  const { data: connections } = useBankConnections();
-  const { data: transactions, refetch: refetchTransactions } = useUnreviewedBankTransactions();
-  const { data: cards, refetch: refetchCards } = usePaymentCards();
-
-  const [banks, setBanks] = useState<Bank[]>([]);
-  const [loadingBanks, setLoadingBanks] = useState(false);
-  const [connecting, setConnecting] = useState(false);
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const { connections, accounts, loaded, refetch } = useBankLinks();
+  const { data: paymentCards, refetch: refetchCards } = usePaymentCards();
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState<string | null>(null);
 
+  // Back from the bank: finish the connection once, then clear the code
+  // from the address so a refresh can't replay it. A code that arrives
+  // without the state we saved before leaving isn't ours, so it's refused.
+  const handled = useRef(false);
   useEffect(() => {
-    if (connections.length > 0 || banks.length > 0) return;
-    setLoadingBanks(true);
-    setError('');
-    fetch('/.netlify/functions/bank-list?country=GB')
-      .then(async (r) => {
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error || `Request failed (${r.status})`);
-        return d;
-      })
-      .then((d) => setBanks(d.banks || []))
-      .catch((err) => setError(err instanceof Error ? err.message : 'Could not load the bank list.'))
-      .finally(() => setLoadingBanks(false));
-  }, [connections.length, banks.length]);
+    const code = params.get('code');
+    const bankError = params.get('error');
+    if (handled.current || (!code && !bankError)) return;
+    handled.current = true;
+    const state = params.get('state');
+    navigate('/bank-sync', { replace: true });
+    if (bankError) { setError(bankError); return; }
+    if (!state || state !== takeState()) { setError('That bank link did not come from this app, so it was ignored. Start again.'); return; }
+    setBusy('connect');
+    exchangeBankCode(code!)
+      .then(() => refetch())
+      .catch((err) => setError(errorMessage(err)))
+      .finally(() => setBusy(null));
+  }, [params, navigate, refetch]);
 
-  async function handleConnect(bank: Bank) {
-    setConnecting(true);
+  async function connect() {
     setError('');
+    setBusy('connect');
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) throw new Error('Not signed in');
-      const res = await fetch('/.netlify/functions/bank-link-start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          aspspName: bank.name,
-          aspspCountry: bank.country,
-          userId: userData.user.id,
-          redirectUrl: `${window.location.origin}/.netlify/functions/bank-link-callback`,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not start the connection');
-      window.location.href = data.url;
+      window.location.href = await startBankLink();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
-      setConnecting(false);
+      setError(errorMessage(err));
+      setBusy(null);
+    }
+  }
+
+  async function sync(c: BankConnection) {
+    setError('');
+    setBusy(c.id);
+    try {
+      const r = await syncBank(c.id);
+      if (!r.ok) setError(r.error ?? 'The sync did not complete.');
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      refetch();
+      setBusy(null);
+    }
+  }
+
+  async function disconnect(c: BankConnection) {
+    setError('');
+    setBusy(c.id);
+    try {
+      await disconnectBank(c.id);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      refetch();
+      setBusy(null);
     }
   }
 
   return (
     <div>
       <ScreenHeader title="Bank sync" />
-
       <div style={{ padding: '0 20px' }}>
-        {connections.length === 0 ? (
+        <p style={{ fontSize: 'var(--fs-body)', color: 'var(--ink2)', lineHeight: 1.5, marginBottom: 16 }}>
+          Link the bank or card that pays for your rewards cards. Purchases are added up by each card's own earning
+          categories and tracked against its spending goals, once a day. Individual transactions aren't shown, and
+          accounts you don't point at a rewards card are never read.
+        </p>
+        {error && <ErrorText style={{ marginBottom: 12 }}>{error}</ErrorText>}
+
+        {loaded && connections.length === 0 && busy !== 'connect' && <EmptyState>No bank connected yet.</EmptyState>}
+        {connections.map((c) => (
+          <ConnectionCard
+            key={c.id}
+            connection={c}
+            accounts={accounts.filter((a) => a.connectionId === c.id)}
+            existingCardIds={paymentCards.map((p) => p.id)}
+            busy={busy === c.id}
+            onSync={() => sync(c)}
+            onDisconnect={() => disconnect(c)}
+            onMapped={async () => { await sync(c); refetchCards(); }}
+            onError={setError}
+          />
+        ))}
+        <Button block onClick={connect} disabled={busy === 'connect'} style={{ marginTop: 8 }}>
+          {busy === 'connect' ? 'Connecting…' : connections.length === 0 ? 'Connect a bank' : 'Connect another bank'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ConnectionCard({ connection, accounts, existingCardIds, busy, onSync, onDisconnect, onMapped, onError }: {
+  connection: BankConnection; accounts: BankAccount[]; existingCardIds: string[]; busy: boolean;
+  onSync: () => void; onDisconnect: () => void; onMapped: () => Promise<void>; onError: (m: string) => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const trackedCount = accounts.filter((a) => a.paymentCardId).length;
+  return (
+    <div className="card" style={{ padding: 14, marginBottom: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+        <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 600 }}>{connection.providerName ?? 'Bank'}</div>
+        <div style={{ fontSize: 'var(--fs-caption)', color: connection.status === 'error' ? 'var(--red)' : connection.status === 'partial' ? 'var(--amber)' : 'var(--green)' }}>
+          {connection.status === 'error' ? 'Needs attention' : connection.status === 'partial' ? 'Partly synced' : 'Connected'}
+        </div>
+      </div>
+      <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 3 }}>
+        {connection.lastSyncedAt ? `Last synced ${new Date(connection.lastSyncedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : 'Not synced yet'}
+      </div>
+      {connection.error && <ErrorText style={{ marginTop: 8 }}>{connection.error}</ErrorText>}
+
+      <SectionLabel style={{ marginTop: 14, marginBottom: 12 }}>Which rewards card does each one pay for?</SectionLabel>
+      {accounts.map((a) => (
+        <AccountRow key={a.id} account={a} cardExists={(id) => existingCardIds.includes(id)} onMapped={onMapped} onError={onError} />
+      ))}
+      {trackedCount === 0 && (
+        <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink3)', marginTop: 8 }}>Nothing is tracked until you choose a card above.</div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+        <Button variant="secondary" small onClick={onSync} disabled={busy || trackedCount === 0}>{busy ? 'Working…' : 'Sync now'}</Button>
+        {confirming ? (
           <>
-            <p style={{ fontSize: 'var(--fs-body)', color: 'var(--ink2)', lineHeight: 1.5, marginBottom: 16 }}>
-              Connect your bank and new spend gets pulled in once a day. You still review and assign each transaction to a card yourself, so nothing's added to your totals without your say.
-            </p>
-            {loadingBanks && <div style={{ color: 'var(--ink3)', fontSize: 'var(--fs-body)' }}>Loading banks…</div>}
-            {error && <div style={{ color: 'var(--red)', fontSize: 'var(--fs-body)', marginBottom: 12 }}>{error}</div>}
-            <div style={{ display: 'grid', gap: 8 }}>
-              {banks.map((bank) => (
-                <button
-                  key={bank.name}
-                  onClick={() => handleConnect(bank)}
-                  disabled={connecting}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 'var(--r-control)',
-                    border: '1px solid var(--line)', background: 'var(--card)', fontSize: 'var(--fs-body)', fontWeight: 700,
-                    color: 'var(--ink)', cursor: connecting ? 'default' : 'pointer', textAlign: 'left',
-                  }}
-                >
-                  {bank.name}
-                </button>
-              ))}
-            </div>
+            <Button variant="danger" small onClick={onDisconnect} disabled={busy}>Remove it and its spend</Button>
+            <Button variant="ghost" small onClick={() => setConfirming(false)}>Cancel</Button>
           </>
         ) : (
-          <>
-            {connections.map((c) => (
-              <div key={c.id} style={{ padding: '12px 14px', borderRadius: 'var(--r-sm)', background: 'var(--card)', border: '1px solid var(--line)', marginBottom: 10 }}>
-                <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700 }}>{c.aspspName}</div>
-                <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 3 }}>
-                  {c.accountName ?? 'Account'} · last synced {c.lastSyncedAt ? new Date(c.lastSyncedAt).toLocaleDateString() : 'not yet'}
-                </div>
-              </div>
-            ))}
-
-            <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', margin: '16px 0 8px' }}>
-              To review ({transactions.length})
-            </div>
-            {transactions.length === 0 && (
-              <div style={{ padding: '20px 4px', textAlign: 'center', color: 'var(--ink3)', fontSize: 'var(--fs-body)' }}>
-                Nothing new since the last sync.
-              </div>
-            )}
-            <div style={{ display: 'grid', gap: 8 }}>
-              {transactions.map((t) => (
-                <TransactionRow
-                  key={t.id}
-                  transaction={t}
-                  cards={cards}
-                  onAssign={async (cardId) => {
-                    const card = cards.find((c) => c.id === cardId);
-                    if (!card) return;
-                    await assignBankTransactionToCard(t.id, cardId, card.manualSpendAdjustment, t.amount);
-                    refetchTransactions();
-                    refetchCards();
-                  }}
-                  onDismiss={async () => {
-                    await dismissBankTransaction(t.id);
-                    refetchTransactions();
-                  }}
-                />
-              ))}
-            </div>
-          </>
+          <Button variant="ghost" small onClick={() => setConfirming(true)}>Disconnect</Button>
         )}
       </div>
     </div>
   );
 }
 
-function TransactionRow({
-  transaction, cards, onAssign, onDismiss,
-}: {
-  transaction: { date: string; amount: number; currency: string; description: string | null };
-  cards: { id: string; programmeBrand: string }[];
-  onAssign: (cardId: string) => void;
-  onDismiss: () => void;
+function AccountRow({ account, cardExists, onMapped, onError }: {
+  account: BankAccount; cardExists: (cardId: string) => boolean; onMapped: () => Promise<void>; onError: (m: string) => void;
 }) {
-  const [selected, setSelected] = useState('');
+  const [pending, setPending] = useState<string | null>(null); // a card chosen that still needs an open date
+  const [openDate, setOpenDate] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  async function save(cardId: string, date: string | null) {
+    onError('');
+    setSaving(true);
+    try {
+      await mapAccountToCard(account.id, CARDS_STATIC.find((c) => c.id === cardId) ?? null, date);
+      setPending(null);
+      setOpenDate('');
+      await onMapped();
+    } catch (err) {
+      onError(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function choose(cardId: string) {
+    if (cardId === '') { void save('', null); return; }
+    // A card that has never been tracked needs its open date: card-year
+    // and welcome-bonus goals are counted from it.
+    if (!cardExists(cardId)) { setPending(cardId); return; }
+    void save(cardId, null);
+  }
+
   return (
-    <div style={{ padding: '11px 14px', borderRadius: 'var(--r-control)', border: '1px solid var(--line)', background: 'var(--card)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-        <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700 }}>{transaction.description || 'Transaction'}</div>
-        <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700, flexShrink: 0 }}>
-          {transaction.currency} {transaction.amount.toFixed(2)}
+    <Field
+      label={`${account.displayName}${account.last4 ? ` ····${account.last4}` : ''}`}
+      hint={account.kind === 'card' ? 'Credit card' : 'Current account'}
+    >
+      <select className="input" value={pending ?? account.paymentCardId ?? ''} disabled={saving} onChange={(e) => choose(e.target.value)}>
+        <option value="">Not a rewards card</option>
+        {CARDS_STATIC.map((c) => <option key={c.id} value={c.id}>{c.id}</option>)}
+      </select>
+      {pending && (
+        <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+          <input className="input" type="date" value={openDate} onChange={(e) => setOpenDate(e.target.value)} aria-label={`When did you open the ${pending}?`} />
+          <Button small disabled={!openDate || saving} onClick={() => save(pending, openDate)}>Track</Button>
+          <Button small variant="ghost" onClick={() => setPending(null)}>Cancel</Button>
         </div>
-      </div>
-      <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 2 }}>{transaction.date}</div>
-      <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-        <select
-          value={selected}
-          onChange={(e) => setSelected(e.target.value)}
-          style={{ flex: 1, padding: '7px 9px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', fontSize: 'var(--fs-small)' }}
-        >
-          <option value="">Assign to card…</option>
-          {cards.map((c) => (
-            <option key={c.id} value={c.id}>{c.id}</option>
-          ))}
-        </select>
-        <button
-          disabled={!selected}
-          onClick={() => onAssign(selected)}
-          style={{ padding: '7px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: selected ? 'var(--brand)' : 'var(--card2)', color: selected ? 'var(--on-brand)' : 'var(--ink3)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: selected ? 'pointer' : 'default' }}
-        >
-          Add
-        </button>
-        <button
-          onClick={onDismiss}
-          style={{ padding: '7px 12px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card2)', color: 'var(--ink2)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
-        >
-          Dismiss
-        </button>
-      </div>
-    </div>
+      )}
+      {pending && <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink3)', marginTop: 6 }}>When did you open the {pending}? Goals count from this date.</div>}
+    </Field>
   );
 }

@@ -2,6 +2,8 @@
 // don't need to change when they switch from mock data to this.
 import { supabase } from './supabase';
 import { addDays } from './tripDay';
+import type { CardDef } from '../data/cardDefs';
+import type { SpendRecord } from './bankSpend';
 import type { Trip, Hotel, Flight, LoyaltyProgramme, PaymentCard, Review, Voucher, Promotion, PromoType, DiscoverItem } from '../types';
 
 export async function fetchTrips(): Promise<Trip[]> {
@@ -662,46 +664,73 @@ export async function registerDiscoverItem(id: string, registered: boolean) {
 }
 
 export interface BankConnection {
-  id: string; aspspName: string; aspspCountry: string; accountName: string | null;
-  consentValidUntil: string; lastSyncedAt: string | null;
+  id: string; providerName: string | null; lastSyncedAt: string | null;
+  status: 'ok' | 'partial' | 'error' | null; error: string | null;
 }
-export async function fetchBankConnections(): Promise<BankConnection[]> {
-  const { data, error } = await supabase.from('bank_connections').select('*');
-  if (error) throw error;
-  return (data ?? []).map((c) => ({
-    id: c.id, aspspName: c.aspsp_name, aspspCountry: c.aspsp_country, accountName: c.account_name,
-    consentValidUntil: c.consent_valid_until, lastSyncedAt: c.last_synced_at,
-  }));
+export interface BankAccount {
+  id: string; connectionId: string; kind: 'account' | 'card'; displayName: string;
+  last4: string | null; currency: string; paymentCardId: string | null; syncedThrough: string | null;
+}
+export interface BankLinks { connections: BankConnection[]; accounts: BankAccount[]; spend: SpendRecord[] }
+
+// Supabase returns at most 1000 rows a request, and two years of card
+// purchases can pass that, so read every page.
+async function fetchAllCardSpend(): Promise<SpendRecord[]> {
+  const PAGE = 1000;
+  const out: SpendRecord[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase.from('card_spend')
+      .select('account_id, txn_date, amount, currency, merchant')
+      .order('txn_date', { ascending: true }).order('id', { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    for (const r of data ?? []) {
+      out.push({ accountId: r.account_id, date: r.txn_date, amount: Number(r.amount), currency: r.currency, merchant: r.merchant });
+    }
+    if (!data || data.length < PAGE) break;
+  }
+  return out;
 }
 
-export interface BankTransaction {
-  id: string; connectionId: string; date: string; amount: number; currency: string;
-  description: string | null; matchedCardId: string | null; dismissed: boolean;
-}
-export async function fetchUnreviewedBankTransactions(): Promise<BankTransaction[]> {
-  const { data, error } = await supabase
-    .from('bank_transactions')
-    .select('*')
-    .is('matched_card_id', null)
-    .eq('dismissed', false)
-    .order('transaction_date', { ascending: false });
-  if (error) throw error;
-  return (data ?? []).map((t) => ({
-    id: t.id, connectionId: t.connection_id, date: t.transaction_date, amount: t.amount, currency: t.currency,
-    description: t.description, matchedCardId: t.matched_card_id, dismissed: t.dismissed,
-  }));
-}
-
-export async function assignBankTransactionToCard(transactionId: string, cardId: string, currentAdjustment: number, amountGBP: number) {
-  const { error: e1 } = await supabase.from('bank_transactions').update({ matched_card_id: cardId }).eq('id', transactionId);
-  if (e1) throw e1;
-  const { error: e2 } = await supabase.from('payment_cards').update({ manual_spend_adjustment: currentAdjustment + amountGBP }).eq('id', cardId);
-  if (e2) throw e2;
+export async function fetchBankLinks(): Promise<BankLinks> {
+  const [conns, accts, spend] = await Promise.all([
+    supabase.from('open_banking_connections').select('*').order('created_at'),
+    supabase.from('open_banking_accounts').select('*').order('display_name'),
+    fetchAllCardSpend(),
+  ]);
+  if (conns.error) throw conns.error;
+  if (accts.error) throw accts.error;
+  return {
+    connections: (conns.data ?? []).map((c) => ({
+      id: c.id, providerName: c.provider_name, lastSyncedAt: c.last_synced_at,
+      status: c.last_sync_status, error: c.last_sync_error,
+    })),
+    accounts: (accts.data ?? []).map((a) => ({
+      id: a.id, connectionId: a.connection_id, kind: a.kind, displayName: a.display_name ?? 'Account',
+      last4: a.last4, currency: a.currency, paymentCardId: a.payment_card_id, syncedThrough: a.synced_through,
+    })),
+    spend,
+  };
 }
 
-export async function dismissBankTransaction(transactionId: string) {
-  const { error } = await supabase.from('bank_transactions').update({ dismissed: true }).eq('id', transactionId);
+// Points an account at a rewards card (or at none). The card row has to
+// exist first, so it is created here if this is the first time it's used.
+export async function mapAccountToCard(accountId: string, card: CardDef | null, openDate: string | null) {
+  if (card) {
+    const { data: existing, error: e0 } = await supabase.from('payment_cards').select('id').eq('id', card.id);
+    if (e0) throw e0;
+    if (!existing || existing.length === 0) {
+      if (!openDate) throw new Error('Enter the date you opened this card first.');
+      const { error: e1 } = await supabase.from('payment_cards').insert({
+        id: card.id, programme_brand: card.programmeBrand, annual_fee: card.annualFee, fee_label: card.feeLabel, open_date: openDate,
+      });
+      if (e1) throw e1;
+    }
+  }
+  const { data, error } = await supabase.from('open_banking_accounts')
+    .update({ payment_card_id: card?.id ?? null }).eq('id', accountId).select('id');
   if (error) throw error;
+  if (!data || data.length === 0) throw new Error('That account was not found.');
 }
 
 export interface TripPhoto {

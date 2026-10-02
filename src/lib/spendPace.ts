@@ -34,3 +34,12 @@ export function spendPace(a: { spent: number; target: number; windowStart: strin
     status: 'open',
   };
 }
+
+// One plain sentence on where a goal stands, for the card and Home.
+export function paceLine(p: Pace): string | null {
+  if (p.status === 'reached') return null;
+  if (p.status === 'closed') return 'Window closed';
+  const perMonth = `£${Math.round(p.perMonthNeeded).toLocaleString()}/month to go`;
+  const days = `${p.daysLeft} day${p.daysLeft === 1 ? '' : 's'} left`;
+  return `${perMonth} · ${days} · ${p.onTrack ? 'on track' : 'behind pace'}`;
+}

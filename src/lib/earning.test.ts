@@ -120,3 +120,15 @@ describe('summariseSpend', () => {
     expect(cardDistinguishesAbroad(card('Virgin Atlantic Mastercard+'), '2026-03-01')).toBe(false);
   });
 });
+
+describe('bankRowsToItems without a usable rate', () => {
+  test('a currency with no known rate is left out, not turned into NaN', () => {
+    const card = CARDS_STATIC[0];
+    const items = bankRowsToItems(card, [
+      { date: '2026-05-01', amount: 100, currency: 'CHF', merchant: null },
+      { date: '2026-05-02', amount: 10, currency: 'GBP', merchant: null },
+    ], {});
+    expect(items).toHaveLength(1);
+    expect(items[0].amount).toBe(10);
+  });
+});

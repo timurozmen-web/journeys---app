@@ -67,18 +67,25 @@ export function bankRowsToItems(
   rows: BankSpendRow[],
   rates: Record<string, number> = {},
 ): SpendItem[] {
-  return rows.map((r) => {
+  const items: SpendItem[] = [];
+  for (const r of rows) {
     const cur = r.currency.trim().toUpperCase();
+    // No rate for this currency (e.g. offline, and not one of the
+    // built-in approximations): leave the purchase out rather than guess,
+    // because convertCurrency would otherwise return NaN and poison the
+    // card's totals.
     const pounds = cur === 'GBP' ? r.amount : convertCurrency(r.amount, cur as CurrencyCode, 'GBP', rates);
-    return {
+    if (!Number.isFinite(pounds)) continue;
+    items.push({
       date: r.date,
       amount: pounds,
       own: r.merchant ? isOwnBrandMerchant(card, r.merchant) : false,
       region: regionOfCurrency(cur),
       source: 'bank',
       basis: cur === 'GBP' ? 'assumed' : 'currency',
-    };
-  });
+    });
+  }
+  return items;
 }
 
 // ----------------------------------------------------------- categories

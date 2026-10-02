@@ -21,8 +21,12 @@ ready for an iOS build.
   or **scan a booking email / screenshot** (Claude extracts the
   bookings) and **scan a promotion**. Likely duplicates are flagged.
   Works offline: entries queue locally and sync when back online.
-- **Bank sync**: links a bank account through Enable Banking and
-  suggests travel transactions to log.
+- **Card spend tracking**: links the bank or card that pays for each
+  rewards card (TrueLayer open banking). Purchases are totalled by that
+  card's own earning categories (e.g. "Marriott stays abroad",
+  "Everyday in the UK") and tracked live against its spending goals,
+  welcome bonuses and renewal vouchers. Individual transactions are
+  never listed, and accounts not mapped to a rewards card are never read.
 - **Plan a trip**: season and weather guide, crowd and price levels
   around holidays, annual leave needed (UK bank holidays), budget
   estimate, map, rail connections, and points-vs-cash comparisons.
@@ -78,7 +82,12 @@ with a `VITE_` prefix):**
 - `ANTHROPIC_API_KEY`: email/promotion scanning and the smart
   suggestion functions.
 - `SUPABASE_SERVICE_ROLE_KEY`: scheduled jobs and bank linking.
-- `ENABLE_BANKING_APP_ID`, `ENABLE_BANKING_PRIVATE_KEY`: bank linking.
+- `TRUELAYER_CLIENT_ID`, `TRUELAYER_CLIENT_SECRET`: bank linking.
+  `TRUELAYER_ENV=sandbox` switches to TrueLayer's mock bank (default is
+  live). In the TrueLayer console, register
+  `https://<your-site>/.netlify/functions/bank-link-callback` as a
+  redirect URI. Bank logins are stored in a table the app's own key
+  cannot read.
 
 ## Database
 

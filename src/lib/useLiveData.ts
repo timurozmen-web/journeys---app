@@ -2,10 +2,12 @@
 // run yet (or a table is empty) — so the app keeps working today, and
 // switches over to real data the moment `supabase/schema.sql` is applied
 // and rows exist.
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as mock from '../data/mock';
 import { getCached, setCached } from './localCache';
-import { fetchTrips, fetchLoyaltyProgrammes, fetchPaymentCards, fetchReviews, fetchAllHotels, fetchAllFlights, fetchVouchers, fetchPromotions, fetchBankConnections, fetchUnreviewedBankTransactions, fetchPromotionCandidates, fetchDiscoverItems, fetchHomeLocation, fetchClimateData, fetchCrowdPriceData, fetchPointsValueData, fetchCityCashRates, fetchCurrencyPreference } from './queries';
+import type { BankLinks } from './queries';
+import { groupBankSpend } from './bankSpend';
+import { fetchTrips, fetchLoyaltyProgrammes, fetchPaymentCards, fetchReviews, fetchAllHotels, fetchAllFlights, fetchVouchers, fetchPromotions, fetchBankLinks, fetchPromotionCandidates, fetchDiscoverItems, fetchHomeLocation, fetchClimateData, fetchCrowdPriceData, fetchPointsValueData, fetchCityCashRates, fetchCurrencyPreference } from './queries';
 
 function useLive<T>(cacheKey: string, fetcher: () => Promise<T[]>, fallback: T[]) {
   // Synchronous on first render, not an effect -- this is what makes
@@ -92,8 +94,27 @@ export const useAllHotels = () => useLive('allHotels', fetchAllHotels, mock.trip
 export const useAllFlights = () => useLive('allFlights', fetchAllFlights, mock.trips.flatMap((t) => t.flights));
 export const useVouchers = () => useLive('vouchers', fetchVouchers, []);
 export const usePromotions = () => useLive('promotions', fetchPromotions, []);
-export const useBankConnections = () => useLive('bankConnections', fetchBankConnections, []);
-export const useUnreviewedBankTransactions = () => useLive('unreviewedBankTransactions', fetchUnreviewedBankTransactions, []);
+
+const NO_BANK_LINKS: BankLinks = { connections: [], accounts: [], spend: [] };
+
+// Bank connections, their accounts and synced card purchases. Not built on
+// useLive: that hook keeps old data when a fetch returns nothing, which
+// would leave a disconnected bank showing until the cache expired. Here an
+// empty result is a real answer (nothing connected).
+export function useBankLinks() {
+  const [data, setData] = useState<BankLinks>(() => getCached<BankLinks>('bankLinks')?.data ?? NO_BANK_LINKS);
+  const [loaded, setLoaded] = useState(false);
+  const load = useCallback(() => {
+    let cancelled = false;
+    fetchBankLinks()
+      .then((d) => { if (!cancelled) { setData(d); setLoaded(true); setCached('bankLinks', d); } })
+      .catch((err) => console.error('[useBankLinks] fetch failed, keeping the cached copy:', err));
+    return () => { cancelled = true; };
+  }, []);
+  useEffect(() => load(), [load]);
+  const bankSpend = useMemo(() => groupBankSpend(data.accounts, data.spend), [data]);
+  return { ...data, bankSpend, loaded, refetch: load };
+}
 export const usePromotionCandidates = () => useLive('promotionCandidates', fetchPromotionCandidates, []);
 export const useDiscoverItems = () => useLive('discoverItems', fetchDiscoverItems, mock.discoverItems);
 export const useHomeLocation = () => useLiveSingle('homeLocation', fetchHomeLocation, { city: 'London', country: 'United Kingdom' });

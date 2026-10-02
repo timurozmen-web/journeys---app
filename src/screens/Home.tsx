@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes, usePromotions, usePaymentCards, useVouchers, useReviews } from '../lib/useLiveData';
+import { useTrips, useAllHotels, useAllFlights, useLoyaltyProgrammes, usePromotions, usePaymentCards, useBankLinks, useVouchers, useReviews } from '../lib/useLiveData';
+import { useCurrency } from '../lib/currency';
+import { paceLine } from '../lib/spendPace';
 import { computeCardResults } from '../lib/cardMath';
 import { computeStatusProgress } from '../lib/statusProgress';
 import { findHotelsNeedingReview } from '../lib/reviewScoring';
@@ -64,8 +66,10 @@ export function Home() {
   const { data: vouchers } = useVouchers();
   const { data: reviews } = useReviews();
   const { data: promotions } = usePromotions();
+  const { bankSpend } = useBankLinks();
+  const { rates } = useCurrency();
 
-  const cardResults = computeCardResults(hotels, flights, paymentCards, loyaltyProgrammes, TODAY);
+  const cardResults = computeCardResults(hotels, flights, paymentCards, loyaltyProgrammes, TODAY, { bankSpend, rates });
 
   const currentTrip = trips.find((t) => t.section === 'current');
   const nextUpcomingTrip = trips
@@ -104,16 +108,18 @@ export function Home() {
 
   const cardsWithNextMilestone = cardResults
     .filter((r) => r.nextMilestone && r.nextMilestone.m.spendRequired)
-    .map((r) => ({ r, pct: Math.min(100, (r.autoSpend / r.nextMilestone!.m.spendRequired!) * 100) }))
+    .map((r) => ({ r, pct: Math.min(100, (r.nextMilestone!.spend / r.nextMilestone!.m.spendRequired!) * 100) }))
     .sort((a, b) => b.pct - a.pct);
   for (const { r, pct } of cardsWithNextMilestone.slice(0, 2)) {
-    const remaining = Math.max(0, r.nextMilestone!.m.spendRequired! - r.autoSpend);
+    const remaining = Math.max(0, r.nextMilestone!.m.spendRequired! - r.nextMilestone!.spend);
     const programme = loyaltyProgrammes.find((p) => p.name === r.card.programmeBrand);
     const estValue = programme?.ptValue ? Math.round((r.nextMilestone!.m.rewardPoints * programme.ptValue) / 100) : null;
     actionItems.push({
       key: `card-milestone-${r.card.id}`, color: 'var(--brand)',
       title: `Spend £${Math.round(remaining).toLocaleString()} on the ${r.card.id}`,
-      subtitle: `Turns into ${r.nextMilestone!.m.rewardLabel}${estValue ? `, worth about £${estValue}` : ''}`,
+      // Spend counted here is the goal's own (a welcome bonus only counts
+      // its window), and the pace line comes from real figures.
+      subtitle: `Turns into ${r.nextMilestone!.m.rewardLabel}${estValue ? `, worth about £${estValue}` : ''}${r.nextMilestone!.pace && paceLine(r.nextMilestone!.pace) ? ` · ${paceLine(r.nextMilestone!.pace)}` : ''}`,
       progressPct: pct,
       onClick: () => navigate('/wallet'),
     });

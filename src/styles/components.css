@@ -145,3 +145,7 @@ textarea.input{resize:vertical;line-height:1.45}
 .lb-year-bar.latest{background:linear-gradient(180deg,var(--brand2),#9E8455)}
 .lb-todo{flex:0 0 100%;width:100%;scroll-snap-align:start;display:flex;align-items:center;gap:12px;padding:14px 16px;
   text-align:left;cursor:pointer;color:var(--ink)}
+
+/* Thin share bar used for spend by earning category and goal progress. */
+.catbar{height:4px;border-radius:var(--r-pill);background:var(--card2);overflow:hidden}
+.catbar i{display:block;height:100%;border-radius:var(--r-pill);background:var(--brand)}

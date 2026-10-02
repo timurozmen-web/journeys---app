@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { spendPace } from './spendPace';
+import { paceLine, spendPace } from './spendPace';
 
 const base = { windowStart: '2026-01-01', windowEnd: '2026-07-01', today: '2026-04-01' }; // 90 of 181 days gone
 
@@ -32,5 +32,17 @@ describe('spendPace', () => {
     const p = spendPace({ ...base, today: '2026-01-01', spent: 0, target: 3000 });
     expect(Number.isFinite(p.projected)).toBe(true);
     expect(p.status).toBe('open');
+  });
+});
+
+describe('paceLine', () => {
+  const base = { remaining: 1000, daysLeft: 1, perMonthNeeded: 1000.4, projected: 0, onTrack: false, status: 'open' as const };
+  test('says what is needed, how long is left, and whether the pace gets there', () => {
+    expect(paceLine(base)).toBe('£1,000/month to go · 1 day left · behind pace');
+    expect(paceLine({ ...base, daysLeft: 40, onTrack: true })).toBe('£1,000/month to go · 40 days left · on track');
+  });
+  test('nothing to say once reached; says so once closed', () => {
+    expect(paceLine({ ...base, status: 'reached' })).toBeNull();
+    expect(paceLine({ ...base, status: 'closed' })).toBe('Window closed');
   });
 });

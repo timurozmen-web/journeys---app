@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLoyaltyProgrammes, usePaymentCards, useAllHotels, useAllFlights, usePromotions, useVouchers } from '../lib/useLiveData';
+import { useLoyaltyProgrammes, usePaymentCards, useBankLinks, useAllHotels, useAllFlights, usePromotions, useVouchers } from '../lib/useLiveData';
+import { useCurrency } from '../lib/currency';
 import { computeCardResults, computeCardVoucherCandidates } from '../lib/cardMath';
 import { computeWalletValueChange } from '../lib/hotelPlanner';
 import { withLiveOverrides } from '../lib/walletValue';
@@ -21,10 +22,12 @@ export function Wallet() {
   const { data: hotels } = useAllHotels();
   const { data: promotions } = usePromotions();
   const { data: flights } = useAllFlights();
+  const { bankSpend } = useBankLinks();
+  const { rates } = useCurrency();
 
   // Card results only need ptValue for the value-lookup, not the points
   // balance itself, so this can run against the raw (pre-override) data.
-  const cardResults = computeCardResults(hotels, flights, paymentCards, rawLoyaltyProgrammes, TODAY);
+  const cardResults = computeCardResults(hotels, flights, paymentCards, rawLoyaltyProgrammes, TODAY, { bankSpend, rates });
 
   // Auto-sync any newly-hit card vouchers once real card results are
   // available. Runs here rather than inside a specific tab's component,
