@@ -104,16 +104,23 @@ const NO_BANK_LINKS: BankLinks = { connections: [], accounts: [], spend: [] };
 export function useBankLinks() {
   const [data, setData] = useState<BankLinks>(() => getCached<BankLinks>('bankLinks')?.data ?? NO_BANK_LINKS);
   const [loaded, setLoaded] = useState(false);
-  const load = useCallback(() => {
-    let cancelled = false;
+  // Resolves once fresh data is in (and cached for other screens), so a
+  // flow can wait for it before moving on.
+  const refetch = useCallback(() =>
     fetchBankLinks()
-      .then((d) => { if (!cancelled) { setData(d); setLoaded(true); setCached('bankLinks', d); } })
-      .catch((err) => console.error('[useBankLinks] fetch failed, keeping the cached copy:', err));
-    return () => { cancelled = true; };
-  }, []);
-  useEffect(() => load(), [load]);
+      .then((d) => { setData(d); setLoaded(true); setCached('bankLinks', d); })
+      .catch((err) => console.error('[useBankLinks] fetch failed, keeping the cached copy:', err)),
+  []);
+  useEffect(() => { void refetch(); }, [refetch]);
+  // The bank link can finish in another browser tab or the installed app
+  // while this one sits in the background, so look again on return.
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') void refetch(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [refetch]);
   const bankSpend = useMemo(() => groupBankSpend(data.accounts, data.spend), [data]);
-  return { ...data, bankSpend, loaded, refetch: load };
+  return { ...data, bankSpend, loaded, refetch };
 }
 export const usePromotionCandidates = () => useLive('promotionCandidates', fetchPromotionCandidates, []);
 export const useDiscoverItems = () => useLive('discoverItems', fetchDiscoverItems, mock.discoverItems);

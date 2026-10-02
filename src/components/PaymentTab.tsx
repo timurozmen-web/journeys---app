@@ -48,10 +48,10 @@ function SpendByCategory({ r }: { r: CardResult }) {
   );
 }
 
-export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
-  cardResults: CardResult[]; loyaltyProgrammes: LoyaltyProgramme[]; refetchCards: () => void;
+export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initialOpen = null }: {
+  cardResults: CardResult[]; loyaltyProgrammes: LoyaltyProgramme[]; refetchCards: () => void; initialOpen?: string | null;
 }) {
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(initialOpen);
   const [editingSpendCard, setEditingSpendCard] = useState<string | null>(null);
   const [spendInput, setSpendInput] = useState('');
   const [spendIsUK, setSpendIsUK] = useState(true);
