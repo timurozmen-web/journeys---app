@@ -65,11 +65,23 @@ Run all three; all must be clean:
 ## Server side
 
 - `netlify/functions/*.js` are plain JS. Secrets (`ANTHROPIC_API_KEY`,
-  `SUPABASE_SERVICE_ROLE_KEY`, Enable Banking keys) are only read there,
+  `SUPABASE_SERVICE_ROLE_KEY`, `TRUELAYER_*`) are only read there,
   never with a `VITE_` prefix, which would ship them to the browser.
 - `netlify.toml` stops `index.html`, `sw.js` and the manifest being
   cached. Keep that when touching headers; stale HTML pointing at old
   chunk names has broken deploys before.
+
+## Card earning and open banking
+
+- Each card in `src/data/cardDefs.ts` has its own `earnCategories`; rates
+  always come from its `rateFor`. A test checks every own-brand x region
+  combination lands in exactly one category, so edit both together.
+- Bank spend is totalled per category (`src/lib/earning.ts`), never listed.
+  A card with synced bank data uses only that (no double counting with
+  logged stays). Spend billed in GBP is assumed UK; say so in the UI.
+- Bank tables: `open_banking_*` and `card_spend`. Writes are server-only
+  (Netlify functions, service role); tokens are unreadable by the app key.
+  Test schema/RLS changes in a scratch Postgres (PGlite), not live.
 
 ## Tests
 

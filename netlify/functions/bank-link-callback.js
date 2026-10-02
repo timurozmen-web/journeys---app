@@ -1,53 +1,17 @@
-import { createClient } from '@supabase/supabase-js';
 import { withLambda } from '@netlify/aws-lambda-compat';
-import { enableBankingFetch } from '../lib/enableBankingAuth.js';
+import { header } from '../lib/openBanking.js';
 
-function html(body) {
-  return { statusCode: 200, headers: { 'Content-Type': 'text/html' }, body };
-}
-
+// Where TrueLayer sends the user after they consent. It does nothing
+// itself -- no signed-in user exists on this request -- it just hands the
+// code back to the app, which is signed in and finishes the job with
+// bank-link-exchange.
 export default withLambda(async (event) => {
-  const { code, state, error, error_description } = event.queryStringParameters || {};
-
-  if (error) {
-    return html(`<h2>Bank connection failed</h2><p>${error_description || error}</p><p>You can close this window and try again.</p>`);
-  }
-  if (!code || !state) {
-    return html(`<h2>Bank connection failed</h2><p>Missing authorization details.</p>`);
-  }
-
-  const supabaseUrl = process.env.VITE_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceKey) {
-    return html(`<h2>Server not configured</h2><p>Missing Supabase service role credentials.</p>`);
-  }
-  const supabase = createClient(supabaseUrl, serviceKey);
-  const userId = state; // set by bank-link-start
-
-  try {
-    const session = await enableBankingFetch('/sessions', {
-      method: 'POST',
-      body: JSON.stringify({ code }),
-    });
-
-    const account = session.accounts?.[0];
-    if (!account?.uid) {
-      return html(`<h2>Bank connection failed</h2><p>No accessible account was returned.</p>`);
-    }
-
-    const { error: dbError } = await supabase.from('bank_connections').insert({
-      user_id: userId,
-      aspsp_name: session.aspsp?.name ?? 'Unknown bank',
-      aspsp_country: session.aspsp?.country ?? '',
-      session_id: session.session_id,
-      account_uid: account.uid,
-      account_name: account.name ?? account.product ?? null,
-      consent_valid_until: session.access?.valid_until ?? new Date(Date.now() + 90 * 86400000).toISOString(),
-    });
-    if (dbError) throw dbError;
-
-    return html(`<h2>Bank connected</h2><p>You can close this window and go back to the app.</p>`);
-  } catch (err) {
-    return html(`<h2>Bank connection failed</h2><p>${err.message || 'Unknown error'}</p>`);
-  }
+  const { code, state, error, error_description: description } = event.queryStringParameters || {};
+  const host = header(event, 'x-forwarded-host') || header(event, 'host');
+  const proto = header(event, 'x-forwarded-proto') || 'https';
+  const params = new URLSearchParams();
+  if (code) params.set('code', code);
+  if (state) params.set('state', state);
+  if (error) params.set('error', description || error);
+  return { statusCode: 302, headers: { Location: `${proto}://${host}/#/bank-sync?${params.toString()}` }, body: '' };
 });

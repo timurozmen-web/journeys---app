@@ -103,6 +103,7 @@ export function useCurrency() {
   return {
     currency,
     isLive,
+    rates, // 1 GBP = X, for converting spend billed in other currencies
     // From GBP (the app's own logged data) to the display currency.
     fromGbp: (amountGbp: number) => convertCurrency(amountGbp, 'GBP', currency, rates),
     // From USD (the points-value research data) to the display currency.

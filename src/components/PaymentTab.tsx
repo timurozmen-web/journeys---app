@@ -4,6 +4,8 @@ import { updateManualSpendAdjustment, updateCardClosedDate } from '../lib/querie
 import type { CardResult } from '../lib/cardMath';
 import type { LoyaltyProgramme } from '../types';
 import { cardBackground, textOn } from '../lib/cardTheme';
+import { cardDistinguishesAbroad } from '../lib/earning';
+import { paceLine } from '../lib/spendPace';
 
 function money(n: number) {
   const sign = n < 0 ? '−' : '';
@@ -14,6 +16,36 @@ function moneyPrecise(n: number) {
   const abs = Math.abs(n);
   const hasCents = Math.round(abs * 100) % 100 !== 0;
   return `${sign}£${hasCents ? abs.toFixed(2) : Math.round(abs).toLocaleString()}`;
+}
+
+// Spend split by this card's own earning categories, with the points each
+// earns. This is the only breakdown shown: purchases are never listed one
+// by one.
+function SpendByCategory({ r }: { r: CardResult }) {
+  const { summary } = r;
+  if (summary.totalSpend <= 0) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  const shown = summary.categories.filter((c) => c.spend > 0);
+  const caveat = r.connected && summary.assumedShare > 0 && cardDistinguishesAbroad(r.card, today);
+  return (
+    <div style={{ padding: '4px 0 10px' }}>
+      <div className="dd-lab">Where it went</div>
+      {shown.map((c) => (
+        <div key={c.category.id} style={{ padding: '5px 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 'var(--fs-small)' }}>
+            <span style={{ color: 'var(--ink2)' }}>{c.category.label} <span style={{ color: 'var(--ink3)' }}>· {c.rate}pt/£</span></span>
+            <span style={{ fontWeight: 700, flexShrink: 0 }}>{moneyPrecise(c.spend)} · {c.points.toLocaleString()} pts</span>
+          </div>
+          <div className="catbar" style={{ marginTop: 4 }}><i style={{ width: `${(c.spend / summary.totalSpend) * 100}%` }} /></div>
+        </div>
+      ))}
+      {caveat && (
+        <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 6 }}>
+          Purchases the bank bills in £ count as UK spend, so anything bought abroad in £ may earn more than shown here.
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
@@ -80,7 +112,14 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
               <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Spend this card-year</span>
               <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{moneyPrecise(r.autoSpend)}</span>
             </div>
+            {r.connected && (
+              <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--green)', fontWeight: 600, paddingBottom: 6 }}>
+                Tracked from your bank
+              </div>
+            )}
+            <SpendByCategory r={r} />
 
+            {!r.connected && (
             <div style={{ padding: '8px 0', borderBottom: '1px solid var(--line)', marginBottom: 4 }}>
               {editingSpendCard === r.card.id ? (
                 <div>
@@ -148,6 +187,7 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
                 </button>
               )}
             </div>
+            )}
 
             <div className="dd-row">
               <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Points earned</span>
@@ -160,13 +200,24 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards }: {
               </div>
             )}
             {r.milestoneResults.map((m) => (
-              <div className="dd-row" key={m.m.id}>
-                <span style={{ fontSize: 'var(--fs-small)', color: m.hit ? 'var(--green)' : 'var(--ink3)', fontWeight: 600 }}>
-                  {m.hit ? '✓' : '—'} {m.m.rewardLabel}
-                </span>
-                <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700, opacity: m.superseded ? 0.5 : 1 }}>
-                  {m.hit && !m.superseded ? moneyPrecise(m.value) : ''}
-                </span>
+              <div key={m.m.id} style={{ padding: '7px 0', borderTop: '1px solid var(--line)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 'var(--fs-small)', color: m.hit ? 'var(--green)' : m.missed ? 'var(--ink3)' : 'var(--ink2)', fontWeight: 600 }}>
+                    {m.hit ? '✓' : m.missed ? '✕' : '—'} {m.m.rewardLabel}
+                  </span>
+                  <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700, opacity: m.superseded ? 0.5 : 1, flexShrink: 0 }}>
+                    {m.hit && !m.superseded ? moneyPrecise(m.value) : ''}
+                  </span>
+                </div>
+                {m.m.spendRequired && !m.hit && !m.missed && (
+                  <>
+                    <div className="catbar" style={{ marginTop: 6 }}><i style={{ width: `${Math.min(100, (m.spend / m.m.spendRequired) * 100)}%` }} /></div>
+                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 4 }}>
+                      {moneyPrecise(m.spend)} of {moneyPrecise(m.m.spendRequired)}{m.pace && paceLine(m.pace) ? ` · ${paceLine(m.pace)}` : ''}
+                    </div>
+                  </>
+                )}
+                {m.missed && <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 4 }}>Not reached within its window ({moneyPrecise(m.spend)} spent)</div>}
               </div>
             ))}
             {r.card.perks.length > 0 && (
