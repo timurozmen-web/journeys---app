@@ -32,3 +32,23 @@ export function tripDayInfo(trip: Trip, today: string): { dayIndex: number; tota
   const dayIndex = Math.min(totalDays, Math.max(1, daysBetween(trip.start, today) + 1));
   return { dayIndex, totalDays };
 }
+
+// Adds calendar months to a Y-M-D date string, clamping to the end of a
+// shorter month (31 Jan + 1 month = 28/29 Feb). Done in UTC like addDays,
+// so it can't shift with the browser's timezone.
+export function addMonths(dateStr: string, months: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const target = m - 1 + months;
+  const year = y + Math.floor(target / 12);
+  const month = ((target % 12) + 12) % 12;
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(year, month, Math.min(d, lastDay))).toISOString().slice(0, 10);
+}
+
+// Whole days from a to b (negative if b is earlier). UTC, so clock changes
+// can't make a day 23 or 25 hours long.
+export function daysBetweenISO(a: string, b: string): number {
+  const [ay, am, ad] = a.split('-').map(Number);
+  const [by, bm, bd] = b.split('-').map(Number);
+  return Math.round((Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)) / 86400000);
+}

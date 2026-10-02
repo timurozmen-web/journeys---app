@@ -99,3 +99,27 @@ export function detectSubBrand(raw: string, programme?: string): string | null {
   return null;
 }
 
+
+/**
+ * Stricter sibling of normalizeBrand for card/bank merchant text
+ * ("WAITROSE 1234 LONDON GB"). normalizeBrand does a plain substring
+ * match and falls back to one-letter sub-brands like "W", which is right
+ * for a hotel name ("W Prague") but wrongly maps WAITROSE and W H SMITH
+ * to Marriott Bonvoy. Here a sub-brand must be a whole word (or words) of
+ * at least 4 characters, so a shop name can't match by accident.
+ * Returns the parent programme, or null.
+ */
+const STRICT_LOOKUP: { re: RegExp; programme: string }[] = LOOKUP
+  .filter((l) => l.needle.length >= 4)
+  .map((l) => ({
+    re: new RegExp(`(^|[^a-z0-9])${l.needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^a-z0-9])`),
+    programme: l.programme,
+  }));
+
+export function matchProgrammeStrict(raw: string): string | null {
+  const text = raw.toLowerCase();
+  for (const { re, programme } of STRICT_LOOKUP) {
+    if (re.test(text)) return programme;
+  }
+  return null;
+}

@@ -10,16 +10,52 @@ export interface Milestone {
   rewardLabel: string;
   isVoucher?: boolean; // a discrete certificate/choice reward to track and redeem, not just an automatic points credit
 }
+// Where a purchase happened, at the granularity any card's earn rate cares
+// about. 'premium' is IHG's list of higher-earning countries; for every
+// other card it's simply abroad.
+export type Region = 'uk' | 'europe' | 'premium' | 'elsewhere';
+export const REGIONS: Region[] = ['uk', 'europe', 'premium', 'elsewhere'];
+
+export interface RateCtx { ownBrand: boolean; isUK: boolean; isUKEurope: boolean; isPremiumCountry: boolean; date: string }
+
+// The earn-rate inputs for a region. Kept consistent (UK implies Europe).
+export function regionCtx(region: Region): Omit<RateCtx, 'ownBrand' | 'date'> {
+  return {
+    isUK: region === 'uk',
+    isUKEurope: region === 'uk' || region === 'europe',
+    isPremiumCountry: region === 'premium',
+  };
+}
+
+// One line of a card's earn table: "Marriott stays abroad: 6 points a pound".
+// `own` null/undefined means both; `regions` lists every region that earns
+// this same rate. The set of a card's categories must cover every
+// own-brand/region combination exactly once (enforced by a test), and its
+// rate is always read from `rateFor`, never repeated here.
+export interface EarnCategory {
+  id: string;
+  label: string;
+  own?: boolean;
+  regions: Region[];
+}
+
 export interface CardDef {
   id: string;
   programmeBrand: string;
   annualFee: number;
   feeLabel: string;
-  rateFor: (ctx: { ownBrand: boolean; isUK: boolean; isUKEurope: boolean; isPremiumCountry: boolean; date: string }) => number;
+  rateFor: (ctx: RateCtx) => number;
+  earnCategories: EarnCategory[];
+  // Merchant text that counts as this card's own brand when the programme
+  // isn't a hotel group (e.g. an airline). Hotel groups use the brand map.
+  ownBrandKeywords?: string[];
   eliteNights: { auto: number; perSpendAmount: number | null; perSpendCap: number | null };
   milestones: Milestone[];
   perks: { id: string; label: string }[];
 }
+
+const ALL: Region[] = ['uk', 'europe', 'premium', 'elsewhere'];
+const ABROAD: Region[] = ['europe', 'premium', 'elsewhere'];
 
 const IHG_PROMO_END = '2026-10-31';
 const IHG_PREMIUM_COUNTRIES = new Set(['Canada', 'Japan', 'Singapore', 'Thailand', 'United Arab Emirates', 'United States']);
@@ -40,6 +76,12 @@ export const CARDS_STATIC: CardDef[] = [
   {
     id: 'Marriott Debit', programmeBrand: 'Marriott Bonvoy', annualFee: 165, feeLabel: '£165/yr',
     rateFor: (ctx) => (ctx.ownBrand ? (ctx.isUK ? 4 : 6) : ctx.isUK ? 1 : 3),
+    earnCategories: [
+      { id: 'own-uk', label: 'Marriott stays in the UK', own: true, regions: ['uk'] },
+      { id: 'own-abroad', label: 'Marriott stays abroad', own: true, regions: ABROAD },
+      { id: 'other-uk', label: 'Everyday in the UK', own: false, regions: ['uk'] },
+      { id: 'other-abroad', label: 'Everyday abroad', own: false, regions: ABROAD },
+    ],
     eliteNights: { auto: 15, perSpendAmount: 4000, perSpendCap: 5 },
     milestones: [
       { id: 'welcome30k', type: 'spend', spendRequired: 3000, rewardPoints: 30000, windowMonths: 3, rewardLabel: '30,000pt welcome bonus (£3k spend within 3mo)' },
@@ -51,6 +93,10 @@ export const CARDS_STATIC: CardDef[] = [
   {
     id: 'Marriott Amex', programmeBrand: 'Marriott Bonvoy', annualFee: 95, feeLabel: '£95/yr',
     rateFor: (ctx) => (ctx.ownBrand ? 6 : 2),
+    earnCategories: [
+      { id: 'own', label: 'Marriott stays', own: true, regions: ALL },
+      { id: 'other', label: 'Everything else', own: false, regions: ALL },
+    ],
     eliteNights: { auto: 15, perSpendAmount: null, perSpendCap: null },
     milestones: [],
     perks: [{ id: 'status', label: 'Marriott Silver status' }],
@@ -58,6 +104,7 @@ export const CARDS_STATIC: CardDef[] = [
   {
     id: 'Accor Explorer', programmeBrand: 'Accor ALL', annualFee: 0, feeLabel: 'Free',
     rateFor: () => 1,
+    earnCategories: [{ id: 'all', label: 'All spend', regions: ALL }],
     eliteNights: { auto: 30, perSpendAmount: null, perSpendCap: null },
     milestones: [],
     perks: [],
@@ -65,6 +112,12 @@ export const CARDS_STATIC: CardDef[] = [
   {
     id: 'Hilton Debit', programmeBrand: 'Hilton Honors', annualFee: 150, feeLabel: '£150/yr',
     rateFor: (ctx) => (ctx.ownBrand ? (ctx.isUK ? 3 : 4.5) : ctx.isUK ? 1.5 : 3),
+    earnCategories: [
+      { id: 'own-uk', label: 'Hilton stays in the UK', own: true, regions: ['uk'] },
+      { id: 'own-abroad', label: 'Hilton stays abroad', own: true, regions: ABROAD },
+      { id: 'other-uk', label: 'Everyday in the UK', own: false, regions: ['uk'] },
+      { id: 'other-abroad', label: 'Everyday abroad', own: false, regions: ABROAD },
+    ],
     eliteNights: { auto: 0, perSpendAmount: null, perSpendCap: null },
     milestones: [{ id: 'welcome30k', type: 'spend', spendRequired: 2500, rewardPoints: 30000, windowMonths: 6, rewardLabel: '30,000pt welcome bonus (£2.5k foreign-currency spend, first 6mo)' }],
     perks: [{ id: 'status', label: 'Hilton Gold status' }, { id: 'fx', label: '0.5% FX fee' }],
@@ -80,6 +133,13 @@ export const CARDS_STATIC: CardDef[] = [
       }
       return ctx.isUKEurope ? 1.5 : 3;
     },
+    earnCategories: [
+      { id: 'own-premium', label: 'IHG stays: US, Canada, Japan, Singapore, Thailand, UAE', own: true, regions: ['premium'] },
+      { id: 'own-uk-europe', label: 'IHG stays in the UK and Europe', own: true, regions: ['uk', 'europe'] },
+      { id: 'own-elsewhere', label: 'IHG stays elsewhere', own: true, regions: ['elsewhere'] },
+      { id: 'other-uk-europe', label: 'Everyday in the UK and Europe', own: false, regions: ['uk', 'europe'] },
+      { id: 'other-elsewhere', label: 'Everyday elsewhere', own: false, regions: ['premium', 'elsewhere'] },
+    ],
     eliteNights: { auto: 15, perSpendAmount: 4000, perSpendCap: null },
     milestones: [
       { id: 'welcome30k', type: 'spend', spendRequired: 3000, rewardPoints: 30000, windowMonths: 3, rewardLabel: '30,000pt welcome bonus (£3k spend within 3mo)' },
@@ -93,6 +153,11 @@ export const CARDS_STATIC: CardDef[] = [
   {
     id: 'Virgin Atlantic Mastercard+', programmeBrand: 'Virgin Points', annualFee: 160, feeLabel: '£160/yr',
     rateFor: (ctx) => (ctx.ownBrand ? 3 : 1.5),
+    ownBrandKeywords: ['virgin atlantic'],
+    earnCategories: [
+      { id: 'own', label: 'Virgin Atlantic', own: true, regions: ALL },
+      { id: 'other', label: 'Everything else', own: false, regions: ALL },
+    ],
     eliteNights: { auto: 0, perSpendAmount: null, perSpendCap: null },
     milestones: [
       { id: 'welcome30k', type: 'tick', rewardPoints: 30000, rewardLabel: '30,000pt welcome bonus (on approval)' },
