@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config';
 // Kept separate from vite.config.ts so tests don't load the PWA plugin.
 export default defineConfig({
   test: {
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'netlify/**/*.test.js'],
     // Timezone pinned to one with a positive UTC offset in summer (BST) --
     // that's where the date bugs this project has hit actually showed up.
     env: {

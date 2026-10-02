@@ -464,3 +464,79 @@ create index if not exists climate_normals_lookup on climate_normals (country, r
 create index if not exists climate_normals_station on climate_normals (station, month);
 alter table climate_normals enable row level security;
 create policy "public read" on climate_normals for select using (true);
+
+-- ---------------------------------------------------------------------
+-- Open banking (TrueLayer): real card spend, so points and spending goals
+-- are tracked live. Replaces the older bank_connections/bank_transactions
+-- tables, which are left in place but no longer used.
+-- ---------------------------------------------------------------------
+
+-- One row per bank login the user has connected.
+create table if not exists open_banking_connections (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users not null default auth.uid(),
+  provider text not null default 'truelayer' check (provider in ('truelayer')),
+  provider_name text,
+  last_synced_at timestamptz,
+  last_sync_status text check (last_sync_status in ('ok', 'partial', 'error')),
+  last_sync_error text,
+  created_at timestamptz not null default now()
+);
+alter table open_banking_connections enable row level security;
+create policy "read own connections" on open_banking_connections for select using (auth.uid() = user_id);
+-- Writes happen only in the Netlify functions, with the service-role key;
+-- the app's roles are also stripped of write privileges, so a missing
+-- policy is not the only thing standing in the way.
+revoke insert, update, delete on open_banking_connections from anon, authenticated;
+
+-- The saved bank login. RLS is on with no policies, and the app's own
+-- roles are revoked outright: only the service-role key can read these.
+create table if not exists open_banking_tokens (
+  connection_id uuid primary key references open_banking_connections on delete cascade,
+  access_token text not null,
+  refresh_token text,
+  expires_at timestamptz
+);
+alter table open_banking_tokens enable row level security;
+revoke all on open_banking_tokens from anon, authenticated;
+
+-- Each current account or card found at a bank, and which of the user's
+-- rewards cards (payment_cards) its spend counts toward. Nothing is fetched
+-- for an account until it is mapped to a card.
+create table if not exists open_banking_accounts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users not null default auth.uid(),
+  connection_id uuid not null references open_banking_connections on delete cascade,
+  provider_account_id text not null,
+  kind text not null check (kind in ('account', 'card')),
+  display_name text,
+  last4 text,
+  currency text not null default 'GBP',
+  payment_card_id text references payment_cards(id) on delete set null,
+  synced_through date,
+  unique (connection_id, provider_account_id)
+);
+alter table open_banking_accounts enable row level security;
+create policy "read own accounts" on open_banking_accounts for select using (auth.uid() = user_id);
+create policy "map own accounts" on open_banking_accounts for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+-- The app may only change which card an account feeds, nothing else.
+revoke update on open_banking_accounts from authenticated;
+grant update (payment_card_id) on open_banking_accounts to authenticated;
+
+-- Card purchases only (never repayments, transfers or cash). Used to total
+-- spend by earning category; the app never lists these one by one.
+create table if not exists card_spend (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users not null default auth.uid(),
+  account_id uuid not null references open_banking_accounts on delete cascade,
+  external_id text not null,
+  txn_date date not null,
+  amount numeric not null,
+  currency text not null default 'GBP',
+  merchant text,
+  unique (account_id, external_id)
+);
+create index if not exists card_spend_account_date on card_spend (account_id, txn_date);
+alter table card_spend enable row level security;
+create policy "read own spend" on card_spend for select using (auth.uid() = user_id);
+revoke insert, update, delete on card_spend from anon, authenticated;

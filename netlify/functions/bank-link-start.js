@@ -1,49 +1,17 @@
 import { withLambda } from '@netlify/aws-lambda-compat';
-import { enableBankingFetch } from '../lib/enableBankingAuth.js';
+import { randomUUID } from 'node:crypto';
+import { adminClient, callbackUri, handle, HttpError, json, requireUser } from '../lib/openBanking.js';
+import { buildAuthUrl, truelayerConfig } from '../lib/truelayer.js';
 
-export default withLambda(async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
-  }
-
-  let body;
-  try {
-    body = JSON.parse(event.body || '{}');
-  } catch {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid request body' }) };
-  }
-  const { aspspName, aspspCountry, userId, redirectUrl } = body;
-  if (!aspspName || !aspspCountry || !userId || !redirectUrl) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'aspspName, aspspCountry, userId, and redirectUrl are all required' }) };
-  }
-
-  // A consent window of 90 days -- comfortably covers "daily or weekly"
-  // syncing without needing to re-authorize constantly. Enable Banking
-  // will clamp this down if the bank's own maximum is shorter.
-  const validUntil = new Date();
-  validUntil.setDate(validUntil.getDate() + 90);
-
-  // The user's Supabase id travels in "state" so the callback (which the
-  // bank redirects to directly, with no authenticated browser session)
-  // knows whose account this connection belongs to.
-  const state = userId;
-
-  try {
-    const data = await enableBankingFetch('/auth', {
-      method: 'POST',
-      body: JSON.stringify({
-        access: { valid_until: validUntil.toISOString(), balances: true, transactions: true },
-        aspsp: { name: aspspName, country: aspspCountry },
-        state,
-        redirect_url: redirectUrl,
-        psu_type: 'personal',
-      }),
-    });
-    return { statusCode: 200, body: JSON.stringify({ url: data.url }) };
-  } catch (err) {
-    return {
-      statusCode: err.status && err.status < 500 ? err.status : 502,
-      body: JSON.stringify({ error: err.message, detail: err.body }),
-    };
-  }
-});
+// Step 1 of connecting a bank: returns TrueLayer's consent URL. The
+// caller must be signed in. `state` is a random value the app keeps and
+// checks when the user comes back, so a stray or forged callback is
+// ignored (it is never the user id).
+export default withLambda((event) => handle(async () => {
+  if (event.httpMethod !== 'POST') throw new HttpError(405, 'Method not allowed');
+  await requireUser(adminClient(), event);
+  const cfg = truelayerConfig();
+  const state = randomUUID();
+  const url = buildAuthUrl(cfg, { redirectUri: callbackUri(event), state, nonce: randomUUID() });
+  return json(200, { url, state });
+}));
