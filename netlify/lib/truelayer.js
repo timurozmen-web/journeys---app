@@ -28,8 +28,10 @@ export const SCOPE = 'accounts cards transactions offline_access';
 export class ConfigError extends Error {}
 
 export function truelayerConfig(env = process.env) {
-  const clientId = env.TRUELAYER_CLIENT_ID;
-  const clientSecret = env.TRUELAYER_CLIENT_SECRET;
+  // Trimmed: a space or newline pasted along with a key in the Netlify
+  // dashboard is invisible there and makes the bank reject the key.
+  const clientId = env.TRUELAYER_CLIENT_ID?.trim();
+  const clientSecret = env.TRUELAYER_CLIENT_SECRET?.trim();
   if (!clientId || !clientSecret) {
     throw new ConfigError('Bank connection is not set up yet: TRUELAYER_CLIENT_ID and TRUELAYER_CLIENT_SECRET are missing.');
   }
@@ -61,7 +63,11 @@ async function requestToken(cfg, params, fetchImpl) {
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    return { ok: false, status: res.status, body: body.slice(0, 300) };
+    // TrueLayer explains itself as {"error":"invalid_client",...}; keep that
+    // code so the failure can be diagnosed (never any token or secret).
+    let reason = '';
+    try { const j = JSON.parse(body); reason = [j.error, j.error_description].filter(Boolean).join(': ').slice(0, 160); } catch { /* not JSON */ }
+    return { ok: false, status: res.status, reason, body: body.slice(0, 300) };
   }
   const data = await res.json();
   return {

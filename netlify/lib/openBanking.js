@@ -81,7 +81,7 @@ const FALLBACK_DAYS = 90;     // what a bank will always share without a fresh l
 export async function completeLink({ store, cfg, userId, code, redirectUri, fetchImpl = fetch }) {
   if (!code) throw new HttpError(400, 'The bank did not send back an authorisation code. Try connecting again.');
   const token = await exchangeCode(cfg, code, redirectUri, fetchImpl);
-  if (!token.ok) throw new HttpError(400, `The bank connection was not accepted (${token.status}). Try connecting again.`);
+  if (!token.ok) throw new HttpError(400, `The bank connection was not accepted (${token.status}${token.reason ? ` ${token.reason}` : ''}). Try connecting again.`);
 
   const { items, error } = await listItems(cfg, token.accessToken, fetchImpl);
   if (error) throw new HttpError(items.length === 0 && error.startsWith('No accounts') ? 400 : 502, error);
