@@ -99,6 +99,18 @@ describe('syncConnection', () => {
     expect(new URLSearchParams(bank.txnCalls()[1].url.split('?')[1]).get('from')).toBe(addDaysISO(TODAY, -90));
   });
 
+  test('a card funded from a current account: only its own Mbv lines on the account are kept', async () => {
+    const monzo = { account_id: 'monzo1', display_name: 'Monzo', provider: { display_name: 'Monzo' }, account_number: { number: '12345678' }, currency: 'GBP' };
+    const line = (id, description, amount, category = 'PURCHASE') => ({ transaction_id: id, timestamp: '2026-09-10T10:00:00Z', amount, currency: 'GBP', transaction_category: category, description });
+    const bank = fakeBank({ accounts: [monzo], txns: { monzo1: [
+      line('a', 'Mbv04 Courtyard By Marriott', -120), line('b', 'Tesco', -30), line('c', 'Mbv05 Zola.Comregi', -50, 'DEBIT'), line('d', 'Mbv06 Refund', 20, 'CREDIT'),
+    ] } });
+    const store = fakeStore({ accounts: [{ provider_account_id: 'monzo1', kind: 'account', payment_card_id: 'Marriott Debit' }], openDates: { 'Marriott Debit': '2026-01-01' } });
+    const r = await syncConnection({ store, cfg, connection, today: TODAY, fetchImpl: bank.fetchImpl });
+    expect(r.rows).toBe(2);
+    expect(store.state.spend.map((s) => [s.external_id, s.merchant, s.amount]).sort()).toEqual([['a', 'Courtyard By Marriott', 120], ['c', 'Zola.Comregi', 50]]);
+  });
+
   test('later syncs only re-read the last week, so late-settling purchases are still caught', async () => {
     const bank = fakeBank({ cards: [amexCard] });
     const store = fakeStore({ accounts: [{ provider_account_id: 'amex1', payment_card_id: 'Marriott Amex', synced_through: '2026-09-29' }] });
