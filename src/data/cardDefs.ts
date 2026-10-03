@@ -76,6 +76,18 @@ export interface CardDef {
 const ALL: Region[] = ['uk', 'europe', 'premium', 'elsewhere'];
 const ABROAD: Region[] = ['europe', 'premium', 'elsewhere'];
 
+// Banks cut long card names short (the Amex feed gives "British Airways
+// American Express® P" for the Premium Plus, "... Express® C" for the free
+// card). A cut-off name that is the start of one product's full name and not
+// the other's tells them apart; the full names are Amex's own product names.
+const BA_PREMIUM_PLUS_NAME = 'british airways american express® premium plus card';
+const BA_FREE_NAME = 'british airways american express® credit card';
+const isTruncationOf = (text: string, full: string) => {
+  const cut = text.split('\n')[0].trim();
+  return cut.length >= 30 && cut.length < full.length && full.startsWith(cut)
+    && !(full === BA_PREMIUM_PLUS_NAME ? BA_FREE_NAME : BA_PREMIUM_PLUS_NAME).startsWith(cut);
+};
+
 const BA_KEYWORDS = ['british airways', 'ba.com', 'ba holidays'];
 const BA_NAME = /british airways|\bba\b|avios/;
 
@@ -204,7 +216,7 @@ export const CARDS_STATIC: CardDef[] = [
     id: 'BA Amex Premium Plus', programmeBrand: 'Avios', annualFee: 300, feeLabel: '£300/yr',
     rateFor: (ctx) => (ctx.ownBrand ? 3 : ctx.date >= BA_PREMIUM_PLUS_RATE_CHANGE ? 1.25 : 1.5),
     ownBrandKeywords: BA_KEYWORDS,
-    detect: (t) => BA_NAME.test(t) && /premium plus/.test(t),
+    detect: (t) => BA_NAME.test(t) && (/premium plus/.test(t) || isTruncationOf(t, BA_PREMIUM_PLUS_NAME)),
     earnCategories: [
       { id: 'own', label: 'British Airways and BA Holidays', own: true, regions: ALL },
       { id: 'other', label: 'Everything else', own: false, regions: ALL },
@@ -223,7 +235,7 @@ export const CARDS_STATIC: CardDef[] = [
     id: 'BA Amex', programmeBrand: 'Avios', annualFee: 0, feeLabel: 'Free',
     rateFor: () => 1,
     ownBrandKeywords: BA_KEYWORDS,
-    detect: (t) => BA_NAME.test(t) && /amex|american express|credit card/.test(t),
+    detect: (t) => BA_NAME.test(t) && (/credit card/.test(t) || isTruncationOf(t, BA_FREE_NAME) || (/amex|american express/.test(t) && !isTruncationOf(t, BA_PREMIUM_PLUS_NAME))),
     earnCategories: [
       { id: 'own', label: 'British Airways', own: true, regions: ALL },
       { id: 'other', label: 'Everything else', own: false, regions: ALL },

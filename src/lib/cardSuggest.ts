@@ -5,6 +5,8 @@ import { CARDS_STATIC } from '../data/cardDefs';
 // each catalogue card's own `detect` rule. It only suggests; the user
 // confirms. Returns null when nothing in the catalogue fits.
 export function suggestCard(displayName: string, providerName: string | null = null): string | null {
-  const text = `${displayName} ${providerName ?? ''}`.toLowerCase();
+  // Name first, then the provider on its own line, so a rule can look at the
+  // card's own name (which may be cut short) separately from the provider.
+  const text = `${displayName}\n${providerName ?? ''}`.toLowerCase();
   return CARDS_STATIC.find((c) => c.detect?.(text))?.id ?? null;
 }
