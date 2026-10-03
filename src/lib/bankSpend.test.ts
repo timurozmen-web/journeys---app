@@ -32,4 +32,13 @@ describe('groupBankSpend', () => {
     );
     expect(out['Marriott Debit']).toHaveLength(2);
   });
+
+  test('one account paying for two cards: tagged lines go to their own card, the rest to the mapped card', () => {
+    const out = groupBankSpend(
+      [{ id: 'monzo', paymentCardId: 'Marriott Debit', syncedThrough: '2026-06-01' }],
+      [{ ...row('monzo', 100), cardId: 'Marriott Debit' }, { ...row('monzo', 40), cardId: 'Hilton Debit' }, row('monzo', 5)],
+    );
+    expect(out['Marriott Debit'].map((r) => r.amount)).toEqual([100, 5]);
+    expect(out['Hilton Debit'].map((r) => r.amount)).toEqual([40]);
+  });
 });

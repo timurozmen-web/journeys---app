@@ -5,7 +5,9 @@ export interface LinkedAccount {
   paymentCardId: string | null;
   syncedThrough: string | null;
 }
-export interface SpendRecord extends BankSpendRow { accountId: string }
+// `cardId` is set when a line belongs to a different card than the one its
+// account is mapped to (one Monzo account paying for two Currensea cards).
+export interface SpendRecord extends BankSpendRow { accountId: string; cardId?: string | null }
 
 // Groups synced purchases by the rewards card their account feeds. A card
 // only appears here once an account mapped to it has synced at least once:
@@ -21,8 +23,10 @@ export function groupBankSpend(accounts: LinkedAccount[], spend: SpendRecord[]):
     out[a.paymentCardId] ??= [];
   }
   for (const s of spend) {
-    const cardId = cardOfAccount.get(s.accountId);
-    if (cardId) out[cardId].push({ date: s.date, amount: s.amount, currency: s.currency, merchant: s.merchant });
+    const accountCard = cardOfAccount.get(s.accountId);
+    if (!accountCard) continue;
+    const cardId = s.cardId ?? accountCard;
+    (out[cardId] ??= []).push({ date: s.date, amount: s.amount, currency: s.currency, merchant: s.merchant });
   }
   return out;
 }

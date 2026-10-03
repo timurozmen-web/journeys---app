@@ -111,6 +111,26 @@ describe('syncConnection', () => {
     expect(store.state.spend.map((s) => [s.external_id, s.merchant, s.amount]).sort()).toEqual([['a', 'Courtyard By Marriott', 120], ['c', 'Zola.Comregi', 50]]);
   });
 
+  test('one Monzo account paying for both Currensea cards: each line goes to its own card', async () => {
+    const monzo = { account_id: 'monzo1', display_name: 'Monzo', provider: { display_name: 'Monzo' }, account_number: { number: '12345678' }, currency: 'GBP' };
+    const line = (id, description, amount) => ({ transaction_id: id, timestamp: '2026-09-10T10:00:00Z', amount, currency: 'GBP', transaction_category: 'PURCHASE', description });
+    const bank = fakeBank({ accounts: [monzo], txns: { monzo1: [line('a', 'Mbv04 Courtyard By Marriott', -120), line('b', 'Hltn02 Hilton London', -80), line('c', 'Tesco', -9)] } });
+    const store = fakeStore({ accounts: [{ provider_account_id: 'monzo1', kind: 'account', payment_card_id: 'Marriott Debit' }], openDates: { 'Marriott Debit': '2026-03-01', 'Hilton Debit': '2026-01-15' } });
+    const r = await syncConnection({ store, cfg, connection, today: TODAY, fetchImpl: bank.fetchImpl });
+    expect(r.rows).toBe(2);
+    expect(store.state.spend.map((s) => [s.external_id, s.payment_card_id, s.merchant]).sort()).toEqual([['a', 'Marriott Debit', 'Courtyard By Marriott'], ['b', 'Hilton Debit', 'Hilton London']]);
+    // reaches back to the earlier of the two cards' open dates
+    expect(new URLSearchParams(bank.txnCalls()[0].url.split('?')[1]).get('from')).toBe('2026-01-15');
+  });
+
+  test('a Hilton line is ignored when no Hilton card has been set up', async () => {
+    const monzo = { account_id: 'monzo1', display_name: 'Monzo', provider: { display_name: 'Monzo' }, account_number: { number: '12345678' }, currency: 'GBP' };
+    const bank = fakeBank({ accounts: [monzo], txns: { monzo1: [{ transaction_id: 'b', timestamp: '2026-09-10T10:00:00Z', amount: -80, currency: 'GBP', transaction_category: 'PURCHASE', description: 'Hltn02 Hilton London' }] } });
+    const store = fakeStore({ accounts: [{ provider_account_id: 'monzo1', kind: 'account', payment_card_id: 'Marriott Debit' }], openDates: { 'Marriott Debit': '2026-03-01' } });
+    const r = await syncConnection({ store, cfg, connection, today: TODAY, fetchImpl: bank.fetchImpl });
+    expect(r.rows).toBe(0);
+  });
+
   test('later syncs only re-read the last week, so late-settling purchases are still caught', async () => {
     const bank = fakeBank({ cards: [amexCard] });
     const store = fakeStore({ accounts: [{ provider_account_id: 'amex1', payment_card_id: 'Marriott Amex', synced_through: '2026-09-29' }] });

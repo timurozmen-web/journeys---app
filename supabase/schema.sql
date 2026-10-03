@@ -549,3 +549,8 @@ revoke all on open_banking_connections, open_banking_accounts, card_spend, open_
 revoke all on open_banking_connections, open_banking_accounts, card_spend from authenticated;
 grant select on open_banking_connections, open_banking_accounts, card_spend to authenticated;
 grant update (payment_card_id) on open_banking_accounts to authenticated;
+
+-- One current account can pay for several rewards cards (Currensea cards
+-- funded from Monzo). A line then names the card it belongs to; null means
+-- the card its account is mapped to.
+alter table card_spend add column if not exists payment_card_id text references payment_cards(id) on delete cascade;

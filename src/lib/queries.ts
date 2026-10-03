@@ -680,12 +680,12 @@ async function fetchAllCardSpend(): Promise<SpendRecord[]> {
   const out: SpendRecord[] = [];
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await supabase.from('card_spend')
-      .select('account_id, txn_date, amount, currency, merchant')
+      .select('account_id, payment_card_id, txn_date, amount, currency, merchant')
       .order('txn_date', { ascending: true }).order('id', { ascending: true })
       .range(from, from + PAGE - 1);
     if (error) throw error;
     for (const r of data ?? []) {
-      out.push({ accountId: r.account_id, date: r.txn_date, amount: Number(r.amount), currency: r.currency, merchant: r.merchant });
+      out.push({ accountId: r.account_id, cardId: r.payment_card_id, date: r.txn_date, amount: Number(r.amount), currency: r.currency, merchant: r.merchant });
     }
     if (!data || data.length < PAGE) break;
   }
