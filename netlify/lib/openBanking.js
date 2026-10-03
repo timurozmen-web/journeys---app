@@ -4,6 +4,7 @@
 // interface, so it is tested against an in-memory fake (we can't call a
 // real bank from a test).
 import { serviceClient } from './supabaseAdmin.js';
+import { FUNDING_RULES, fundingSpendRow } from './fundingRules.js';
 import { ConfigError, exchangeCode, fetchTransactions, listItems, refreshAccessToken, toSpendRow } from './truelayer.js';
 
 export class HttpError extends Error {
@@ -175,7 +176,10 @@ export async function syncConnection({ store, cfg, connection, today = todayISO(
     // the same row twice.
     const byId = new Map();
     for (const t of fetched.transactions) {
-      const row = toSpendRow(item.kind, t);
+      // A card paid for from a current account: only that card's own lines
+      // on the account count (see fundingRules.js).
+      const rule = item.kind === 'account' ? FUNDING_RULES[acc.payment_card_id] : undefined;
+      const row = rule ? fundingSpendRow(rule, t) : toSpendRow(item.kind, t);
       if (row) byId.set(row.external_id, row);
     }
     const spendRows = [...byId.values()];

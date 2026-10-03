@@ -86,6 +86,10 @@ Run all three; all must be clean:
   welcome milestone otherwise, since standard terms aren't a sourced
   figure). Cards added by hand in the app are `custom`: spend only, no
   points, because their earn rate isn't known.
+- A card paid for from a current account (Marriott Debit via Monzo) has a
+  rule in `netlify/lib/fundingRules.js` saying which lines on that account
+  are its purchases; only those are stored. Rules come from the
+  cardholder's own statement text, never guessed.
 - Bank spend is totalled per category (`src/lib/earning.ts`), never listed.
   A card with synced bank data uses only that (no double counting with
   logged stays). Spend billed in GBP is assumed UK; say so in the UI.

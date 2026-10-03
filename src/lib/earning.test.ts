@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { CARDS_STATIC, REGIONS, type Region } from '../data/cardDefs';
 import {
-  bankRowsToItems, cardDistinguishesAbroad, categoryFor, categoryRate, rateOf, regionOfCountry, regionOfCurrency, summariseSpend,
+  bankRowsToItems, cardDistinguishesAbroad, categoryFor, categoryRate, isOwnBrandMerchant, rateOf, regionOfCountry, regionOfCurrency, summariseSpend,
 } from './earning';
 
 const card = (id: string) => CARDS_STATIC.find((c) => c.id === id)!;
@@ -130,5 +130,14 @@ describe('bankRowsToItems without a usable rate', () => {
     ], {});
     expect(items).toHaveLength(1);
     expect(items[0].amount).toBe(10);
+  });
+});
+
+describe('Marriott Debit merchants as they arrive from Currensea via Monzo (prefix already removed)', () => {
+  const debit = CARDS_STATIC.find((c) => c.id === 'Marriott Debit')!;
+  test('a Courtyard stay is a Marriott purchase; Zola and Uber are everyday', () => {
+    expect(isOwnBrandMerchant(debit, 'Courtyard By Marriott')).toBe(true);
+    expect(isOwnBrandMerchant(debit, 'Zola.Comregi')).toBe(false);
+    expect(isOwnBrandMerchant(debit, 'Uber Train')).toBe(false);
   });
 });
