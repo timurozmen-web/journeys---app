@@ -164,3 +164,33 @@ textarea.input{resize:vertical;line-height:1.45}
   background:var(--card);cursor:pointer;text-align:left;font:inherit;width:100%;color:var(--ink)}
 .optionrow-icon{width:38px;height:38px;border-radius:var(--r-sm);background:var(--card2);display:grid;place-items:center;flex-shrink:0}
 .optionrow-label{font-size:var(--fs-body-lg);font-weight:700}
+
+/* Wallet: cards at real card proportions, stacked so each shows its top
+   edge. Margin percentages are of the stack's width, which is also the
+   card's width, so the overlap scales with the card (card height is 63.05%
+   of its width; 78px of each card stays visible). */
+.walletstack{padding:0 16px}
+.walletslot{position:relative;margin-top:14px}
+.walletslot:first-child{margin-top:0}
+.walletslot.stacked{margin-top:calc(-63.05% + 78px)}
+.walletcard{display:flex;flex-direction:column;justify-content:space-between;width:100%;aspect-ratio:85.6/54;border-radius:var(--r-lg);
+  border:1px solid rgba(255,255,255,.14);box-shadow:0 -8px 20px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.12);
+  padding:14px 16px;cursor:pointer;text-align:left;color:#fff;font:inherit;position:relative;overflow:hidden}
+.walletcard::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(115deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,0) 42%)}
+.walletcard-top{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:50px}
+.walletcard-id{display:flex;align-items:center;gap:10px;min-width:0}
+.walletcard-name{font-size:var(--fs-body);font-weight:600;letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.walletcard-meta{display:flex;align-items:center;gap:10px;font-size:var(--fs-caption);opacity:.85;flex-shrink:0}
+.walletcard-bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+.walletcard-mark{display:flex;align-items:center;gap:8px;min-width:0}
+.walletcard-issuer{font-size:var(--fs-small);font-weight:600;letter-spacing:.08em;text-transform:uppercase;opacity:.85}
+.walletcard-amex{font-size:var(--fs-small);font-weight:800;letter-spacing:.12em;border:1.5px solid rgba(255,255,255,.75);border-radius:4px;padding:2px 6px}
+.walletcard-mc{display:inline-flex}
+.walletcard-mc i{width:22px;height:22px;border-radius:50%;background:#EB001B;opacity:.95}
+.walletcard-mc i + i{background:#F79E1B;margin-left:-9px;mix-blend-mode:screen}
+.walletcard-value{display:flex;flex-direction:column;align-items:flex-end;text-align:right}
+.walletcard-value span{font-size:var(--fs-title);font-weight:500}
+.walletcard-value small{font-size:var(--fs-caption);opacity:.72;margin-top:2px}
+.walletdetail{display:grid;gap:4px;padding:12px 14px 16px;background:var(--card);color:var(--ink);border:1px solid var(--line);
+  border-radius:var(--r-lg);margin-top:8px}

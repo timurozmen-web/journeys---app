@@ -3,7 +3,7 @@ import { BrandLogo } from './BrandLogo';
 import { updateManualSpendAdjustment, updateCardClosedDate } from '../lib/queries';
 import type { CardResult } from '../lib/cardMath';
 import type { LoyaltyProgramme } from '../types';
-import { cardBackground, textOn } from '../lib/cardTheme';
+import { CARD_FACES, DEFAULT_FACE } from '../data/cardFaces';
 import { cardDistinguishesAbroad } from '../lib/earning';
 import { paceLine } from '../lib/spendPace';
 
@@ -63,54 +63,51 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
   const active = cardResults.filter((r) => !r.cardRow?.closedDate);
   const archived = cardResults.filter((r) => r.cardRow?.closedDate);
 
-  function renderCard(r: CardResult, muted: boolean) {
+  function renderCard(r: CardResult, muted: boolean, stacked: boolean) {
     const prog = loyaltyProgrammes.find((p) => p.name === r.card.programmeBrand);
     const isOpen = open === r.card.id;
 
+    const faceSpec = CARD_FACES[r.card.id] ?? DEFAULT_FACE;
     return (
-      <div
-        key={r.card.id}
-        className="brandcard"
-        style={{
-          background: cardBackground(prog?.color ?? ''), color: textOn(prog?.color ?? '#14171E'),
-          opacity: muted ? 0.55 : 1, filter: muted ? 'grayscale(0.6)' : undefined,
-        }}
-      >
+      <div key={r.card.id} className={`walletslot${stacked ? ' stacked' : ''}`} style={{ opacity: muted ? 0.55 : 1, filter: muted ? 'grayscale(0.6)' : undefined }}>
         <button
+          type="button"
+          className="walletcard"
           onClick={() => setOpen(isOpen ? null : r.card.id)}
           aria-expanded={isOpen}
-          style={{
-            width: '100%', display: 'flex', flexDirection: 'column', gap: 18, padding: '16px 16px 18px',
-            background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'inherit',
-          }}
+          aria-label={r.card.id}
+          style={{ background: `linear-gradient(150deg, ${faceSpec.from} 0%, ${faceSpec.to} 100%)` }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, width: '100%' }}>
-            <BrandLogo name={prog?.name ?? ''} shape={prog?.shape} color={prog?.color} accent={prog?.accent} size={32} />
-            <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="walletcard-top">
+            <span className="walletcard-id">
+              <BrandLogo name={prog?.name ?? ''} shape={prog?.shape} color={prog?.color} accent={prog?.accent} size={28} />
+              <span className="walletcard-name">{r.card.id}</span>
+            </span>
+            <span className="walletcard-meta">
               {r.connected && <span className="live">Live</span>}
-              <span style={{ fontSize: 'var(--fs-caption)', opacity: 0.75 }}>{r.card.feeLabel}</span>
+              <span>{r.card.feeLabel}</span>
             </span>
           </div>
-          {/* The card's chip -- purely decorative, it's what makes the pane read as a payment card. */}
           <span aria-hidden="true" className="cardchip" />
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, width: '100%' }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 600, letterSpacing: '.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.card.id}</div>
-              <div style={{ fontSize: 'var(--fs-caption)', opacity: 0.72, marginTop: 2 }}>
-                {r.cardRow?.closedDate
-                  ? `Closed ${r.cardRow.closedDate}`
-                  : r.cardRow?.openDate ? `Opened ${r.cardRow.openDate}` : 'Open date not set'}
-              </div>
-            </div>
-            <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <div style={{ fontSize: 'var(--fs-title)', fontWeight: 500 }}>{r.card.custom ? money(r.autoSpend) : money(r.net)}</div>
-              <div style={{ fontSize: 'var(--fs-caption)', opacity: 0.72, marginTop: 2 }}>{r.card.custom ? 'spend this year' : 'net value'}</div>
-            </div>
+          <div className="walletcard-bottom">
+            <span className="walletcard-mark">
+              {faceSpec.issuer && <span className="walletcard-issuer">{faceSpec.issuer}</span>}
+              {faceSpec.network === 'amex' && <span className="walletcard-amex">AMEX</span>}
+              {faceSpec.network === 'mastercard' && <span className="walletcard-mc" aria-label="Mastercard"><i /><i /></span>}
+            </span>
+            <span className="walletcard-value">
+              <span>{r.card.custom ? money(r.autoSpend) : money(r.net)}</span>
+              <small>{r.card.custom ? 'spend this year' : 'net value'}</small>
+            </span>
           </div>
         </button>
 
         {isOpen && (
-          <div style={{ padding: '12px 14px 16px', display: 'grid', gap: 4, background: 'var(--card)', color: 'var(--ink)' }}>
+          <div className="walletdetail">
+            <div className="dd-row">
+              <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>{r.cardRow?.closedDate ? 'Closed' : 'Opened'}</span>
+              <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{r.cardRow?.closedDate ?? r.cardRow?.openDate ?? 'Not set'}</span>
+            </div>
             <div className="dd-row">
               <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Spend this card-year</span>
               <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{moneyPrecise(r.autoSpend)}</span>
@@ -283,15 +280,15 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
   }
 
   return (
-    <div style={{ display: 'grid', gap: 12, padding: '0 16px' }}>
-      {active.map((r) => renderCard(r, false))}
+    <div className="walletstack">
+      {active.map((r, i) => renderCard(r, false, i > 0 && open !== active[i - 1].card.id))}
 
       {archived.length > 0 && (
         <>
           <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginTop: 10 }}>
             Archived
           </div>
-          {archived.map((r) => renderCard(r, true))}
+          {archived.map((r, i) => renderCard(r, true, i > 0 && open !== archived[i - 1].card.id))}
         </>
       )}
     </div>
