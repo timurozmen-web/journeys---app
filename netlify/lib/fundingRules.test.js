@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { FUNDING_RULES, fundingSpendRow } from './fundingRules.js';
+import { FUNDING_RULES, fundingSpendRow, matchFundingCard } from './fundingRules.js';
 
 const rule = FUNDING_RULES['Marriott Debit'];
 const txn = (description, amount = -42.5, extra = {}) => ({
@@ -33,5 +33,24 @@ describe('Marriott Debit (Currensea via Monzo)', () => {
 
   test('also matches when the bank puts the text in merchant_name', () => {
     expect(fundingSpendRow(rule, txn('Card payment', -9, { merchant_name: 'Mbv09 Hilton' }))?.merchant).toBe('Hilton');
+  });
+});
+
+describe('Hilton Debit (Currensea via Monzo)', () => {
+  const hilton = FUNDING_RULES['Hilton Debit'];
+  test('Hltn lines count, numbered or not, with the prefix removed', () => {
+    expect(fundingSpendRow(hilton, txn('Hltn02 Hilton London'))?.merchant).toBe('Hilton London');
+    expect(fundingSpendRow(hilton, txn('HLTN Waldorf Astoria'))?.merchant).toBe('Waldorf Astoria');
+  });
+  test('words that merely start with the letters, and Marriott lines, are not Hilton', () => {
+    for (const d of ['Hltnxyz Ltd', 'Mbv04 Courtyard', 'Hilton London']) expect(fundingSpendRow(hilton, txn(d))).toBeNull();
+  });
+});
+
+describe('matchFundingCard', () => {
+  test('says which card a line belongs to', () => {
+    expect(matchFundingCard(FUNDING_RULES, txn('Mbv04 Hotel'))?.cardId).toBe('Marriott Debit');
+    expect(matchFundingCard(FUNDING_RULES, txn('Hltn04 Hotel'))?.cardId).toBe('Hilton Debit');
+    expect(matchFundingCard(FUNDING_RULES, txn('Tesco'))).toBeNull();
   });
 });

@@ -4,7 +4,7 @@
 // interface, so it is tested against an in-memory fake (we can't call a
 // real bank from a test).
 import { serviceClient } from './supabaseAdmin.js';
-import { FUNDING_RULES, fundingSpendRow } from './fundingRules.js';
+import { FUNDING_RULES, matchFundingCard } from './fundingRules.js';
 import { ConfigError, exchangeCode, fetchTransactions, listItems, refreshAccessToken, toSpendRow } from './truelayer.js';
 
 export class HttpError extends Error {
@@ -148,6 +148,19 @@ export async function syncConnection({ store, cfg, connection, today = todayISO(
     if (!item) continue;
     tracked += 1;
 
+    // A current account that pays for a rewards card with a funding rule
+    // (Currensea via Monzo) can pay for several: look for every such card
+    // you have set up, and tag each line with the card it belongs to.
+    const funding = item.kind === 'account' && FUNDING_RULES[acc.payment_card_id];
+    const rules = {};
+    const openDates = [];
+    if (funding) {
+      for (const cardId of Object.keys(FUNDING_RULES)) {
+        const opened = await store.cardOpenDate(connection.user_id, cardId);
+        if (opened || cardId === acc.payment_card_id) { rules[cardId] = FUNDING_RULES[cardId]; if (opened) openDates.push(opened); }
+      }
+    }
+
     let fetched;
     let from;
     if (acc.synced_through) {
@@ -158,7 +171,7 @@ export async function syncConnection({ store, cfg, connection, today = todayISO(
       // opened (card-year and welcome-bonus goals need it), up to two
       // years. Banks only share long history right after you log in, so
       // if that's refused, settle for the last 90 days.
-      const opened = await store.cardOpenDate(connection.user_id, acc.payment_card_id);
+      const opened = funding ? openDates.sort()[0] ?? null : await store.cardOpenDate(connection.user_id, acc.payment_card_id);
       const earliest = addDaysISO(today, -MAX_HISTORY_DAYS);
       from = opened ? (opened > earliest ? opened : earliest) : addDaysISO(today, -365);
       fetched = await fetchTransactions(cfg, accessToken, item, from, today, fetchImpl);
@@ -176,10 +189,12 @@ export async function syncConnection({ store, cfg, connection, today = todayISO(
     // the same row twice.
     const byId = new Map();
     for (const t of fetched.transactions) {
-      // A card paid for from a current account: only that card's own lines
-      // on the account count (see fundingRules.js).
-      const rule = item.kind === 'account' ? FUNDING_RULES[acc.payment_card_id] : undefined;
-      const row = rule ? fundingSpendRow(rule, t) : toSpendRow(item.kind, t);
+      if (funding) {
+        const hit = matchFundingCard(rules, t);
+        if (hit) byId.set(hit.row.external_id, { ...hit.row, payment_card_id: hit.cardId });
+        continue;
+      }
+      const row = toSpendRow(item.kind, t);
       if (row) byId.set(row.external_id, row);
     }
     const spendRows = [...byId.values()];
