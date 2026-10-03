@@ -26,7 +26,7 @@ describe('parseIcs', () => {
 
   test('escaped commas and semicolons are unescaped; events come back in date order', () => {
     const events = parseIcs(ics(
-      'BEGIN:VEVENT\r\nSUMMARY:Later\r\nDTSTART:20270101\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Dinner\\, drinks\; late\r\nDTSTART:20261201\r\nEND:VEVENT',
+      'BEGIN:VEVENT\r\nSUMMARY:Later\r\nDTSTART:20270101\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Dinner\\, drinks\\; late\r\nDTSTART:20261201\r\nEND:VEVENT',
     ));
     expect(events.map((e) => e.summary)).toEqual(['Dinner, drinks; late', 'Later']);
   });
