@@ -20,7 +20,6 @@ export function Wallet() {
   // Arriving from bank setup: open on Cards with the new cards in view.
   const arrival = (useLocation().state ?? null) as { seg?: Seg; tracked?: string[] } | null;
   const [seg, setSeg] = useState<Seg>(arrival?.seg ?? 'loyalty');
-  const [arrivalDismissed, setArrivalDismissed] = useState(false);
   const { data: rawLoyaltyProgrammes, isLive } = useLoyaltyProgrammes();
   const { data: paymentCards, refetch: refetchCards } = usePaymentCards();
   const { data: hotels } = useAllHotels();
@@ -97,8 +96,6 @@ export function Wallet() {
           <BankStatus
             connections={connections}
             accounts={accounts}
-            tracked={arrivalDismissed ? [] : cardResults.filter((r) => arrival?.tracked?.includes(r.card.id))}
-            onDismiss={() => setArrivalDismissed(true)}
             onOpen={() => navigate('/bank-sync')}
           />
         )}

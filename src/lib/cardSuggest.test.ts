@@ -17,6 +17,13 @@ describe('suggestCard', () => {
     expect(suggestCard('British Airways American Express Credit Card', 'American Express')).toBe('BA Amex');
     expect(suggestCard('Avios Amex')).toBe('BA Amex');
   });
+  test('names the bank cuts short are still told apart (the Amex feed cuts at 35 characters)', () => {
+    expect(suggestCard('British Airways American Express® P', 'American Express')).toBe('BA Amex Premium Plus');
+    expect(suggestCard('British Airways American Express® C', 'American Express')).toBe('BA Amex');
+    expect(suggestCard('Marriott Bonvoy American Express® C', 'American Express')).toBe('Marriott Amex');
+    expect(suggestCard('British Airways American Express® Premium Plus Card', 'American Express')).toBe('BA Amex Premium Plus');
+    expect(suggestCard('British Airways American Express® Credit Card', 'American Express')).toBe('BA Amex');
+  });
   test('an unrelated or generic name suggests nothing', () => {
     expect(suggestCard('Platinum Card', 'American Express')).toBeNull();
     expect(suggestCard('Current account')).toBeNull();

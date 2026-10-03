@@ -16,6 +16,12 @@
 .input{background:var(--card);border:1px solid var(--line);border-radius:var(--r-control);color:var(--ink);
   font-size:var(--fs-field);padding:11px 12px;width:100%;outline:none;min-width:0;box-sizing:border-box}
 .input:focus{border-color:var(--brand2)}
+/* iOS Safari draws a date field as its own oversized pill that spills out of
+   the box; take that styling away so it sits inside like the other inputs. */
+input[type=date].input,input[type=time].input{-webkit-appearance:none;appearance:none;display:block;max-width:100%;
+  line-height:1.25;min-height:calc(var(--fs-field) * 1.25 + 24px);text-align:left}
+input[type=date].input::-webkit-date-and-time-value{text-align:left;min-height:1.25em;margin:0}
+input[type=date].input::-webkit-calendar-picker-indicator{opacity:.6;margin:0;padding:0}
 textarea.input{resize:vertical;line-height:1.45}
 .input.compact{font-size:var(--fs-body);padding:9px 11px;border-radius:var(--r-xs)}
 .field-hint{font-size:var(--fs-caption);color:var(--ink3);margin-top:5px;line-height:1.45}
@@ -149,3 +155,7 @@ textarea.input{resize:vertical;line-height:1.45}
 /* Thin share bar used for spend by earning category and goal progress. */
 .catbar{height:4px;border-radius:var(--r-pill);background:var(--card2);overflow:hidden}
 .catbar i{display:block;height:100%;border-radius:var(--r-pill);background:var(--brand)}
+
+/* Marks a card whose spend is coming live from the bank. */
+.live{display:inline-flex;align-items:center;gap:6px;color:var(--green);font-size:var(--fs-caption);font-weight:700;letter-spacing:.04em}
+.live::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px var(--green-soft)}

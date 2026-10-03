@@ -86,7 +86,10 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, width: '100%' }}>
             <BrandLogo name={prog?.name ?? ''} shape={prog?.shape} color={prog?.color} accent={prog?.accent} size={32} />
-            <span style={{ fontSize: 'var(--fs-caption)', opacity: 0.75 }}>{r.card.feeLabel}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {r.connected && <span className="live">Live</span>}
+              <span style={{ fontSize: 'var(--fs-caption)', opacity: 0.75 }}>{r.card.feeLabel}</span>
+            </span>
           </div>
           {/* The card's chip -- purely decorative, it's what makes the pane read as a payment card. */}
           <span aria-hidden="true" className="cardchip" />
@@ -112,11 +115,6 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
               <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Spend this card-year</span>
               <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{moneyPrecise(r.autoSpend)}</span>
             </div>
-            {r.connected && (
-              <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--green)', fontWeight: 600, paddingBottom: 6 }}>
-                Tracked from your bank
-              </div>
-            )}
             <SpendByCategory r={r} />
 
             {!r.connected && (
