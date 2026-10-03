@@ -138,3 +138,13 @@ export function DateStack({ date }: { date: string | null }) {
     </span>
   );
 }
+
+// A full-width tappable row with an icon: a choice on a menu-style screen.
+export function OptionRow({ icon, label, onClick }: { icon: ReactNode; label: ReactNode; onClick: () => void }) {
+  return (
+    <button type="button" className="optionrow" onClick={onClick}>
+      <span className="optionrow-icon">{icon}</span>
+      <span className="optionrow-label">{label}</span>
+    </button>
+  );
+}

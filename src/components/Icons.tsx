@@ -120,6 +120,7 @@ export const CarIcon = wrap(
   '<path d="M4 16V11l2-5h12l2 5v5"/><path d="M4 16h16M6 16v2M18 16v2"/><circle cx="7.5" cy="16" r="1.5"/><circle cx="16.5" cy="16" r="1.5"/>'
 );
 export const BackIcon = wrap('<path d="M15 5 8 12l7 7"/>');
+export const CalendarIcon = wrap('<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>');
 export const MailIcon = wrap(
   '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M3.5 6.5 12 13l8.5-6.5"/>'
 );

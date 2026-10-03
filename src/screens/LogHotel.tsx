@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { addHotel, updateHotel, deleteHotel, addTrip, updateTrip } from '../lib/queries';
 import { withOfflineFallback } from '../lib/offlineQueue';
 import { suggestTripAssignment } from '../lib/autoTrip';
 import { normalizeBrand } from '../data/brandMap';
 import type { Hotel } from '../types';
-import { useTrips, useAllHotels, useAllFlights } from '../lib/useLiveData';
+import { useTrips, useAllHotels, useAllFlights, usePaymentCards } from '../lib/useLiveData';
+import { needsPlaceFields, tripPlace } from '../lib/tripPlace';
+import { loadWorldCities } from '../data/worldCitiesLoader';
 import { findLikelyDuplicateHotel } from '../lib/duplicateDetection';
 import { Button, ErrorText, ScreenHeader } from '../components/ui';
 
@@ -25,6 +27,18 @@ export function LogHotel() {
   const { data: trips } = useTrips();
   const { data: allHotels } = useAllHotels();
   const { data: allFlights } = useAllFlights();
+  const { data: paymentCards } = usePaymentCards();
+  const presetTrip = trips.find((t) => t.id === presetTripId);
+  // A trip with no stays yet is placed by its title, from the city list.
+  const [cities, setCities] = useState<{ name: string; country: string }[]>([]);
+  useEffect(() => {
+    if (presetTrip && presetTrip.hotels.length === 0) loadWorldCities().then((c) => setCities(c.map((x) => ({ name: x.name, country: x.country }))));
+  }, [presetTrip]);
+  // Active cards from the wallet; a card already on this stay stays choosable even if since closed.
+  const cardOptions = [...new Set([...paymentCards.filter((c) => !c.closedDate).map((c) => c.id), ...(src?.card ? [src.card] : [])])];
+  const place = presetTrip ? tripPlace(presetTrip, cities) : null;
+  // Country and city are only asked for when the trip doesn't already say.
+  const showPlace = needsPlaceFields(place);
   const knownHotels = Array.from(new Map(allHotels.map((h) => [h.name, h])).values());
   const [manualTripOverride, setManualTripOverride] = useState(!!presetTripId || !!editing);
   const [saving, setSaving] = useState(false);
@@ -54,13 +68,17 @@ export function LogHotel() {
     avgRate: src?.avgRate != null ? String(src.avgRate) : '',
   });
 
+  // What gets saved: the typed place, or the trip's when the fields are hidden.
+  const effectiveCountry = showPlace ? form.country : form.country || place?.country || '';
+  const effectiveCity = showPlace ? form.city : form.city || place?.city || '';
+
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
     setConfirmedOverlap(false);
     setOverlapWarning(null);
   }
 
-  const autoSuggestion = suggestTripAssignment(form.date || TODAY, form.city || null, form.country, trips, allFlights);
+  const autoSuggestion = suggestTripAssignment(form.date || TODAY, effectiveCity || null, effectiveCountry, trips, allFlights);
 
   function findOverlap(): string | null {
     if (!form.tripId || !form.date) return null;
@@ -83,8 +101,8 @@ export function LogHotel() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name || !form.country || !form.date) {
-      setError('Name, country and date are required.');
+    if (!form.name || !effectiveCountry || !form.date) {
+      setError(showPlace ? 'Name, country and date are required.' : 'Name and date are required.');
       return;
     }
     if (!confirmedOverlap) {
@@ -147,7 +165,7 @@ export function LogHotel() {
       }
 
       const payload = {
-        name: form.name, country: form.country, city: form.city || null, brand: normalizeBrand(form.brand || 'Other'),
+        name: form.name, country: effectiveCountry, city: effectiveCity || null, brand: normalizeBrand(form.brand || 'Other'),
         nights, date: form.date, status: form.status,
         total,
         card: form.card || null, category: form.category,
@@ -188,7 +206,7 @@ export function LogHotel() {
 
   return (
     <div>
-      <ScreenHeader title={editing ? 'Edit stay' : 'Log a stay'} />
+      <ScreenHeader title={editing ? 'Edit stay' : presetTrip ? `Log a stay for ${presetTrip.title}` : 'Log a stay'} />
 
       <form onSubmit={handleSubmit} style={{ padding: '0 20px', display: 'grid', gap: 14 }}>
         <div>
@@ -218,6 +236,7 @@ export function LogHotel() {
             ))}
           </datalist>
         </div>
+        {showPlace && (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
             <label className="field-label">Country *</label>
@@ -228,6 +247,7 @@ export function LogHotel() {
             <input className="input" value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="London" />
           </div>
         </div>
+        )}
         <div>
           <label className="field-label">Brand</label>
           <input
@@ -277,7 +297,10 @@ export function LogHotel() {
           </div>
           <div>
             <label className="field-label">Card used</label>
-            <input className="input" value={form.card} onChange={(e) => set('card', e.target.value)} placeholder="Optional" />
+            <select className="input" value={form.card} onChange={(e) => set('card', e.target.value)}>
+              <option value="">None</option>
+              {cardOptions.map((id) => <option key={id} value={id}>{id}</option>)}
+            </select>
           </div>
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--fs-body)', color: 'var(--ink)', cursor: 'pointer' }}>
@@ -318,6 +341,7 @@ export function LogHotel() {
             />
           </div>
         </div>
+        {editing && (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
           <div>
             <label className="field-label">Benefit value (£)</label>
@@ -339,10 +363,12 @@ export function LogHotel() {
             <input className="input" value={form.benefitNote} onChange={(e) => set('benefitNote', e.target.value)} placeholder="Suite upgrade, breakfast…" />
           </div>
         </div>
+        )}
         <div>
           <label className="field-label">Booked via (leave blank if direct)</label>
           <input className="input" value={form.bookingChannel} onChange={(e) => set('bookingChannel', e.target.value)} placeholder="e.g. Expedia" />
         </div>
+        {!presetTripId && (
         <div>
           <label className="field-label">Trip</label>
           {!manualTripOverride ? (
@@ -386,6 +412,7 @@ export function LogHotel() {
             </>
           )}
         </div>
+        )}
 
         {extractNote && (
           <div style={{ background: 'var(--amber-soft)', color: 'var(--amber)', fontSize: 'var(--fs-small)', padding: '10px 14px', borderRadius: 'var(--r-control)', fontWeight: 600 }}>

@@ -21,6 +21,7 @@ export function LogFlight() {
   const extractNote = state?.extractNote as string | undefined;
   const { data: trips } = useTrips();
   const { data: allFlights } = useAllFlights();
+  const presetTrip = trips.find((t) => t.id === presetTripId);
   const knownFrom = Array.from(new Set(allFlights.map((f) => f.from))).sort();
   const knownTo = Array.from(new Set(allFlights.map((f) => f.to))).sort();
   const knownAirlines = Array.from(new Set(allFlights.map((f) => f.airline))).sort();
@@ -91,7 +92,7 @@ export function LogFlight() {
 
   return (
     <div>
-      <ScreenHeader title={editing ? 'Edit flight' : 'Log a flight'} />
+      <ScreenHeader title={editing ? 'Edit flight' : presetTrip ? `Log a flight for ${presetTrip.title}` : 'Log a flight'} />
 
       <form onSubmit={handleSubmit} style={{ padding: '0 20px', display: 'grid', gap: 14 }}>
         <div>
@@ -169,6 +170,7 @@ export function LogFlight() {
             Overnight or long-haul flight, covers the night before and of this date. No hotel needed either night.
           </label>
         </div>
+        {!presetTripId && (
         <div>
           <label className="field-label">Attach to trip</label>
           <select className="input" value={form.tripId} onChange={(e) => set('tripId', e.target.value)}>
@@ -176,6 +178,7 @@ export function LogFlight() {
             {trips.map((t) => <option key={t.id} value={t.id}>{t.title} ({t.start})</option>)}
           </select>
         </div>
+        )}
 
         {extractNote && (
           <div style={{ background: 'var(--amber-soft)', color: 'var(--amber)', fontSize: 'var(--fs-small)', padding: '10px 14px', borderRadius: 'var(--r-control)', fontWeight: 600 }}>
