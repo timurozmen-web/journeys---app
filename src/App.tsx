@@ -18,6 +18,8 @@ import { LogTrip } from './screens/LogTrip';
 import { ScanEmail } from './screens/ScanEmail';
 import { ScanPromotion } from './screens/ScanPromotion';
 import { BankSync } from './screens/BankSync';
+import { AddMethod } from './screens/AddMethod';
+import { ImportCalendar } from './screens/ImportCalendar';
 import { ReviewTrip } from './screens/ReviewTrip';
 import { CreditAdvisor } from './screens/CreditAdvisor';
 
@@ -34,6 +36,8 @@ export default function App() {
             <Route path="/wallet" element={<Wallet />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/add/:kind" element={<AddMethod />} />
+            <Route path="/import-calendar" element={<ImportCalendar />} />
             <Route path="/log-hotel" element={<LogHotel />} />
             <Route path="/log-flight" element={<LogFlight />} />
             <Route path="/log-trip" element={<LogTrip />} />

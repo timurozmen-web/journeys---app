@@ -1,16 +1,15 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { MailIcon, PlusCircleIcon, BedIcon, PlaneIcon } from '../components/Icons';
-import { ScreenHeader } from '../components/ui';
+import { OptionRow, ScreenHeader } from '../components/ui';
 
-const CONTENT: Record<string, { title: string; body: string; actions?: { label: string; to: string; Icon: typeof MailIcon }[] }> = {
+const CONTENT: Record<string, { title: string; actions?: { label: string; to: string; Icon: typeof MailIcon }[] }> = {
   capture: {
-    title: 'Capture',
-    body: 'Paste or screenshot a confirmation to pull the details automatically (and catch every booking in it), start a new trip, or log a stay or flight by hand.',
+    title: 'Add',
     actions: [
-      { label: 'Scan an email', to: '/scan-email', Icon: MailIcon },
+      { label: 'Log a stay', to: '/add/stay', Icon: BedIcon },
+      { label: 'Log a flight', to: '/add/flight', Icon: PlaneIcon },
       { label: 'Start a new trip', to: '/log-trip', Icon: PlusCircleIcon },
-      { label: 'Log a stay', to: '/log-hotel', Icon: BedIcon },
-      { label: 'Log a flight', to: '/log-flight', Icon: PlaneIcon },
+      { label: 'Import an email', to: '/scan-email', Icon: MailIcon },
     ],
   },
 };
@@ -18,28 +17,15 @@ const CONTENT: Record<string, { title: string; body: string; actions?: { label: 
 export function Action() {
   const { kind } = useParams();
   const navigate = useNavigate();
-  const c = CONTENT[kind ?? ''] ?? { title: kind ?? '', body: '' };
+  const c = CONTENT[kind ?? ''] ?? { title: kind ?? '' };
 
   return (
     <div>
       <ScreenHeader title={c.title} />
-      <p style={{ padding: '0 20px', fontSize: 'var(--fs-body)', color: 'var(--ink2)', lineHeight: 1.6 }}>{c.body}</p>
       {c.actions && (
         <div style={{ padding: '10px 20px', display: 'grid', gap: 10 }}>
           {c.actions.map((a) => (
-            <button
-              key={a.to}
-              onClick={() => navigate(a.to)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: '14px', borderRadius: 'var(--r-md)', border: '1px solid var(--line)',
-                background: 'var(--card)', cursor: 'pointer', textAlign: 'left', font: 'inherit',
-              }}
-            >
-              <span style={{ width: 38, height: 38, borderRadius: 'var(--r-sm)', background: 'var(--card2)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                <a.Icon size={19} color="var(--brand)" />
-              </span>
-              <span style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 700, color: 'var(--ink)' }}>{a.label}</span>
-            </button>
+            <OptionRow key={a.to} icon={<a.Icon size={19} color="var(--brand)" />} label={a.label} onClick={() => navigate(a.to)} />
           ))}
         </div>
       )}

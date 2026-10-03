@@ -337,13 +337,13 @@ export function TripDetail() {
               })}
             <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
               <button
-                onClick={() => navigate('/log-hotel', { state: { tripId: trip.id } })}
+                onClick={() => navigate('/add/stay', { state: { tripId: trip.id } })}
                 style={{ flex: 1, padding: '10px 0', borderRadius: 'var(--r-control)', border: '1px solid var(--line)', background: 'var(--card2)', color: 'var(--ink)', fontSize: 'var(--fs-body)', fontWeight: 700, cursor: 'pointer' }}
               >
                 + Add hotel
               </button>
               <button
-                onClick={() => navigate('/log-flight', { state: { tripId: trip.id } })}
+                onClick={() => navigate('/add/flight', { state: { tripId: trip.id } })}
                 style={{ flex: 1, padding: '10px 0', borderRadius: 'var(--r-control)', border: '1px solid var(--line)', background: 'var(--card2)', color: 'var(--ink)', fontSize: 'var(--fs-body)', fontWeight: 700, cursor: 'pointer' }}
               >
                 + Add flight

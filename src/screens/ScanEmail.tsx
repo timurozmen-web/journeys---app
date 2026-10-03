@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { BackIcon, CameraIcon } from '../components/Icons';
-import { normalizeBrand } from '../data/brandMap';
+import { bookingRoute, summarizeBooking } from '../lib/bookingPrefill';
+import type { ExtractedBooking } from '../lib/bookingPrefill';
 import { useAllHotels, useAllFlights } from '../lib/useLiveData';
 import { findLikelyDuplicateHotel, findLikelyDuplicateFlight } from '../lib/duplicateDetection';
 import { ScreenHeader } from '../components/ui';
@@ -13,11 +14,6 @@ interface PickedImage {
   previewUrl: string;
 }
 
-interface ExtractedBooking {
-  type: 'hotel' | 'flight';
-  [key: string]: unknown;
-}
-
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -27,14 +23,10 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-function summarize(b: ExtractedBooking): string {
-  if (b.type === 'hotel') return `${b.name ?? 'Hotel'} · ${b.checkIn ?? 'date unknown'}${b.nights ? ` · ${b.nights}n` : ''}`;
-  return `${b.airline ?? 'Flight'} ${b.from ?? '?'} → ${b.to ?? '?'} · ${b.date ?? 'date unknown'}`;
-}
-
 export function ScanEmail() {
   const navigate = useNavigate();
   const location = useLocation();
+  const tripId = (location.state as { tripId?: string } | null)?.tripId;
   const { data: hotels } = useAllHotels();
   const { data: flights } = useAllFlights();
   const [text, setText] = useState('');
@@ -67,28 +59,9 @@ export function ScanEmail() {
   }
 
   function openBooking(b: ExtractedBooking, index: number) {
-    const returnTo = { pathname: '/scan-email', state: { resumeBookings: bookings, resumeSaved: [...savedKeys, index] } };
-    if (b.type === 'hotel') {
-      navigate('/log-hotel', {
-        state: {
-          prefill: {
-            name: b.name, country: b.country, city: b.city, brand: b.brand ? normalizeBrand(b.brand as string) : null,
-            date: b.checkIn, nights: b.nights, total: b.total,
-            roomType: b.roomType ?? null, rateType: b.rateType ?? 'Standard',
-          },
-          extractNote: b.currency && b.currency !== 'GBP' ? `Detected amount was in ${b.currency}, worth double-checking the £ figure.` : undefined,
-          returnTo,
-        },
-      });
-    } else {
-      navigate('/log-flight', {
-        state: {
-          prefill: { date: b.date, from: b.from, to: b.to, airline: b.airline, flightNo: b.flightNo, cabin: b.cabin, cost: b.cost },
-          extractNote: b.currency && b.currency !== 'GBP' ? `Detected amount was in ${b.currency}, worth double-checking the £ figure.` : undefined,
-          returnTo,
-        },
-      });
-    }
+    const returnTo = { pathname: '/scan-email', state: { tripId, resumeBookings: bookings, resumeSaved: [...savedKeys, index] } };
+    const r = bookingRoute(b, { tripId, returnTo });
+    navigate(r.to, { state: r.state });
   }
 
   async function handleExtract() {
@@ -135,9 +108,6 @@ export function ScanEmail() {
           </button>
           <div className="h1" style={{ fontSize: 'var(--fs-heading)' }}>Found {bookings.length} bookings</div>
         </div>
-        <p style={{ padding: '0 20px 4px', fontSize: 'var(--fs-body)', color: 'var(--ink2)', lineHeight: 1.5 }}>
-          Tap each one to review and save it. You can check and correct the details before anything's added.
-        </p>
         <div className="stack" style={{ marginTop: 8 }}>
           {bookings.map((b, i) => {
             const saved = savedKeys.has(i);
@@ -156,7 +126,7 @@ export function ScanEmail() {
               >
                 <span style={{ fontSize: 'var(--fs-title)', flexShrink: 0 }}>{b.type === 'hotel' ? '🏨' : '✈️'}</span>
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 'var(--fs-body)', fontWeight: 700 }}>{summarize(b)}</span>
+                  <span style={{ display: 'block', fontSize: 'var(--fs-body)', fontWeight: 700 }}>{summarizeBooking(b)}</span>
                   {dup && !saved && (
                     <span style={{ display: 'block', fontSize: 'var(--fs-caption)', color: 'var(--amber)', fontWeight: 600, marginTop: 2 }}>
                       ⚠ Might already be logged, worth checking before saving again
@@ -186,11 +156,7 @@ export function ScanEmail() {
 
   return (
     <div>
-      <ScreenHeader title="Scan an email" />
-      <p style={{ padding: '0 20px 4px', fontSize: 'var(--fs-body)', color: 'var(--ink2)', lineHeight: 1.5 }}>
-        Easiest way: screenshot the confirmation and attach it below, no need to copy any text. Multiple bookings in one confirmation (a flight plus a hotel, say) all get picked up together, and you'll get a chance to review and correct everything before it's saved.
-      </p>
-
+      <ScreenHeader title="Import an email" />
       <div style={{ padding: '14px 20px 0' }}>
         <label className="field-label">Screenshots</label>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
