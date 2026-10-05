@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { addHotel, updateHotel, deleteHotel, addTrip, updateTrip } from '../lib/queries';
 import { withOfflineFallback } from '../lib/offlineQueue';
 import { suggestTripAssignment } from '../lib/autoTrip';
-import { normalizeBrand } from '../data/brandMap';
+import { matchProgrammeStrict, normalizeBrand } from '../data/brandMap';
 import type { Hotel } from '../types';
 import { useTrips, useAllHotels, useAllFlights, usePaymentCards } from '../lib/useLiveData';
 import { needsPlaceFields, tripPlace } from '../lib/tripPlace';
@@ -42,6 +42,8 @@ export function LogHotel() {
   const knownHotels = Array.from(new Map(allHotels.map((h) => [h.name, h])).values());
   const [manualTripOverride, setManualTripOverride] = useState(!!presetTripId || !!editing);
   const [saving, setSaving] = useState(false);
+  // Less-used fields stay folded away until asked for (open when editing).
+  const [more, setMore] = useState(!!editing);
   const [error, setError] = useState('');
   const [overlapWarning, setOverlapWarning] = useState<string | null>(null);
   const [confirmedOverlap, setConfirmedOverlap] = useState(false);
@@ -228,6 +230,11 @@ export function LogHotel() {
                 set('name', name);
               }
             }}
+            onBlur={(e) => {
+              // Fill the brand from the hotel's name when it's a known chain ("Courtyard ..." -> Marriott Bonvoy).
+              const brand = !form.brand && matchProgrammeStrict(e.target.value);
+              if (brand) set('brand', brand);
+            }}
             placeholder="e.g. Marriott Marble Arch"
           />
           <datalist id="known-hotels">
@@ -248,46 +255,24 @@ export function LogHotel() {
           </div>
         </div>
         )}
-        <div>
-          <label className="field-label">Brand</label>
-          <input
-            className="input"
-            value={form.brand}
-            onChange={(e) => set('brand', e.target.value)}
-            onBlur={(e) => e.target.value && set('brand', normalizeBrand(e.target.value))}
-            placeholder="Marriott Bonvoy"
-          />
-        </div>
-        <div>
-          <label className="field-label">Check-in date *</label>
-          <input
-            className="input"
-            type="date"
-            value={form.date}
-            onChange={(e) => {
-              const date = e.target.value;
-              setForm((f) => ({ ...f, date, status: statusTouched ? f.status : date > TODAY ? 'Booked' : 'Completed' }));
-              setConfirmedOverlap(false);
-              setOverlapWarning(null);
-            }}
-          />
-        </div>
-        <div>
-          <label className="field-label">Nights</label>
-          <input className="input" type="number" min="1" value={form.nights} onChange={(e) => set('nights', e.target.value)} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.4fr) minmax(0,1fr)', gap: 10 }}>
           <div>
-            <label className="field-label">Status</label>
-            <select className="input" value={form.status} onChange={(e) => { setStatusTouched(true); set('status', e.target.value as (typeof STATUSES)[number]); }}>
-              {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
+            <label className="field-label">Check-in date *</label>
+            <input
+              className="input"
+              type="date"
+              value={form.date}
+              onChange={(e) => {
+                const date = e.target.value;
+                setForm((f) => ({ ...f, date, status: statusTouched ? f.status : date > TODAY ? 'Booked' : 'Completed' }));
+                setConfirmedOverlap(false);
+                setOverlapWarning(null);
+              }}
+            />
           </div>
           <div>
-            <label className="field-label">Category</label>
-            <select className="input" value={form.category} onChange={(e) => set('category', e.target.value as (typeof CATEGORIES)[number])}>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <label className="field-label">Nights</label>
+            <input className="input" type="number" min="1" value={form.nights} onChange={(e) => set('nights', e.target.value)} />
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
@@ -305,69 +290,100 @@ export function LogHotel() {
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--fs-body)', color: 'var(--ink)', cursor: 'pointer' }}>
           <input type="checkbox" checked={form.award} onChange={(e) => set('award', e.target.checked)} />
-          Booked with points/certificate (award stay -- doesn't earn elite night credit)
+          Paid with points or a certificate
         </label>
-        <div>
-          <label className="field-label">Room type</label>
-          <input className="input" value={form.roomType} onChange={(e) => set('roomType', e.target.value)} placeholder="e.g. Deluxe King, City View" />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-          <div>
-            <label className="field-label">Rate type</label>
-            <select
-              className="input"
-              value={form.rateType}
-              onChange={(e) => {
-                const rateType = e.target.value as (typeof RATE_TYPES)[number];
-                setForm((f) => ({
-                  ...f, rateType,
-                  avgRate: rateType === 'Standard' && f.total ? (parseFloat(f.total) / (parseInt(f.nights, 10) || 1)).toFixed(2) : f.avgRate,
-                }));
-              }}
-            >
-              {RATE_TYPES.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="field-label">Standard rate (£/night)</label>
-            <input
-              className="input" style={{ opacity: form.rateType === 'Standard' ? 0.6 : 1 }}
-              type="number"
-              step="0.01"
-              value={form.rateType === 'Standard' && form.total ? (parseFloat(form.total) / (parseInt(form.nights, 10) || 1)).toFixed(2) : form.avgRate}
-              onChange={(e) => set('avgRate', e.target.value)}
-              disabled={form.rateType === 'Standard'}
-              placeholder="What it would've cost at standard rate"
-            />
-          </div>
-        </div>
-        {editing && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-          <div>
-            <label className="field-label">Benefit value (£)</label>
-            <input className="input" type="number" step="0.01" value={form.benefitValue} onChange={(e) => set('benefitValue', e.target.value)} placeholder="e.g. upgrade, breakfast" />
-          </div>
-          <div>
-            <label className="field-label">Benefit type</label>
-            <select className="input" value={form.benefitType} onChange={(e) => set('benefitType', e.target.value)}>
-              <option value="">Not set</option>
-              <option value="breakfast">Free breakfast</option>
-              <option value="upgrade">Room/suite upgrade</option>
-              <option value="lounge">Lounge access</option>
-              <option value="late-checkout">Late checkout</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <div>
-            <label className="field-label">What was it</label>
-            <input className="input" value={form.benefitNote} onChange={(e) => set('benefitNote', e.target.value)} placeholder="Suite upgrade, breakfast…" />
-          </div>
-        </div>
+        <button type="button" className="btn ghost small" style={{ justifySelf: 'start', padding: '4px 0' }} onClick={() => setMore((m) => !m)} aria-expanded={more}>
+          {more ? 'Fewer details' : 'More details'}
+        </button>
+        {more && (
+          <>
+            <div>
+              <label className="field-label">Brand</label>
+              <input
+                className="input"
+                value={form.brand}
+                onChange={(e) => set('brand', e.target.value)}
+                onBlur={(e) => e.target.value && set('brand', normalizeBrand(e.target.value))}
+                placeholder="Marriott Bonvoy"
+              />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
+              <div>
+                <label className="field-label">Status</label>
+                <select className="input" value={form.status} onChange={(e) => { setStatusTouched(true); set('status', e.target.value as (typeof STATUSES)[number]); }}>
+                  {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="field-label">Category</label>
+                <select className="input" value={form.category} onChange={(e) => set('category', e.target.value as (typeof CATEGORIES)[number])}>
+                  {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="field-label">Room type</label>
+              <input className="input" value={form.roomType} onChange={(e) => set('roomType', e.target.value)} placeholder="e.g. Deluxe King, City View" />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
+              <div>
+                <label className="field-label">Rate type</label>
+                <select
+                  className="input"
+                  value={form.rateType}
+                  onChange={(e) => {
+                    const rateType = e.target.value as (typeof RATE_TYPES)[number];
+                    setForm((f) => ({
+                      ...f, rateType,
+                      avgRate: rateType === 'Standard' && f.total ? (parseFloat(f.total) / (parseInt(f.nights, 10) || 1)).toFixed(2) : f.avgRate,
+                    }));
+                  }}
+                >
+                  {RATE_TYPES.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="field-label">Standard rate (£/night)</label>
+                <input
+                  className="input" style={{ opacity: form.rateType === 'Standard' ? 0.6 : 1 }}
+                  type="number"
+                  step="0.01"
+                  value={form.rateType === 'Standard' && form.total ? (parseFloat(form.total) / (parseInt(form.nights, 10) || 1)).toFixed(2) : form.avgRate}
+                  onChange={(e) => set('avgRate', e.target.value)}
+                  disabled={form.rateType === 'Standard'}
+                  placeholder="What it would've cost at standard rate"
+                />
+              </div>
+            </div>
+            {editing && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
+              <div>
+                <label className="field-label">Benefit value (£)</label>
+                <input className="input" type="number" step="0.01" value={form.benefitValue} onChange={(e) => set('benefitValue', e.target.value)} placeholder="e.g. upgrade, breakfast" />
+              </div>
+              <div>
+                <label className="field-label">Benefit type</label>
+                <select className="input" value={form.benefitType} onChange={(e) => set('benefitType', e.target.value)}>
+                  <option value="">Not set</option>
+                  <option value="breakfast">Free breakfast</option>
+                  <option value="upgrade">Room/suite upgrade</option>
+                  <option value="lounge">Lounge access</option>
+                  <option value="late-checkout">Late checkout</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="field-label">What was it</label>
+                <input className="input" value={form.benefitNote} onChange={(e) => set('benefitNote', e.target.value)} placeholder="Suite upgrade, breakfast…" />
+              </div>
+            </div>
+            )}
+            <div>
+              <label className="field-label">Booked via (leave blank if direct)</label>
+              <input className="input" value={form.bookingChannel} onChange={(e) => set('bookingChannel', e.target.value)} placeholder="e.g. Expedia" />
+            </div>
+          </>
         )}
-        <div>
-          <label className="field-label">Booked via (leave blank if direct)</label>
-          <input className="input" value={form.bookingChannel} onChange={(e) => set('bookingChannel', e.target.value)} placeholder="e.g. Expedia" />
-        </div>
         {!presetTripId && (
         <div>
           <label className="field-label">Trip</label>

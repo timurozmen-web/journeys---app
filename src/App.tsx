@@ -19,6 +19,7 @@ import { ScanEmail } from './screens/ScanEmail';
 import { ScanPromotion } from './screens/ScanPromotion';
 import { BankSync } from './screens/BankSync';
 import { AddMethod } from './screens/AddMethod';
+import { AddCard } from './screens/AddCard';
 import { ImportCalendar } from './screens/ImportCalendar';
 import { ReviewTrip } from './screens/ReviewTrip';
 import { CreditAdvisor } from './screens/CreditAdvisor';
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/add/:kind" element={<AddMethod />} />
+            <Route path="/add-card" element={<AddCard />} />
             <Route path="/import-calendar" element={<ImportCalendar />} />
             <Route path="/log-hotel" element={<LogHotel />} />
             <Route path="/log-flight" element={<LogFlight />} />

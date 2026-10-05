@@ -85,6 +85,23 @@ export async function addLoyaltyProgramme(input: NewLoyaltyProgrammeInput) {
   if (error) throw error;
 }
 
+export async function updateLoyaltyProgramme(name: string, patch: { points?: number; tier?: string | null; nextTier?: string | null; nightsNeeded?: number | null }) {
+  const row: Record<string, unknown> = {};
+  if (patch.points !== undefined) row.points = patch.points;
+  if (patch.tier !== undefined) row.tier = patch.tier;
+  if (patch.nextTier !== undefined) row.next_tier = patch.nextTier;
+  if (patch.nightsNeeded !== undefined) row.nights_needed = patch.nightsNeeded;
+  const { data, error } = await supabase.from('loyalty_programmes').update(row).eq('name', name).select('name');
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error(`No loyalty programme called "${name}".`);
+}
+
+export async function deleteLoyaltyProgramme(name: string) {
+  const { data, error } = await supabase.from('loyalty_programmes').delete().eq('name', name).select('name');
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error(`No loyalty programme called "${name}".`);
+}
+
 // Settings preferences (e.g. airline elite status) update the matching
 // programme's tier in place if it's already tracked in the wallet, or
 // create a minimal placeholder row if it isn't -- so "Where to credit"
@@ -221,6 +238,38 @@ export async function updateCardClosedDate(cardId: string, closedDate: string | 
   if (!data || data.length === 0) {
     throw new Error(`No payment card found with id "${cardId}" -- the update silently matched nothing.`);
   }
+}
+
+// Adds a card to the wallet, or brings back one closed earlier (same card,
+// new open date). Card ids are the catalogue names, so re-adding a card
+// you once closed reopens its record rather than failing as a duplicate.
+export async function savePaymentCard(card: { id: string; programmeBrand: string; annualFee: number; feeLabel: string }, openDate: string) {
+  const { data: existing, error: e0 } = await supabase.from('payment_cards').select('id').eq('id', card.id);
+  if (e0) throw e0;
+  if (existing && existing.length > 0) {
+    const { error } = await supabase.from('payment_cards').update({ open_date: openDate, closed_date: null }).eq('id', card.id);
+    if (error) throw error;
+    return;
+  }
+  const { error } = await supabase.from('payment_cards').insert({
+    id: card.id, programme_brand: card.programmeBrand, annual_fee: card.annualFee, fee_label: card.feeLabel, open_date: openDate,
+  });
+  if (error) throw error;
+}
+
+export async function updateCardOpenDate(cardId: string, openDate: string) {
+  const { data, error } = await supabase.from('payment_cards').update({ open_date: openDate }).eq('id', cardId).select('id');
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error(`No payment card found with id "${cardId}".`);
+}
+
+// Removes a card from the wallet. A bank account that fed it is left
+// connected but no longer mapped to any card (the database sets that link
+// to null), so nothing else is lost.
+export async function deletePaymentCard(cardId: string) {
+  const { data, error } = await supabase.from('payment_cards').delete().eq('id', cardId).select('id');
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error(`No payment card found with id "${cardId}".`);
 }
 
 export async function updateManualSpendAdjustment(cardId: string, amount: number, isUK: boolean) {
@@ -721,10 +770,7 @@ export async function mapAccountToCard(accountId: string, card: Pick<CardDef, 'i
     if (e0) throw e0;
     if (!existing || existing.length === 0) {
       if (!openDate) throw new Error('Enter the date you opened this card first.');
-      const { error: e1 } = await supabase.from('payment_cards').insert({
-        id: card.id, programme_brand: card.programmeBrand, annual_fee: card.annualFee, fee_label: card.feeLabel, open_date: openDate,
-      });
-      if (e1) throw e1;
+      await savePaymentCard(card, openDate);
     }
   }
   const { data, error } = await supabase.from('open_banking_accounts')

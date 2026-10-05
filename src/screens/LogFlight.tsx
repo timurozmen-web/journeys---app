@@ -5,6 +5,7 @@ import { withOfflineFallback } from '../lib/offlineQueue';
 import type { Flight } from '../types';
 import { useTrips, useAllFlights } from '../lib/useLiveData';
 import { findLikelyDuplicateFlight } from '../lib/duplicateDetection';
+import { airlineFromFlightNo } from '../lib/flightNumber';
 import { Button, ErrorText, ScreenHeader } from '../components/ui';
 
 const CABINS = ['Economy', 'Premium Economy', 'Business', 'First'] as const;
@@ -29,6 +30,9 @@ export function LogFlight() {
   const [confirmedDup, setConfirmedDup] = useState(false);
   const TODAY = new Date().toISOString().slice(0, 10);
   const [saving, setSaving] = useState(false);
+  // Less-used fields stay folded away until asked for (open when editing).
+  const [more, setMore] = useState(!!editing);
+  const [autoAirline, setAutoAirline] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
@@ -117,25 +121,24 @@ export function LogFlight() {
             <datalist id="known-to">{knownTo.map((c) => <option key={c} value={c} />)}</datalist>
           </div>
         </div>
-        <div style={{ display: 'grid', gap: 10 }}>
-          <div>
-            <label className="field-label">Departs (optional)</label>
-            <input className="input" type="time" value={form.departureTime} onChange={(e) => set('departureTime', e.target.value)} />
-          </div>
-          <div>
-            <label className="field-label">Arrives (optional)</label>
-            <input className="input" type="time" value={form.arrivalTime} onChange={(e) => set('arrivalTime', e.target.value)} />
-          </div>
-        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
+          <div>
+            <label className="field-label">Flight no.</label>
+            <input
+              className="input" value={form.flightNo} placeholder="e.g. BA866" autoCapitalize="characters"
+              onChange={(e) => {
+                const flightNo = e.target.value;
+                // Fill the airline from the flight number unless one was typed by hand.
+                const airline = airlineFromFlightNo(flightNo, allFlights);
+                setForm((f) => ({ ...f, flightNo, airline: airline && (!f.airline || f.airline === autoAirline) ? airline : f.airline }));
+                if (airline) setAutoAirline(airline);
+              }}
+            />
+          </div>
           <div>
             <label className="field-label">Airline *</label>
             <input className="input" list="known-airlines" value={form.airline} onChange={(e) => set('airline', e.target.value)} placeholder="British Airways" />
             <datalist id="known-airlines">{knownAirlines.map((a) => <option key={a} value={a} />)}</datalist>
-          </div>
-          <div>
-            <label className="field-label">Flight no.</label>
-            <input className="input" value={form.flightNo} onChange={(e) => set('flightNo', e.target.value)} placeholder="Optional" />
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
@@ -146,30 +149,47 @@ export function LogFlight() {
             </select>
           </div>
           <div>
-            <label className="field-label">Status</label>
-            <select className="input" value={form.status} onChange={(e) => set('status', e.target.value as (typeof STATUSES)[number])}>
-              {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-          <div>
             <label className="field-label">Cost (£)</label>
             <input className="input" type="number" step="0.01" value={form.cost} onChange={(e) => set('cost', e.target.value)} placeholder="Optional" />
           </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 11 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--fs-body-lg)', color: 'var(--ink2)' }}>
-              <input type="checkbox" checked={form.award} onChange={(e) => set('award', e.target.checked)} />
-              Award / points redemption
-            </label>
-          </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--fs-body-lg)', color: 'var(--ink2)' }}>
-            <input type="checkbox" checked={form.overnight} onChange={(e) => set('overnight', e.target.checked)} />
-            Overnight or long-haul flight, covers the night before and of this date. No hotel needed either night.
-          </label>
-        </div>
+        <button type="button" className="btn ghost small" style={{ justifySelf: 'start', padding: '4px 0' }} onClick={() => setMore((m) => !m)} aria-expanded={more}>
+          {more ? 'Fewer details' : 'More details'}
+        </button>
+        {more && (
+          <>
+            <div style={{ display: 'grid', gap: 10 }}>
+              <div>
+                <label className="field-label">Departs (optional)</label>
+                <input className="input" type="time" value={form.departureTime} onChange={(e) => set('departureTime', e.target.value)} />
+              </div>
+              <div>
+                <label className="field-label">Arrives (optional)</label>
+                <input className="input" type="time" value={form.arrivalTime} onChange={(e) => set('arrivalTime', e.target.value)} />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
+              <div>
+                <label className="field-label">Status</label>
+                <select className="input" value={form.status} onChange={(e) => set('status', e.target.value as (typeof STATUSES)[number])}>
+                  {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 11 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--fs-body-lg)', color: 'var(--ink2)' }}>
+                  <input type="checkbox" checked={form.award} onChange={(e) => set('award', e.target.checked)} />
+                  Award / points redemption
+                </label>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--fs-body-lg)', color: 'var(--ink2)' }}>
+                <input type="checkbox" checked={form.overnight} onChange={(e) => set('overnight', e.target.checked)} />
+                Overnight flight (no hotel needed that night)
+              </label>
+            </div>
+          </>
+        )}
         {!presetTripId && (
         <div>
           <label className="field-label">Attach to trip</label>

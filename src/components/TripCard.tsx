@@ -39,14 +39,15 @@ const SECTION_PILL: Record<Trip['section'], { label: string; cls: string }> = {
   past: { label: 'Completed', cls: 'grey' },
 };
 
-export function TripCard({ trip }: { trip: Trip }) {
+// `linked` is off when a wrapper (swipe-to-delete) handles the tap itself.
+export function TripCard({ trip, linked = true }: { trip: Trip; linked?: boolean }) {
   const navigate = useNavigate();
   const pill = SECTION_PILL[trip.section];
   const nights = nightsOf(trip);
   const hotel = relevantHotel(trip);
 
   return (
-    <div className="trip" onClick={() => navigate(`/trips/${trip.id}`)} style={{ cursor: 'pointer' }}>
+    <div className="trip" onClick={linked ? () => navigate(`/trips/${trip.id}`) : undefined} style={{ cursor: 'pointer' }}>
       <div style={{ position: 'relative' }}>
         {trip.heroImageUrl ? (
           <img src={trip.heroImageUrl} alt={trip.title} style={{ width: '100%', height: 130, objectFit: 'cover', display: 'block' }} />

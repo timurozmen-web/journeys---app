@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { BrandLogo } from './BrandLogo';
-import { updateManualSpendAdjustment, updateCardClosedDate } from '../lib/queries';
+import { updateManualSpendAdjustment, updateCardClosedDate, updateCardOpenDate, deletePaymentCard } from '../lib/queries';
+import { SwipeToDelete } from './SwipeToDelete';
+import { useNavigate } from 'react-router-dom';
+import { Button, ErrorText } from './ui';
 import type { CardResult } from '../lib/cardMath';
 import type { LoyaltyProgramme } from '../types';
 import { CARD_FACES, DEFAULT_FACE } from '../data/cardFaces';
@@ -52,6 +55,22 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
   cardResults: CardResult[]; loyaltyProgrammes: LoyaltyProgramme[]; refetchCards: () => void; initialOpen?: string | null;
 }) {
   const [open, setOpen] = useState<string | null>(initialOpen);
+  const [cardError, setCardError] = useState('');
+  // Deleted this session: hidden straight away, before the refetch lands.
+  const [removed, setRemoved] = useState<Set<string>>(new Set());
+  const navigate = useNavigate();
+
+  async function removeCard(cardId: string) {
+    setCardError('');
+    try {
+      await deletePaymentCard(cardId);
+      setRemoved((r) => new Set(r).add(cardId));
+      if (open === cardId) setOpen(null);
+      refetchCards();
+    } catch (err) {
+      setCardError(err instanceof Error ? err.message : 'Could not delete the card.');
+    }
+  }
   const [editingSpendCard, setEditingSpendCard] = useState<string | null>(null);
   const [spendInput, setSpendInput] = useState('');
   const [spendIsUK, setSpendIsUK] = useState(true);
@@ -60,8 +79,9 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
   const [closedInput, setClosedInput] = useState('');
   const [closedSaveError, setClosedSaveError] = useState('');
 
-  const active = cardResults.filter((r) => !r.cardRow?.closedDate);
-  const archived = cardResults.filter((r) => r.cardRow?.closedDate);
+  const shown = cardResults.filter((r) => !removed.has(r.card.id));
+  const active = shown.filter((r) => !r.cardRow?.closedDate);
+  const archived = shown.filter((r) => r.cardRow?.closedDate);
 
   function renderCard(r: CardResult, muted: boolean, stacked: boolean) {
     const prog = loyaltyProgrammes.find((p) => p.name === r.card.programmeBrand);
@@ -70,10 +90,19 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
     const faceSpec = CARD_FACES[r.card.id] ?? DEFAULT_FACE;
     return (
       <div key={r.card.id} className={`walletslot${stacked ? ' stacked' : ''}`} style={{ opacity: muted ? 0.55 : 1, filter: muted ? 'grayscale(0.6)' : undefined }}>
-        <button
-          type="button"
-          className="walletcard"
+        <SwipeToDelete
           onClick={() => setOpen(isOpen ? null : r.card.id)}
+          onDelete={() => removeCard(r.card.id)}
+          surface="transparent"
+          revealHeight={78}
+          itemLabel={r.card.id}
+          wrapperStyle={{ borderRadius: 'var(--r-lg)' }}
+        >
+        <div
+          role="button"
+          tabIndex={0}
+          className="walletcard"
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(isOpen ? null : r.card.id); } }}
           aria-expanded={isOpen}
           aria-label={r.card.id}
           style={{ background: `linear-gradient(150deg, ${faceSpec.from} 0%, ${faceSpec.to} 100%)` }}
@@ -100,13 +129,18 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
               <small>{r.card.custom ? 'spend this year' : 'net value'}</small>
             </span>
           </div>
-        </button>
+        </div>
+        </SwipeToDelete>
 
         {isOpen && (
           <div className="walletdetail">
             <div className="dd-row">
-              <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>{r.cardRow?.closedDate ? 'Closed' : 'Opened'}</span>
-              <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{r.cardRow?.closedDate ?? r.cardRow?.openDate ?? 'Not set'}</span>
+              <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Opened</span>
+              <input
+                type="date" className="input compact inline-date" aria-label="Date opened"
+                defaultValue={r.cardRow?.openDate ?? ''}
+                onChange={(e) => e.target.value && updateCardOpenDate(r.card.id, e.target.value).then(refetchCards).catch((err) => setCardError(err instanceof Error ? err.message : 'Could not save.'))}
+              />
             </div>
             <div className="dd-row">
               <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Spend this card-year</span>
@@ -281,14 +315,16 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
 
   return (
     <div className="walletstack">
-      {active.map((r, i) => renderCard(r, false, i > 0 && open !== active[i - 1].card.id))}
+      {cardError && <ErrorText style={{ marginBottom: 10 }}>{cardError}</ErrorText>}
+      <div>{active.map((r, i) => renderCard(r, false, i > 0 && open !== active[i - 1].card.id))}</div>
+      <Button variant="secondary" block onClick={() => navigate('/add-card')} style={{ marginTop: 14 }}>Add a card</Button>
 
       {archived.length > 0 && (
         <>
           <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginTop: 10 }}>
             Archived
           </div>
-          {archived.map((r, i) => renderCard(r, true, i > 0 && open !== archived[i - 1].card.id))}
+          <div>{archived.map((r, i) => renderCard(r, true, i > 0 && open !== archived[i - 1].card.id))}</div>
         </>
       )}
     </div>

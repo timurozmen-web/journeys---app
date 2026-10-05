@@ -70,10 +70,12 @@ describe('summariseSpend', () => {
     expect(s.totalPoints).toBe(5700);
   });
 
-  test('the Accor card has a single category at 1 point a pound', () => {
-    const rows = [{ date: '2026-02-01', amount: 500, currency: 'GBP', merchant: 'ACCOR LIVE LIMITLESS' }, { date: '2026-02-02', amount: 100, currency: 'GBP', merchant: 'TESCO' }];
-    const s = summariseSpend(card('Accor Explorer'), bankRowsToItems(card('Accor Explorer'), rows), window, '2026-03-01');
-    expect(s.categories).toHaveLength(1);
+  test('the free BA Amex earns 1 Avios a pound, British Airways split out as its own category', () => {
+    const rows = [{ date: '2026-02-01', amount: 500, currency: 'GBP', merchant: 'BRITISH AIRWAYS' }, { date: '2026-02-02', amount: 100, currency: 'GBP', merchant: 'TESCO' }];
+    const s = summariseSpend(card('BA Amex'), bankRowsToItems(card('BA Amex'), rows), window, '2026-03-01');
+    const by = Object.fromEntries(s.categories.map((c) => [c.category.id, c]));
+    expect(by.own.spend).toBe(500);
+    expect(by.other.spend).toBe(100);
     expect(s.totalPoints).toBe(600);
   });
 
@@ -100,7 +102,7 @@ describe('summariseSpend', () => {
       { date: '2026-02-05', amount: -100, currency: 'GBP', merchant: 'SHOP' },
       { date: '2025-12-31', amount: 999, currency: 'GBP', merchant: 'SHOP' },
     ];
-    const c = card('Accor Explorer');
+    const c = card('BA Amex');
     expect(summariseSpend(c, bankRowsToItems(c, rows), window, '2026-03-01').totalSpend).toBe(400);
   });
 
@@ -115,7 +117,7 @@ describe('summariseSpend', () => {
   test('only cards that pay differently abroad need the caveat', () => {
     expect(cardDistinguishesAbroad(card('Marriott Debit'), '2026-03-01')).toBe(true);
     expect(cardDistinguishesAbroad(card('Hilton Debit'), '2026-03-01')).toBe(true);
-    expect(cardDistinguishesAbroad(card('Accor Explorer'), '2026-03-01')).toBe(false);
+    expect(cardDistinguishesAbroad(card('BA Amex'), '2026-03-01')).toBe(false);
     expect(cardDistinguishesAbroad(card('Marriott Amex'), '2026-03-01')).toBe(false);
     expect(cardDistinguishesAbroad(card('Virgin Atlantic Mastercard+'), '2026-03-01')).toBe(false);
   });

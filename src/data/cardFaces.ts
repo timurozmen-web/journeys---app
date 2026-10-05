@@ -16,7 +16,6 @@ export const CARD_FACES: Record<string, CardFace> = {
   'Hilton Debit': { from: '#12508F', to: '#05223F', issuer: 'Currensea' },
   'IHG Revolut Elite': { from: '#26262B', to: '#000000', issuer: 'Revolut' },
   'Virgin Atlantic Mastercard+': { from: '#D3132F', to: '#6E0A1B', network: 'mastercard' },
-  'Accor Explorer': { from: '#232766', to: '#0B0C2E' },
 };
 
 // A card not in the table (added by hand, or new to the catalogue).

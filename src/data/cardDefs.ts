@@ -138,15 +138,6 @@ export const CARDS_STATIC: CardDef[] = [
     perks: [{ id: 'status', label: 'Marriott Silver status' }],
   },
   {
-    id: 'Accor Explorer', programmeBrand: 'Accor ALL', annualFee: 0, feeLabel: 'Free',
-    detect: (t) => t.includes('accor'),
-    rateFor: () => 1,
-    earnCategories: [{ id: 'all', label: 'All spend', regions: ALL }],
-    eliteNights: { auto: 30, perSpendAmount: null, perSpendCap: null },
-    milestones: [],
-    perks: [],
-  },
-  {
     id: 'Hilton Debit', programmeBrand: 'Hilton Honors', annualFee: 150, feeLabel: '£150/yr',
     detect: (t) => t.includes('hilton'),
     rateFor: (ctx) => (ctx.ownBrand ? (ctx.isUK ? 3 : 4.5) : ctx.isUK ? 1.5 : 3),
