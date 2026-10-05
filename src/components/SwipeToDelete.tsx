@@ -12,13 +12,16 @@ const TAP_THRESHOLD = 8; // px of movement below which this counts as a tap, not
  * unchanged -- only a deliberate horizontal swipe exposes delete.
  */
 export function SwipeToDelete({
-  children, onClick, onDelete, deleteLabel = 'Delete', wrapperStyle,
+  children, onClick, onDelete, deleteLabel = 'Delete', wrapperStyle, surface = 'var(--card)', itemLabel, revealHeight,
 }: {
   children: React.ReactNode;
   onClick?: () => void;
   onDelete: () => void;
   deleteLabel?: string;
   wrapperStyle?: React.CSSProperties;
+  surface?: string;                 // what's behind the row while it slides (transparent for a card face)
+  itemLabel?: string;               // what gets deleted, for the button's accessible name
+  revealHeight?: number;            // limit the delete box to the visible top of the row (stacked cards)
 }) {
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -56,13 +59,19 @@ export function SwipeToDelete({
   return (
     <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--r-sm)', ...wrapperStyle }}>
       <button
+        type="button"
+        aria-label={itemLabel ? `${deleteLabel} ${itemLabel}` : deleteLabel}
+        // Hidden until swiped open: not reachable by tab or screen reader before then.
+        aria-hidden={offset === 0}
+        tabIndex={offset === 0 ? -1 : 0}
         onClick={() => {
           setOffset(0);
           onDelete();
         }}
         style={{
-          position: 'absolute', top: 0, right: 0, bottom: 0, width: REVEAL_WIDTH,
+          position: 'absolute', top: 0, right: 0, bottom: revealHeight ? 'auto' : 0, height: revealHeight, width: REVEAL_WIDTH,
           background: 'var(--red)', color: 'var(--on-dark)', border: 'none', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
       >
         {deleteLabel}
@@ -73,7 +82,7 @@ export function SwipeToDelete({
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         style={{
-          position: 'relative', transform: `translateX(${offset}px)`, background: 'var(--card)',
+          position: 'relative', transform: `translateX(${offset}px)`, background: surface,
           transition: dragging ? 'none' : 'transform .2s ease', touchAction: 'pan-y',
         }}
       >

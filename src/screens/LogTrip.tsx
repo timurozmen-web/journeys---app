@@ -3,13 +3,15 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { addTrip, updateTrip, deleteTrip } from '../lib/queries';
 import { withOfflineFallback } from '../lib/offlineQueue';
 import type { Trip } from '../types';
-import { Button, ErrorText, ScreenHeader } from '../components/ui';
+import { Button, ErrorText, ScreenHeader, Segmented } from '../components/ui';
 
 
 export function LogTrip() {
   const navigate = useNavigate();
   const location = useLocation();
   const editing = (location.state as { trip?: Trip } | null)?.trip;
+  // Started from the Trips screen's Work tab: default to a work trip.
+  const presetType = (location.state as { tripType?: 'work' | 'leisure' } | null)?.tripType;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -18,7 +20,7 @@ export function LogTrip() {
     title: editing?.title ?? '',
     start: editing?.start ?? '',
     end: editing?.end ?? '',
-    tripType: (editing?.tripType ?? 'leisure') as 'work' | 'leisure',
+    tripType: (editing?.tripType ?? presetType ?? 'leisure') as 'work' | 'leisure',
     notes: editing?.notes ?? '',
   });
 
@@ -72,48 +74,26 @@ export function LogTrip() {
           <label className="field-label">Trip name *</label>
           <input className="input" value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. Japan 2027" />
         </div>
-        <div>
-          <label className="field-label">Start date *</label>
-          <input className="input" type="date" value={form.start} onChange={(e) => set('start', e.target.value)} />
-        </div>
-        <div>
-          <label className="field-label">End date *</label>
-          <input className="input" type="date" value={form.end} onChange={(e) => set('end', e.target.value)} />
-        </div>
-
-        <div>
-          <label className="field-label">You're travelling for…</label>
-          <div
-            onClick={() => set('tripType', form.tripType === 'work' ? 'leisure' : 'work')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
-              background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 'var(--r-sm)', padding: '10px 14px',
-            }}
-          >
-            <span style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 700, color: form.tripType === 'leisure' ? 'var(--ink)' : 'var(--ink3)', flex: 1 }}>
-              Leisure
-            </span>
-            <span
-              style={{
-                width: 46, height: 26, borderRadius: 'var(--r-pill)', position: 'relative', flexShrink: 0,
-                background: form.tripType === 'work' ? 'var(--brand)' : 'var(--line)',
-                transition: 'background .18s ease',
-              }}
-            >
-              <span
-                style={{
-                  position: 'absolute', top: 3, left: form.tripType === 'work' ? 23 : 3,
-                  width: 20, height: 20, borderRadius: '50%', background: 'var(--card)',
-                  boxShadow: '0 1px 3px rgba(0,0,0,.3)', transition: 'left .18s ease',
-                }}
-              />
-            </span>
-            <span style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 700, color: form.tripType === 'work' ? 'var(--ink)' : 'var(--ink3)', flex: 1, textAlign: 'right' }}>
-              Work
-            </span>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
+          <div>
+            <label className="field-label">Start *</label>
+            <input
+              className="input" type="date" value={form.start}
+              // An end date before the new start is cleared rather than kept invalid.
+              onChange={(e) => setForm((f) => ({ ...f, start: e.target.value, end: f.end && f.end < e.target.value ? '' : f.end }))}
+            />
+          </div>
+          <div>
+            <label className="field-label">End *</label>
+            <input className="input" type="date" min={form.start || undefined} value={form.end} onChange={(e) => set('end', e.target.value)} />
           </div>
         </div>
 
+        <Segmented
+          variant="pills" tone="brand"
+          options={[{ value: 'leisure', label: 'Leisure' }, { value: 'work', label: 'Work' }]}
+          value={form.tripType} onChange={(v) => set('tripType', v)}
+        />
         <div>
           <label className="field-label">Notes</label>
           <textarea

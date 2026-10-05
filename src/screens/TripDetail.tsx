@@ -15,9 +15,9 @@ import { computeTripPoints, computeTripSavings, groupDestinations, findGaps, sug
 import { tripDayInfo, addDays } from '../lib/tripDay';
 import { checkTripCompleteness, flightSearchUrl, returnFlightSearchUrl, tripGapDescription } from '../lib/tripCompleteness';
 import { useFlightExemptTripIds } from '../lib/homeLocation';
-import { DateStack, Eyebrow, PhotoHero, Segmented } from '../components/ui';
+import { Button, DateStack, ErrorText, Eyebrow, PhotoHero, Segmented } from '../components/ui';
 
-type Seg = 'overview' | 'itinerary' | 'expenses' | 'notes';
+type Seg = 'overview' | 'expenses' | 'notes';
 
 function fmt(iso: string | null) {
   if (!iso) return '';
@@ -47,6 +47,19 @@ export function TripDetail() {
   }, [id]);
 
   const [splitting, setSplitting] = useState(false);
+  const [legError, setLegError] = useState('');
+
+  // Swipe a stay or flight left and tap Delete: that's the confirmation.
+  async function removeLeg(kind: 'hotel' | 'flight', legId: string) {
+    setLegError('');
+    try {
+      if (kind === 'hotel') await deleteHotel(legId);
+      else await deleteFlight(legId);
+      refetchTrips();
+    } catch (err) {
+      setLegError(err instanceof Error ? err.message : 'Could not delete it.');
+    }
+  }
   const flightExemptTripIds = useFlightExemptTripIds(trips);
 
   if (!trip) return <div className="head">Trip not found</div>;
@@ -202,13 +215,21 @@ export function TripDetail() {
         </div>
       )}
 
-      {(sortedHotels.length > 0 || sortedFlights.length > 0) && (
-        <div style={{ padding: '18px 20px 0' }}>
+      <div style={{ padding: '18px 20px 0' }}>
           <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)', marginBottom: 10 }}>Itinerary</div>
+          {legError && <ErrorText style={{ marginBottom: 8 }}>{legError}</ErrorText>}
           <div>
             {legs.map((leg) =>
               leg.kind === 'hotel' ? (
-                <div key={`h-${leg.data.id}`} className="legrow" onClick={() => navigate('/log-hotel', { state: { hotel: leg.data, tripId: trip.id } })}>
+                <SwipeToDelete
+                  key={`h-${leg.data.id}`}
+                  itemLabel={leg.data.name}
+                  wrapperStyle={{ borderRadius: 0 }}
+                  surface="var(--bg)"
+                  onClick={() => navigate('/log-hotel', { state: { hotel: leg.data, tripId: trip.id } })}
+                  onDelete={() => removeLeg('hotel', leg.data.id)}
+                >
+                <div className="legrow">
                   <DateStack date={leg.data.date} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{leg.data.name}</div>
@@ -216,8 +237,17 @@ export function TripDetail() {
                   </div>
                   {leg.data.total != null && <div style={{ fontSize: 'var(--fs-body)', fontWeight: 600, flexShrink: 0 }}>£{leg.data.total}</div>}
                 </div>
+                </SwipeToDelete>
               ) : (
-                <div key={`f-${leg.data.id}`} className="legrow" onClick={() => navigate('/log-flight', { state: { flight: leg.data, tripId: trip.id } })}>
+                <SwipeToDelete
+                  key={`f-${leg.data.id}`}
+                  itemLabel={`${leg.data.from} → ${leg.data.to}`}
+                  wrapperStyle={{ borderRadius: 0 }}
+                  surface="var(--bg)"
+                  onClick={() => navigate('/log-flight', { state: { flight: leg.data, tripId: trip.id } })}
+                  onDelete={() => removeLeg('flight', leg.data.id)}
+                >
+                <div className="legrow">
                   <DateStack date={leg.data.date} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -234,11 +264,15 @@ export function TripDetail() {
                   </div>
                   {leg.data.cost != null && <div style={{ fontSize: 'var(--fs-body)', fontWeight: 600, flexShrink: 0 }}>£{leg.data.cost}</div>}
                 </div>
+                </SwipeToDelete>
               )
             )}
           </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+            <Button variant="secondary" small style={{ flex: 1 }} onClick={() => navigate('/add/stay', { state: { tripId: trip.id } })}>Add stay</Button>
+            <Button variant="secondary" small style={{ flex: 1 }} onClick={() => navigate('/add/flight', { state: { tripId: trip.id } })}>Add flight</Button>
+          </div>
         </div>
-      )}
 
       {(() => {
         const suggestion = suggestTripSplit(trip);
@@ -270,7 +304,7 @@ export function TripDetail() {
 
       <Segmented<Seg>
         style={{ margin: '20px 20px 0' }}
-        options={(['overview', 'itinerary', 'expenses', 'notes'] as Seg[]).map((k) => ({ value: k, label: k.charAt(0).toUpperCase() + k.slice(1) }))}
+        options={(['overview', 'expenses', 'notes'] as Seg[]).map((k) => ({ value: k, label: k.charAt(0).toUpperCase() + k.slice(1) }))}
         value={seg} onChange={setSeg}
       />
 
@@ -299,55 +333,6 @@ export function TripDetail() {
                 This trip includes an award flight. Points redeemed aren't tracked as a value yet.
               </div>
             )}
-            </div>
-          </>
-        )}
-        {seg === 'itinerary' && (
-          <>
-            {[...trip.hotels, ...trip.flights]
-              .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
-              .map((leg, i) => {
-                const isHotel = 'name' in leg;
-                return (
-                  <SwipeToDelete
-                    key={i}
-                    wrapperStyle={{ borderRadius: 0, borderTop: i > 0 ? '1px solid var(--line)' : 'none' }}
-                    onClick={() =>
-                      isHotel
-                        ? navigate('/log-hotel', { state: { hotel: leg, tripId: trip.id } })
-                        : navigate('/log-flight', { state: { flight: leg, tripId: trip.id } })
-                    }
-                    onDelete={async () => {
-                      const label = isHotel ? (leg as typeof trip.hotels[number]).name : `this flight`;
-                      if (!window.confirm(`Delete ${label}? This can't be undone.`)) return;
-                      if (isHotel) await deleteHotel(leg.id);
-                      else await deleteFlight(leg.id);
-                      refetchTrips();
-                    }}
-                  >
-                    <div className="itin" style={{ cursor: 'pointer', alignItems: 'center' }}>
-                      <DateStack date={leg.date} />
-                      <div className="line">
-                        <div className="t">{isHotel ? leg.name : `${leg.from} → ${leg.to}`}</div>
-                        <div className="s">{isHotel ? 'Stay' : 'Flight'}</div>
-                      </div>
-                    </div>
-                  </SwipeToDelete>
-                );
-              })}
-            <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-              <button
-                onClick={() => navigate('/add/stay', { state: { tripId: trip.id } })}
-                style={{ flex: 1, padding: '10px 0', borderRadius: 'var(--r-control)', border: '1px solid var(--line)', background: 'var(--card2)', color: 'var(--ink)', fontSize: 'var(--fs-body)', fontWeight: 700, cursor: 'pointer' }}
-              >
-                + Add hotel
-              </button>
-              <button
-                onClick={() => navigate('/add/flight', { state: { tripId: trip.id } })}
-                style={{ flex: 1, padding: '10px 0', borderRadius: 'var(--r-control)', border: '1px solid var(--line)', background: 'var(--card2)', color: 'var(--ink)', fontSize: 'var(--fs-body)', fontWeight: 700, cursor: 'pointer' }}
-              >
-                + Add flight
-              </button>
             </div>
           </>
         )}

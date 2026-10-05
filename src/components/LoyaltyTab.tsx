@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { BrandLogo } from './BrandLogo';
 import { hasWordmarkLogo } from '../data/brandLogos';
 import { useVouchers } from '../lib/useLiveData';
-import { setVoucherRedeemed } from '../lib/queries';
+import { deleteLoyaltyProgramme, setVoucherRedeemed, updateLoyaltyProgramme } from '../lib/queries';
+import { SwipeToDelete } from './SwipeToDelete';
+import { ErrorText } from './ui';
 import { computeStatusProgress } from '../lib/statusProgress';
 import { computeLoyaltyInsights } from '../lib/loyaltyInsights';
 import { cardBackground, luminance, textOn, tierFinish } from '../lib/cardTheme';
@@ -17,16 +19,43 @@ function moneyPrecise(n: number): string {
 }
 
 export function LoyaltyTab({
-  programmes, hotels, promotions, paymentCards, cardResults,
+  programmes, hotels, promotions, paymentCards, cardResults, refetchProgrammes,
 }: {
   programmes: LoyaltyProgramme[]; hotels: Hotel[]; promotions: Promotion[]; paymentCards: PaymentCard[];
   cardResults?: Parameters<typeof computeStatusProgress>[3];
+  refetchProgrammes: () => void;
 }) {
   const { data: vouchers, refetch: refetchVouchers } = useVouchers();
   const [category, setCategory] = useState<Category>('hotel');
   const [open, setOpen] = useState<string | null>(null);
+  // Removed this session: hidden straight away, before the refetch lands.
+  const [removed, setRemoved] = useState<Set<string>>(new Set());
+  const [error, setError] = useState('');
 
-  const filtered = programmes.filter((p) => p.category === category);
+  async function remove(name: string) {
+    setError('');
+    try {
+      await deleteLoyaltyProgramme(name);
+      setRemoved((r) => new Set(r).add(name));
+      if (open === name) setOpen(null);
+      refetchProgrammes();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete it.');
+    }
+  }
+
+  // Saves a changed balance or tier when you leave the field.
+  async function save(name: string, patch: Parameters<typeof updateLoyaltyProgramme>[1]) {
+    setError('');
+    try {
+      await updateLoyaltyProgramme(name, patch);
+      refetchProgrammes();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save.');
+    }
+  }
+
+  const filtered = programmes.filter((p) => p.category === category && !removed.has(p.name));
   const insights = computeLoyaltyInsights(hotels, programmes, new Date().getFullYear());
 
   return (
@@ -39,6 +68,7 @@ export function LoyaltyTab({
         ))}
       </div>
 
+      {error && <ErrorText>{error}</ErrorText>}
       {filtered.length === 0 && (
         <div style={{ padding: '20px 4px', textAlign: 'center', color: 'var(--ink3)', fontSize: 'var(--fs-body)' }}>
           No {category} programmes yet.
@@ -64,10 +94,12 @@ export function LoyaltyTab({
 
         return (
           <div key={p.name} className="brandcard" style={{ background: cardBackground(p.color), color: ink }}>
-            <button
-              onClick={() => setOpen(isOpen ? null : p.name)}
+            <SwipeToDelete itemLabel={p.name} surface={cardBackground(p.color)} wrapperStyle={{ borderRadius: 0 }} onClick={() => setOpen(isOpen ? null : p.name)} onDelete={() => remove(p.name)}>
+            <div
+              role="button" tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(isOpen ? null : p.name); } }}
               aria-expanded={isOpen}
-              style={{ width: '100%', display: 'block', padding: '16px 16px 18px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'inherit' }}
+              style={{ width: '100%', display: 'block', padding: '16px 16px 18px', cursor: 'pointer', textAlign: 'left', color: ink }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0, flex: 1 }}>
@@ -91,7 +123,8 @@ export function LoyaltyTab({
                   )}
                 </div>
               </div>
-            </button>
+            </div>
+            </SwipeToDelete>
             {progress && (
               <div className="bc-progress" aria-hidden="true">
                 <i style={{ width: `${Math.max(0, Math.min(100, progress.pct ?? 0))}%`, background: p.accent && luminance(p.accent) > 0.05 ? p.accent : 'var(--brand)' }} />
@@ -100,6 +133,24 @@ export function LoyaltyTab({
 
             {isOpen && (
               <div style={{ padding: '14px 14px 16px', background: 'var(--card)', color: 'var(--ink)', display: 'grid', gap: 14 }}>
+                <div className="dd-row">
+                  <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Points</span>
+                  <input
+                    className="input compact inline-value" type="number" inputMode="numeric" aria-label={`${p.name} points`}
+                    defaultValue={p.points}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                    onBlur={(e) => { const v = parseInt(e.target.value, 10); if (Number.isFinite(v) && v !== p.points) save(p.name, { points: v }); }}
+                  />
+                </div>
+                <div className="dd-row">
+                  <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Tier</span>
+                  <input
+                    className="input compact inline-value" aria-label={`${p.name} tier`} placeholder="None"
+                    defaultValue={p.tier ?? ''}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                    onBlur={(e) => { const v = e.target.value.trim() || null; if (v !== (p.tier ?? null)) save(p.name, { tier: v }); }}
+                  />
+                </div>
                 <div className="dd-row">
                   <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Rate</span>
                   <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{p.ptValue}p per point</span>

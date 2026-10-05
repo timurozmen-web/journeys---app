@@ -47,6 +47,11 @@ Run all three; all must be clean:
 - **No explanatory copy in the UI.** Labels, buttons, empty states and
   errors only. No intro paragraphs, how-it-works blurbs, confirmation
   banners or hint text unless it is needed to complete the task.
+- **Fewest taps.** Lists delete by swipe-left then tapping Delete
+  (`SwipeToDelete`, with `itemLabel`); values edit in place where they're
+  shown; forms show only essentials with the rest under "More details",
+  and fill what they can (brand from hotel name, airline from flight
+  number, country from the trip).
 - Routing uses `HashRouter`; routes are listed in `src/App.tsx`.
 
 ## Data layer

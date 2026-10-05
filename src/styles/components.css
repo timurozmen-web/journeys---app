@@ -194,3 +194,15 @@ textarea.input{resize:vertical;line-height:1.45}
 .walletcard-value small{font-size:var(--fs-caption);opacity:.72;margin-top:2px}
 .walletdetail{display:grid;gap:4px;padding:12px 14px 16px;background:var(--card);color:var(--ink);border:1px solid var(--line);
   border-radius:var(--r-lg);margin-top:8px}
+
+/* A date shown as a value that can be changed in place (tap to edit). */
+input[type=date].input.inline-date{width:auto;max-width:60%;min-height:0;padding:4px 8px;background:transparent;border-color:transparent;text-align:right;font-weight:700;font-size:var(--fs-small)}
+input[type=date].input.inline-date:focus{border-color:var(--brand2)}
+
+.optionrow.picked{border-color:var(--brand);background:var(--brand-soft)}
+/* A small card swatch in a list of cards. */
+.minicard{width:46px;aspect-ratio:85.6/54;border-radius:5px;flex-shrink:0;border:1px solid rgba(255,255,255,.14)}
+
+/* A value shown as plain text that can be edited in place. */
+.input.inline-value{width:auto;max-width:55%;height:30px;line-height:1;padding:0 0 0 8px;background:transparent;border-color:transparent;text-align:right;font-weight:700;font-size:var(--fs-small)}
+.input.inline-value:focus{border-color:var(--brand2);background:var(--card2);padding-right:8px}

@@ -7,6 +7,7 @@ import * as mock from '../data/mock';
 import { getCached, setCached } from './localCache';
 import type { BankLinks } from './queries';
 import { groupBankSpend } from './bankSpend';
+import { shouldReplace } from './liveRefresh';
 import { fetchTrips, fetchLoyaltyProgrammes, fetchPaymentCards, fetchReviews, fetchAllHotels, fetchAllFlights, fetchVouchers, fetchPromotions, fetchBankLinks, fetchPromotionCandidates, fetchDiscoverItems, fetchHomeLocation, fetchClimateData, fetchCrowdPriceData, fetchPointsValueData, fetchCityCashRates, fetchCurrencyPreference } from './queries';
 
 function useLive<T>(cacheKey: string, fetcher: () => Promise<T[]>, fallback: T[]) {
@@ -27,7 +28,7 @@ function useLive<T>(cacheKey: string, fetcher: () => Promise<T[]>, fallback: T[]
     fetcher()
       .then((rows) => {
         if (cancelled) return;
-        if (rows.length > 0) {
+        if (shouldReplace(rows.length, getCached<T[]>(cacheKey) != null)) {
           setData(rows);
           setIsLive(true);
           setCachedAt(Date.now());

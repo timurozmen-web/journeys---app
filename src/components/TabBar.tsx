@@ -7,7 +7,7 @@ import { fanPositions } from '../lib/fanLayout';
 // The + button's fan, left to right along the arc.
 const ACTIONS = [
   { key: 'plan', label: 'Plan', desc: 'Weather, crowds and cost for a trip', Icon: PlanIcon },
-  { key: 'capture', label: 'Capture', desc: 'Scan a booking or log one by hand', Icon: CaptureIcon },
+  { key: 'capture', label: 'Add', desc: 'Stays, flights, trips and cards', Icon: CaptureIcon },
   { key: 'discover', label: 'Discover', desc: 'Card offers and loyalty news', Icon: DiscoverIcon },
   { key: 'credit', label: 'Credit', desc: 'Best programme for a flight', Icon: CreditIcon },
 ] as const;
@@ -75,10 +75,7 @@ export function TabBar() {
         }}
       >
         <div style={{ width: 36, height: 4, borderRadius: 'var(--r-pill)', background: 'var(--line)', margin: '0 auto 14px' }} />
-        <div style={{ fontSize: 'var(--fs-title)', fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>Waiting to sync</div>
-        <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
-          These will save automatically as soon as you're back online.
-        </p>
+        <div style={{ fontSize: 'var(--fs-title)', fontWeight: 600, color: 'var(--ink)', marginBottom: 14 }}>Waiting to sync</div>
         <div style={{ display: 'grid', gap: 8, maxHeight: '40vh', overflowY: 'auto' }}>
           {pendingItems.map((item) => (
             <div key={item.id} style={{ padding: '10px 12px', borderRadius: 'var(--r-control)', background: 'var(--card2)' }}>

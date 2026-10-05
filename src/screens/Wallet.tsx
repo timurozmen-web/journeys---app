@@ -20,7 +20,7 @@ export function Wallet() {
   // Arriving from bank setup: open on Cards with the new cards in view.
   const arrival = (useLocation().state ?? null) as { seg?: Seg; tracked?: string[] } | null;
   const [seg, setSeg] = useState<Seg>(arrival?.seg ?? 'loyalty');
-  const { data: rawLoyaltyProgrammes, isLive } = useLoyaltyProgrammes();
+  const { data: rawLoyaltyProgrammes, isLive, refetch: refetchProgrammes } = useLoyaltyProgrammes();
   const { data: paymentCards, refetch: refetchCards } = usePaymentCards();
   const { data: hotels } = useAllHotels();
   const { data: promotions } = usePromotions();
@@ -77,8 +77,8 @@ export function Wallet() {
             </div>
           </div>
           <button
-            onClick={() => navigate('/log-loyalty-programme')}
-            aria-label="Add a loyalty scheme"
+            onClick={() => navigate(seg === 'payment' ? '/add-card' : seg === 'promotions' ? '/scan-promotion' : '/log-loyalty-programme')}
+            aria-label={seg === 'payment' ? 'Add a card' : seg === 'promotions' ? 'Add a promotion' : 'Add a loyalty programme'}
             style={{ width: 34, height: 34, borderRadius: '50%', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink)', fontSize: 'var(--fs-title)', fontWeight: 600, display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0 }}
           >
             +
@@ -101,7 +101,7 @@ export function Wallet() {
         )}
 
         {seg === 'loyalty' && (
-          <LoyaltyTab programmes={loyaltyProgrammes} hotels={hotels} promotions={promotions} paymentCards={paymentCards} cardResults={cardResults} />
+          <LoyaltyTab programmes={loyaltyProgrammes} hotels={hotels} promotions={promotions} paymentCards={paymentCards} cardResults={cardResults} refetchProgrammes={refetchProgrammes} />
         )}
 
         {seg === 'payment' && (
