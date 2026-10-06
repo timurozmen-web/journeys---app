@@ -37,20 +37,33 @@ Run all three; all must be clean:
   Use those first. Any remaining inline style should reference tokens
   (`fontSize: 'var(--fs-body)'`), never raw px sizes or hex colours.
   Form controls take `className="input"` inside a `Field`.
-- **The theme is Paper:** off-white ground (`--bg`), black text, and
-  orange as the single accent (`--brand` for text, `--brand2` for fills
-  and large marks). Headings (screen titles, trip names, map labels)
-  are Space Mono, a modern typewriter face; all other text is Archivo.
-  Both are self-hosted via @fontsource. Anything on an orange fill uses
-  `--on-brand` (white). The tab bar is a black pill with white icons.
-  Photos carry a dark scrim so white text on them stays readable. Wallet
-  cards take each programme's own brand colour (`src/lib/cardTheme.ts`);
-  map colours live in `src/data/mapTheme.ts` because Leaflet and SVG
+- **Two sections, one set of data** (`src/lib/appMode.ts`). The start
+  page (`/`, `Start`) is split into Travel (top) and Loyalty (bottom);
+  Settings has an icon toggle to switch. Every route belongs to one
+  section (`modeForPath`); shared screens keep the current one. The
+  section is set on `<html data-mode>`, which switches the theme.
+  - **Travel** (`/now`, `/then`, trips, Plan): the Paper theme.
+    Off-white ground (`--bg`), black text, orange as the single accent
+    (`--brand` for text, `--brand2` for fills). Headings, trip names and
+    map labels are Space Mono, a modern typewriter face; other text is
+    Archivo. Tab bar: "Now" and "Then" either side of +, which offers
+    Add and Plan. Now (`Trips.tsx`, `src/lib/tripTimeline.ts`) is trips
+    under way, the today line with tonight's stay, and what's coming.
+    Then (`Profile.tsx`) is the past: a scratch-off world map, a
+    polaroid scrapbook by year, ratings to do and the logbook.
+  - **Loyalty** (`/loyalty`, `/wallet`, Discover, Credit, bank sync):
+    graphite theme (`html[data-mode="loyalty"]` in tokens.css), Archivo
+    throughout. Tab bar: Home and Wallet icons either side of +, which
+    offers Discover and Credit. Home (`LoyaltyHome`) shows wallet value,
+    a status ring per programme and "worth knowing"
+    (`src/lib/loyaltyHighlights.ts`). Airline status is set in Settings,
+    not edited in the wallet.
+  Anything on an orange fill uses `--on-brand` (white). Photos carry a
+  dark scrim so white text on them stays readable. Wallet cards take
+  each programme's own brand colour (`src/lib/cardTheme.ts`); map
+  colours live in `src/data/mapTheme.ts` because Leaflet and SVG
   attributes can't read CSS variables. Maps are drawn as a pencil
   sketch: hatched land, a doubled ink outline, orange dashed routes.
-- **Trips is one timeline** (`src/lib/tripTimeline.ts`): work and
-  leisure together, opened at today, three months back above the today
-  line, older trips folded into one row that unfolds on scrolling up.
 - **Bookings share one card shape** on a trip's itinerary: a square
   badge in the airline's colour (`src/data/airlineBrand.ts`) or the
   hotel programme's colour (`src/lib/bookingBadge.ts`), then a plane and
@@ -58,7 +71,8 @@ Run all three; all must be clean:
 - **Status rings** (`src/lib/statusRing.ts`, `StatusRing`): one tick
   per night toward the next tier, coloured by source (stays, card
   nights, promotions, booked) from `computeStatusProgress().breakdown`;
-  swipe across for the spend requirement on the same kind of ring.
+  swipe across for the spend requirement on the same kind of ring (the
+  Nights / Spend tabs stay put; only the rings slide).
 - **No explanatory copy in the UI.** Labels, buttons, empty states and
   errors only. No intro paragraphs, how-it-works blurbs, confirmation
   banners or hint text unless it is needed to complete the task.

@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useRef, useEffect, useId } from 'react';
 import { geoNaturalEarth1, geoPath } from 'd3-geo';
 import { worldGeo } from '../data/worldGeo';
 import { COUNTRY_NAME_MAP } from '../data/airports';
@@ -32,10 +32,13 @@ function project(lat: number, lng: number): [number, number] | null {
 }
 
 export function WorldMap({
-  hotels, flights, reviews, focusCountries,
+  hotels, flights, reviews, focusCountries, scratch = false,
 }: {
   hotels: Hotel[]; flights: Flight[]; reviews: Review[]; focusCountries?: string[] | null;
+  /** Draw visited countries scratched off (Then) rather than shaded by nights. */
+  scratch?: boolean;
 }) {
+  const scratchId = `scratch${useId().replace(/:/g, '')}`;
   const [showRoutes, setShowRoutes] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -193,6 +196,14 @@ export function WorldMap({
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
         >
+          {scratch && (
+            <defs>
+              <pattern id={scratchId} width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(12)">
+                <rect width="5" height="5" fill={MAP.scratch} />
+                <path d="M0 0L5 5M5 0L0 5" stroke={MAP.scratchMark} strokeWidth="0.7" strokeOpacity="0.55" />
+              </pattern>
+            </defs>
+          )}
           <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
             <MapBackdrop
               projection={projection} width={WIDTH} height={HEIGHT}
@@ -201,7 +212,7 @@ export function WorldMap({
                 const isSelected = selected === c.name;
                 return {
                   key: c.name, d: c.d,
-                  fill: nights ? shadeFor(nights, maxNights) : undefined,
+                  fill: nights ? (scratch ? `url(#${scratchId})` : shadeFor(nights, maxNights)) : undefined,
                   stroke: isSelected ? MAP.text : MAP.landBorder, strokeWidth: isSelected ? 1.2 / zoom : 0.4 / zoom,
                   onClick: () => selectCountry(c.name),
                 };

@@ -50,7 +50,7 @@ export function ReviewTrip() {
     return (
       <div style={{ padding: 20 }}>
         <p style={{ color: 'var(--ink3)', fontSize: 'var(--fs-body)' }}>No stay selected to review.</p>
-        <button onClick={() => navigate('/profile')} style={{ color: 'var(--brand)', background: 'none', border: 'none', fontWeight: 700 }}>
+        <button onClick={() => navigate('/then')} style={{ color: 'var(--brand)', background: 'none', border: 'none', fontWeight: 700 }}>
           Back to Profile
         </button>
       </div>
@@ -124,7 +124,7 @@ export function ReviewTrip() {
           date: hotel!.date, category: categories[i].key, score: s.score,
         });
       }
-      navigate('/profile');
+      navigate('/then');
     } catch (err) {
       const message =
         err instanceof Error

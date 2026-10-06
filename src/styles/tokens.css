@@ -97,9 +97,40 @@
   --map-route: #F2551D;
 }
 
+/* Loyalty section: the technical side of the app, on graphite so the
+   programmes' and cards' own brand colours stand out. Same orange accent,
+   and Archivo for headings too (the typewriter face belongs to Travel).
+   Contrast on --card / --bg: ink 15.2/16.8, ink2 8.0/8.8, ink3 5.0/5.5,
+   brand 6.6/7.2, green 8.3/9.1, red 7.0/7.7, amber 8.7/9.6. */
+html[data-mode="loyalty"] {
+  color-scheme: dark only;
+  --bg: #111214;
+  --card: #1B1C20;
+  --card2: #25262B;
+  --line: #2E3036;
+  --ink: #F4F2EE;
+  --ink2: #B5B1AA;
+  --ink3: #8F8B85;
+  --brand: #FF7A45;
+  --brand2: #F2551D;
+  --on-brand: #FFFFFF;
+  --green: #5CC98B;
+  --red: #F08A7E;
+  --amber: #E8B04B;
+  --pending: #5E5A54;
+  --promo: #4FB39C;
+  --brand-soft: rgba(255,122,69,.14);
+  --amber-soft: rgba(232,176,75,.14);
+  --red-soft: rgba(240,138,126,.14);
+  --green-soft: rgba(92,201,139,.14);
+  --font-display: var(--font-body);
+  --shadow-card: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-raised: 0 12px 30px rgba(0,0,0,.5);
+  --shadow-hero: 0 18px 40px rgba(0,0,0,.55);
+}
+
 html {
   background-color: var(--bg) !important;
-  color-scheme: light only;
 }
 html {
   background-color: var(--bg) !important;

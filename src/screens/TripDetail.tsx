@@ -152,7 +152,7 @@ export function TripDetail() {
         src={heroImage}
         fallback={<DestinationPhoto query={destinationQuery(trip)} seed={trip.id} height={380} />}
       >
-        <button className="tdback" onClick={() => navigate('/trips')}>
+        <button className="tdback" aria-label="Back" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/now'))}>
           <BackIcon size={18} color="var(--on-dark)" />
         </button>
         <button
