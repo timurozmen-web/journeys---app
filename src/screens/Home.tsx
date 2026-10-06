@@ -246,11 +246,11 @@ export function Home() {
 
           <span className="ph-bottom" style={{ left: 24, right: 24, bottom: 18 }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <span className="nf-eyebrow" style={{ color: 'var(--brand)' }}>
+              <span className="ph-eyebrow">
                 {heroIsCurrent ? `In progress · Day ${heroDayInfo!.dayIndex} of ${heroDayInfo!.totalDays}` : `Upcoming · ${heroDaysToGo} day${heroDaysToGo === 1 ? '' : 's'} to go`}
               </span>
               {isTripIncomplete(heroTrip) && !flightExemptTripIds.has(heroTrip.id) && (
-                <span className="nf-eyebrow" style={{ color: 'var(--ink)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <span className="ph-eyebrow alert">
                   <AlertIcon size={12} color="var(--brand)" /> Trip incomplete
                 </span>
               )}

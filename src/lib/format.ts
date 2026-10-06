@@ -25,6 +25,17 @@ export function formatDateRange(startIso: string, endIso: string) {
   return `${s.d} ${MONTHS_SHORT[s.m]} ${s.y} - ${e.d} ${MONTHS_SHORT[e.m]} ${e.y}`;
 }
 
+// Compact range for timelines and cards: "23 – 25 Oct", "30 Sep – 1 Oct",
+// with the year only when it isn't the current one ("15 – 23 Jan 2027").
+export function formatShortRange(startIso: string, endIso: string, todayIso: string) {
+  const s = parts(startIso);
+  const e = parts(endIso);
+  const year = e.y === parts(todayIso).y && s.y === e.y ? '' : ` ${e.y}`;
+  const startYear = s.y !== e.y ? ` ${s.y}` : '';
+  if (s.y === e.y && s.m === e.m) return s.d === e.d ? `${s.d} ${MONTHS_SHORT[s.m]}${year}` : `${s.d} – ${e.d} ${MONTHS_SHORT[s.m]}${year}`;
+  return `${s.d} ${MONTHS_SHORT[s.m]}${startYear} – ${e.d} ${MONTHS_SHORT[e.m]}${year}`;
+}
+
 // Line-item amounts show 2dp only when under £100 and the cents aren't
 // .00 (no point showing decimals that add nothing); headline/big totals
 // always round to whole pounds.
@@ -38,6 +49,15 @@ export function formatMoney(n: number) {
 export function formatMoneyHeadline(n: number) {
   const sign = n < 0 ? '−' : '';
   return `${sign}£${Math.round(Math.abs(n)).toLocaleString()}`;
+}
+
+// Weekday and day of month for an itinerary's day column:
+// "2027-01-15" -> { weekday: 'FRI', day: '15' }. UTC, so no timezone can
+// shift the weekday.
+export function weekdayDay(iso: string): { weekday: string; day: string } {
+  const { y, m, d } = parts(iso);
+  const weekday = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][new Date(Date.UTC(y, m, d)).getUTCDay()];
+  return { weekday, day: String(d) };
 }
 
 // Day and short month for the gold date column in itineraries:

@@ -20,7 +20,9 @@ export interface DrawnLeg {
   index: number;                   // which leg of its flight (the date shows on the first)
 }
 
-// Ocean shading, faint latitude/longitude lines and softly lit land.
+// Paper, faint latitude/longitude lines and land drawn like a pencil
+// sketch: a sand fill, light hatching and a second, offset outline so the
+// coast looks gone over twice by hand.
 export function MapBackdrop({ projection, width, height, countries }: {
   projection: GeoProjection; width: number; height: number; countries: { key: string; d: string; fill?: string; stroke?: string; strokeWidth?: number; onClick?: () => void }[];
 }) {
@@ -29,24 +31,24 @@ export function MapBackdrop({ projection, width, height, countries }: {
   return (
     <>
       <defs>
-        <radialGradient id={`sea${id}`} cx="50%" cy="40%" r="75%">
-          <stop offset="0%" stopColor={MAP.seaLight} />
-          <stop offset="100%" stopColor={MAP.sea} />
-        </radialGradient>
-        <linearGradient id={`land${id}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={MAP.landLight} />
-          <stop offset="100%" stopColor={MAP.land} />
-        </linearGradient>
+        <pattern id={`hatch${id}`} width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+          <line x1="0" y1="0" x2="0" y2="5" stroke={MAP.hatch} strokeWidth="1" />
+        </pattern>
       </defs>
-      <rect x={-width} y={-height} width={width * 3} height={height * 3} fill={`url(#sea${id})`} />
+      <rect x={-width} y={-height} width={width * 3} height={height * 3} fill={MAP.sea} />
       <path d={grat} fill="none" stroke={MAP.graticule} strokeWidth={0.4} />
       {countries.map((c) => (
         <path
           key={c.key} d={c.d}
-          fill={c.fill ?? `url(#land${id})`} stroke={c.stroke ?? MAP.landBorder} strokeWidth={c.strokeWidth ?? 0.5}
+          fill={c.fill ?? MAP.land} stroke={c.stroke ?? MAP.landBorder} strokeWidth={c.strokeWidth ?? 0.6} strokeOpacity={c.stroke ? 1 : 0.7} strokeLinejoin="round"
           onClick={c.onClick} style={c.onClick ? { cursor: 'pointer' } : undefined}
         />
       ))}
+      <g transform="translate(1.1 0.9)" pointerEvents="none">
+        {countries.map((c) => (
+          <path key={`${c.key}-sketch`} d={c.d} fill={`url(#hatch${id})`} stroke={MAP.landBorder} strokeOpacity={0.28} strokeWidth={0.5} />
+        ))}
+      </g>
     </>
   );
 }
@@ -54,9 +56,10 @@ export function MapBackdrop({ projection, width, height, countries }: {
 // Nose points along +x, so rotating by the heading angle aims it.
 const PLANE = 'M8,0 C8,.9 7,1.2 6,1.2 L2,1.2 L-2,7 L-4,7 L-1.5,1.2 L-5,1.2 L-6.5,3.5 L-8,3.5 L-7,0 L-8,-3.5 L-6.5,-3.5 L-5,-1.2 L-1.5,-1.2 L-4,-7 L-2,-7 L2,-1.2 L6,-1.2 C7,-1.2 8,-.9 8,0 Z';
 
-// Routes: dotted great-circle path, hollow ring at the origin, glowing
-// dot at the destination, small white dot at a stopover, airport codes,
-// and a plane at the midpoint facing the way it flies (with the date).
+// Routes: orange dashed great-circle path, hollow ring at the origin,
+// orange dot at the destination, small ink dot at a stopover, typewriter
+// airport codes, and a plane at the midpoint facing the way it flies
+// (with the date).
 // `k` is the current zoom, so marks stay the same size on screen.
 export function RouteLayer({ legs, k = 1, showPlanes = true, showDates = true, showCodes = true }: {
   legs: DrawnLeg[]; k?: number; showPlanes?: boolean; showDates?: boolean; showCodes?: boolean;
@@ -64,8 +67,8 @@ export function RouteLayer({ legs, k = 1, showPlanes = true, showDates = true, s
   const s = 1 / k;
   const label = (x: number, y: number, text: string, anchor: 'start' | 'end' | 'middle' = 'middle') => (
     <text
-      x={x} y={y} textAnchor={anchor} fontSize={7 * s} fontWeight={600} letterSpacing={0.6 * s} fill={MAP.text}
-      stroke={MAP.sea} strokeWidth={2.4 * s} paintOrder="stroke" style={{ fontFamily: 'var(--font-body)' }}
+      x={x} y={y} textAnchor={anchor} fontSize={7.5 * s} fontWeight={700} letterSpacing={0.2 * s} fill={MAP.text}
+      stroke={MAP.sea} strokeWidth={2.6 * s} paintOrder="stroke" style={{ fontFamily: MAP.font }}
     >{text}</text>
   );
   // Each airport is labelled once even when several legs share it, and a
@@ -83,14 +86,14 @@ export function RouteLayer({ legs, k = 1, showPlanes = true, showDates = true, s
   return (
     <g>
       {legs.map((l) => l.parts.map((d, i) => (
-        <path key={`${l.key}-${i}`} d={d} fill="none" stroke={MAP.route} strokeWidth={1.3 * s} strokeDasharray={`${1.5 * s} ${3.5 * s}`} strokeLinecap="round" />
+        <path key={`${l.key}-${i}`} d={d} fill="none" stroke={MAP.route} strokeWidth={1.6 * s} strokeDasharray={`${4.5 * s} ${3.5 * s}`} strokeLinecap="round" />
       )))}
       {legs.map((l) => (
         <g key={`${l.key}-pts`}>
           {l.startsJourney && <circle cx={l.start[0]} cy={l.start[1]} r={3.4 * s} fill={MAP.sea} stroke={MAP.route} strokeWidth={1.3 * s} />}
           {l.endsJourney ? (
             <>
-              <circle cx={l.end[0]} cy={l.end[1]} r={7 * s} fill={MAP.route} opacity={0.18} />
+              <circle cx={l.end[0]} cy={l.end[1]} r={7 * s} fill={MAP.route} opacity={0.15} />
               <circle cx={l.end[0]} cy={l.end[1]} r={3.6 * s} fill={MAP.route} stroke={MAP.stopRing} strokeWidth={1 * s} />
             </>
           ) : (
@@ -118,8 +121,8 @@ export function RouteLayer({ legs, k = 1, showPlanes = true, showDates = true, s
             const w = (text.length * 4.6 + 8) * s;
             return (
               <g transform={`translate(0,${-12 * s})`}>
-                <rect x={-w / 2} y={-6.5 * s} width={w} height={11 * s} rx={5.5 * s} fill={MAP.panel} stroke={MAP.route} strokeWidth={0.6 * s} />
-                <text y={1.6 * s} textAnchor="middle" fontSize={6.6 * s} fontWeight={600} letterSpacing={0.5 * s} fill={MAP.route} style={{ fontFamily: 'var(--font-body)' }}>{text}</text>
+                <rect x={-w / 2} y={-6.5 * s} width={w} height={11 * s} rx={2 * s} fill={MAP.panel} stroke={MAP.text} strokeWidth={0.6 * s} transform="rotate(-3)" />
+                <text y={1.6 * s} textAnchor="middle" fontSize={6.4 * s} fontWeight={700} fill={MAP.text} transform="rotate(-3)" style={{ fontFamily: MAP.font }}>{text}</text>
               </g>
             );
           })()}

@@ -14,6 +14,8 @@ const PAD = 28; // leaves breathing room so points/routes aren't flush against t
 const STEP_MS = 1400; // time spent on each stop before advancing
 
 const geo = worldGeo;
+// The crescent from MoonIcon, drawn at each place stayed.
+const MOON = 'M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z';
 
 // One chronological stop in the playback sequence -- a hotel stay, or a
 // geotagged photo. Flights don't get their own stop (they're the lines
@@ -79,11 +81,17 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
 
     const routeLegs: DrawnLeg[] = projectLegs(legs, (lng, lat) => projection([lng, lat]) as [number, number] | null, WIDTH);
 
-    const markers: { x: number; y: number; label: string }[] = [];
+    // One marker per place stayed, with the nights spent there (stays in
+    // the same city are added together, as the moons on the itinerary).
+    const markers: { x: number; y: number; label: string; nights: number }[] = [];
     for (const h of hotels) {
       if (h.lat == null || h.lng == null) continue;
       const p = project(h.lat, h.lng);
-      if (p) markers.push({ x: p[0], y: p[1], label: h.city ?? h.name });
+      if (!p) continue;
+      const label = h.city ?? h.name;
+      const same = markers.find((m) => m.label === label || Math.hypot(m.x - p[0], m.y - p[1]) < 6);
+      if (same) same.nights += h.nights;
+      else markers.push({ x: p[0], y: p[1], label, nights: h.nights });
     }
 
     const photoMarkers: { x: number; y: number; url: string }[] = [];
@@ -145,10 +153,16 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
 
   return (
     <div style={{ position: 'relative' }}>
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block', background: 'var(--map-bg)', borderRadius: 'var(--r-md)', overflow: 'hidden' }}>
+      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block', background: 'var(--map-bg)', borderRadius: 'var(--r-md)', border: '1px solid var(--line)', overflow: 'hidden' }}>
         {projection && <MapBackdrop projection={projection} width={WIDTH} height={HEIGHT} countries={countryPaths.map((c) => ({ key: c.name, d: c.d }))} />}
         {markers.map((m, i) => (
-          <circle key={`h${i}`} cx={m.x} cy={m.y} r={2.4} fill={MAP.home} opacity={0.75} />
+          <g key={`h${i}`}>
+            <circle cx={m.x} cy={m.y} r={3} fill={MAP.sea} stroke={MAP.home} strokeWidth={1.3} />
+            <g transform={`translate(${m.x + 5},${m.y - 13}) scale(0.42)`}>
+              <path d={MOON} fill={MAP.route} />
+            </g>
+            <text x={m.x + 16} y={m.y - 5} fontSize={8} fontWeight={700} fill={MAP.text} stroke={MAP.sea} strokeWidth={2.4} paintOrder="stroke" style={{ fontFamily: MAP.font }}>{m.nights}</text>
+          </g>
         ))}
         <RouteLayer legs={routeLegs} />
         {photoMarkers.map((p, i) => (
@@ -172,8 +186,8 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
           onClick={togglePlay}
           style={{
             position: 'absolute', top: 8, right: 8, display: 'flex', alignItems: 'center', gap: 5,
-            padding: '5px 11px', borderRadius: 'var(--r-pill)', border: 'none', background: 'rgba(20,23,30,.9)',
-            color: 'var(--brand)', fontSize: 'var(--fs-caption)', fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,.4)',
+            padding: '5px 11px', borderRadius: 'var(--r-pill)', border: '1px solid var(--ink)', background: 'var(--card)',
+            color: 'var(--ink)', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-caption)', fontWeight: 700, cursor: 'pointer',
           }}
         >
           {playing ? '⏸ Pause' : '▶ Play trip'}
@@ -185,7 +199,7 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
           style={{
             position: 'absolute', left: 10, right: 10, bottom: 10, background: 'var(--card)', borderRadius: 'var(--r-control)',
             border: '1px solid var(--line)', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 8,
-            boxShadow: '0 4px 14px rgba(0,0,0,.4)',
+            boxShadow: 'var(--shadow-raised)',
           }}
         >
           {activeStop.photoUrl && (
