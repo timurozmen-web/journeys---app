@@ -72,6 +72,9 @@ export function SwipeToDelete({
           position: 'absolute', top: 0, right: 0, bottom: revealHeight ? 'auto' : 0, height: revealHeight, width: REVEAL_WIDTH,
           background: 'var(--red)', color: 'var(--on-dark)', border: 'none', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          // Kept out of sight until a swipe starts: otherwise its red edge
+          // shows through the anti-aliased rounded corners of a closed row.
+          visibility: offset === 0 && !dragging ? 'hidden' : 'visible',
         }}
       >
         {deleteLabel}

@@ -137,6 +137,10 @@ export interface StatusProgress {
   uniqueBrandCount: number;
   spendProgress: SpendProgress | null;
   brandExplorer: BrandExplorerProgress | null;
+  // Where the nights toward the target came from, for the status ring.
+  // stays + card + promos = currentNights; pending is booked stays plus
+  // card and promotion nights not yet credited.
+  breakdown: { stays: number; card: number; promos: number; pending: number };
 }
 
 export function computeStatusProgress(
@@ -396,5 +400,11 @@ export function computeStatusProgress(
     uniqueBrandCount,
     spendProgress,
     brandExplorer,
+    breakdown: {
+      stays: currentNights,
+      card: earnedCardNights,
+      promos: uniqueBrandNights + appliedPromoNights,
+      pending: bookedNights + pendingNights,
+    },
   };
 }

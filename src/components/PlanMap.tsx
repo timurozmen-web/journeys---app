@@ -45,7 +45,7 @@ function legBadgeIcon(info: MapLegInfo): L.DivIcon {
   return L.divIcon({
     className: '',
     html: `
-      <div style="display:flex;align-items:center;gap:4px;background:${MAP.panel};border:1.5px solid ${MAP.route};border-radius:99px;padding:4px 9px;box-shadow:0 3px 8px rgba(0,0,0,.4);white-space:nowrap;font-family:inherit;">
+      <div style="display:flex;align-items:center;gap:4px;background:${MAP.panel};border:1.5px solid ${MAP.route};border-radius:99px;padding:4px 9px;box-shadow:0 3px 8px rgba(40,30,20,.2);white-space:nowrap;font-family:inherit;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${MAP.route}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${MODE_ICON_SVG[info.mode]}</svg>
         <span style="font-size:11.5px;font-weight:700;color:${MAP.text};">${label}</span>
       </div>`,
@@ -86,7 +86,7 @@ const PLANE_PATH = 'M8,0 C8,.9 7,1.2 6,1.2 L2,1.2 L-2,7 L-4,7 L-1.5,1.2 L-5,1.2 
 // outbound chip when the two routes run close together.
 function planeIcon(angle: number, date: string | null, dim = false): L.DivIcon {
   const chip = date
-    ? `<div style="position:absolute;left:50%;${dim ? 'top:24px' : 'bottom:22px'};transform:translateX(-50%);white-space:nowrap;background:${MAP.panel};border:1px solid ${MAP.route};color:${MAP.route};border-radius:99px;padding:2px 8px;font:600 10.5px/1.3 var(--font-body);letter-spacing:.06em;">${date}</div>`
+    ? `<div style="position:absolute;left:50%;${dim ? 'top:24px' : 'bottom:22px'};transform:translateX(-50%);white-space:nowrap;background:${MAP.panel};border:1px solid ${MAP.route};color:${MAP.route};border-radius:99px;padding:2px 8px;font:700 10.5px/1.3 var(--font-display);">${date}</div>`
     : '';
   return L.divIcon({
     className: '',
@@ -105,7 +105,7 @@ function originIcon(code: string): L.DivIcon {
   return L.divIcon({
     className: '',
     html: `<div style="position:relative;width:16px;height:16px;border-radius:50%;background:${MAP.sea};border:2.5px solid ${MAP.route};box-sizing:border-box">
-      <div style="position:absolute;top:18px;left:50%;transform:translateX(-50%);font:600 11px/1 var(--font-body);letter-spacing:.08em;color:${MAP.text};text-shadow:0 1px 3px #000">${code}</div></div>`,
+      <div style="position:absolute;top:18px;left:50%;transform:translateX(-50%);font:700 11px/1 var(--font-display);color:${MAP.text};text-shadow:0 0 3px #FBF9F4">${code}</div></div>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8],
   });
@@ -165,7 +165,7 @@ export function PlanMap({
     // limitation of free pre-rendered raster tiles generally (the label
     // language is baked in by whoever renders the tile), not something
     // fixable by picking a different free style.
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       maxZoom: 19,
       subdomains: 'abcd',

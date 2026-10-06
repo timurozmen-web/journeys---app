@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { BrandLogo } from './BrandLogo';
-import { hasWordmarkLogo } from '../data/brandLogos';
 import { useVouchers } from '../lib/useLiveData';
 import { deleteLoyaltyProgramme, setVoucherRedeemed, updateLoyaltyProgramme } from '../lib/queries';
 import { SwipeToDelete } from './SwipeToDelete';
 import { ErrorText } from './ui';
-import { computeStatusProgress } from '../lib/statusProgress';
+import { computeStatusProgress, type StatusProgress } from '../lib/statusProgress';
+import { ringTicks, spendTicks, type RingSegment } from '../lib/statusRing';
+import { StatusRing } from './StatusRing';
 import { computeLoyaltyInsights } from '../lib/loyaltyInsights';
-import { cardBackground, luminance, textOn, tierFinish } from '../lib/cardTheme';
 import { voucherDates } from '../lib/voucherDates';
 import { formatDate } from '../lib/format';
 import type { LoyaltyProgramme, Hotel, Promotion, PaymentCard } from '../types';
@@ -84,7 +84,6 @@ export function LoyaltyTab({
         const hasStatus = !!p.nextTier && p.nights != null;
         const progress = hasStatus ? computeStatusProgress(p, hotels, promotions, cardResults) : null;
         const tier = progress?.effectiveTier ?? p.tier;
-        const ink = textOn(p.color);
         const brandInsight = insights.byBrand.find((b) => b.brand === p.name);
 
         // card's own programme brand where possible (auto-synced
@@ -96,46 +95,35 @@ export function LoyaltyTab({
         );
 
         return (
-          <div key={p.name} className="brandcard" style={{ background: cardBackground(p.color), color: ink }}>
-            <SwipeToDelete itemLabel={p.name} surface={cardBackground(p.color)} wrapperStyle={{ borderRadius: 0 }} onClick={() => setOpen(isOpen ? null : p.name)} onDelete={() => remove(p.name)}>
+          <div key={p.name} className="prog">
+            <SwipeToDelete itemLabel={p.name} surface="var(--card)" wrapperStyle={{ borderRadius: 0 }} onClick={() => setOpen(isOpen ? null : p.name)} onDelete={() => remove(p.name)}>
             <div
-              role="button" tabIndex={0}
+              className="prog-head" role="button" tabIndex={0} aria-expanded={isOpen}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(isOpen ? null : p.name); } }}
-              aria-expanded={isOpen}
-              style={{ width: '100%', display: 'block', padding: '16px 16px 18px', cursor: 'pointer', textAlign: 'left', color: ink }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0, flex: 1 }}>
-                  <BrandLogo name={p.name} shape={p.shape} color={p.color} accent={p.accent} size={32} />
-                  {!hasWordmarkLogo(p.name) && <span style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>}
+              {progress && progress.total > 0 ? (
+                <StatusRing ticks={ringTicks(progress.total, nightSegments(progress))} size={46} label={`${progress.currentNights} of ${progress.total} nights`}>
+                  <BrandLogo name={p.name} shape={p.shape} color={p.color} accent={p.accent} size={26} />
+                </StatusRing>
+              ) : (
+                <BrandLogo name={p.name} shape={p.shape} color={p.color} accent={p.accent} size={34} />
+              )}
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="prog-name">{p.name}</div>
+                <div className="prog-sub">
+                  {[tier, progress && progress.total > 0 ? `${progress.currentNights}/${progress.total} nights` : null].filter(Boolean).join(' · ')}
                 </div>
-                {tier && <span className={`tierchip ${tierFinish(tier)}`}>{tier}</span>}
-                <span aria-hidden="true" style={{ fontSize: 'var(--fs-caption)', opacity: 0.7, flexShrink: 0 }}>{isOpen ? '⌃' : '⌄'}</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 18, gap: 10 }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 'var(--fs-h1)', fontWeight: 400, letterSpacing: '-.5px', lineHeight: 1 }}>{p.points.toLocaleString()}</div>
-                  <div style={{ fontSize: 'var(--fs-caption)', opacity: 0.72, marginTop: 4 }}>points · {p.ptValue}p each</div>
-                </div>
-                <div style={{ flexShrink: 0, textAlign: 'right' }}>
-                  <div style={{ fontSize: 'var(--fs-title)', fontWeight: 500 }}>{moneyPrecise(value)}</div>
-                  {progress?.targetTier && progress.total > progress.currentNights && (
-                    <div style={{ fontSize: 'var(--fs-caption)', opacity: 0.72, marginTop: 2 }}>
-                      {progress.total - progress.currentNights} nights to {progress.targetTier}
-                    </div>
-                  )}
-                </div>
+              <div style={{ flexShrink: 0 }}>
+                <div className="prog-pts">{p.points.toLocaleString()}</div>
+                <div className="prog-val">{moneyPrecise(value)}</div>
               </div>
             </div>
             </SwipeToDelete>
-            {progress && (
-              <div className="bc-progress" aria-hidden="true">
-                <i style={{ width: `${Math.max(0, Math.min(100, progress.pct ?? 0))}%`, background: p.accent && luminance(p.accent) > 0.05 ? p.accent : 'var(--brand)' }} />
-              </div>
-            )}
 
             {isOpen && (
-              <div style={{ padding: '14px 14px 16px', background: 'var(--card)', color: 'var(--ink)', display: 'grid', gap: 14 }}>
+              <div className="prog-body">
+                {progress && progress.total > 0 && <RingPager progress={progress} />}
                 <div className="dd-row">
                   <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Points</span>
                   <input
@@ -178,78 +166,10 @@ export function LoyaltyTab({
                   <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{p.ptValue}p per point</span>
                 </div>
 
-                {progress && (
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                      <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>
-                        {progress.currentNights} of {progress.total} nights
-                        {progress.bookedNights + progress.pendingNights > 0 && (
-                          <span style={{ color: 'var(--amber)', fontWeight: 700 }}> (+{progress.bookedNights + progress.pendingNights} pending)</span>
-                        )}
-                      </span>
-                      <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>
-                        {progress.targetTier ?? p.nextTier}
-                      </span>
-                    </div>
-                    {progress.cardGrantedTier && (
-                      <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginBottom: 6 }}>
-                        {progress.cardGrantedTier} held via card — working toward {progress.targetTier ?? 'the next tier'}
-                      </div>
-                    )}
-                    {progress.uniqueBrandNights > 0 && (
-                      <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginBottom: 6 }}>
-                        +{progress.uniqueBrandNights} elite nights from {progress.uniqueBrandCount} unique brands (promotion)
-                      </div>
-                    )}
-                    <div
-                      className="hbar"
-                      style={{
-                        position: 'relative', background: 'var(--card2)',
-                        border: '1px solid var(--line)', boxSizing: 'border-box',
-                      }}
-                    >
-                      {progress.pendingPct != null && (
-                        <i
-                          style={{
-                            width: `${Math.max(0, Math.min(100, progress.pendingPct))}%`, background: 'rgba(232,176,75,.45)',
-                            position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 'var(--r-pill)',
-                          }}
-                        />
-                      )}
-                      <i
-                        style={{
-                          width: `${Math.max(0, Math.min(100, progress.pct ?? 0))}%`, background: p.color,
-                          position: 'relative', borderRadius: 'var(--r-pill)', display: 'block', height: '100%',
-                        }}
-                      />
-                    </div>
-                    {progress.spendProgress && (
-                      <>
-                        <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', fontWeight: 600, marginTop: 8 }}>
-                          {progress.spendProgress.label}: {progress.spendProgress.currencySymbol ?? ''}
-                          {Math.round(progress.spendProgress.currentAmount).toLocaleString()}
-                          {progress.spendProgress.unit === 'points' ? ' pts' : ''}
-                          {' / '}{progress.spendProgress.currencySymbol ?? ''}{Math.round(progress.spendProgress.requiredAmount).toLocaleString()}
-                          {progress.spendProgress.unit === 'points' ? ' pts' : ''}
-                          {progress.spendProgress.pendingAmount > 0 && (
-                            <span style={{ color: 'var(--amber)', fontWeight: 700 }}>
-                              {' '}(+{progress.spendProgress.currencySymbol ?? ''}{Math.round(progress.spendProgress.pendingAmount).toLocaleString()} pending)
-                            </span>
-                          )}
-                        </div>
-                        <div className="hbar" style={{ marginTop: 4, position: 'relative', background: 'var(--card2)', border: '1px solid var(--line)', boxSizing: 'border-box' }}>
-                          {progress.spendProgress.pendingPct != null && (
-                            <i
-                              style={{
-                                width: `${progress.spendProgress.pendingPct}%`, background: 'rgba(232,176,75,.45)',
-                                position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 'var(--r-pill)',
-                              }}
-                            />
-                          )}
-                          <i style={{ width: `${progress.spendProgress.pct}%`, background: p.color, borderRadius: 'var(--r-pill)', display: 'block', height: '100%', position: 'relative' }} />
-                        </div>
-                      </>
-                    )}
+                {progress?.cardGrantedTier && (
+                  <div className="dd-row">
+                    <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Held via card</span>
+                    <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{progress.cardGrantedTier}</span>
                   </div>
                 )}
 
@@ -362,6 +282,97 @@ export function LoyaltyTab({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// Where the nights came from, in ring order: stays, card nights,
+// promotions, then booked stays still to come.
+function nightSegments(p: StatusProgress): RingSegment[] {
+  return [
+    { key: 'stays', label: 'Stays', count: p.breakdown.stays, colour: 'var(--ink)' },
+    { key: 'card', label: 'Card', count: p.breakdown.card, colour: 'var(--brand2)' },
+    { key: 'promos', label: 'Promos', count: p.breakdown.promos, colour: 'var(--promo)' },
+    { key: 'pending', label: 'Booked', count: p.breakdown.pending, colour: 'var(--pending)' },
+  ];
+}
+
+function Legend({ items }: { items: { label: string; value: string; colour: string; zero?: boolean }[] }) {
+  return (
+    <div className="ringlegend">
+      {items.map((it) => (
+        <div key={it.label}>
+          <div className="l"><span className="sw" style={{ background: it.colour }} />{it.label}</div>
+          <div className={it.zero ? 'v zero' : 'v'}>{it.value}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// The nights ring, and beside it (swipe across) the spend requirement on
+// the same kind of ring, when the programme has one.
+function RingPager({ progress }: { progress: StatusProgress }) {
+  const [page, setPage] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  const sp = progress.spendProgress;
+  const pages = sp ? ['Nights', sp.unit === 'points' ? 'Status points' : 'Spend'] : ['Nights'];
+  const segs = nightSegments(progress);
+  const toGo = Math.max(0, progress.total - progress.currentNights);
+  const money = (n: number) => `${sp?.currencySymbol ?? ''}${Math.round(n).toLocaleString()}`;
+  const go = (i: number) => ref.current?.scrollTo({ left: i * ref.current.clientWidth, behavior: 'smooth' });
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      <div
+        className="ringpager" ref={ref}
+        onScroll={(e) => setPage(Math.round(e.currentTarget.scrollLeft / Math.max(1, e.currentTarget.clientWidth)))}
+      >
+        <div className="ringpage">
+          {pages.length > 1 && <Tabs pages={pages} page={0} go={go} />}
+          <StatusRing ticks={ringTicks(progress.total, segs)} size={220} label={`${progress.currentNights} of ${progress.total} nights`}>
+            <div className="ring-big">{progress.currentNights}</div>
+            <div className="ring-of">of {progress.total} nights</div>
+            <div className="ring-go">{toGo > 0 ? `${toGo} to go` : `${progress.targetTier ?? 'Tier'} reached`}</div>
+          </StatusRing>
+          <Legend items={segs.map((s) => ({ label: s.label, value: String(s.count), colour: s.colour, zero: s.count === 0 }))} />
+        </div>
+        {sp && (() => {
+          const t = spendTicks(sp.currentAmount, sp.pendingAmount, sp.requiredAmount);
+          const left = Math.max(0, sp.requiredAmount - sp.currentAmount);
+          const unit = sp.unit === 'points' ? ' pts' : '';
+          return (
+            <div className="ringpage">
+              <Tabs pages={pages} page={1} go={go} />
+              <StatusRing
+                ticks={ringTicks(100, [
+                  { key: 'done', label: '', count: t.done, colour: 'var(--ink)' },
+                  { key: 'pending', label: '', count: t.pending, colour: 'var(--pending)' },
+                ])}
+                size={220} label={`${money(sp.currentAmount)} of ${money(sp.requiredAmount)}`}
+              >
+                <div className="ring-big money">{money(sp.currentAmount)}</div>
+                <div className="ring-of">of {money(sp.requiredAmount)}{unit}</div>
+                <div className="ring-go">{left > 0 ? `${money(left)}${unit} to go` : 'Reached'}</div>
+              </StatusRing>
+              <Legend items={[
+                { label: sp.unit === 'points' ? 'Earned' : 'Stays paid', value: `${money(sp.currentAmount)}`, colour: 'var(--ink)' },
+                { label: 'Booked', value: `${money(sp.pendingAmount)}`, colour: 'var(--pending)', zero: sp.pendingAmount === 0 },
+              ]} />
+            </div>
+          );
+        })()}
+      </div>
+      {pages.length > 1 && <div className="ringdots" aria-hidden="true">{pages.map((pg, i) => <i key={pg} className={i === page ? 'on' : ''} />)}</div>}
+    </div>
+  );
+}
+
+function Tabs({ pages, page, go }: { pages: string[]; page: number; go: (i: number) => void }) {
+  return (
+    <div className="ringpage-tabs" role="tablist">
+      {pages.map((pg, i) => (
+        <button key={pg} role="tab" aria-selected={i === page} className={i === page ? 'on' : ''} onClick={() => go(i)}>{pg}</button>
+      ))}
     </div>
   );
 }

@@ -5,7 +5,7 @@
 /* Screen header: back arrow + title, used by every pushed screen. */
 .screenhead{display:flex;align-items:center;gap:var(--s3)}
 .screenhead .back{background:none;border:none;padding:0;cursor:pointer;display:grid;place-items:center;color:var(--ink)}
-.screenhead .title{font-family:var(--font-display);font-size:var(--fs-heading);font-weight:600;letter-spacing:-.4px;line-height:1.2}
+.screenhead .title{font-family:var(--font-display);font-size:var(--fs-heading);font-weight:700;letter-spacing:-.04em;line-height:1.2}
 .screenhead .right{margin-left:auto}
 .screenintro{padding:0 var(--s5);font-size:var(--fs-body);color:var(--ink2);line-height:1.5;margin:calc(var(--s1) * -1) 0 0}
 
@@ -73,15 +73,14 @@ textarea.input{resize:vertical;line-height:1.45}
 .photohero > .ph-content{position:relative;height:100%;display:flex;flex-direction:column;text-shadow:var(--text-on-photo-shadow)}
 .photohero.rounded{border-radius:var(--r-xl);box-shadow:var(--shadow-hero)}
 .photohero:focus-visible{outline:2px solid var(--brand2);outline-offset:2px}
-/* Gold uppercase line on a photo -- plain text, no pill, as in the
-   Night Flight concept. */
+/* Uppercase line on a photo: an orange pill, so it reads on any image. */
 .ph-eyebrow{display:inline-block;align-self:flex-start;font-size:var(--fs-caption);font-weight:600;text-transform:uppercase;
-  letter-spacing:.2em;color:var(--brand)}
-.ph-eyebrow.alert{display:inline-flex;align-items:center;gap:4px;color:var(--ink);flex-shrink:0}
+  letter-spacing:.12em;color:var(--on-brand);background:var(--brand);border-radius:var(--r-pill);padding:4px 10px;text-shadow:none}
+.ph-eyebrow.alert{display:inline-flex;align-items:center;gap:4px;color:var(--ink);background:var(--card);flex-shrink:0}
 /* Positioned text blocks inside a hero. */
 .ph-top{position:absolute;top:var(--s4);left:var(--s5);right:var(--s5)}
 .ph-bottom{position:absolute;left:var(--s5);right:var(--s5);bottom:var(--s6)}
-.ph-title{display:block;font-family:var(--font-display);font-weight:400;letter-spacing:-1px;line-height:1}
+.ph-title{display:block;font-family:var(--font-display);font-weight:700;letter-spacing:-.04em;line-height:1.05}
 .ph-sub{display:block;font-size:var(--fs-body);font-weight:600;opacity:.9;margin-top:6px}
 
 /* Themed wallet card: the programme's or card's own brand colour
@@ -102,7 +101,7 @@ textarea.input{resize:vertical;line-height:1.45}
 .tierchip.platinum{background:linear-gradient(135deg,#C3C7CE 0%,#F7F8FA 45%,#A3A8B0 100%)}
 .tierchip.titanium{background:linear-gradient(135deg,#8E9196 0%,#D9DBDE 45%,#7B7E83 100%)}
 .tierchip.diamond{background:linear-gradient(135deg,#9FC4E8 0%,#EEF6FF 45%,#7FA6CC 100%)}
-.tierchip.ambassador{background:#0B0D12;color:var(--brand);border:1px solid var(--brand)}
+.tierchip.ambassador{background:var(--ink);color:var(--gold2);border:1px solid var(--gold2)}
 .cardchip{display:block;width:34px;height:26px;border-radius:var(--r-xs);box-shadow:inset 0 0 0 1px rgba(0,0,0,.18);
   background:linear-gradient(135deg,#B8914F 0%,#F1D9A0 45%,#A57F3F 100%)}
 
@@ -113,9 +112,9 @@ textarea.input{resize:vertical;line-height:1.45}
 .legrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
 .legrow:last-child{border-bottom:0}
 
-/* Night Flight basics used across screens. */
+/* Basics used across screens. */
 .nf-eyebrow{display:block;font-size:var(--fs-caption);font-weight:600;letter-spacing:.2em;text-transform:uppercase}
-.glass{display:block;font:inherit;border-radius:var(--r-lg);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
+.glass{display:block;font:inherit;border-radius:var(--r-lg);background:var(--card);border:1px solid var(--line)}
 
 /* Profile logbook. */
 .lb-head{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top,0px) + 22px) 20px 0}
@@ -126,9 +125,9 @@ textarea.input{resize:vertical;line-height:1.45}
 .lb-notice{display:flex;align-items:center;gap:8px;margin:14px 16px 0;padding:10px 14px;border-radius:var(--r-sm);
   background:var(--amber-soft);font-size:var(--fs-small);color:var(--ink2);line-height:1.4}
 .lb-dot{width:6px;height:6px;border-radius:50%;background:var(--amber);flex-shrink:0}
-.lb-map{position:relative;margin:16px 16px 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid rgba(255,255,255,.08);background:var(--map-bg)}
+.lb-map{position:relative;margin:16px 16px 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--line);background:var(--map-bg)}
 .lb-map-count{position:absolute;left:16px;bottom:12px;z-index:2;display:flex;flex-direction:column;gap:2px;pointer-events:none;
-  text-shadow:0 1px 8px rgba(0,0,0,.7)}
+  text-shadow:0 0 6px var(--map-bg),0 0 3px var(--map-bg)}
 .lb-label{padding:26px 24px 10px;color:var(--ink2)}
 .lb-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0 16px}
 .lb-tile{padding:14px 16px;display:flex;flex-direction:column;gap:2px}
@@ -141,14 +140,14 @@ textarea.input{resize:vertical;line-height:1.45}
   background:none;color:var(--ink);font:inherit;font-size:var(--fs-input);text-align:left;cursor:pointer}
 .lb-bar.on{background:var(--brand-soft)}
 .lb-bar-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lb-bar-track{height:6px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden}
+.lb-bar-track{height:6px;border-radius:3px;background:var(--card2);overflow:hidden}
 .lb-bar-track i{display:block;height:100%;border-radius:3px;background:var(--brand)}
 .lb-bar-val{text-align:right;color:var(--ink2)}
 .lb-years{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:16px;align-items:end;padding:0 24px;min-height:150px}
 .lb-year{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
 .lb-year-cap{font-size:var(--fs-small);line-height:1.3}
-.lb-year-bar{width:100%;border-radius:var(--r-xs);background:linear-gradient(180deg,#B8995F,#6E5E43)}
-.lb-year-bar.latest{background:linear-gradient(180deg,var(--brand2),#9E8455)}
+.lb-year-bar{width:100%;border-radius:var(--r-xs);background:var(--ink)}
+.lb-year-bar.latest{background:var(--brand2)}
 .lb-todo{flex:0 0 100%;width:100%;scroll-snap-align:start;display:flex;align-items:center;gap:12px;padding:14px 16px;
   text-align:left;cursor:pointer;color:var(--ink)}
 
@@ -174,7 +173,7 @@ textarea.input{resize:vertical;line-height:1.45}
 .walletslot:first-child{margin-top:0}
 .walletslot.stacked{margin-top:calc(-63.05% + 78px)}
 .walletcard{display:flex;flex-direction:column;justify-content:space-between;width:100%;aspect-ratio:85.6/54;border-radius:var(--r-lg);
-  border:1px solid rgba(255,255,255,.14);box-shadow:0 -8px 20px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.14);box-shadow:0 -6px 16px rgba(40,30,20,.22),inset 0 1px 0 rgba(255,255,255,.12);
   padding:14px 16px;cursor:pointer;text-align:left;color:#fff;font:inherit;position:relative;overflow:hidden}
 .walletcard::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
   background:linear-gradient(115deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,0) 42%)}
@@ -201,7 +200,7 @@ input[type=date].input.inline-date:focus{border-color:var(--brand2)}
 
 .optionrow.picked{border-color:var(--brand);background:var(--brand-soft)}
 /* A small card swatch in a list of cards. */
-.minicard{width:46px;aspect-ratio:85.6/54;border-radius:5px;flex-shrink:0;border:1px solid rgba(255,255,255,.14)}
+.minicard{width:46px;aspect-ratio:85.6/54;border-radius:5px;flex-shrink:0;border:1px solid rgba(0,0,0,.08)}
 
 /* A value shown as plain text that can be edited in place. */
 .input.inline-value{width:auto;max-width:55%;height:30px;line-height:1;padding:0 0 0 8px;background:transparent;border-color:transparent;text-align:right;font-weight:700;font-size:var(--fs-small)}
@@ -212,12 +211,115 @@ input[type=date].input.inline-date:focus{border-color:var(--brand2)}
   border-radius:var(--r-md);cursor:pointer;color:var(--ink);font-size:var(--fs-body)}
 
 /* Count badge: solid gold with dark text, top-right of an icon. */
-.badge{position:absolute;top:2px;right:2px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--brand);
+.badge{position:absolute;top:2px;right:2px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--brand2);
   color:var(--on-brand);font-size:var(--fs-micro);font-weight:700;line-height:18px;text-align:center;pointer-events:none;
-  box-shadow:0 0 0 2px var(--bg)}
+  box-shadow:0 0 0 2px var(--ink)}
 .fabwrap{position:relative;display:inline-grid}
 .fabwrap .badge{top:-4px;right:-6px;z-index:83}
 .fan-btn{position:relative}
 
 .lb-todo-main{display:flex;align-items:center;gap:10px;background:none;border:0;padding:0;color:inherit;font:inherit;text-align:left;cursor:pointer;width:100%}
 .lb-todo-cancel{align-self:flex-start;background:none;border:0;padding:0;color:var(--ink3);font:inherit;font-size:var(--fs-caption);font-weight:600;cursor:pointer}
+
+/* Small rounded label: orange by default, white on a photo. */
+.chip{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:var(--r-pill);font-size:var(--fs-small);
+  font-weight:600;background:var(--brand);color:var(--on-brand);white-space:nowrap}
+.chip.light{background:var(--card);color:var(--ink)}
+
+/* ---- Trips timeline ----
+   Three columns: month, the dot on the line, the trip. The line runs down
+   the middle column; today is an orange line across it. */
+.tl{position:relative;display:grid;gap:12px;padding:0 20px 24px 12px}
+.tl::before{content:"";position:absolute;left:calc(12px + 40px + 10px + 8px);top:6px;bottom:0;width:1.5px;background:var(--line)}
+.tl-row{display:grid;grid-template-columns:40px 16px minmax(0,1fr);column-gap:10px;align-items:center;position:relative}
+.tl-row.top{align-items:start}
+.tl-row.top .tl-dot{margin-top:10px}
+.tl-row.top .tl-month{padding-top:8px}
+.tl-month{font-family:var(--font-display);font-size:var(--fs-micro);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);text-align:right}
+.tl-month.quiet{opacity:.6}
+.tl-month small{display:block;font-size:9px;letter-spacing:.04em;margin-top:1px}
+.tl-dot{width:10px;height:10px;border-radius:50%;border:1.6px solid var(--ink3);background:var(--bg);justify-self:center;position:relative;z-index:1}
+.tl-dot.solid{width:12px;height:12px;background:var(--ink);border-color:var(--ink)}
+.tl-past{display:flex;align-items:center;gap:12px;min-width:0;padding:2px 0;color:var(--ink)}
+.tl-past:not(.now) .tl-thumb,.tl-past:not(.now) .tl-title,.tl-past:not(.now) .tl-sub{opacity:.62}
+.tl-past:not(.now) .tl-thumb{filter:grayscale(.55)}
+.tl-thumb{width:44px;height:44px;border-radius:var(--r-xs);overflow:hidden;flex-shrink:0;display:block;background:var(--card2)}
+.tl-title{display:block;font-weight:600;font-size:var(--fs-body-lg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-sub{display:block;font-size:var(--fs-caption);color:var(--ink2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-past .tl-chip{margin-left:auto;flex-shrink:0;font-size:var(--fs-caption);font-weight:600;color:var(--brand)}
+.tl-earlier{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:var(--r-md);border:1px solid var(--line);
+  background:var(--card);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.tl-stack{display:flex;flex-shrink:0}
+.tl-stack .tl-thumb{width:34px;height:34px;border:2px solid var(--card)}
+.tl-stack .tl-thumb + .tl-thumb{margin-left:-14px}
+.tl-up{margin-left:auto;color:var(--brand);font-weight:700;font-size:var(--fs-title)}
+.tl-today .tl-today-dot{width:14px;height:14px;border-radius:50%;background:var(--brand2);box-shadow:0 0 0 6px var(--brand-soft);justify-self:center;z-index:1}
+.tl-today::after{content:"";position:absolute;left:58px;right:-20px;top:50%;height:1.5px;background:var(--brand2)}
+.tl-today-label{position:relative;z-index:1;justify-self:start;padding-right:10px;background:var(--bg);font-family:var(--font-display);
+  font-size:var(--fs-caption);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--brand)}
+.tl-tonight{display:grid;gap:2px;width:100%;padding:10px 14px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--card);
+  color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.tl-tonight .k{font-size:var(--fs-caption);font-weight:600;color:var(--brand)}
+.tl-tonight .n{font-size:var(--fs-body-lg);font-weight:700}
+.tl-tonight .s{font-size:var(--fs-caption);color:var(--ink2)}
+.tl-card{position:relative;height:176px;border-radius:var(--r-md);overflow:hidden;color:var(--on-dark);display:block}
+.tl-card-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 35%,rgba(0,0,0,.62) 100%)}
+.tl-card-chips{position:absolute;top:12px;left:12px;display:flex;gap:6px}
+.tl-card-name{position:absolute;left:14px;right:14px;bottom:32px;font-family:var(--font-display);font-weight:700;font-size:var(--fs-heading);
+  letter-spacing:-.04em;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-card-meta{position:absolute;left:14px;right:14px;bottom:12px;font-size:var(--fs-caption);font-weight:500;opacity:.92;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Underlined text tabs (a trip's Itinerary / Map). */
+.tabsline{display:flex;gap:22px;margin-bottom:14px}
+.tabsline button{background:none;border:0;padding:0 0 6px;font:inherit;font-size:var(--fs-body-lg);font-weight:600;color:var(--ink3);
+  cursor:pointer;border-bottom:2px solid transparent}
+.tabsline button.on{color:var(--ink);border-bottom-color:var(--brand2)}
+
+/* ---- Trip itinerary: day column, a dot on the line, one card shape ---- */
+.itin2{position:relative;display:grid;gap:8px}
+.itin2::before{content:"";position:absolute;left:calc(32px + 8px + 6px);top:8px;bottom:8px;width:1.5px;background:var(--line)}
+.itin2-row{display:grid;grid-template-columns:32px 14px minmax(0,1fr);column-gap:8px;align-items:center}
+.itin2-day{font-family:var(--font-display);font-size:var(--fs-micro);font-weight:700;letter-spacing:.04em;line-height:1.2;color:var(--ink3);text-align:right}
+.itin2-dot{width:9px;height:9px;border-radius:50%;background:var(--ink);justify-self:center;position:relative;z-index:1}
+.itin2-dot.ghost{visibility:hidden}
+.bookcard{display:flex;align-items:center;gap:12px;padding:9px 12px 9px 9px;border-radius:var(--r-md);background:var(--card);
+  border:1px solid var(--line);color:var(--ink)}
+.bookcard-badge{width:40px;height:40px;border-radius:var(--r-control);display:grid;place-items:center;flex-shrink:0;color:var(--on-dark);
+  font-family:var(--font-display);font-weight:700;font-size:var(--fs-small);letter-spacing:-.02em}
+.bookcard-title{display:block;font-weight:700;font-size:var(--fs-body-lg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bookcard-sub{display:flex;align-items:center;gap:6px;margin-top:2px;font-size:var(--fs-caption);color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bookcard-sub svg{flex-shrink:0}
+.bookcard-price{font-size:var(--fs-small);font-weight:600;color:var(--ink2);flex-shrink:0}
+.moons{display:inline-flex;gap:1px;color:var(--brand2)}
+
+/* ---- Wallet: loyalty programmes with status rings ---- */
+.statusring{position:relative;flex-shrink:0}
+.statusring svg{display:block}
+.statusring-c{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.prog{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+.prog-head{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;color:var(--ink)}
+.prog-name{font-family:var(--font-display);font-weight:700;font-size:var(--fs-input);letter-spacing:-.03em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog-sub{font-size:var(--fs-caption);color:var(--ink2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog-pts{font-weight:700;font-size:var(--fs-input);text-align:right}
+.prog-val{font-size:var(--fs-caption);color:var(--ink2);text-align:right;margin-top:2px}
+.prog-body{border-top:1px solid var(--line);padding:6px 16px 16px;display:grid;gap:14px}
+.ringpager{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -16px}
+.ringpager::-webkit-scrollbar{display:none}
+.ringpage{flex:0 0 100%;scroll-snap-align:start;scroll-snap-stop:always;display:grid;justify-items:center;gap:12px;padding:8px 16px 0}
+.ringpage-tabs{display:flex;gap:18px;justify-self:start;font-size:var(--fs-small);font-weight:600;color:var(--ink3)}
+.ringpage-tabs button{background:none;border:0;padding:0 0 4px;font:inherit;color:inherit;cursor:pointer;border-bottom:2px solid transparent}
+.ringpage-tabs button.on{color:var(--ink);border-bottom-color:var(--ink)}
+.ring-big{font-weight:600;font-size:52px;letter-spacing:-.04em;line-height:1}
+.ring-big.money{font-size:36px}
+.ring-of{font-size:var(--fs-caption);color:var(--ink2);margin-top:6px}
+.ring-go{font-size:var(--fs-small);font-weight:700;color:var(--brand);margin-top:2px}
+.ringlegend{display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:6px;width:100%}
+.ringlegend .l{display:flex;align-items:center;gap:6px;font-size:var(--fs-caption);color:var(--ink2)}
+.ringlegend .sw{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.ringlegend .v{font-weight:600;font-size:var(--fs-title);margin-top:2px}
+.ringlegend .v.zero{color:var(--ink3)}
+.ringdots{display:flex;justify-content:center;gap:6px}
+.ringdots i{width:6px;height:6px;border-radius:50%;background:var(--line)}
+.ringdots i.on{background:var(--ink)}

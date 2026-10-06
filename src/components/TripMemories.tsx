@@ -104,7 +104,7 @@ export function TripMemories({ tripId }: { tripId: string }) {
 
       {photos.length === 0 ? (
         <div style={{ padding: '4px 20px 16px', fontSize: 'var(--fs-small)', color: 'var(--ink3)' }}>
-          No photos added yet. Photos with location data will automatically appear on the trip map.
+          No photos yet.
         </div>
       ) : (
         <div className="stack">

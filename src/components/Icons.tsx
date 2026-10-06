@@ -143,3 +143,6 @@ export const GripIcon = wrap(
 export const ExternalLinkIcon = wrap(
   '<path d="M14 4h6v6M20 4 11 13M9 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3"/>'
 );
+
+// A filled crescent: one per night on a stay's itinerary card.
+export const MoonIcon = wrapFilled('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>');

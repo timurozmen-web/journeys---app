@@ -1,20 +1,24 @@
-// Night Flight map colours as literal hex, for the places CSS variables
-// can't reach: Leaflet layer options, marker HTML strings and SVG
-// attributes. Keep in step with --map-* and --brand in tokens.css.
+// Map colours as literal hex, for the places CSS variables can't reach:
+// Leaflet layer options, marker HTML strings and SVG attributes. Keep in
+// step with --map-* and --brand2 in tokens.css. The look is a pencil
+// sketch on paper: hatched land with a doubled ink outline, orange
+// dashed routes, typewriter labels.
 export const MAP = {
-  sea: '#0D1016',
-  seaLight: '#161B24',
-  land: '#252A35',
-  landLight: '#2E3440',
-  graticule: 'rgba(244,242,238,.05)',
-  landBorder: '#11141A',
-  route: '#D9B77C',
-  stop: '#D9B77C',
-  stopRing: '#0B0D12',
-  home: '#F4F2EE',
-  text: '#F4F2EE',
-  textSub: '#B3B0AA',
-  panel: '#14171E',
-  // Visited-country fill, fewest nights to most: dim bronze up to gold.
-  visitedShades: ['#4A4234', '#6E5E43', '#9E8455', '#D9B77C'],
+  sea: '#FBF9F4',
+  seaLight: '#FBF9F4',
+  land: '#ECE5D6',
+  landLight: '#EFE9DC',
+  graticule: 'rgba(18,18,18,.05)',
+  landBorder: '#121212',
+  hatch: 'rgba(18,18,18,.10)',
+  route: '#F2551D',
+  stop: '#F2551D',
+  stopRing: '#121212',
+  home: '#121212',
+  text: '#121212',
+  textSub: '#5E5A54',
+  panel: '#FFFFFF',
+  // Visited-country fill, fewest nights to most: pale sand up to orange.
+  visitedShades: ['#E8D9C4', '#EDB99A', '#F28B5E', '#F2551D'],
+  font: "'Space Mono', ui-monospace, Menlo, monospace",
 } as const;

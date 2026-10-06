@@ -63,7 +63,7 @@ export function Wallet() {
           <div>
             <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)' }}>Wallet value {!isLive && '· sample data'}</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-hero)', fontWeight: 600, letterSpacing: '-1.5px', marginTop: 2, lineHeight: 1, color: 'var(--ink)' }}>£{Math.round(totalValue).toLocaleString()}</div>
+              <div style={{ fontSize: 'var(--fs-hero)', fontWeight: 600, letterSpacing: '-1.5px', marginTop: 2, lineHeight: 1, color: 'var(--ink)' }}>£{Math.round(totalValue).toLocaleString()}</div>
               {valueChange.hasData && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 3, color: valueChange.deltaValue >= 0 ? 'var(--green)' : 'var(--red)', fontSize: 'var(--fs-body)', fontWeight: 600 }}>
                   <span>{valueChange.deltaValue >= 0 ? '▲' : '▼'}</span>

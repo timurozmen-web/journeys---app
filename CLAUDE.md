@@ -37,13 +37,28 @@ Run all three; all must be clean:
   Use those first. Any remaining inline style should reference tokens
   (`fontSize: 'var(--fs-body)'`), never raw px sizes or hex colours.
   Form controls take `className="input"` inside a `Field`.
-- **The theme is Night Flight:** near-black ground, warm white text,
-  champagne gold (`--brand`) as the single accent, font Jost. Anything
-  on a gold fill uses `--on-brand` (dark), never white. Photos fade
-  into the page via the scrim tokens. Wallet cards take each
-  programme's own brand colour (`src/lib/cardTheme.ts`); map colours
-  live in `src/data/mapTheme.ts` because Leaflet and SVG attributes
-  can't read CSS variables.
+- **The theme is Paper:** off-white ground (`--bg`), black text, and
+  orange as the single accent (`--brand` for text, `--brand2` for fills
+  and large marks). Headings (screen titles, trip names, map labels)
+  are Space Mono, a modern typewriter face; all other text is Archivo.
+  Both are self-hosted via @fontsource. Anything on an orange fill uses
+  `--on-brand` (white). The tab bar is a black pill with white icons.
+  Photos carry a dark scrim so white text on them stays readable. Wallet
+  cards take each programme's own brand colour (`src/lib/cardTheme.ts`);
+  map colours live in `src/data/mapTheme.ts` because Leaflet and SVG
+  attributes can't read CSS variables. Maps are drawn as a pencil
+  sketch: hatched land, a doubled ink outline, orange dashed routes.
+- **Trips is one timeline** (`src/lib/tripTimeline.ts`): work and
+  leisure together, opened at today, three months back above the today
+  line, older trips folded into one row that unfolds on scrolling up.
+- **Bookings share one card shape** on a trip's itinerary: a square
+  badge in the airline's colour (`src/data/airlineBrand.ts`) or the
+  hotel programme's colour (`src/lib/bookingBadge.ts`), then a plane and
+  the flight number, or one moon per night.
+- **Status rings** (`src/lib/statusRing.ts`, `StatusRing`): one tick
+  per night toward the next tier, coloured by source (stays, card
+  nights, promotions, booked) from `computeStatusProgress().breakdown`;
+  swipe across for the spend requirement on the same kind of ring.
 - **No explanatory copy in the UI.** Labels, buttons, empty states and
   errors only. No intro paragraphs, how-it-works blurbs, confirmation
   banners or hint text unless it is needed to complete the task.

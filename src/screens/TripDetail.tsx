@@ -4,18 +4,20 @@ import { useTrips, useLoyaltyProgrammes, usePromotions } from '../lib/useLiveDat
 import { uploadTripPhoto, fetchTripPhotos, splitTrip, deleteHotel, deleteFlight } from '../lib/queries';
 import { SwipeToDelete } from '../components/SwipeToDelete';
 import type { TripPhoto } from '../lib/queries';
-import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, EditIcon, AlertIcon } from '../components/Icons';
+import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, EditIcon, AlertIcon, MoonIcon, PlaneIcon } from '../components/Icons';
+import { airlineBadge } from '../data/airlineBrand';
+import { hotelBadge } from '../lib/bookingBadge';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
 import { DestinationPhoto } from '../components/DestinationPhoto';
 const TripMap = lazyWithRetry(() => import('../components/TripMap').then((m) => ({ default: m.TripMap })));
 import { destinationQuery } from '../lib/tripHotels';
 import { TripMemories } from '../components/TripMemories';
-import { formatDateRange, formatMoney } from '../lib/format';
+import { formatDateRange, formatMoney, weekdayDay } from '../lib/format';
 import { computeTripPoints, computeTripSavings, groupDestinations, findGaps, suggestTripSplit } from '../lib/tripStats';
 import { tripDayInfo, addDays } from '../lib/tripDay';
 import { checkTripCompleteness, flightSearchUrl, returnFlightSearchUrl, tripGapDescription } from '../lib/tripCompleteness';
 import { useFlightExemptTripIds } from '../lib/homeLocation';
-import { Button, DateStack, ErrorText, Eyebrow, PhotoHero, Segmented } from '../components/ui';
+import { Button, ErrorText, Eyebrow, PhotoHero, Segmented } from '../components/ui';
 
 type Seg = 'overview' | 'expenses' | 'notes';
 
@@ -29,6 +31,7 @@ export function TripDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [seg, setSeg] = useState<Seg>('overview');
+  const [view, setView] = useState<'itinerary' | 'map'>('itinerary');
   const { data: trips, refetch: refetchTrips } = useTrips();
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
   const { data: promotions } = usePromotions();
@@ -216,63 +219,74 @@ export function TripDetail() {
       )}
 
       <div style={{ padding: '18px 20px 0' }}>
-          <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--brand)', marginBottom: 10 }}>Itinerary</div>
-          {legError && <ErrorText style={{ marginBottom: 8 }}>{legError}</ErrorText>}
-          <div>
-            {legs.map((leg) =>
-              leg.kind === 'hotel' ? (
-                <SwipeToDelete
-                  key={`h-${leg.data.id}`}
-                  itemLabel={leg.data.name}
-                  wrapperStyle={{ borderRadius: 0 }}
-                  surface="var(--bg)"
-                  onClick={() => navigate('/log-hotel', { state: { hotel: leg.data, tripId: trip.id } })}
-                  onDelete={() => removeLeg('hotel', leg.data.id)}
-                >
-                <div className="legrow">
-                  <DateStack date={leg.data.date} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{leg.data.name}</div>
-                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 2 }}>{leg.data.nights} night{leg.data.nights === 1 ? '' : 's'}{leg.data.brand && leg.data.brand !== 'Independent' ? ` · ${leg.data.brand}` : ''}</div>
-                  </div>
-                  {leg.data.total != null && <div style={{ fontSize: 'var(--fs-body)', fontWeight: 600, flexShrink: 0 }}>£{leg.data.total}</div>}
-                </div>
-                </SwipeToDelete>
-              ) : (
-                <SwipeToDelete
-                  key={`f-${leg.data.id}`}
-                  itemLabel={`${leg.data.from} → ${leg.data.to}`}
-                  wrapperStyle={{ borderRadius: 0 }}
-                  surface="var(--bg)"
-                  onClick={() => navigate('/log-flight', { state: { flight: leg.data, tripId: trip.id } })}
-                  onDelete={() => removeLeg('flight', leg.data.id)}
-                >
-                <div className="legrow">
-                  <DateStack date={leg.data.date} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {leg.data.from}{leg.data.departureTime ? ` ${leg.data.departureTime}` : ''} → {leg.data.to}{leg.data.arrivalTime ? ` ${leg.data.arrivalTime}` : ''}
-                      {leg.role && (
-                        <span style={{ fontSize: 'var(--fs-micro)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--brand)', background: 'var(--brand-soft)', borderRadius: 'var(--r-pill)', padding: '2px 7px' }}>
-                          {leg.role}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 2, fontWeight: 500 }}>
-                      {[leg.data.airline, leg.data.flightNo].filter(Boolean).join(' ')}{leg.data.airline || leg.data.flightNo ? ' · ' : ''}{leg.data.cabin}
-                    </div>
-                  </div>
-                  {leg.data.cost != null && <div style={{ fontSize: 'var(--fs-body)', fontWeight: 600, flexShrink: 0 }}>£{leg.data.cost}</div>}
-                </div>
-                </SwipeToDelete>
-              )
-            )}
-          </div>
-          <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-            <Button variant="secondary" small style={{ flex: 1 }} onClick={() => navigate('/add/stay', { state: { tripId: trip.id } })}>Add stay</Button>
-            <Button variant="secondary" small style={{ flex: 1 }} onClick={() => navigate('/add/flight', { state: { tripId: trip.id } })}>Add flight</Button>
-          </div>
+        <div className="tabsline" role="tablist">
+          {(['itinerary', 'map'] as const).map((v) => (
+            <button key={v} role="tab" aria-selected={view === v} className={view === v ? 'on' : ''} onClick={() => setView(v)}>
+              {v === 'itinerary' ? 'Itinerary' : 'Map'}
+            </button>
+          ))}
         </div>
+        {view === 'map' ? (
+          <Suspense fallback={<div style={{ height: 220, background: 'var(--map-bg)', borderRadius: 'var(--r-md)' }} />}>
+            <TripMap hotels={trip.hotels} flights={trip.flights} photos={tripPhotos} />
+          </Suspense>
+        ) : (
+          <>
+            {legError && <ErrorText style={{ marginBottom: 8 }}>{legError}</ErrorText>}
+            <div className="itin2">
+              {legs.map((leg, i) => {
+                const newDay = i === 0 || legs[i - 1].date !== leg.date;
+                const wd = leg.date ? weekdayDay(leg.date) : null;
+                return (
+                  <div className="itin2-row" key={`${leg.kind}-${leg.data.id}`}>
+                    <span className="itin2-day">{newDay && wd ? <>{wd.weekday}<br />{wd.day}</> : null}</span>
+                    <span className={newDay ? 'itin2-dot' : 'itin2-dot ghost'} />
+                    {leg.kind === 'hotel' ? (
+                      <SwipeToDelete
+                        itemLabel={leg.data.name} surface="var(--bg)" wrapperStyle={{ borderRadius: 'var(--r-md)' }}
+                        onClick={() => navigate('/log-hotel', { state: { hotel: leg.data, tripId: trip.id } })}
+                        onDelete={() => removeLeg('hotel', leg.data.id)}
+                      >
+                        <BookingCard
+                          badge={hotelBadge(leg.data, loyaltyProgrammes)}
+                          title={leg.data.name}
+                          price={leg.data.total}
+                          sub={<>
+                            <span className="moons" aria-hidden="true">
+                              {Array.from({ length: Math.min(leg.data.nights, 7) }, (_, k) => <MoonIcon key={k} size={13} />)}
+                            </span>
+                            {leg.data.nights} night{leg.data.nights === 1 ? '' : 's'}{leg.data.brand && leg.data.brand !== 'Independent' ? ` · ${leg.data.brand}` : ''}
+                          </>}
+                        />
+                      </SwipeToDelete>
+                    ) : (
+                      <SwipeToDelete
+                        itemLabel={`${leg.data.from} → ${leg.data.to}`} surface="var(--bg)" wrapperStyle={{ borderRadius: 'var(--r-md)' }}
+                        onClick={() => navigate('/log-flight', { state: { flight: leg.data, tripId: trip.id } })}
+                        onDelete={() => removeLeg('flight', leg.data.id)}
+                      >
+                        <BookingCard
+                          badge={airlineBadge(leg.data.flightNo, leg.data.airline)}
+                          title={`${leg.data.from}${leg.data.departureTime ? ` ${leg.data.departureTime}` : ''} → ${leg.data.to}${leg.data.arrivalTime ? ` ${leg.data.arrivalTime}` : ''}`}
+                          price={leg.data.cost}
+                          sub={<>
+                            <PlaneIcon size={13} />
+                            {[leg.data.flightNo, leg.data.airline, leg.data.cabin].filter(Boolean).join(' · ')}
+                          </>}
+                        />
+                      </SwipeToDelete>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+              <Button variant="secondary" small style={{ flex: 1 }} onClick={() => navigate('/add/stay', { state: { tripId: trip.id } })}>Add stay</Button>
+              <Button variant="secondary" small style={{ flex: 1 }} onClick={() => navigate('/add/flight', { state: { tripId: trip.id } })}>Add flight</Button>
+            </div>
+          </>
+        )}
+      </div>
 
       {(() => {
         const suggestion = suggestTripSplit(trip);
@@ -311,11 +325,6 @@ export function TripDetail() {
       <div className="tdpane">
         {seg === 'overview' && (
           <>
-            <div style={{ marginBottom: 14 }}>
-              <Suspense fallback={<div style={{ height: 220, background: 'var(--map-bg)', borderRadius: 'var(--r-md)' }} />}>
-                <TripMap hotels={trip.hotels} flights={trip.flights} photos={tripPhotos} />
-              </Suspense>
-            </div>
             <div style={{ marginBottom: 14 }}>
               <TripMemories tripId={trip.id} />
             </div>
@@ -452,6 +461,22 @@ export function TripDetail() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// One card shape for every booking: a square badge in the airline's or
+// hotel programme's colour, the name, and a line that says what it is (a
+// plane and the flight number, or a moon for each night).
+function BookingCard({ badge, title, sub, price }: { badge: { code: string; colour: string | null }; title: string; sub: React.ReactNode; price: number | null }) {
+  return (
+    <div className="bookcard">
+      <span className="bookcard-badge" style={{ background: badge.colour ?? 'var(--ink)' }}>{badge.code}</span>
+      <span style={{ minWidth: 0, flex: 1 }}>
+        <span className="bookcard-title">{title}</span>
+        <span className="bookcard-sub">{sub}</span>
+      </span>
+      {price != null && <span className="bookcard-price">{formatMoney(price)}</span>}
     </div>
   );
 }
