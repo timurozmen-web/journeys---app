@@ -12,6 +12,7 @@ import { useFlightExemptTripIds } from '../lib/homeLocation';
 import {
   buildTripTimeline, countdownLabel, emptyMonthsBetween, monthKey, monthLabel, tonightStay,
 } from '../lib/tripTimeline';
+import { SectionSwitch } from '../components/SectionSwitch';
 import { SettingsIcon } from '../components/Icons';
 import { EmptyState, ErrorText } from '../components/ui';
 
@@ -76,7 +77,10 @@ export function Trips() {
       <div style={{ background: 'var(--bg)', height: 'env(safe-area-inset-top, 0px)' }} />
       <div style={{ padding: '20px 20px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h1 className="h1" style={{ margin: 0 }}>Now</h1>
-        <button className="lb-iconbtn" aria-label="Settings" onClick={() => navigate('/settings')}><SettingsIcon size={20} /></button>
+        <div className="headtools">
+          <SectionSwitch />
+          <button className="lb-iconbtn" aria-label="Settings" onClick={() => navigate('/settings')}><SettingsIcon size={20} /></button>
+        </div>
       </div>
       {error && <ErrorText style={{ padding: '0 20px 10px' }}>{error}</ErrorText>}
       {trips.length > 0 && above.length === 0 && timeline.upcoming.length === 0 && !tonight && <EmptyState>Nothing booked.</EmptyState>}

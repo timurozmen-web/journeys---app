@@ -1,14 +1,13 @@
 import type { Hotel, LoyaltyProgramme, Promotion, Voucher } from '../types';
 import type { CardResult } from './cardMath';
-import { computeStatusProgress } from './statusProgress';
 import { paceLine } from './spendPace';
 import { daysBetweenISO } from './tripDay';
 
 // "Worth knowing" on the Loyalty home: only what is true right now, from
-// real figures. Elite status close at hand, the cards nearest their next
-// spend milestone, renewals within 45 days (keep or cancel, from the
-// card-year's real value against its fee), and vouchers expiring within
-// 90 days.
+// real figures. The cards nearest their next spend milestone, renewals
+// within 45 days (keep or cancel, from the card-year's real value against
+// its fee), and vouchers expiring within 90 days. Status isn't repeated
+// here: the rings above it already show nights to the next tier.
 
 export interface Highlight {
   key: string;
@@ -18,26 +17,10 @@ export interface Highlight {
   progressPct?: number;
 }
 
-export function loyaltyHighlights({ programmes, hotels, promotions, cardResults, vouchers, today }: {
+export function loyaltyHighlights({ programmes, cardResults, vouchers, today }: {
   programmes: LoyaltyProgramme[]; hotels: Hotel[]; promotions: Promotion[]; cardResults: CardResult[]; vouchers: Voucher[]; today: string;
 }): Highlight[] {
   const out: Highlight[] = [];
-
-  const status = programmes
-    .filter((p) => p.nextTier && p.nights != null && p.nightsNeeded != null)
-    .map((p) => ({ p, progress: computeStatusProgress(p, hotels, promotions, cardResults) }))
-    .filter((x) => x.progress.total > x.progress.currentNights)
-    .sort((a, b) => (b.progress.pct ?? 0) - (a.progress.pct ?? 0))
-    .slice(0, 3);
-  for (const { p, progress } of status) {
-    const remaining = progress.total - progress.currentNights;
-    out.push({
-      key: `status-${p.name}`, tone: 'brand',
-      title: `${remaining} night${remaining === 1 ? '' : 's'} to ${progress.targetTier} with ${p.name}`,
-      subtitle: `${progress.currentNights} of ${progress.total} nights${progress.bookedNights > 0 ? ` · ${progress.bookedNights} booked` : ''}`,
-      progressPct: Math.max(0, Math.min(100, progress.pct ?? 0)),
-    });
-  }
 
   const milestones = cardResults
     .filter((r) => r.nextMilestone && r.nextMilestone.m.spendRequired)

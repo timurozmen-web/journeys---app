@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { Fragment, useState, useEffect, useRef, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTrips, useLoyaltyProgrammes, usePromotions } from '../lib/useLiveData';
 import { uploadTripPhoto, fetchTripPhotos, splitTrip, deleteHotel, deleteFlight } from '../lib/queries';
 import { SwipeToDelete } from '../components/SwipeToDelete';
 import type { TripPhoto } from '../lib/queries';
-import { BackIcon, CameraIcon, ChevronDownIcon, BedIcon, EditIcon, AlertIcon, MoonIcon, PlaneIcon } from '../components/Icons';
+import { BackIcon, CameraIcon, BedIcon, EditIcon, AlertIcon, MoonIcon, PlaneIcon } from '../components/Icons';
 import { airlineBadge } from '../data/airlineBrand';
 import { hotelBadge } from '../lib/bookingBadge';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
@@ -21,12 +21,6 @@ import { Button, ErrorText, Eyebrow, PhotoHero, Segmented } from '../components/
 
 type Seg = 'overview' | 'expenses' | 'notes';
 
-function fmt(iso: string | null) {
-  if (!iso) return '';
-  const [y, m, d] = iso.split('-');
-  return `${d}/${m}/${y}`;
-}
-
 export function TripDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -41,7 +35,6 @@ export function TripDetail() {
   const [uploadError, setUploadError] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const [expandedDest, setExpandedDest] = useState<number | null>(null);
   const [tripPhotos, setTripPhotos] = useState<TripPhoto[]>([]);
 
   useEffect(() => {
@@ -237,8 +230,21 @@ export function TripDetail() {
               {legs.map((leg, i) => {
                 const newDay = i === 0 || legs[i - 1].date !== leg.date;
                 const wd = leg.date ? weekdayDay(leg.date) : null;
+                // A note where the trip moves somewhere new, to break the
+                // itinerary into places (only when there's more than one).
+                const arrival = destinations.length > 1 && leg.kind === 'hotel'
+                  ? destinations.find((d) => d.hotels[0]?.id === leg.data.id) ?? null
+                  : null;
                 return (
-                  <div className="itin2-row" key={`${leg.kind}-${leg.data.id}`}>
+                  <Fragment key={`${leg.kind}-${leg.data.id}`}>
+                  {arrival && (
+                    <div className="itin2-row">
+                      <span />
+                      <span />
+                      <span className="destnote">{arrival.place} · {arrival.nights} night{arrival.nights === 1 ? '' : 's'}</span>
+                    </div>
+                  )}
+                  <div className="itin2-row">
                     <span className="itin2-day">{newDay && wd ? <>{wd.weekday}<br />{wd.day}</> : null}</span>
                     <span className={newDay ? 'itin2-dot' : 'itin2-dot ghost'} />
                     {leg.kind === 'hotel' ? (
@@ -277,6 +283,7 @@ export function TripDetail() {
                       </SwipeToDelete>
                     )}
                   </div>
+                  </Fragment>
                 );
               })}
             </div>
@@ -402,65 +409,6 @@ export function TripDetail() {
         </>
       )}
 
-      {destinations.length > 0 && (
-        <>
-          <div className="sect">
-            <h2>Destinations</h2>
-          </div>
-          <div style={{ display: 'grid', gap: 10, padding: '0 20px 20px' }}>
-            {destinations.map((d, i) => {
-              const isOpen = expandedDest === i;
-              const destTotal = d.hotels.reduce((s, h) => s + (h.total ?? 0), 0);
-              return (
-                <div key={i} style={{ borderRadius: 'var(--r-md)', overflow: 'hidden', background: 'var(--card)', border: '1px solid var(--line)' }}>
-                  <div
-                    style={{ display: 'flex', gap: 12, cursor: 'pointer' }}
-                    onClick={() => setExpandedDest(isOpen ? null : i)}
-                  >
-                    <div style={{ width: 90, flexShrink: 0 }}>
-                      <DestinationPhoto query={d.place} seed={`${trip.id}-${d.place}`} height={90} />
-                    </div>
-                    <div style={{ padding: '10px 12px 10px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1, minWidth: 0 }}>
-                      <div>
-                        <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 700 }}>{d.place}</div>
-                        <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 3 }}>
-                          {formatDateRange(d.start, d.end)} · {d.nights} nights
-                        </div>
-                      </div>
-                      <ChevronDownIcon size={16} color="var(--ink3)" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', flexShrink: 0 }} />
-                    </div>
-                  </div>
-                  {isOpen && (
-                    <div style={{ padding: '4px 14px 14px', borderTop: '1px solid var(--line)' }}>
-                      {d.hotels.map((h) => (
-                        <div key={h.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '9px 0' }}>
-                          <span style={{ width: 24, height: 24, borderRadius: 'var(--r-xs)', background: 'var(--card2)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                            <BedIcon size={13} color="var(--ink2)" />
-                          </span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{h.name}</div>
-                            <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)' }}>
-                              {fmt(h.date)} · {h.nights} night{h.nights === 1 ? '' : 's'}
-                            </div>
-                          </div>
-                          <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700, flexShrink: 0 }}>{h.total != null ? `£${h.total}` : '—'}</div>
-                        </div>
-                      ))}
-                      {d.hotels.length > 1 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, marginTop: 4, borderTop: '1px solid var(--line)' }}>
-                          <span style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 600 }}>Total</span>
-                          <span style={{ fontSize: 'var(--fs-small)', fontWeight: 600 }}>£{destTotal}</span>
-                        </div>
-                      )}
-                      <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', marginTop: 8 }}>Other costs (transfers, activities) aren't tracked yet.</div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
     </div>
   );
 }

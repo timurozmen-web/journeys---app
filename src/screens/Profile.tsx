@@ -4,6 +4,7 @@ import { deleteHotel } from '../lib/queries';
 import { useReviews, useAllHotels, useAllFlights, useTrips } from '../lib/useLiveData';
 import { findHotelsNeedingReview, findHotelsMissingCategories, REVIEW_CATEGORIES } from '../lib/reviewScoring';
 import { flightDistanceKm, estimateFlightHours } from '../lib/travelStats';
+import { SectionSwitch } from '../components/SectionSwitch';
 import { PlaneIcon, SettingsIcon, StarIcon } from '../components/Icons';
 import { DestinationPhoto } from '../components/DestinationPhoto';
 import { destinationQuery } from '../lib/tripHotels';
@@ -159,9 +160,12 @@ export function Profile() {
           <h1 className="h1" style={{ margin: 0 }}>Then</h1>
           {since && <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 2 }}>Since {since}</div>}
         </div>
-        <button className="lb-iconbtn" onClick={() => navigate('/settings')} aria-label="Settings">
-          <SettingsIcon size={20} color="currentColor" />
-        </button>
+        <div className="headtools">
+          <SectionSwitch />
+          <button className="lb-iconbtn" onClick={() => navigate('/settings')} aria-label="Settings">
+            <SettingsIcon size={20} color="currentColor" />
+          </button>
+        </div>
       </div>
 
       {showingMockData && (
@@ -173,14 +177,14 @@ export function Profile() {
 
       {/* The world leads: every country you've stayed in, scratched off. */}
       <div className="lb-map scratchmap">
-        <div className="lb-map-count">
-          <span className="scratch-count">{countryCount}</span>
-          <span className="scratch-cap">
-            {countryCount === 1 ? 'country' : 'countries'} scratched off · {shareOfWorld(countryCount)}% of the world
-          </span>
-        </div>
         <Suspense fallback={<div style={{ height: 200, background: 'var(--map-bg)' }} />}>
-          <WorldMap hotels={loggedStays} flights={completedFlights} reviews={filteredReviews} focusCountries={focusCountries} scratch />
+          <WorldMap
+            hotels={loggedStays} flights={completedFlights} reviews={filteredReviews} focusCountries={focusCountries} scratch
+            caption={<>
+              <span className="scratch-count">{countryCount}</span>
+              <span className="scratch-cap">{countryCount === 1 ? 'country' : 'countries'} scratched off · {shareOfWorld(countryCount)}% of the world</span>
+            </>}
+          />
         </Suspense>
       </div>
 
@@ -343,16 +347,7 @@ export function Profile() {
 
       <div style={{ padding: '10px 20px 0', display: 'flex', gap: 6 }}>
         {([['score', 'Top rated'], ['recent', 'Most recent'], ['az', 'A–Z']] as [SortMode, string][]).map(([mode, label]) => (
-          <button
-            key={mode}
-            onClick={() => setSortMode(mode)}
-            style={{
-              padding: '6px 14px', borderRadius: 'var(--r-pill)', fontSize: 'var(--fs-caption)', fontWeight: 700, cursor: 'pointer',
-              border: sortMode === mode ? 'none' : '1px solid var(--line)',
-              background: sortMode === mode ? 'var(--brand)' : 'var(--card)',
-              color: sortMode === mode ? 'var(--on-brand)' : 'var(--ink2)',
-            }}
-          >
+          <button key={mode} className={sortMode === mode ? 'tagbtn on' : 'tagbtn'} aria-pressed={sortMode === mode} onClick={() => setSortMode(mode)}>
             {label}
           </button>
         ))}

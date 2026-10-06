@@ -1,5 +1,4 @@
-import { useRef, useState } from 'react';
-import { BrandLogo } from './BrandLogo';
+import { useEffect, useRef, useState } from 'react';
 import { useVouchers } from '../lib/useLiveData';
 import { deleteLoyaltyProgramme, setVoucherRedeemed, updateLoyaltyProgramme } from '../lib/queries';
 import { SwipeToDelete } from './SwipeToDelete';
@@ -21,15 +20,22 @@ function moneyPrecise(n: number): string {
 }
 
 export function LoyaltyTab({
-  programmes, hotels, promotions, paymentCards, cardResults, refetchProgrammes,
+  programmes, hotels, promotions, paymentCards, cardResults, refetchProgrammes, initialOpen = null,
 }: {
   programmes: LoyaltyProgramme[]; hotels: Hotel[]; promotions: Promotion[]; paymentCards: PaymentCard[];
   cardResults?: Parameters<typeof computeStatusProgress>[3];
   refetchProgrammes: () => void;
+  initialOpen?: string | null; // a programme to open on arrival (tapping its ring on Loyalty home)
 }) {
   const { data: vouchers, refetch: refetchVouchers } = useVouchers();
-  const [category, setCategory] = useState<Category>('hotel');
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(initialOpen);
+  // Arriving for one programme: open it on the right tab and bring it into view.
+  const [category, setCategory] = useState<Category>(() => (programmes.find((p) => p.name === initialOpen)?.category ?? 'hotel'));
+  useEffect(() => {
+    if (!initialOpen) return;
+    const el = document.getElementById(`prog-${initialOpen.replace(/\W+/g, '-')}`);
+    el?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }, [initialOpen]);
   // Removed this session: hidden straight away, before the refetch lands.
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
@@ -95,18 +101,16 @@ export function LoyaltyTab({
         );
 
         return (
-          <div key={p.name} className="prog">
+          <div key={p.name} className="prog" id={`prog-${p.name.replace(/\W+/g, '-')}`}>
             <SwipeToDelete itemLabel={p.name} surface="var(--card)" wrapperStyle={{ borderRadius: 0 }} onClick={() => setOpen(isOpen ? null : p.name)} onDelete={() => remove(p.name)}>
             <div
               className="prog-head" role="button" tabIndex={0} aria-expanded={isOpen}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(isOpen ? null : p.name); } }}
             >
-              {progress && progress.total > 0 ? (
+              {progress && progress.total > 0 && (
                 <StatusRing ticks={ringTicks(progress.total, nightSegments(progress))} size={46} label={`${progress.currentNights} of ${progress.total} nights`}>
-                  <BrandLogo name={p.name} shape={p.shape} color={p.color} accent={p.accent} size={26} />
+                  <span className="prog-ringnum">{progress.currentNights}</span>
                 </StatusRing>
-              ) : (
-                <BrandLogo name={p.name} shape={p.shape} color={p.color} accent={p.accent} size={34} />
               )}
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div className="prog-name">{p.name}</div>
