@@ -5,9 +5,10 @@ import { computeCardResults } from '../lib/cardMath';
 import { computeStatusProgress } from '../lib/statusProgress';
 import { withLiveOverrides } from '../lib/walletValue';
 import { loyaltyHighlights } from '../lib/loyaltyHighlights';
+import { computeWalletValueChange } from '../lib/hotelPlanner';
 import { ringTicks } from '../lib/statusRing';
 import { StatusRing } from '../components/StatusRing';
-import { BrandLogo } from '../components/BrandLogo';
+import { SectionSwitch } from '../components/SectionSwitch';
 import { SettingsIcon } from '../components/Icons';
 
 // The Loyalty home: what everything is worth, how close each status is,
@@ -33,6 +34,7 @@ export function LoyaltyHome() {
     .map((p) => ({ p, progress: computeStatusProgress(p, hotels, promotions, cardResults) }))
     .filter((x) => x.progress.total > 0)
     .sort((a, b) => b.progress.currentNights / b.progress.total - a.progress.currentNights / a.progress.total);
+  const change = computeWalletValueChange(hotels, programmes, vouchers, today);
   const highlights = loyaltyHighlights({ programmes: rawProgrammes, hotels, promotions, cardResults, vouchers, today });
 
   return (
@@ -40,13 +42,21 @@ export function LoyaltyHome() {
       <div style={{ background: 'var(--bg)', height: 'env(safe-area-inset-top, 0px)' }} />
       <div style={{ padding: '20px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h1 className="h1" style={{ margin: 0 }}>Loyalty</h1>
-        <button className="lb-iconbtn" aria-label="Settings" onClick={() => navigate('/settings')}><SettingsIcon size={20} /></button>
+        <div className="headtools">
+          <SectionSwitch />
+          <button className="lb-iconbtn" aria-label="Settings" onClick={() => navigate('/settings')}><SettingsIcon size={20} /></button>
+        </div>
       </div>
 
       <div style={{ padding: '0 16px' }}>
         <button className="lh-value" onClick={() => navigate('/wallet')}>
           <span className="lh-label">Wallet value</span>
           <span className="lh-big">£{Math.round(value).toLocaleString()}</span>
+          {change.hasData && (
+            <span className={change.deltaValue >= 0 ? 'lh-delta up' : 'lh-delta down'}>
+              {change.deltaValue >= 0 ? '▲' : '▼'} £{Math.round(Math.abs(change.deltaValue)).toLocaleString()} on last month
+            </span>
+          )}
           <span className="lh-sub">{points.toLocaleString()} points across {programmes.length} programmes</span>
         </button>
       </div>
@@ -64,9 +74,10 @@ export function LoyaltyHome() {
               ];
               const toGo = Math.max(0, progress.total - progress.currentNights);
               return (
-                <button key={p.name} className="lh-ring" onClick={() => navigate('/wallet')}>
+                <button key={p.name} className="lh-ring" onClick={() => navigate('/wallet', { state: { open: p.name } })}>
                   <StatusRing ticks={ringTicks(progress.total, segs)} size={92} label={`${progress.currentNights} of ${progress.total} nights`}>
-                    <BrandLogo name={p.name} shape={p.shape} color={p.color} accent={p.accent} size={34} />
+                    <span className="lh-ring-num">{progress.currentNights}</span>
+                    <span className="lh-ring-of">of {progress.total}</span>
                   </StatusRing>
                   <span className="lh-ring-name">{p.name}</span>
                   <span className="lh-ring-sub">{toGo > 0 ? `${toGo} to ${progress.targetTier ?? p.nextTier}` : `${progress.targetTier ?? p.nextTier} reached`}</span>

@@ -32,9 +32,11 @@ function project(lat: number, lng: number): [number, number] | null {
 }
 
 export function WorldMap({
-  hotels, flights, reviews, focusCountries, scratch = false,
+  hotels, flights, reviews, focusCountries, scratch = false, caption,
 }: {
   hotels: Hotel[]; flights: Flight[]; reviews: Review[]; focusCountries?: string[] | null;
+  /** Shown over the map only at full size with nothing selected, so it never sits under a country's card. */
+  caption?: React.ReactNode;
   /** Draw visited countries scratched off (Then) rather than shaded by nights. */
   scratch?: boolean;
 }) {
@@ -175,14 +177,7 @@ export function WorldMap({
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, padding: '14px 16px 10px', alignItems: 'center' }}>
-        <button
-          onClick={() => setShowRoutes((v) => !v)}
-          style={{
-            padding: '6px 12px', borderRadius: 'var(--r-pill)', border: '1px solid var(--line)',
-            background: showRoutes ? 'var(--brand)' : 'var(--card2)', color: showRoutes ? 'var(--on-brand)' : 'var(--ink2)',
-            fontSize: 'var(--fs-caption)', fontWeight: 700, cursor: 'pointer',
-          }}
-        >
+        <button className={showRoutes ? 'maptag on' : 'maptag'} aria-pressed={showRoutes} onClick={() => setShowRoutes((v) => !v)}>
           Routes
         </button>
       </div>
@@ -223,20 +218,19 @@ export function WorldMap({
         </svg>
 
         <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <ZoomBtn onClick={() => zoomBy(1.5)}>+</ZoomBtn>
-          <ZoomBtn onClick={() => zoomBy(1 / 1.5)}>−</ZoomBtn>
-          {(zoom !== 1 || selected) && <ZoomBtn onClick={resetView}>⟲</ZoomBtn>}
+          <ZoomBtn label="Zoom in" onClick={() => zoomBy(1.5)}>+</ZoomBtn>
+          <ZoomBtn label="Zoom out" onClick={() => zoomBy(1 / 1.5)}>−</ZoomBtn>
+          {(zoom !== 1 || selected) && <ZoomBtn label="Reset map" onClick={resetView}>⟲</ZoomBtn>}
         </div>
+
+        {caption && zoom === 1 && !selected && <div className="map-caption">{caption}</div>}
 
         {selected && selectedDetail && (
           <div
-            style={{
-              position: 'absolute', left: 10, right: 10, bottom: 10, background: 'var(--card)', borderRadius: 'var(--r-sm)',
-              border: '1.5px solid var(--brand)', padding: '10px 12px', boxShadow: '0 6px 16px rgba(0,0,0,.4)',
-            }}
+            className="mapcard"
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ fontSize: 'var(--fs-body)', fontWeight: 600, color: 'var(--ink)' }}>{selected}</div>
+              <div className="mapcard-title">{selected}</div>
               <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--ink3)', cursor: 'pointer', fontSize: 'var(--fs-body)', padding: 0, lineHeight: 1 }}>✕</button>
             </div>
             <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--brand)', fontWeight: 700, marginTop: 2 }}>
@@ -261,19 +255,8 @@ export function WorldMap({
   );
 }
 
-function ZoomBtn({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        width: 26, height: 26, borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card)',
-        color: 'var(--ink)', fontSize: 'var(--fs-body-lg)', fontWeight: 700, cursor: 'pointer', display: 'grid', placeItems: 'center',
-        boxShadow: '0 1px 4px rgba(0,0,0,.4)',
-      }}
-    >
-      {children}
-    </button>
-  );
+function ZoomBtn({ children, onClick, label }: { children: React.ReactNode; onClick: () => void; label: string }) {
+  return <button className="mapbtn" aria-label={label} onClick={onClick}>{children}</button>;
 }
 
 function shadeFor(nights: number, max: number) {

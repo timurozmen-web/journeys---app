@@ -5,9 +5,7 @@ import { SUPPORTED_CURRENCIES, CURRENCY_SYMBOL } from '../lib/currency';
 import { BA_TIERS, QR_TIERS, QF_TIERS, KF_TIERS } from '../lib/creditingEngine';
 import { loadWorldCities, type WorldCity } from '../data/worldCitiesLoader';
 import { ScreenHeader } from '../components/ui';
-import { useNavigate } from 'react-router-dom';
-import { TripsIcon, WalletIcon } from '../components/Icons';
-import { MODE_HOME, useAppMode, writeMode, type AppMode } from '../lib/appMode';
+import { SectionSwitch } from '../components/SectionSwitch';
 
 
 const AIRLINE_PROGRAMMES = [
@@ -18,8 +16,6 @@ const AIRLINE_PROGRAMMES = [
 ] as const;
 
 export function Settings() {
-  const navigate = useNavigate();
-  const mode = useAppMode();
   const { data: programmes, refetch } = useLoyaltyProgrammes();
   const { data: home, refetch: refetchHome } = useHomeLocation();
   const [saving, setSaving] = useState<string | null>(null);
@@ -74,19 +70,7 @@ export function Settings() {
     <div>
       <ScreenHeader
         title="Settings"
-        right={
-          <div className="modeswitch" role="radiogroup" aria-label="Section">
-            {(['travel', 'loyalty'] as AppMode[]).map((m) => (
-              <button
-                key={m} role="radio" aria-checked={mode === m} aria-label={m === 'travel' ? 'Travel' : 'Loyalty'}
-                className={mode === m ? 'on' : ''}
-                onClick={() => { if (m !== mode) { writeMode(m); navigate(MODE_HOME[m]); } }}
-              >
-                {m === 'travel' ? <TripsIcon size={18} /> : <WalletIcon size={18} />}
-              </button>
-            ))}
-          </div>
-        }
+        right={<SectionSwitch />}
       />
 
       <div style={{ padding: '4px 20px 24px' }}>

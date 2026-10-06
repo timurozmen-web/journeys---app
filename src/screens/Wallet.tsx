@@ -18,7 +18,7 @@ const TODAY = new Date().toISOString().slice(0, 10);
 export function Wallet() {
   const navigate = useNavigate();
   // Arriving from bank setup: open on Cards with the new cards in view.
-  const arrival = (useLocation().state ?? null) as { seg?: Seg; tracked?: string[] } | null;
+  const arrival = (useLocation().state ?? null) as { seg?: Seg; tracked?: string[]; open?: string } | null;
   const [seg, setSeg] = useState<Seg>(arrival?.seg ?? 'loyalty');
   const { data: rawLoyaltyProgrammes, isLive, refetch: refetchProgrammes } = useLoyaltyProgrammes();
   const { data: paymentCards, refetch: refetchCards } = usePaymentCards();
@@ -101,7 +101,7 @@ export function Wallet() {
         )}
 
         {seg === 'loyalty' && (
-          <LoyaltyTab programmes={loyaltyProgrammes} hotels={hotels} promotions={promotions} paymentCards={paymentCards} cardResults={cardResults} refetchProgrammes={refetchProgrammes} />
+          <LoyaltyTab programmes={loyaltyProgrammes} hotels={hotels} promotions={promotions} paymentCards={paymentCards} cardResults={cardResults} refetchProgrammes={refetchProgrammes} initialOpen={arrival?.open ?? null} />
         )}
 
         {seg === 'payment' && (

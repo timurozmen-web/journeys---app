@@ -1,6 +1,10 @@
 import { CARDS_STATIC, defaultCardFor, isEuropeOrUK, isIHGPremiumCountry } from '../data/cardDefs';
 import { basePointsForHotel } from './loyaltyPoints';
 import type { Trip, Hotel, LoyaltyProgramme, Promotion } from '../types';
+// The shared UTC helper: a local copy here added days in local time and
+// read the date back in UTC, so a stay running over the clocks going
+// forward (28 Mar + 2 nights) ended a day early, on the 29th.
+import { addDays } from './tripDay';
 
 export interface TripPointsResult {
   totalPoints: number;
@@ -99,11 +103,6 @@ export function groupDestinations(trip: Trip): Destination[] {
   return groups;
 }
 
-function addDays(iso: string, days: number) {
-  const d = new Date(iso);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
 
 export interface Gap {
   start: string;

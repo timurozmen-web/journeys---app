@@ -344,7 +344,6 @@ html[data-mode="loyalty"] .tabs{background:var(--card2);border-color:var(--line)
 /* Travel's tab bar: two words either side of the + */
 .tab.word{width:auto;min-width:72px;padding:0 10px;font-family:var(--font-display);font-weight:700;font-size:var(--fs-input);letter-spacing:-.02em}
 .tab.word .badge{top:4px;right:-2px}
-.tabs.travel:not(.open){left:48px;right:48px}
 /* Settings: which half of the app you're in. */
 .modeswitch{display:flex;padding:3px;border-radius:var(--r-pill);background:var(--card2);border:1px solid var(--line)}
 .modeswitch button{width:40px;height:32px;border:0;border-radius:var(--r-pill);background:none;color:var(--ink3);display:grid;place-items:center;cursor:pointer;
@@ -387,3 +386,41 @@ html[data-mode="loyalty"] .tabs{background:var(--card2);border-color:var(--line)
 .lh-item-sub{display:block;font-size:var(--fs-caption);color:var(--ink2);margin-top:3px}
 .lh-bar{display:block;height:3px;border-radius:2px;background:var(--card2);margin-top:10px;overflow:hidden}
 .lh-bar i{display:block;height:100%;background:var(--brand2)}
+.lh-ring-num{font-size:var(--fs-h1);font-weight:700;letter-spacing:-.04em;line-height:1}
+.lh-ring-of{font-size:var(--fs-caption);color:var(--ink2);margin-top:2px}
+.lh-delta{font-size:var(--fs-small);font-weight:600}
+.lh-delta.up{color:var(--green)}.lh-delta.down{color:var(--red)}
+.prog-ringnum{font-size:var(--fs-small);font-weight:700}
+.headtools{display:flex;align-items:center;gap:10px}
+/* A place the trip moves on to, between itinerary cards. */
+.destnote{display:flex;align-items:center;gap:8px;margin:6px 0 0;font-family:var(--font-display);font-weight:700;font-size:var(--fs-small);
+  color:var(--brand)}
+.destnote::after{content:"";flex:1;border-top:1.5px dashed var(--line)}
+.statuscover{position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:58;opacity:0;
+  pointer-events:none;transition:opacity .15s ease}
+.statuscover.on{opacity:1}
+.map-caption{position:absolute;left:12px;bottom:10px;display:flex;flex-direction:column;gap:2px;pointer-events:none;
+  text-shadow:0 0 6px var(--map-bg),0 0 3px var(--map-bg)}
+
+/* ---- Travel: every control in the typewriter-tag style ----
+   Ink outlines, square-ish corners, Space Mono, ink fill when on. */
+.maptag,.tagbtn{padding:6px 12px;border-radius:6px;border:1.5px solid var(--ink);background:var(--card);color:var(--ink);
+  font-family:var(--font-display);font-size:var(--fs-caption);font-weight:700;cursor:pointer}
+.maptag.on,.tagbtn.on{background:var(--ink);color:var(--bg)}
+.mapbtn{width:28px;height:28px;border-radius:6px;border:1.5px solid var(--ink);background:var(--card);color:var(--ink);
+  font-family:var(--font-display);font-size:var(--fs-body-lg);font-weight:700;line-height:1;display:grid;place-items:center;cursor:pointer;padding:0}
+.mapcard{position:absolute;left:10px;right:10px;bottom:10px;background:var(--card);border:1.5px solid var(--ink);border-radius:6px;
+  padding:10px 12px;box-shadow:var(--shadow-raised)}
+.mapcard-title{font-family:var(--font-display);font-weight:700;font-size:var(--fs-body);color:var(--ink)}
+html[data-mode="travel"] .segmented{border:1.5px solid var(--ink);border-radius:8px;background:var(--card)}
+html[data-mode="travel"] .segmented button{font-family:var(--font-display);border-radius:5px}
+html[data-mode="travel"] .segmented.dark button.on,html[data-mode="travel"] .segmented.brand button.on{background:var(--ink);color:var(--bg)}
+html[data-mode="travel"] .segmented.pills{border:0;background:none}
+html[data-mode="travel"] .segmented.pills button,html[data-mode="travel"] .catchip button{border:1.5px solid var(--ink);border-radius:6px;
+  background:var(--card);color:var(--ink);font-family:var(--font-display);font-weight:700}
+html[data-mode="travel"] .segmented.pills button.on,html[data-mode="travel"] .catchip button.won{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+html[data-mode="travel"] .lb-iconbtn{border:1.5px solid var(--ink)}
+html[data-mode="travel"] .modeswitch{border:1.5px solid var(--ink);background:var(--card)}
+html[data-mode="travel"] .btn.secondary{border:1.5px solid var(--ink);font-family:var(--font-display)}
+html[data-mode="travel"] .input{border:1.5px solid var(--ink);border-radius:6px}
+html[data-mode="travel"] .field-label,html[data-mode="travel"] .sectionlabel{font-family:var(--font-display)}

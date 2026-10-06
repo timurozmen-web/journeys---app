@@ -16,9 +16,8 @@ describe('loyaltyHighlights', () => {
     expect(h.map((x) => x.title)).toEqual(['Free night b expires in 14 days', 'Free night a expires in 75 days']);
   });
 
-  it('shows nights to the next tier when status is within reach', () => {
+  it("doesn't repeat status, which the rings already show", () => {
     const marriott = { name: 'Marriott Bonvoy', points: 0, ptValue: 0.6, tier: 'Titanium Elite', nextTier: 'Ambassador', nights: 54, nightsNeeded: 46, nightsBaselineDate: TODAY, category: 'hotel' } as LoyaltyProgramme;
-    const h = loyaltyHighlights({ programmes: [marriott], hotels: [], promotions: [], cardResults: [], vouchers: [], today: TODAY });
-    expect(h[0].title).toBe('46 nights to Ambassador with Marriott Bonvoy');
+    expect(loyaltyHighlights({ programmes: [marriott], hotels: [], promotions: [], cardResults: [], vouchers: [], today: TODAY })).toEqual([]);
   });
 });

@@ -182,14 +182,7 @@ export function TripMap({ hotels, flights, photos = [] }: { hotels: Hotel[]; fli
       </svg>
 
       {stops.length > 1 && (
-        <button
-          onClick={togglePlay}
-          style={{
-            position: 'absolute', top: 8, right: 8, display: 'flex', alignItems: 'center', gap: 5,
-            padding: '5px 11px', borderRadius: 'var(--r-pill)', border: '1px solid var(--ink)', background: 'var(--card)',
-            color: 'var(--ink)', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-caption)', fontWeight: 700, cursor: 'pointer',
-          }}
-        >
+        <button className={playing ? 'maptag on' : 'maptag'} onClick={togglePlay} style={{ position: 'absolute', top: 8, right: 8 }}>
           {playing ? '⏸ Pause' : '▶ Play trip'}
         </button>
       )}

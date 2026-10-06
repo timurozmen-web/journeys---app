@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { modeForPath, readMode, useAppMode, writeMode } from './lib/appMode';
 import { Start } from './screens/Start';
@@ -36,10 +36,26 @@ function ModeSync() {
   return null;
 }
 
+// The status bar is translucent (so photos can run to the top edge), which
+// let page text scroll up underneath the clock and look as if it faded
+// away. Once the page has scrolled, a strip in the page colour covers the
+// status bar area.
+function StatusBarCover() {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  return <div className={scrolled ? 'statuscover on' : 'statuscover'} aria-hidden="true" />;
+}
+
 export default function App() {
   return (
     <HashRouter>
      <ModeSync />
+     <StatusBarCover />
      <AuthGate>
       <div className="screen on">
         <ErrorBoundary>
