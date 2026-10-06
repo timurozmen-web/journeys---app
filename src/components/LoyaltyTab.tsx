@@ -8,13 +8,15 @@ import { ErrorText } from './ui';
 import { computeStatusProgress } from '../lib/statusProgress';
 import { computeLoyaltyInsights } from '../lib/loyaltyInsights';
 import { cardBackground, luminance, textOn, tierFinish } from '../lib/cardTheme';
+import { voucherDates } from '../lib/voucherDates';
+import { formatDate } from '../lib/format';
 import type { LoyaltyProgramme, Hotel, Promotion, PaymentCard } from '../types';
 
 type Category = 'hotel' | 'airline';
 
+// Values are shown to the pound, like every other figure in the wallet
+// (the One Key Cash balance was showing as £31.00).
 function moneyPrecise(n: number): string {
-  if (n === 0) return '£0';
-  if (Math.abs(n) < 100) return `£${n.toFixed(2)}`;
   return `£${Math.round(n).toLocaleString()}`;
 }
 
@@ -55,6 +57,7 @@ export function LoyaltyTab({
     }
   }
 
+  const today = new Date().toISOString().slice(0, 10);
   const filtered = programmes.filter((p) => p.category === category && !removed.has(p.name));
   const insights = computeLoyaltyInsights(hotels, programmes, new Date().getFullYear());
 
@@ -139,9 +142,28 @@ export function LoyaltyTab({
                     className="input compact inline-value" type="number" inputMode="numeric" aria-label={`${p.name} points`}
                     defaultValue={p.points}
                     onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    onBlur={(e) => { const v = parseInt(e.target.value, 10); if (Number.isFinite(v) && v !== p.points) save(p.name, { points: v }); }}
+                    // Entering a balance records it as of today: stays up to now are
+                    // in it, so the baseline moves to today (nights too, kept in step)
+                    // and only later stays are added on top.
+                    onBlur={(e) => {
+                      const v = parseInt(e.target.value, 10);
+                      if (!Number.isFinite(v) || v === p.points) return;
+                      save(p.name, { points: v, nightsBaselineDate: today, ...(p.nights != null && progress ? { nights: progress.currentNights } : {}) });
+                    }}
                   />
                 </div>
+                {(p.stayPoints ?? 0) > 0 && (
+                  <div className="dd-row">
+                    <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>From stays since {formatDate(p.nightsBaselineDate ?? today)}</span>
+                    <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--green)' }}>+{(p.stayPoints ?? 0).toLocaleString()}</span>
+                  </div>
+                )}
+                {(p.pendingStayPoints ?? 0) > 0 && (
+                  <div className="dd-row">
+                    <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Pending from booked stays</span>
+                    <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--amber)' }}>+{(p.pendingStayPoints ?? 0).toLocaleString()}</span>
+                  </div>
+                )}
                 <div className="dd-row">
                   <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Tier</span>
                   <input
@@ -308,8 +330,11 @@ export function LoyaltyTab({
                             onChange={() => setVoucherRedeemed(v.id, true).then(refetchVouchers)}
                             style={{ width: 17, height: 17, flexShrink: 0 }}
                           />
-                          <div style={{ flex: 1, minWidth: 0, fontSize: 'var(--fs-small)', fontWeight: 600 }}>{v.name}</div>
-                          {v.value != null && <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>£{v.value.toFixed(2)}</div>}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 'var(--fs-small)', fontWeight: 600 }}>{v.name}</div>
+                            <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 2 }}>{voucherDates(v, today)}</div>
+                          </div>
+                          {v.value != null && <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>£{Math.round(v.value).toLocaleString()}</div>}
                         </div>
                       ))}
                     </div>

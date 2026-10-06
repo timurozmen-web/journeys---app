@@ -1,26 +1,12 @@
 import type { Hotel, LoyaltyProgramme } from '../types';
 import { addDays } from './tripDay';
+import { BASE_PROGRAMS, basePointsPerGBP, stayPoints, TIER_BONUS } from './loyaltyPoints';
 
-// Real base earning rates per programme, per £1 spent on qualifying stays.
-// These are the published base rates -- the elite bonus is applied on top
-// separately, based on the user's actual current tier.
-export const BASE_POINTS_PER_GBP: Record<string, number> = {
-  'Marriott Bonvoy': 12.7, // 10 pts per USD, converted at ~1.27
-  'Hilton Honors': 12.7, // 10 pts per USD
-  'IHG One Rewards': 12.7, // 10 pts per USD
-  'World of Hyatt': 6.35, // 5 pts per USD
-  'Accor ALL': 2.93, // 25 pts per EUR10 = 2.5/EUR, converted at ~1.17
-};
-
-// Real elite earning bonuses by programme and tier, as a multiplier on the
-// base rate. Only tiers the user actually holds need to be accurate here.
-export const TIER_BONUS: Record<string, Record<string, number>> = {
-  'Marriott Bonvoy': { Silver: 1.1, Gold: 1.25, Platinum: 1.5, 'Titanium Elite': 1.75, Titanium: 1.75, Ambassador: 1.75 },
-  'Hilton Honors': { Silver: 1.2, Gold: 1.8, Diamond: 2.0 },
-  'IHG One Rewards': { Silver: 1.2, Gold: 1.4, Platinum: 1.6, Diamond: 2.0 },
-  'World of Hyatt': { Discoverist: 1.1, Explorist: 1.2, Globalist: 1.3 },
-  'Accor ALL': { Silver: 1.25, Gold: 1.5, Platinum: 1.75, Diamond: 2.0 },
-};
+// Earning rates come from the one source in loyaltyPoints.ts.
+export { TIER_BONUS };
+export const BASE_POINTS_PER_GBP: Record<string, number> = Object.fromEntries(
+  BASE_PROGRAMS.map((d) => [d.brand, basePointsPerGBP(d.brand) as number]),
+);
 
 // Genuinely useful, widely-applicable benefits by tier. Deliberately
 // conservative -- only benefits that are broadly reliable, not
@@ -86,9 +72,7 @@ export function computeWalletValueChange(
     if (BASE_POINTS_PER_GBP[h.brand] == null) continue;
     sawActivity = true;
     const programme = programmes.find((p) => p.name === h.brand);
-    const tier = programme?.tier ?? null;
-    const bonus = (tier && TIER_BONUS[h.brand]?.[tier]) || 1;
-    const pointsEarned = h.total * BASE_POINTS_PER_GBP[h.brand] * bonus;
+    const pointsEarned = stayPoints(h, programmes);
     if (programme?.ptValue) pointsValueEarned += (pointsEarned * programme.ptValue) / 100;
   }
 

@@ -63,6 +63,8 @@ export interface LoyaltyProgramme {
   nightsBaselineDate?: string | null; // nights count is accurate as of this date; only Completed stays after it add on top live
   statusPointsOverride?: number | null; // manual override for real current status/qualifying points, when spend history alone can't be trusted to compute it accurately
   category: 'hotel' | 'airline';
+  stayPoints?: number;        // added live: completed stays since the balance was recorded
+  pendingStayPoints?: number; // added live: booked stays not yet completed
 }
 
 export interface PaymentCard {

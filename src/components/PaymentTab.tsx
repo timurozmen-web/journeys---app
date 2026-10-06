@@ -89,7 +89,28 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
 
     const faceSpec = CARD_FACES[r.card.id] ?? DEFAULT_FACE;
     return (
-      <div key={r.card.id} className={`walletslot${stacked ? ' stacked' : ''}`} style={{ opacity: muted ? 0.55 : 1, filter: muted ? 'grayscale(0.6)' : undefined }}>
+      // Bug fixed: archived cards were stacked faces at 55% opacity, so they
+      // showed through one another and an opened one overlaid the rest.
+      // They are compact rows instead.
+      <div key={r.card.id} className={muted ? 'archslot' : `walletslot${stacked ? ' stacked' : ''}`}>
+        {muted ? (
+        <SwipeToDelete
+          onClick={() => setOpen(isOpen ? null : r.card.id)}
+          onDelete={() => removeCard(r.card.id)}
+          itemLabel={r.card.id}
+          wrapperStyle={{ borderRadius: 'var(--r-md)' }}
+        >
+          <div role="button" tabIndex={0} className="archrow" aria-expanded={isOpen} aria-label={r.card.id}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(isOpen ? null : r.card.id); } }}>
+            <span className="minicard" style={{ background: `linear-gradient(150deg, ${faceSpec.from} 0%, ${faceSpec.to} 100%)` }} />
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontWeight: 600 }}>{r.card.id}</span>
+              <span style={{ display: 'block', fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 2 }}>Closed {r.cardRow?.closedDate}</span>
+            </span>
+            <span aria-hidden="true" style={{ color: 'var(--ink3)' }}>{isOpen ? '⌃' : '⌄'}</span>
+          </div>
+        </SwipeToDelete>
+        ) : (
         <SwipeToDelete
           onClick={() => setOpen(isOpen ? null : r.card.id)}
           onDelete={() => removeCard(r.card.id)}
@@ -131,6 +152,7 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
           </div>
         </div>
         </SwipeToDelete>
+        )}
 
         {isOpen && (
           <div className="walletdetail">
@@ -324,7 +346,7 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
           <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginTop: 10 }}>
             Archived
           </div>
-          <div>{archived.map((r, i) => renderCard(r, true, i > 0 && open !== archived[i - 1].card.id))}</div>
+          <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>{archived.map((r) => renderCard(r, true, false))}</div>
         </>
       )}
     </div>

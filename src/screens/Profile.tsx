@@ -1,5 +1,6 @@
 import { useState, useMemo, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { deleteHotel } from '../lib/queries';
 import { useReviews, useAllHotels, useAllFlights, useTrips } from '../lib/useLiveData';
 import { findHotelsNeedingReview, findHotelsMissingCategories, REVIEW_CATEGORIES } from '../lib/reviewScoring';
 import { flightDistanceKm, estimateFlightHours } from '../lib/travelStats';
@@ -45,6 +46,7 @@ export function Profile() {
   const [countryFilter, setCountryFilter] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [year, setYear] = useState<'all' | number>('all');
+  const [cancelling, setCancelling] = useState<string | null>(null);
 
   const { data: reviews, isLive: reviewsLive } = useReviews();
   const { data: hotels, isLive: hotelsLive } = useAllHotels();
@@ -258,17 +260,26 @@ export function Profile() {
           <div className="nf-eyebrow lb-label">To rate</div>
           <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '0 16px', scrollbarWidth: 'none' }}>
             {needsReview.map((h) => (
-              <button
-                key={h.hotelId} className="glass lb-todo"
-                onClick={() => navigate('/review-trip', { state: { hotel: h } })}
-              >
-                <StarIcon size={18} color="var(--brand)" />
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 'var(--fs-body-lg)', fontWeight: 500 }}>Rate {h.hotelName}</span>
-                  <span style={{ display: 'block', fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 2 }}>{h.tripTitle} · {h.date}</span>
-                </span>
-                <span style={{ color: 'var(--brand)', fontSize: 'var(--fs-small)' }}>Rate ›</span>
-              </button>
+              <div key={h.hotelId} className="glass lb-todo" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+                <button type="button" className="lb-todo-main" onClick={() => navigate('/review-trip', { state: { hotel: h } })}>
+                  <StarIcon size={18} color="var(--brand)" />
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: 'block', fontSize: 'var(--fs-body-lg)', fontWeight: 500 }}>Rate {h.hotelName}</span>
+                    <span style={{ display: 'block', fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 2 }}>{h.tripTitle} · {h.date}</span>
+                  </span>
+                  <span style={{ color: 'var(--brand)', fontSize: 'var(--fs-small)' }}>Rate ›</span>
+                </button>
+                {/* A stay that was cancelled shouldn't be waiting to be rated: remove it (two taps). */}
+                <button
+                  type="button" className="lb-todo-cancel"
+                  onClick={async () => {
+                    if (cancelling !== h.hotelId) { setCancelling(h.hotelId); return; }
+                    try { await deleteHotel(h.hotelId); } finally { setCancelling(null); }
+                  }}
+                >
+                  {cancelling === h.hotelId ? 'Remove this stay' : "Didn't stay"}
+                </button>
+              </div>
             ))}
             {missingCategories.map((m) => (
               <button

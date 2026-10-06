@@ -49,7 +49,7 @@ export function Wallet() {
   // One Key Cash isn't a fixed balance -- it's 6% of what's actually been
   // booked through Expedia at Platinum tier, computed live in the shared
   // helper so this always matches the figure Home shows.
-  const loyaltyProgrammes = withLiveOverrides(rawLoyaltyProgrammes, hotels);
+  const loyaltyProgrammes = withLiveOverrides(rawLoyaltyProgrammes, hotels, promotions);
 
   const totalValue = loyaltyProgrammes.reduce((s, p) => s + (p.points * p.ptValue) / 100, 0);
   const { data: vouchers } = useVouchers();

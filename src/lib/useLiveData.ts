@@ -8,6 +8,7 @@ import { getCached, setCached } from './localCache';
 import type { BankLinks } from './queries';
 import { groupBankSpend } from './bankSpend';
 import { shouldReplace } from './liveRefresh';
+import { DATA_CHANGED } from './dataEvents';
 import { fetchTrips, fetchLoyaltyProgrammes, fetchPaymentCards, fetchReviews, fetchAllHotels, fetchAllFlights, fetchVouchers, fetchPromotions, fetchBankLinks, fetchPromotionCandidates, fetchDiscoverItems, fetchHomeLocation, fetchClimateData, fetchCrowdPriceData, fetchPointsValueData, fetchCityCashRates, fetchCurrencyPreference } from './queries';
 
 function useLive<T>(cacheKey: string, fetcher: () => Promise<T[]>, fallback: T[]) {
@@ -52,6 +53,12 @@ function useLive<T>(cacheKey: string, fetcher: () => Promise<T[]>, fallback: T[]
   }, [cacheKey, fetcher]);
 
   useEffect(() => load(), [load]);
+  // Refresh whenever saved data changes anywhere in the app.
+  useEffect(() => {
+    const onChange = () => { load(); };
+    window.addEventListener(DATA_CHANGED, onChange);
+    return () => window.removeEventListener(DATA_CHANGED, onChange);
+  }, [load]);
 
   return { data, isLive, cachedAt, refetch: load };
 }

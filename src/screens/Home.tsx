@@ -80,7 +80,7 @@ export function Home() {
   const heroTrip = currentTrip ?? nextUpcomingTrip ?? null;
   const heroIsCurrent = heroTrip?.section === 'current';
 
-  const effectiveProgrammes = withLiveOverrides(loyaltyProgrammes, hotels);
+  const effectiveProgrammes = withLiveOverrides(loyaltyProgrammes, hotels, promotions);
   const walletValue = effectiveProgrammes.reduce((s, p) => s + (p.points ?? 0) * (p.ptValue ?? 0) / 100, 0);
 
   // Real "worth knowing" signals -- only ever shows what's genuinely
@@ -242,11 +242,6 @@ export function Home() {
               <span className="nf-eyebrow" style={{ color: 'var(--on-dark2)' }}>{fmtFullDate(TODAY)}</span>
               <span style={{ display: 'block', fontSize: 'var(--fs-title)', fontWeight: 400, marginTop: 3 }}>Good {timeOfDay()}, Timur</span>
             </span>
-            <span
-              role="link" aria-label="Profile"
-              onClick={(e) => { e.stopPropagation(); navigate('/profile'); }}
-              style={{ width: 44, height: 44, borderRadius: '50%', border: '1px solid rgba(217,183,124,.55)', background: 'rgba(11,13,18,.35)', color: 'var(--brand)', display: 'grid', placeItems: 'center', fontWeight: 500, backdropFilter: 'blur(10px)', textShadow: 'none' }}
-            >T</span>
           </span>
 
           <span className="ph-bottom" style={{ left: 24, right: 24, bottom: 18 }}>

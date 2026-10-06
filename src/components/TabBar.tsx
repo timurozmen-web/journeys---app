@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { HomeIcon, TripsIcon, WalletIcon, ProfileIcon, PlusIcon, PlanIcon, CaptureIcon, DiscoverIcon, CreditIcon } from './Icons';
 import { getQueuedWrites, onQueueChange, processQueue } from '../lib/offlineQueue';
 import { fanPositions } from '../lib/fanLayout';
+import { useDiscoverItems, useReviews, useTrips } from '../lib/useLiveData';
+import { badgeLabel, newDiscoverCount, profileActionCount } from '../lib/badges';
 
 // The + button's fan, left to right along the arc.
 const ACTIONS = [
@@ -27,6 +29,12 @@ export function TabBar() {
   const navigate = useNavigate();
   const [pendingCount, setPendingCount] = useState(() => getQueuedWrites().length);
   const [pendingItems, setPendingItems] = useState(() => getQueuedWrites());
+  // Count badges: things waiting on Profile, and new Discover items behind +.
+  const { data: trips } = useTrips();
+  const { data: reviews } = useReviews();
+  const { data: discoverItems } = useDiscoverItems();
+  const profileBadge = badgeLabel(profileActionCount(trips, reviews, new Date().toISOString().slice(0, 10)));
+  const discoverBadge = badgeLabel(newDiscoverCount(discoverItems));
 
   // Escape closes the fan.
   useEffect(() => {
@@ -56,7 +64,7 @@ export function TabBar() {
         <button
           onClick={() => setPendingOpen(true)}
           style={{
-            position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 'calc(86px + env(safe-area-inset-bottom, 0px))',
+            position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 'calc(74px + env(safe-area-inset-bottom, 0px) * 0.5)',
             zIndex: 94, display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 'var(--r-pill)', border: 'none',
             background: 'var(--ink)', color: 'var(--on-dark)', fontSize: 'var(--fs-caption)', fontWeight: 700, boxShadow: '0 4px 14px rgba(0,0,0,.4)', cursor: 'pointer',
           }}
@@ -107,7 +115,10 @@ export function TabBar() {
             style={{ ['--x' as string]: `${FAN[i].x}px`, ['--y' as string]: `${FAN[i].y}px`, transitionDelay: open ? `${i * 45}ms` : '0ms' }}
             onClick={() => { setOpen(false); navigate(`/action/${a.key}`); }}
           >
-            <span className="fan-btn"><a.Icon size={22} color="currentColor" /></span>
+            <span className="fan-btn">
+              <a.Icon size={22} color="currentColor" />
+              {a.key === 'discover' && discoverBadge && <span className="badge">{discoverBadge}</span>}
+            </span>
             <span className="fan-label">{a.label}</span>
             <span className="fan-desc">{a.desc}</span>
           </button>
@@ -121,14 +132,22 @@ export function TabBar() {
         <NavLink to="/trips" aria-label="Trips" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
           {({ isActive }) => <TripsIcon size={22} strokeWidth={isActive ? 1.9 : 1.5} />}
         </NavLink>
-        <button className={`fab ${open ? 'open' : ''}`} onClick={() => setOpen((v) => !v)} aria-label={open ? 'Close actions' : 'Actions'} aria-expanded={open}>
-          <PlusIcon size={20} strokeWidth={2.2} />
-        </button>
+        <span className="fabwrap">
+          <button className={`fab ${open ? 'open' : ''}`} onClick={() => setOpen((v) => !v)} aria-label={open ? 'Close actions' : discoverBadge ? `Actions, ${discoverBadge} new in Discover` : 'Actions'} aria-expanded={open}>
+            <PlusIcon size={20} strokeWidth={2.2} />
+          </button>
+          {!open && discoverBadge && <span className="badge" aria-hidden="true">{discoverBadge}</span>}
+        </span>
         <NavLink to="/wallet" aria-label="Wallet" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
           {({ isActive }) => <WalletIcon size={22} strokeWidth={isActive ? 1.9 : 1.5} />}
         </NavLink>
-        <NavLink to="/profile" aria-label="Profile" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
-          {({ isActive }) => <ProfileIcon size={22} strokeWidth={isActive ? 1.9 : 1.5} />}
+        <NavLink to="/profile" aria-label={profileBadge ? `Profile, ${profileBadge} to do` : 'Profile'} className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
+          {({ isActive }) => (
+            <>
+              <ProfileIcon size={22} strokeWidth={isActive ? 1.9 : 1.5} />
+              {profileBadge && <span className="badge" aria-hidden="true">{profileBadge}</span>}
+            </>
+          )}
         </NavLink>
       </nav>
     </>

@@ -1,5 +1,6 @@
 import type { Hotel, LoyaltyProgramme } from '../types';
-import { BASE_POINTS_PER_GBP, TIER_BONUS } from './hotelPlanner';
+import { BASE_POINTS_PER_GBP } from './hotelPlanner';
+import { stayPoints } from './loyaltyPoints';
 
 export interface BrandInsight {
   brand: string;
@@ -61,9 +62,7 @@ export function computeLoyaltyInsights(
     // no points, matching how they earn no elite night credit either.
     if (!h.award && h.total && BASE_POINTS_PER_GBP[brand] != null) {
       const programme = programmes.find((p) => p.name === brand);
-      const tier = programme?.tier ?? null;
-      const bonus = (tier && TIER_BONUS[brand]?.[tier]) || 1;
-      const pointsEarned = h.total * BASE_POINTS_PER_GBP[brand] * bonus;
+      const pointsEarned = stayPoints({ ...h, brand }, programmes);
       b.pointsEarned += pointsEarned;
       if (programme?.ptValue) b.pointsValue += (pointsEarned * programme.ptValue) / 100;
     }
