@@ -2,6 +2,8 @@
 // don't need to change when they switch from mock data to this.
 import { supabase } from './supabase';
 import { addDays } from './tripDay';
+import { canonicalStay } from './stayNormalise';
+import { notifyDataChanged } from './dataEvents';
 import type { CardDef } from '../data/cardDefs';
 import type { SpendRecord } from './bankSpend';
 import type { Trip, Hotel, Flight, LoyaltyProgramme, PaymentCard, Review, Voucher, Promotion, PromoType, DiscoverItem } from '../types';
@@ -60,6 +62,7 @@ export async function addTrip(input: NewTripInput, id?: string): Promise<string>
     .select('id')
     .single();
   if (error) throw error;
+  notifyDataChanged();
   return data.id;
 }
 
@@ -83,23 +86,28 @@ export async function addLoyaltyProgramme(input: NewLoyaltyProgrammeInput) {
     nights_baseline_date: today, category: input.category,
   });
   if (error) throw error;
+  notifyDataChanged();
 }
 
-export async function updateLoyaltyProgramme(name: string, patch: { points?: number; tier?: string | null; nextTier?: string | null; nightsNeeded?: number | null }) {
+export async function updateLoyaltyProgramme(name: string, patch: { points?: number; tier?: string | null; nextTier?: string | null; nightsNeeded?: number | null; nights?: number | null; nightsBaselineDate?: string }) {
   const row: Record<string, unknown> = {};
   if (patch.points !== undefined) row.points = patch.points;
   if (patch.tier !== undefined) row.tier = patch.tier;
   if (patch.nextTier !== undefined) row.next_tier = patch.nextTier;
   if (patch.nightsNeeded !== undefined) row.nights_needed = patch.nightsNeeded;
+  if (patch.nights !== undefined) row.nights = patch.nights;
+  if (patch.nightsBaselineDate !== undefined) row.nights_baseline_date = patch.nightsBaselineDate;
   const { data, error } = await supabase.from('loyalty_programmes').update(row).eq('name', name).select('name');
   if (error) throw error;
   if (!data || data.length === 0) throw new Error(`No loyalty programme called "${name}".`);
+  notifyDataChanged();
 }
 
 export async function deleteLoyaltyProgramme(name: string) {
   const { data, error } = await supabase.from('loyalty_programmes').delete().eq('name', name).select('name');
   if (error) throw error;
   if (!data || data.length === 0) throw new Error(`No loyalty programme called "${name}".`);
+  notifyDataChanged();
 }
 
 // Settings preferences (e.g. airline elite status) update the matching
@@ -133,6 +141,7 @@ export async function updateTrip(id: string, input: NewTripInput) {
     })
     .eq('id', id);
   if (error) throw error;
+  notifyDataChanged();
 }
 
 // trip_id on hotels/flights isn't a real foreign key, so deleting a trip
@@ -145,6 +154,7 @@ export async function deleteTrip(id: string) {
   if (flightsErr) throw flightsErr;
   const { error: tripErr } = await supabase.from('trips').delete().eq('id', id);
   if (tripErr) throw tripErr;
+  notifyDataChanged();
 }
 
 /**
@@ -175,7 +185,7 @@ export async function splitTrip(tripId: string, splitDate: string, newTitle: str
 }
 
 function mapHotel(h: any): Hotel {
-  return {
+  return canonicalStay({
     id: h.id, name: h.name, country: h.country, city: h.city ?? null, brand: h.brand, tier: h.tier,
     nights: h.nights, date: h.date, status: h.status, total: h.total,
     nightlyRate: h.nightly_rate, avgRate: h.avg_rate, sqm: h.sqm, card: h.card,
@@ -184,7 +194,7 @@ function mapHotel(h: any): Hotel {
     bookingChannel: h.booking_channel ?? null,
     roomType: h.room_type ?? null, rateType: h.rate_type ?? null, award: h.award ?? false,
     createdAt: h.created_at ?? null,
-  };
+  }, new Date().toISOString().slice(0, 10));
 }
 function mapFlight(f: any): Flight {
   return {
@@ -238,6 +248,7 @@ export async function updateCardClosedDate(cardId: string, closedDate: string | 
   if (!data || data.length === 0) {
     throw new Error(`No payment card found with id "${cardId}" -- the update silently matched nothing.`);
   }
+  notifyDataChanged();
 }
 
 // Adds a card to the wallet, or brings back one closed earlier (same card,
@@ -249,18 +260,21 @@ export async function savePaymentCard(card: { id: string; programmeBrand: string
   if (existing && existing.length > 0) {
     const { error } = await supabase.from('payment_cards').update({ open_date: openDate, closed_date: null }).eq('id', card.id);
     if (error) throw error;
+    notifyDataChanged();
     return;
   }
   const { error } = await supabase.from('payment_cards').insert({
     id: card.id, programme_brand: card.programmeBrand, annual_fee: card.annualFee, fee_label: card.feeLabel, open_date: openDate,
   });
   if (error) throw error;
+  notifyDataChanged();
 }
 
 export async function updateCardOpenDate(cardId: string, openDate: string) {
   const { data, error } = await supabase.from('payment_cards').update({ open_date: openDate }).eq('id', cardId).select('id');
   if (error) throw error;
   if (!data || data.length === 0) throw new Error(`No payment card found with id "${cardId}".`);
+  notifyDataChanged();
 }
 
 // Removes a card from the wallet. A bank account that fed it is left
@@ -270,6 +284,7 @@ export async function deletePaymentCard(cardId: string) {
   const { data, error } = await supabase.from('payment_cards').delete().eq('id', cardId).select('id');
   if (error) throw error;
   if (!data || data.length === 0) throw new Error(`No payment card found with id "${cardId}".`);
+  notifyDataChanged();
 }
 
 export async function updateManualSpendAdjustment(cardId: string, amount: number, isUK: boolean) {
@@ -282,6 +297,7 @@ export async function updateManualSpendAdjustment(cardId: string, amount: number
   if (!data || data.length === 0) {
     throw new Error(`No payment card found with id "${cardId}" -- the update silently matched nothing.`);
   }
+  notifyDataChanged();
 }
 
 export async function fetchReviews(): Promise<Review[]> {
@@ -301,6 +317,7 @@ export async function addReview(input: NewReviewInput) {
     date: input.date, category: input.category, score: input.score,
   });
   if (error) throw error;
+  notifyDataChanged();
 }
 
 /* Uploads a photo to the `trip-photos` bucket under the signed-in user's own
@@ -346,6 +363,7 @@ export async function addHotel(input: NewHotelInput) {
     room_type: input.roomType, rate_type: input.rateType, nightly_rate: input.nightlyRate, avg_rate: input.avgRate, award: input.award,
   });
   if (error) throw error;
+  notifyDataChanged();
 }
 
 export async function updateHotel(id: string, input: NewHotelInput) {
@@ -357,11 +375,13 @@ export async function updateHotel(id: string, input: NewHotelInput) {
     room_type: input.roomType, rate_type: input.rateType, nightly_rate: input.nightlyRate, avg_rate: input.avgRate, award: input.award,
   }).eq('id', id);
   if (error) throw error;
+  notifyDataChanged();
 }
 
 export async function deleteHotel(id: string) {
   const { error } = await supabase.from('hotels').delete().eq('id', id);
   if (error) throw error;
+  notifyDataChanged();
 }
 
 export interface NewFlightInput {
@@ -378,6 +398,7 @@ export async function addFlight(input: NewFlightInput) {
     departure_time: input.departureTime, arrival_time: input.arrivalTime,
   });
   if (error) throw error;
+  notifyDataChanged();
 }
 
 export async function updateFlight(id: string, input: NewFlightInput) {
@@ -388,11 +409,13 @@ export async function updateFlight(id: string, input: NewFlightInput) {
     departure_time: input.departureTime, arrival_time: input.arrivalTime,
   }).eq('id', id);
   if (error) throw error;
+  notifyDataChanged();
 }
 
 export async function deleteFlight(id: string) {
   const { error } = await supabase.from('flights').delete().eq('id', id);
   if (error) throw error;
+  notifyDataChanged();
 }
 
 function mapVoucher(v: any): Voucher {
@@ -418,6 +441,7 @@ export async function addVoucher(input: NewVoucherInput) {
     earned_date: input.earnedDate, expiry_date: input.expiryDate, source_key: input.sourceKey,
   });
   if (error) throw error;
+  notifyDataChanged();
 }
 
 // Auto-sync uses upsert on the (user_id, source_key) unique constraint so
@@ -430,7 +454,10 @@ export async function syncCardVouchers(inputs: NewVoucherInput[]) {
       name: v.name, source: v.source, value: v.value,
       earned_date: v.earnedDate, expiry_date: v.expiryDate, source_key: v.sourceKey,
     })),
-    { onConflict: 'user_id,source_key', ignoreDuplicates: true }
+    // Update an auto-created voucher in place, so a corrected rule (e.g. the
+    // renewal date) fixes vouchers already stored. Redeemed state isn't in
+    // the payload, so it is kept.
+    { onConflict: 'user_id,source_key' }
   );
   if (error) throw error;
 }
@@ -440,11 +467,13 @@ export async function setVoucherRedeemed(id: string, redeemed: boolean) {
     redeemed, redeemed_date: redeemed ? new Date().toISOString().slice(0, 10) : null,
   }).eq('id', id);
   if (error) throw error;
+  notifyDataChanged();
 }
 
 export async function deleteVoucher(id: string) {
   const { error } = await supabase.from('vouchers').delete().eq('id', id);
   if (error) throw error;
+  notifyDataChanged();
 }
 
 function mapPromotion(p: any): Promotion {
@@ -489,6 +518,7 @@ export async function addPromotion(input: NewPromotionInput) {
     discount_value: input.discountValue, status_nights_bonus: input.statusNightsBonus, partner_airline: input.partnerAirline,
   });
   if (error) throw error;
+  notifyDataChanged();
 }
 
 export async function setPromotionDiscountUsed(id: string, used: boolean) {
@@ -504,6 +534,7 @@ export async function setPromotionStatusNightsApplied(id: string, applied: boole
 export async function deletePromotion(id: string) {
   const { error } = await supabase.from('promotions').delete().eq('id', id);
   if (error) throw error;
+  notifyDataChanged();
 }
 
 export interface PromotionCandidate {
@@ -777,6 +808,7 @@ export async function mapAccountToCard(accountId: string, card: Pick<CardDef, 'i
     .update({ payment_card_id: card?.id ?? null }).eq('id', accountId).select('id');
   if (error) throw error;
   if (!data || data.length === 0) throw new Error('That account was not found.');
+  notifyDataChanged();
 }
 
 export interface TripPhoto {

@@ -120,7 +120,7 @@ export function computeCardResults(
         window = { start: cardRow.openDate, end: addMonths(cardRow.openDate, m.windowMonths) };
         windowClosed = today >= window.end;
       }
-      const spend = summariseSpend(card, counted, window, today).totalSpend;
+      const spend = summariseSpend(card, m.abroadOnly ? counted.filter((it) => it.region !== 'uk') : counted, window, today).totalSpend;
       const hit = spend >= target;
       const missed = !hit && windowClosed;
       const pace = !hit && !missed && window ? spendPace({ spent: spend, target, windowStart: window.start, windowEnd: window.end, today }) : null;
@@ -161,6 +161,20 @@ export function computeCardVoucherCandidates(results: CardResult[]) {
     if (!r.yearWindow) continue;
     for (const m of r.milestoneResults) {
       if (!m.hit || m.superseded || !m.m.isVoucher) continue;
+      // Bug fixed: a renewal reward was dated from the start of the card year
+      // and shown expiring at its end -- i.e. on the day it is actually issued.
+      // It arrives at renewal and is valid from then (and only if the card is
+      // still open at renewal).
+      if (m.m.issuedAtRenewal) {
+        if (r.cardRow?.closedDate && r.cardRow.closedDate < r.yearWindow.end) continue;
+        candidates.push({
+          name: m.m.rewardLabel, source: r.card.id, value: m.value,
+          earnedDate: r.yearWindow.end,
+          expiryDate: m.m.validMonths ? addMonths(r.yearWindow.end, m.m.validMonths) : null,
+          sourceKey: `${r.card.id}::${m.m.id}::${r.yearWindow.start}`,
+        });
+        continue;
+      }
       candidates.push({
         name: m.m.rewardLabel,
         source: r.card.id,

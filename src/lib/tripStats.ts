@@ -18,7 +18,7 @@ export function computeTripPoints(trip: Trip, loyaltyProgrammes: LoyaltyProgramm
 
     // Base hotel-loyalty-program points (rate × elite tier bonus) --
     // earned by staying, independent of which card paid.
-    const basePts = basePointsForHotel(h, promotions);
+    const basePts = basePointsForHotel(h, promotions, loyaltyProgrammes);
     if (basePts > 0) {
       const basePtVal = ptValueByBrand.get(h.brand) ?? 1;
       totalPoints += basePts;

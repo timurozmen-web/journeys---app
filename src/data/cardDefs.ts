@@ -14,6 +14,12 @@ export interface Milestone {
   // spend and reward; opened outside every offer, there is no welcome
   // milestone, because the standard terms aren't a published figure we hold.
   offers?: WelcomeOffer[];
+  // Only spend abroad counts toward it (non-UK region).
+  abroadOnly?: boolean;
+  // The reward arrives at the card's renewal (end of the card year), not
+  // when the spend is reached, and is valid this many months from then.
+  issuedAtRenewal?: boolean;
+  validMonths?: number;
 }
 export interface WelcomeOffer {
   from: string; // first day (YYYY-MM-DD) an application qualifies
@@ -120,8 +126,13 @@ export const CARDS_STATIC: CardDef[] = [
     eliteNights: { auto: 15, perSpendAmount: 4000, perSpendCap: 5 },
     milestones: [
       { id: 'welcome30k', type: 'spend', spendRequired: 3000, rewardPoints: 30000, windowMonths: 3, rewardLabel: '30,000pt welcome bonus (£3k spend within 3mo)' },
-      { id: 'renew25k', type: 'spend', spendRequired: 4500, rewardPoints: 25000, rewardLabel: '25,000pt renewal voucher (£4.5k–£9k spend)', isVoucher: true },
-      { id: 'renew50k', type: 'spend', spendRequired: 9000, rewardPoints: 50000, supersedes: 'renew25k', rewardLabel: '50,000pt renewal voucher (£9k+ spend)', isVoucher: true },
+      // Renewal free night: from Marriott's card pages and Head for Points'
+      // review (June 2026), checked 6 Oct 2026 -- spend £5,000 abroad in the
+      // card year for up to 25,000 points, £9,500 for up to 50,000, issued
+      // when the card renews; Marriott Free Night Awards expire one year
+      // after issue.
+      { id: 'renew25k', type: 'spend', spendRequired: 5000, rewardPoints: 25000, rewardLabel: '25,000pt free night at renewal (£5k spent abroad)', isVoucher: true, abroadOnly: true, issuedAtRenewal: true, validMonths: 12 },
+      { id: 'renew50k', type: 'spend', spendRequired: 9500, rewardPoints: 50000, supersedes: 'renew25k', rewardLabel: '50,000pt free night at renewal (£9.5k spent abroad)', isVoucher: true, abroadOnly: true, issuedAtRenewal: true, validMonths: 12 },
     ],
     perks: [{ id: 'status', label: 'Marriott Gold status' }, { id: 'fx', label: '0.99% FX fee (vs ~2.99% typical)' }],
   },

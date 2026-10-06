@@ -63,7 +63,7 @@ describe('computeCardResults: milestones from spend (unchanged behaviour)', () =
   const programmes = [programme('Marriott Bonvoy', 0.5)];
 
   test('a spend milestone is hit once spend reaches it; the higher renewal tier supersedes the lower', () => {
-    const cards = [card('Marriott Debit', 'Marriott Bonvoy', '2025-12-01', { manualSpendAdjustment: 9500 })];
+    const cards = [card('Marriott Debit', 'Marriott Bonvoy', '2025-12-01', { manualSpendAdjustment: 9500, manualSpendIsUK: false })];
     const r = result('Marriott Debit', computeCardResults([], [], cards, programmes, '2026-03-10'));
     const by = Object.fromEntries(r.milestoneResults.map((m) => [m.m.id, m]));
     expect(by.renew50k.hit).toBe(true);
@@ -208,5 +208,32 @@ describe('BA Amex cards: sourced rates and offer-dependent welcome bonus', () =>
     expect(r.card.custom).toBe(true);
     expect(r.autoSpend).toBe(400);
     expect(r.autoPts).toBe(0);
+  });
+});
+
+import { computeCardVoucherCandidates } from './cardMath';
+
+describe('Marriott Debit renewal free night', () => {
+  const programmes = [programme('Marriott Bonvoy', 0.5)];
+
+  test('only spend abroad counts toward it', () => {
+    const uk = [card('Marriott Debit', 'Marriott Bonvoy', '2025-12-01', { manualSpendAdjustment: 12000, manualSpendIsUK: true })];
+    const abroad = [card('Marriott Debit', 'Marriott Bonvoy', '2025-12-01', { manualSpendAdjustment: 6000, manualSpendIsUK: false })];
+    const ids = (cards: PaymentCard[]) => result('Marriott Debit', computeCardResults([], [], cards, programmes, '2026-10-06')).milestoneResults.filter((m) => m.hit).map((m) => m.m.id);
+    expect(ids(uk)).not.toContain('renew25k');
+    expect(ids(abroad)).toContain('renew25k');
+  });
+
+  test('the voucher is issued at renewal and valid for 12 months from then', () => {
+    // Regression: it was dated from the start of the card year and shown as
+    // expiring on the renewal date -- "expires in 56 days" for a voucher not yet issued.
+    const cards = [card('Marriott Debit', 'Marriott Bonvoy', '2025-12-01', { manualSpendAdjustment: 12000, manualSpendIsUK: false })];
+    const v = computeCardVoucherCandidates(computeCardResults([], [], cards, programmes, '2026-10-06')).find((c) => c.sourceKey.includes('renew50k'))!;
+    expect(v).toMatchObject({ earnedDate: '2026-12-01', expiryDate: '2027-12-01' });
+  });
+
+  test('a card closed before its renewal gets no renewal voucher', () => {
+    const cards = [card('Marriott Debit', 'Marriott Bonvoy', '2025-12-01', { manualSpendAdjustment: 12000, manualSpendIsUK: false, closedDate: '2026-11-01' })];
+    expect(computeCardVoucherCandidates(computeCardResults([], [], cards, programmes, '2026-10-06'))).toEqual([]);
   });
 });

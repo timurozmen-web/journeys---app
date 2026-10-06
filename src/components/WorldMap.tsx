@@ -171,7 +171,7 @@ export function WorldMap({
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 8, padding: '0 16px 10px', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 8, padding: '14px 16px 10px', alignItems: 'center' }}>
         <button
           onClick={() => setShowRoutes((v) => !v)}
           style={{

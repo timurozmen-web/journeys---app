@@ -61,6 +61,14 @@ Run all three; all must be clean:
   string cache key, not `fetcher.name`, which production builds minify.
 - All Supabase reads and writes are in `src/lib/queries.ts`. Writes made
   offline go through `src/lib/offlineQueue.ts`.
+- Stays are read through `canonicalStay` (`src/lib/stayNormalise.ts`):
+  sub-brands map to their programme and a Booked stay past check-out
+  counts as completed. Hotel points come only from `src/lib/loyaltyPoints.ts`;
+  balances shown are the stored balance plus stays completed since its
+  baseline date (`withLiveOverrides`). Entering a balance moves the baseline
+  to today.
+- Every write in `queries.ts` ends with `notifyDataChanged()`, which makes
+  every `useLive` hook refetch, so totals and badges update everywhere.
 - Adding a DB column: update `src/types/index.ts`, the mapping in
   `queries.ts`, and `supabase/schema.sql` (as an `alter table ... add
   column if not exists` at the end).
