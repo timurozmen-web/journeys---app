@@ -5,6 +5,10 @@ import { useReviews, useAllHotels, useAllFlights, useTrips } from '../lib/useLiv
 import { findHotelsNeedingReview, findHotelsMissingCategories, REVIEW_CATEGORIES } from '../lib/reviewScoring';
 import { flightDistanceKm, estimateFlightHours } from '../lib/travelStats';
 import { PlaneIcon, SettingsIcon, StarIcon } from '../components/Icons';
+import { DestinationPhoto } from '../components/DestinationPhoto';
+import { destinationQuery } from '../lib/tripHotels';
+import { formatShortRange } from '../lib/format';
+import { pastTripsByYear } from '../lib/tripTimeline';
 import { Segmented } from '../components/ui';
 import { averageOverall, completedStays, nightsByCountry, nightsByYear, shareOfWorld, travellingSince, tripsTaken } from '../lib/logbook';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
@@ -37,6 +41,8 @@ function rankBadge(rank: number) {
   return null;
 }
 
+// Then: where you've been. A world map scratched off country by country,
+// your past trips as a scrapbook, and the logbook and ratings below.
 export function Profile() {
   const navigate = useNavigate();
   const [cat, setCat] = useState('overall');
@@ -92,6 +98,7 @@ export function Profile() {
   const tripCount = tripsTaken(year === 'all' ? trips : trips.filter((t) => yearOf(t.start) === year), today).length;
   const rating = averageOverall(filteredReviews);
   const since = travellingSince(hotels);
+  const scrapbook = useMemo(() => pastTripsByYear(trips, today), [trips, today]);
   const completedFlights = useMemo(() => filteredFlights.filter((f) => f.status === 'Completed'), [filteredFlights]);
 
   const { totalDistanceKm, totalHours } = useMemo(() => {
@@ -146,11 +153,11 @@ export function Profile() {
 
   return (
     <div>
-      <div className="lb-head">
-        <div className="lb-avatar" aria-hidden="true">T</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 'var(--fs-title)', fontWeight: 400 }}>Timur</div>
-          <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)' }}>{since ? `Since ${since}` : 'Traveller'}</div>
+      <div style={{ background: 'var(--bg)', height: 'env(safe-area-inset-top, 0px)' }} />
+      <div style={{ padding: '20px 20px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div>
+          <h1 className="h1" style={{ margin: 0 }}>Then</h1>
+          {since && <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 2 }}>Since {since}</div>}
         </div>
         <button className="lb-iconbtn" onClick={() => navigate('/settings')} aria-label="Settings">
           <SettingsIcon size={20} color="currentColor" />
@@ -164,18 +171,41 @@ export function Profile() {
         </div>
       )}
 
-      {/* The world leads: every country visited, shaded by nights. */}
-      <div className="lb-map">
+      {/* The world leads: every country you've stayed in, scratched off. */}
+      <div className="lb-map scratchmap">
         <div className="lb-map-count">
-          <span style={{ fontSize: 'var(--fs-display)', fontWeight: 300, lineHeight: 1 }}>{countryCount}</span>
-          <span className="nf-eyebrow" style={{ color: 'var(--brand)' }}>
-            {countryCount === 1 ? 'country' : 'countries'} · {shareOfWorld(countryCount)}% of the world
+          <span className="scratch-count">{countryCount}</span>
+          <span className="scratch-cap">
+            {countryCount === 1 ? 'country' : 'countries'} scratched off · {shareOfWorld(countryCount)}% of the world
           </span>
         </div>
         <Suspense fallback={<div style={{ height: 200, background: 'var(--map-bg)' }} />}>
-          <WorldMap hotels={loggedStays} flights={completedFlights} reviews={filteredReviews} focusCountries={focusCountries} />
+          <WorldMap hotels={loggedStays} flights={completedFlights} reviews={filteredReviews} focusCountries={focusCountries} scratch />
         </Suspense>
       </div>
+
+      {scrapbook.length > 0 && (
+        <div className="scrapbook">
+          {scrapbook.map((g) => (
+            <section key={g.year}>
+              <div className="scrap-year">{g.year}</div>
+              <div className="scrap-grid">
+                {g.trips.map((t, i) => (
+                  <button key={t.id} className="polaroid" style={{ rotate: `${[-1.6, 1.2, -0.6, 1.8][i % 4]}deg` }} onClick={() => navigate(`/trips/${t.id}`)}>
+                    <span className="polaroid-photo">
+                      {t.heroImageUrl
+                        ? <img src={t.heroImageUrl} alt="" />
+                        : <DestinationPhoto query={destinationQuery(t)} seed={t.id} height={118} />}
+                    </span>
+                    <span className="polaroid-title">{t.title}</span>
+                    <span className="polaroid-date">{formatShortRange(t.start, t.end, today)}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
 
       {years.length > 1 && (
         <div style={{ padding: '14px 16px 0' }}>
@@ -348,7 +378,7 @@ export function Profile() {
                 onClick={() => setExpandedHotel(expandedHotel === r.key ? null : r.key)}
                 style={{
                   display: 'flex', flexDirection: 'column', gap: 0, padding: '12px 16px', cursor: 'pointer',
-                  borderRadius: 'var(--r-md)', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)',
+                  borderRadius: 'var(--r-md)', background: 'var(--card)', border: '1px solid var(--line)',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

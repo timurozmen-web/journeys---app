@@ -143,7 +143,7 @@ export function ScanEmail() {
         {savedKeys.size === bookings.length && (
           <div style={{ padding: '16px 20px' }}>
             <button
-              onClick={() => navigate('/trips')}
+              onClick={() => navigate('/now')}
               style={{ width: '100%', padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 'var(--fs-input)', fontWeight: 700, cursor: 'pointer' }}
             >
               Done, go to trips

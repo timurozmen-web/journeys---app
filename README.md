@@ -7,16 +7,20 @@ ready for an iOS build.
 
 ## What it does
 
-- **Home**: the current or next trip as a photo hero ("Day 2 of 4" /
-  "12 days to go"), the next flight, and loyalty highlights.
-- **Trips / Trip detail**: every trip with its hotels, flights, photos,
-  points earned and savings; flags trips missing an outbound or return
-  flight.
-- **Wallet**: loyalty programmes, payment cards, vouchers and
+- **Two sections, one set of data**: the start page splits into Travel
+  and Loyalty; Settings switches between them.
+- **Travel / Now**: trips under way, tonight's stay and what's coming,
+  as a timeline with photo cards and countdowns.
+- **Travel / Then**: a scratch-off world map of countries stayed in, a
+  scrapbook of past trips by year, stays to rate and the logbook.
+- **Trip detail**: the itinerary (flights and stays in one card shape),
+  a sketched map, photos, points earned and savings; flags trips missing
+  an outbound or return flight.
+- **Loyalty / Home**: wallet value, a status ring per programme and
+  what's worth acting on (status within reach, card milestones,
+  renewals, expiring vouchers).
+- **Loyalty / Wallet**: loyalty programmes, payment cards, vouchers and
   promotions, with points valued in £.
-- **Profile**: a travel logbook -- world map of countries visited, nights,
-  stays, trips and flights, where the nights went, a by-year view, stays
-  to rate, and every rated stay ranked by category.
 - **Logging**: add a hotel, flight, trip or loyalty programme by hand,
   or **scan a booking email / screenshot** (Claude extracts the
   bookings) and **scan a promotion**. Likely duplicates are flagged.
@@ -51,7 +55,7 @@ ready for an iOS build.
 Each screen reads through a hook in `src/lib/useLiveData.ts`. It shows
 the last cached copy instantly, then fetches from Supabase. If Supabase
 returns nothing or fails, it keeps whatever it already had, falling back
-to `src/data/mock.ts`. Profile and Wallet show a "sample data" notice
+to `src/data/mock.ts`. Then and Wallet show a "sample data" notice
 when that fallback is in use. Sign-in is enforced by `AuthGate`.
 
 ## Running locally

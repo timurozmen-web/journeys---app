@@ -1,8 +1,11 @@
-import { HashRouter, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { modeForPath, readMode, useAppMode, writeMode } from './lib/appMode';
+import { Start } from './screens/Start';
 import { TabBar } from './components/TabBar';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AuthGate } from './components/AuthGate';
-import { Home } from './screens/Home';
+import { LoyaltyHome } from './screens/LoyaltyHome';
 import { Trips } from './screens/Trips';
 import { Wallet } from './screens/Wallet';
 import { Profile } from './screens/Profile';
@@ -24,15 +27,28 @@ import { ImportCalendar } from './screens/ImportCalendar';
 import { ReviewTrip } from './screens/ReviewTrip';
 import { CreditAdvisor } from './screens/CreditAdvisor';
 
+// Keeps the section (and its theme) in step with the screen being shown.
+function ModeSync() {
+  const { pathname } = useLocation();
+  const mode = useAppMode();
+  useEffect(() => { writeMode(modeForPath(pathname, readMode())); }, [pathname]);
+  useEffect(() => { document.documentElement.dataset.mode = mode; }, [mode]);
+  return null;
+}
+
 export default function App() {
   return (
     <HashRouter>
+     <ModeSync />
      <AuthGate>
       <div className="screen on">
         <ErrorBoundary>
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Start />} />
+            <Route path="/now" element={<Trips />} />
             <Route path="/trips" element={<Trips />} />
+            <Route path="/then" element={<Profile />} />
+            <Route path="/loyalty" element={<LoyaltyHome />} />
             <Route path="/trips/:id" element={<TripDetail />} />
             <Route path="/wallet" element={<Wallet />} />
             <Route path="/profile" element={<Profile />} />

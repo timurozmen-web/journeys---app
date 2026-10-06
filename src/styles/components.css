@@ -308,7 +308,7 @@ input[type=date].input.inline-date:focus{border-color:var(--brand2)}
 .ringpager{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -16px}
 .ringpager::-webkit-scrollbar{display:none}
 .ringpage{flex:0 0 100%;scroll-snap-align:start;scroll-snap-stop:always;display:grid;justify-items:center;gap:12px;padding:8px 16px 0}
-.ringpage-tabs{display:flex;gap:18px;justify-self:start;font-size:var(--fs-small);font-weight:600;color:var(--ink3)}
+.ringpage-tabs{display:flex;gap:18px;justify-self:start;padding:6px 0 0;font-size:var(--fs-small);font-weight:600;color:var(--ink3)}
 .ringpage-tabs button{background:none;border:0;padding:0 0 4px;font:inherit;color:inherit;cursor:pointer;border-bottom:2px solid transparent}
 .ringpage-tabs button.on{color:var(--ink);border-bottom-color:var(--ink)}
 .ring-big{font-weight:600;font-size:52px;letter-spacing:-.04em;line-height:1}
@@ -323,3 +323,67 @@ input[type=date].input.inline-date:focus{border-color:var(--brand2)}
 .ringdots{display:flex;justify-content:center;gap:6px}
 .ringdots i{width:6px;height:6px;border-radius:50%;background:var(--line)}
 .ringdots i.on{background:var(--ink)}
+
+/* ---- Start: the two halves of the app ---- */
+.start{position:fixed;inset:0;display:grid;grid-template-rows:1fr 1fr;background:var(--scrim);z-index:1}
+.start-half{position:relative;overflow:hidden;border:0;padding:0;margin:0;cursor:pointer;text-align:left;color:var(--on-dark);font:inherit;background:var(--scrim)}
+.start-half + .start-half{border-top:2px solid var(--bg)}
+.start-photo{position:absolute;inset:0;display:block}
+.start-photo img,.start-photo > div{width:100%;height:100%!important;object-fit:cover}
+.start-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.25) 0%,rgba(0,0,0,0) 35%,rgba(0,0,0,.65) 100%)}
+.start-half.travel .start-scrim{background:linear-gradient(180deg,rgba(0,0,0,.45) 0%,rgba(0,0,0,0) 40%,rgba(0,0,0,.6) 100%)}
+.start-text{position:absolute;left:24px;right:24px;bottom:26px;display:grid;gap:6px;text-shadow:var(--text-on-photo-shadow)}
+.start-half.travel .start-text{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 34px)}
+.start-title{font-size:52px;line-height:1;letter-spacing:-.04em;font-weight:700}
+.start-title.travel{font-family:'Space Mono',ui-monospace,monospace}
+.start-title.loyalty{font-family:var(--font-body);letter-spacing:-.05em}
+.start-desc{font-size:var(--fs-body-lg);font-weight:500;max-width:30ch}
+.start-live{justify-self:start;margin-top:6px;padding:5px 12px;border-radius:var(--r-pill);background:rgba(255,255,255,.92);color:#121212;
+  font-size:var(--fs-small);font-weight:600;text-shadow:none}
+html[data-mode="loyalty"] .tabs{background:var(--card2);border-color:var(--line)}
+/* Travel's tab bar: two words either side of the + */
+.tab.word{width:auto;min-width:72px;padding:0 10px;font-family:var(--font-display);font-weight:700;font-size:var(--fs-input);letter-spacing:-.02em}
+.tab.word .badge{top:4px;right:-2px}
+.tabs.travel:not(.open){left:48px;right:48px}
+/* Settings: which half of the app you're in. */
+.modeswitch{display:flex;padding:3px;border-radius:var(--r-pill);background:var(--card2);border:1px solid var(--line)}
+.modeswitch button{width:40px;height:32px;border:0;border-radius:var(--r-pill);background:none;color:var(--ink3);display:grid;place-items:center;cursor:pointer;
+  transition:background .2s,color .2s}
+.modeswitch button.on{background:var(--ink);color:var(--bg)}
+
+/* ---- Then: scratch map and scrapbook ---- */
+.scratchmap{border-radius:var(--r-md);transform:rotate(-.4deg)}
+.scratch-count{font-family:var(--font-display);font-weight:700;font-size:var(--fs-display);line-height:1;color:var(--ink)}
+.scratch-cap{font-family:var(--font-display);font-size:var(--fs-caption);font-weight:700;color:var(--brand)}
+.scrapbook{display:grid;gap:22px;padding:24px 16px 4px}
+.scrap-year{font-family:var(--font-display);font-weight:700;font-size:var(--fs-title);margin:0 4px 12px}
+.scrap-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 14px}
+.polaroid{display:grid;gap:3px;padding:8px 8px 12px;background:var(--card);border:1px solid var(--line);border-radius:3px;
+  box-shadow:0 8px 16px -10px rgba(40,30,20,.45);cursor:pointer;text-align:left;font:inherit;color:var(--ink);transition:rotate .2s ease}
+.polaroid:hover,.polaroid:focus-visible{rotate:0deg!important}
+.polaroid-photo{display:block;height:118px;overflow:hidden;border-radius:2px;background:var(--card2);margin-bottom:6px}
+.polaroid-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.polaroid-title{font-family:var(--font-display);font-weight:700;font-size:var(--fs-body);letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.polaroid-date{font-size:var(--fs-caption);color:var(--ink2)}
+
+/* ---- Loyalty home ---- */
+.lh-value{display:grid;gap:4px;width:100%;padding:18px 18px 16px;border-radius:var(--r-lg);border:1px solid var(--line);background:var(--card);
+  color:var(--ink);text-align:left;font:inherit;cursor:pointer}
+.lh-label{font-size:var(--fs-caption);font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2)}
+.lh-big{font-size:var(--fs-hero);font-weight:600;letter-spacing:-.04em;line-height:1.05}
+.lh-sub{font-size:var(--fs-small);color:var(--ink2)}
+.lh-section{font-size:var(--fs-caption);font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2);padding:24px 20px 10px}
+.lh-rings{display:flex;gap:10px;overflow-x:auto;padding:0 16px 4px;scrollbar-width:none;scroll-snap-type:x mandatory}
+.lh-rings::-webkit-scrollbar{display:none}
+.lh-ring{flex:0 0 132px;display:grid;justify-items:center;gap:4px;padding:14px 8px 12px;border-radius:var(--r-lg);border:1px solid var(--line);
+  background:var(--card);color:var(--ink);font:inherit;cursor:pointer;scroll-snap-align:start;text-align:center}
+.lh-ring-name{font-size:var(--fs-small);font-weight:700;margin-top:6px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lh-ring-sub{font-size:var(--fs-caption);color:var(--brand);font-weight:600}
+.lh-item{display:flex;gap:12px;align-items:flex-start;width:100%;padding:14px 16px;border-radius:var(--r-md);border:1px solid var(--line);
+  background:var(--card);color:var(--ink);text-align:left;font:inherit;cursor:pointer}
+.lh-dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;background:var(--brand)}
+.lh-dot.green{background:var(--green)}.lh-dot.red{background:var(--red)}.lh-dot.amber{background:var(--amber)}
+.lh-item-title{display:block;font-size:var(--fs-body-lg);font-weight:600}
+.lh-item-sub{display:block;font-size:var(--fs-caption);color:var(--ink2);margin-top:3px}
+.lh-bar{display:block;height:3px;border-radius:2px;background:var(--card2);margin-top:10px;overflow:hidden}
+.lh-bar i{display:block;height:100%;background:var(--brand2)}

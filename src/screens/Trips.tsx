@@ -1,5 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTrips } from '../lib/useLiveData';
 import { deleteTrip } from '../lib/queries';
@@ -11,9 +10,9 @@ import { formatShortRange } from '../lib/format';
 import { isTripIncomplete } from '../lib/tripCompleteness';
 import { useFlightExemptTripIds } from '../lib/homeLocation';
 import {
-  buildTripTimeline, countdownLabel, emptyMonthsBetween, monthKey, monthLabel, spanLabel, tonightStay,
+  buildTripTimeline, countdownLabel, emptyMonthsBetween, monthKey, monthLabel, tonightStay,
 } from '../lib/tripTimeline';
-import { PlusIcon } from '../components/Icons';
+import { SettingsIcon } from '../components/Icons';
 import { EmptyState, ErrorText } from '../components/ui';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -41,7 +40,6 @@ export function Trips() {
   const navigate = useNavigate();
   const { data: trips, refetch } = useTrips();
   const [error, setError] = useState('');
-  const [showEarlier, setShowEarlier] = useState(false);
   const flightExemptTripIds = useFlightExemptTripIds(trips);
   const today = new Date().toISOString().slice(0, 10);
   const timeline = useMemo(() => buildTripTimeline(trips, today), [trips, today]);
@@ -63,31 +61,8 @@ export function Trips() {
     if (y > 0) window.scrollTo(0, y);
   }, [trips.length]);
 
-  // Scrolling back up to the top unfolds the older trips, keeping your
-  // place, so the history carries on rather than ending at a button.
-  function unfoldEarlier() {
-    const before = document.documentElement.scrollHeight;
-    flushSync(() => setShowEarlier(true));
-    window.scrollBy(0, document.documentElement.scrollHeight - before);
-  }
-  const earlierRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    const el = earlierRef.current;
-    if (showEarlier || !el) return;
-    // Only on a scroll upward that brings the row into view, so opening
-    // the screen (which lands on today) never unfolds it by itself.
-    let lastY = window.scrollY;
-    const onScroll = () => {
-      const up = window.scrollY < lastY;
-      lastY = window.scrollY;
-      const r = el.getBoundingClientRect();
-      if (up && r.bottom > 0 && r.top < window.innerHeight) unfoldEarlier();
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [showEarlier, timeline.earlier.length]);
-
-  const above = showEarlier ? [...timeline.earlier, ...timeline.recent] : timeline.recent;
+  // Now is what's happening and what's next; the past lives in Then.
+  const above = timeline.recent.filter((t) => t.end >= today);
   let lastMonth = '';
   const monthCell = (date: string) => {
     const m = monthKey(date);
@@ -100,31 +75,15 @@ export function Trips() {
     <div>
       <div style={{ background: 'var(--bg)', height: 'env(safe-area-inset-top, 0px)' }} />
       <div style={{ padding: '20px 20px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h1 className="h1" style={{ margin: 0 }}>Trips</h1>
-        <button className="lb-iconbtn" aria-label="New trip" onClick={() => navigate('/log-trip')}><PlusIcon size={20} /></button>
+        <h1 className="h1" style={{ margin: 0 }}>Now</h1>
+        <button className="lb-iconbtn" aria-label="Settings" onClick={() => navigate('/settings')}><SettingsIcon size={20} /></button>
       </div>
       {error && <ErrorText style={{ padding: '0 20px 10px' }}>{error}</ErrorText>}
+      {trips.length > 0 && above.length === 0 && timeline.upcoming.length === 0 && !tonight && <EmptyState>Nothing booked.</EmptyState>}
       {trips.length === 0 && <EmptyState>No trips yet.</EmptyState>}
 
       {trips.length > 0 && (
         <div className="tl">
-          {!showEarlier && timeline.earlier.length > 0 && (
-            <div className="tl-row">
-              <span />
-              <span />
-              <button ref={earlierRef} className="tl-earlier" onClick={unfoldEarlier}>
-                <span className="tl-stack" aria-hidden="true">
-                  {timeline.earlier.slice(-3).map((t) => <span key={t.id} className="tl-thumb"><TripPhoto trip={t} height={36} /></span>)}
-                </span>
-                <span style={{ minWidth: 0 }}>
-                  <span className="tl-title">{spanLabel(timeline.earlier)}</span>
-                  <span className="tl-sub">{timeline.earlier.length} trip{timeline.earlier.length === 1 ? '' : 's'}</span>
-                </span>
-                <span className="tl-up" aria-hidden="true">↑</span>
-              </button>
-            </div>
-          )}
-
           {above.map((t) => {
             const underway = t.end >= today;
             return (

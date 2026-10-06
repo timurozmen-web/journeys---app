@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildTripTimeline, countdownLabel, emptyMonthsBetween, monthLabel, spanLabel, tonightStay } from './tripTimeline';
+import { buildTripTimeline, pastTripsByYear, countdownLabel, emptyMonthsBetween, monthLabel, spanLabel, tonightStay } from './tripTimeline';
 import { makeHotel, makeTrip } from '../test/fixtures';
 
 const TODAY = '2026-10-06';
@@ -69,5 +69,13 @@ describe('tonightStay', () => {
     const work = makeTrip({ hotels: [gatwick, croydon] });
     expect(tonightStay([work], TODAY)?.hotel.id).toBe('c');
     expect(tonightStay([work], '2026-10-07')).toBeNull();
+  });
+});
+
+describe('pastTripsByYear', () => {
+  it('groups finished trips by year, newest first, leaving out anything still going', () => {
+    const groups = pastTripsByYear([...trips, makeTrip({ id: 'old', start: '2025-05-01', end: '2025-05-04' })], TODAY);
+    expect(groups.map((g) => g.year)).toEqual(['2026', '2025']);
+    expect(groups[0].trips.map((t) => t.id)).toEqual(['por', 'tur', 'feb']);
   });
 });

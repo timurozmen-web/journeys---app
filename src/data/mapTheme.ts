@@ -21,4 +21,8 @@ export const MAP = {
   // Visited-country fill, fewest nights to most: pale sand up to orange.
   visitedShades: ['#E8D9C4', '#EDB99A', '#F28B5E', '#F2551D'],
   font: "'Space Mono', ui-monospace, Menlo, monospace",
+  // Then's scratch map: a visited country is scratched off to orange,
+  // with darker cross-hatched scratch marks over it.
+  scratch: '#F2551D',
+  scratchMark: '#A8360B',
 } as const;

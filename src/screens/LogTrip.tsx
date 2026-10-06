@@ -133,7 +133,7 @@ export function LogTrip() {
                   setDeleting(true);
                   try {
                     await deleteTrip(editing.id);
-                    navigate('/trips');
+                    navigate('/now');
                   } catch (err) {
                     const message =
                       err instanceof Error

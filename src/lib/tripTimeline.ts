@@ -91,3 +91,16 @@ export function countdownLabel(today: string, date: string): string {
   if (d === 1) return 'Tomorrow';
   return `${d} days`;
 }
+
+/** Finished trips for the Then scrapbook, newest year first and newest trip first within it. */
+export function pastTripsByYear(trips: Trip[], today: string): { year: string; trips: Trip[] }[] {
+  const done = trips.filter((t) => t.end < today).sort((a, b) => b.start.localeCompare(a.start));
+  const out: { year: string; trips: Trip[] }[] = [];
+  for (const t of done) {
+    const year = t.start.slice(0, 4);
+    const group = out.find((g) => g.year === year);
+    if (group) group.trips.push(t);
+    else out.push({ year, trips: [t] });
+  }
+  return out;
+}

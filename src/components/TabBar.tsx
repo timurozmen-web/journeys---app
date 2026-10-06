@@ -1,24 +1,31 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { HomeIcon, TripsIcon, WalletIcon, ProfileIcon, PlusIcon, PlanIcon, CaptureIcon, DiscoverIcon, CreditIcon } from './Icons';
+import { HomeIcon, WalletIcon, PlusIcon, PlanIcon, CaptureIcon, DiscoverIcon, CreditIcon } from './Icons';
+import { useAppMode } from '../lib/appMode';
 import { getQueuedWrites, onQueueChange, processQueue } from '../lib/offlineQueue';
 import { fanPositions } from '../lib/fanLayout';
 import { useDiscoverItems, useReviews, useTrips } from '../lib/useLiveData';
 import { badgeLabel, newDiscoverCount, profileActionCount } from '../lib/badges';
 
-// The + button's fan, left to right along the arc.
-const ACTIONS = [
-  { key: 'plan', label: 'Plan', desc: 'Weather, crowds and cost for a trip', Icon: PlanIcon },
-  { key: 'capture', label: 'Add', desc: 'Stays, flights, trips and cards', Icon: CaptureIcon },
-  { key: 'discover', label: 'Discover', desc: 'Card offers and loyalty news', Icon: DiscoverIcon },
-  { key: 'credit', label: 'Credit', desc: 'Best programme for a flight', Icon: CreditIcon },
-] as const;
-const FAN_RADIUS = 145;
-const FAN = fanPositions(ACTIONS.length, FAN_RADIUS);
-// Dotted guide arc through the item centres, 162deg to 18deg.
+// The + button's fan, left to right along the arc. Each section has its
+// own pair: planning and adding trips in Travel, offers and the
+// crediting advisor in Loyalty.
+const ACTIONS = {
+  travel: [
+    { key: 'capture', label: 'Add', desc: 'Stays, flights and trips', Icon: CaptureIcon },
+    { key: 'plan', label: 'Plan', desc: 'Weather, crowds and cost', Icon: PlanIcon },
+  ],
+  loyalty: [
+    { key: 'discover', label: 'Discover', desc: 'Card offers and loyalty news', Icon: DiscoverIcon },
+    { key: 'credit', label: 'Credit', desc: 'Best programme for a flight', Icon: CreditIcon },
+  ],
+} as const;
+const FAN_RADIUS = 120;
+const FAN = fanPositions(2, FAN_RADIUS, 140, 40);
+// Dotted guide arc through the item centres.
 const FAN_ARC = (() => {
   const pt = (deg: number) => [Math.cos((deg * Math.PI) / 180) * FAN_RADIUS, -Math.sin((deg * Math.PI) / 180) * FAN_RADIUS];
-  const [x0, y0] = pt(162); const [x1, y1] = pt(18);
+  const [x0, y0] = pt(140); const [x1, y1] = pt(40);
   return `M${x0.toFixed(1)} ${y0.toFixed(1)} A ${FAN_RADIUS} ${FAN_RADIUS} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`;
 })();
 
@@ -27,6 +34,9 @@ export function TabBar() {
   const [pendingOpen, setPendingOpen] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const navigate = useNavigate();
+  const mode = useAppMode();
+  const { pathname } = useLocation();
+  const actions = ACTIONS[mode];
   const [pendingCount, setPendingCount] = useState(() => getQueuedWrites().length);
   const [pendingItems, setPendingItems] = useState(() => getQueuedWrites());
   // Count badges: things waiting on Profile, and new Discover items behind +.
@@ -57,6 +67,8 @@ export function TabBar() {
       setRetrying(false);
     }
   }
+
+  if (pathname === '/') return null;
 
   return (
     <>
@@ -107,7 +119,7 @@ export function TabBar() {
         <svg className="fan-arc" width={FAN_RADIUS * 2 + 20} height={FAN_RADIUS + 20} viewBox={`${-FAN_RADIUS - 10} ${-FAN_RADIUS - 10} ${FAN_RADIUS * 2 + 20} ${FAN_RADIUS + 20}`} aria-hidden="true">
           <path d={FAN_ARC} fill="none" stroke="var(--brand)" strokeWidth="1.2" strokeDasharray="2 6" strokeLinecap="round" />
         </svg>
-        {ACTIONS.map((a, i) => (
+        {actions.map((a, i) => (
           <button
             key={a.key}
             className="fan-item"
@@ -125,30 +137,30 @@ export function TabBar() {
         ))}
       </div>
 
-      <nav className={`tabs ${open ? 'open' : ''}`} role="tablist">
-        <NavLink to="/" end aria-label="Home" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
-          {({ isActive }) => <HomeIcon size={22} strokeWidth={isActive ? 1.9 : 1.5} />}
-        </NavLink>
-        <NavLink to="/trips" aria-label="Trips" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
-          {({ isActive }) => <TripsIcon size={22} strokeWidth={isActive ? 1.9 : 1.5} />}
-        </NavLink>
+      <nav className={`tabs ${mode} ${open ? 'open' : ''}`} role="tablist">
+        {mode === 'travel' ? (
+          <NavLink to="/now" className={({ isActive }) => `tab word${isActive || pathname === '/trips' ? ' active' : ''}`}>Now</NavLink>
+        ) : (
+          <NavLink to="/loyalty" aria-label="Home" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
+            {({ isActive }) => <HomeIcon size={22} strokeWidth={isActive ? 1.9 : 1.5} />}
+          </NavLink>
+        )}
         <span className="fabwrap">
-          <button className={`fab ${open ? 'open' : ''}`} onClick={() => setOpen((v) => !v)} aria-label={open ? 'Close actions' : discoverBadge ? `Actions, ${discoverBadge} new in Discover` : 'Actions'} aria-expanded={open}>
+          <button className={`fab ${open ? 'open' : ''}`} onClick={() => setOpen((v) => !v)} aria-label={open ? 'Close actions' : mode === 'loyalty' && discoverBadge ? `Actions, ${discoverBadge} new in Discover` : 'Actions'} aria-expanded={open}>
             <PlusIcon size={20} strokeWidth={2.2} />
           </button>
-          {!open && discoverBadge && <span className="badge" aria-hidden="true">{discoverBadge}</span>}
+          {!open && mode === 'loyalty' && discoverBadge && <span className="badge" aria-hidden="true">{discoverBadge}</span>}
         </span>
-        <NavLink to="/wallet" aria-label="Wallet" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
-          {({ isActive }) => <WalletIcon size={22} strokeWidth={isActive ? 1.9 : 1.5} />}
-        </NavLink>
-        <NavLink to="/profile" aria-label={profileBadge ? `Profile, ${profileBadge} to do` : 'Profile'} className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
-          {({ isActive }) => (
-            <>
-              <ProfileIcon size={22} strokeWidth={isActive ? 1.9 : 1.5} />
-              {profileBadge && <span className="badge" aria-hidden="true">{profileBadge}</span>}
-            </>
-          )}
-        </NavLink>
+        {mode === 'travel' ? (
+          <NavLink to="/then" aria-label={profileBadge ? `Then, ${profileBadge} to do` : 'Then'} className={({ isActive }) => `tab word${isActive || pathname === '/profile' ? ' active' : ''}`}>
+            Then
+            {profileBadge && <span className="badge" aria-hidden="true">{profileBadge}</span>}
+          </NavLink>
+        ) : (
+          <NavLink to="/wallet" aria-label="Wallet" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
+            {({ isActive }) => <WalletIcon size={22} strokeWidth={isActive ? 1.9 : 1.5} />}
+          </NavLink>
+        )}
       </nav>
     </>
   );

@@ -152,6 +152,7 @@ export function LoyaltyTab({
                     <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--amber)' }}>+{(p.pendingStayPoints ?? 0).toLocaleString()}</span>
                   </div>
                 )}
+                {p.category !== 'airline' && (<>
                 <div className="dd-row">
                   <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Tier</span>
                   <input
@@ -165,6 +166,7 @@ export function LoyaltyTab({
                   <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Rate</span>
                   <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>{p.ptValue}p per point</span>
                 </div>
+                </>)}
 
                 {progress?.cardGrantedTier && (
                   <div className="dd-row">
@@ -323,12 +325,12 @@ function RingPager({ progress }: { progress: StatusProgress }) {
   const go = (i: number) => ref.current?.scrollTo({ left: i * ref.current.clientWidth, behavior: 'smooth' });
   return (
     <div style={{ display: 'grid', gap: 10 }}>
+      {pages.length > 1 && <Tabs pages={pages} page={page} go={go} />}
       <div
         className="ringpager" ref={ref}
         onScroll={(e) => setPage(Math.round(e.currentTarget.scrollLeft / Math.max(1, e.currentTarget.clientWidth)))}
       >
         <div className="ringpage">
-          {pages.length > 1 && <Tabs pages={pages} page={0} go={go} />}
           <StatusRing ticks={ringTicks(progress.total, segs)} size={220} label={`${progress.currentNights} of ${progress.total} nights`}>
             <div className="ring-big">{progress.currentNights}</div>
             <div className="ring-of">of {progress.total} nights</div>
@@ -342,7 +344,6 @@ function RingPager({ progress }: { progress: StatusProgress }) {
           const unit = sp.unit === 'points' ? ' pts' : '';
           return (
             <div className="ringpage">
-              <Tabs pages={pages} page={1} go={go} />
               <StatusRing
                 ticks={ringTicks(100, [
                   { key: 'done', label: '', count: t.done, colour: 'var(--ink)' },
