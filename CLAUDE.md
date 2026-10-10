@@ -76,6 +76,13 @@ Run all three; all must be clean:
   badge in the airline's colour (`src/data/airlineBrand.ts`) or the
   hotel programme's colour (`src/lib/bookingBadge.ts`), then a plane and
   the flight number, or one moon per night.
+- **Cards are a carousel** (`CardCarousel`, `src/lib/cardCarousel.ts`):
+  faces in a horizontal rail that scroll-snaps each card to the centre;
+  neighbours are posed from their live distance (tilted, smaller,
+  dimmer) so it turns smoothly, and tapping one brings it forward. The
+  lead card's details sit below. Swiping sideways turns the carousel,
+  so an active card is removed with a two-tap button in its details;
+  archived cards stay as swipe-to-delete rows.
 - **Status rings** (`src/lib/statusRing.ts`, `StatusRing`): one tick
   per night toward the next tier, coloured by source (stays, card
   nights, promotions, booked) from `computeStatusProgress().breakdown`;

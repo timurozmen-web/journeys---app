@@ -424,3 +424,25 @@ html[data-mode="travel"] .modeswitch{border:1.5px solid var(--ink);background:va
 html[data-mode="travel"] .btn.secondary{border:1.5px solid var(--ink);font-family:var(--font-display)}
 html[data-mode="travel"] .input{border:1.5px solid var(--ink);border-radius:6px}
 html[data-mode="travel"] .field-label,html[data-mode="travel"] .sectionlabel{font-family:var(--font-display)}
+
+/* ---- Cards carousel ----
+   Each slot is 80% of the rail and snaps to its centre; the padding lets
+   the first and last cards reach the middle too. Poses are set from JS as
+   the rail scrolls (CardCarousel). */
+.carousel{display:grid;gap:12px}
+.carousel-rail{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;
+  padding:10px 10% 14px;scrollbar-width:none;outline:none}
+.carousel-rail::-webkit-scrollbar{display:none}
+.carousel-rail:focus-visible{box-shadow:inset 0 0 0 2px var(--brand2);border-radius:var(--r-lg)}
+.carousel-slot{position:relative;flex:0 0 80%;scroll-snap-align:center;scroll-snap-stop:always;transform-origin:center;will-change:transform,opacity;cursor:pointer}
+.carousel-slot.lead{cursor:default}
+.carousel-slot .walletcard{box-shadow:0 14px 28px -12px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.12)}
+.carousel-dots{display:flex;justify-content:center;gap:6px}
+.carousel-dots button{width:6px;height:6px;padding:0;border:0;border-radius:3px;background:var(--line);cursor:pointer;transition:width .25s ease,background .25s ease}
+.carousel-dots button.on{width:18px;background:var(--ink)}
+/* The lead card's details settle in when a new card locks into place. */
+.leaddetail{animation:leadin .32s cubic-bezier(.2,.9,.3,1) both}
+@keyframes leadin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.leaddetail{animation:none}.carousel-dots button{transition:none}}
+.removecard{background:none;border:0;padding:0;font:inherit;font-size:var(--fs-small);font-weight:700;color:var(--ink3);cursor:pointer}
+.removecard.confirm{color:var(--red)}
