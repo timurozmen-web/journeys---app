@@ -12,6 +12,12 @@ describe('bookingRoute', () => {
     expect(r.to).toBe('/log-flight');
     expect(r.state).toMatchObject({ prefill: { from: 'LHR', to: 'BUD' } });
   });
+  test('the booking class marks an award seat and its cabin, on the airline it belongs to', () => {
+    const qr = bookingRoute({ type: 'flight', date: '2027-05-22', from: 'HEL', to: 'HND', airline: 'Qatar Airways', flightNo: 'QR304', bookingClass: 'U', cabin: null });
+    expect(qr.state).toMatchObject({ prefill: { award: true, cabin: 'Business' } });
+    const lot = bookingRoute({ type: 'flight', date: '2026-10-26', from: 'BUD', to: 'LHR', airline: 'LOT Polish Airlines', flightNo: 'LO538', bookingClass: 'U', cabin: 'Economy' });
+    expect(lot.state).toMatchObject({ prefill: { award: false, cabin: 'Economy' } });
+  });
   test('a foreign-currency amount carries a note to double-check it', () => {
     expect((bookingRoute({ type: 'hotel', name: 'H', currency: 'EUR' }).state.extractNote as string)).toMatch(/EUR/);
     expect(bookingRoute({ type: 'hotel', name: 'H', currency: 'GBP' }).state.extractNote).toBeUndefined();

@@ -147,6 +147,18 @@ Run all three; all must be clean:
   another trip of the same name is folded into it.
 - All Supabase reads and writes are in `src/lib/queries.ts`. Writes made
   offline go through `src/lib/offlineQueue.ts`.
+- Hotel points (`stayPoints`): spend x base rate x tier, any multiplier
+  promotion, then bonus promotions (`src/lib/promoBonus.ts`), whose terms
+  are read from their own wording: "every 2 nights", "on your second
+  stay", "stays of 2+ nights", "at Ruby Hotels". Wording it can't read
+  earns nothing rather than a guess. Upcoming trips show "Points to earn"
+  from their booked stays.
+- Booking classes mean different things per airline: award classes live
+  in `src/data/awardClasses.ts` (sourced; Qatar and BA so far) and
+  `awardCabin` turns airline + letter into an award cabin or null. The
+  email scanner extracts the letter, so a Qatar "U" arrives as a business
+  award while LOT's "U" (a cash Saver fare) doesn't; the Credit advisor
+  shows an award seat as earning nothing.
 - Stays are read through `canonicalStay` (`src/lib/stayNormalise.ts`):
   sub-brands map to their programme and a Booked stay past check-out
   counts as completed. Hotel points come only from `src/lib/loyaltyPoints.ts`;

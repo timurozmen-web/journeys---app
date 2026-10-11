@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLoyaltyProgrammes } from '../lib/useLiveData';
+import { awardCabin } from '../lib/fareClass';
 import { distanceMilesBetween } from '../lib/creditingDistance';
 import {
-  CARRIERS, BA_TIERS, QR_TIERS, QF_TIERS, KF_TIERS, REDEEMABLE_VALUE_PENCE,
+  CARRIERS, BA_TIERS, carrierName, QR_TIERS, QF_TIERS, KF_TIERS, REDEEMABLE_VALUE_PENCE,
   suggestFareLevel, runAdvisor,
   type Cabin, type FareLevel, type ProgramId, type CreditInput, type ProgramResult,
 } from '../lib/creditingEngine';
@@ -64,10 +65,14 @@ export function CreditAdvisor() {
 
   function onBookingClassChange(v: string) {
     setBookingClass(v);
+    // An award class also says the cabin (Qatar U is business).
+    const awardIn = awardCabin(carrier, v);
+    if (awardIn) { setCabin(awardIn); return; }
     const suggestion = suggestFareLevel(cabin, v);
     if (suggestion && !fareLevelTouched) setFareLevel(suggestion);
   }
 
+  const award = awardCabin(carrier, bookingClass);
   const effectiveDistance = distanceMiles ?? (manualDistance ? parseInt(manualDistance, 10) : null);
   const ukDeparture = UK_AIRPORTS.has(from.trim().toUpperCase());
 
@@ -154,7 +159,15 @@ export function CreditAdvisor() {
         </p>
       </div>
 
-      {advisor && <Results advisor={advisor} />}
+      {/* A seat bought with points earns nothing, wherever it's credited. */}
+      {award ? (
+        <div style={{ padding: '4px 20px 32px' }}>
+          <div className="plan-card" style={{ gap: 4 }}>
+            <div className="figure" style={{ fontSize: 'var(--fs-title)' }}>Award seat</div>
+            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)' }}>{carrierName(carrier)} {bookingClass} is a {award.toLowerCase()} redemption: no miles or status to credit.</div>
+          </div>
+        </div>
+      ) : advisor && <Results advisor={advisor} />}
     </div>
   );
 }

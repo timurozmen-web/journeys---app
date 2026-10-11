@@ -13,7 +13,7 @@ For a hotel:
 {"type":"hotel","name":string,"country":string|null,"city":string|null,"brand":string|null,"checkIn":"YYYY-MM-DD","nights":number|null,"total":number|null,"currency":string|null,"roomType":string|null,"rateType":"Standard"|"Member"|"Promotional"|"Non-refundable"|"Other"|null}
 
 For a flight:
-{"type":"flight","date":"YYYY-MM-DD","from":string|null,"to":string|null,"airline":string|null,"flightNo":string|null,"cabin":string|null,"cost":number|null,"currency":string|null}
+{"type":"flight","date":"YYYY-MM-DD","from":string|null,"to":string|null,"airline":string|null,"flightNo":string|null,"cabin":string|null,"bookingClass":string|null,"award":boolean|null,"cost":number|null,"currency":string|null}
 
 Rules:
 - "from"/"to" should be 3-letter IATA airport codes if you can determine them, otherwise null.
@@ -26,6 +26,8 @@ Rules:
 - "rateType": use "Standard" if the confirmation gives no indication of a special rate; only use another value if the confirmation explicitly says so (e.g. "Member Rate", "Non-refundable", "Advance Purchase" -> "Promotional").
 - "roomType": keep this brief -- just the room category/tier as named by the property (e.g. "Studio Suite", "Deluxe Room", "Junior Suite"). Leave out bed configuration (e.g. "King Bed", "Twin"), view, floor, or any other descriptive extras that are sometimes appended to the room name.
 - Date year inference: if a date in the confirmation has no year printed on it, infer the year yourself using today's date (${today}) as the anchor -- if that month/day has already passed this year, it means next year; if it hasn't happened yet this year, use this year. Never default to some fixed or arbitrary year.
+- "bookingClass": the single-letter booking (fare) class exactly as printed, e.g. "BUSINESS(U)" -> "U", "Class: SAVER, U" -> "U", "Booking class P" -> "P". Null if no letter is shown. The same letter means different things on different airlines, so never infer it from the cabin.
+- "award": true if the ticket was paid with points, Avios or miles (e.g. "Avios redeemed", "reward flight", "award ticket"), false if it was clearly bought with money, null if the confirmation doesn't say.
 - Never guess at a field you can't find evidence for -- use null instead.`;
 }
 
