@@ -1,4 +1,5 @@
 import type { Hotel, LoyaltyProgramme, Promotion } from '../types';
+import { promoBonusForStay } from './promoBonus';
 
 // The one place hotel-programme earning lives: base points per stay by
 // programme and brand, plus the member's elite bonus. Trip totals, wallet
@@ -77,19 +78,24 @@ function activeMultiplierFor(h: Hotel, promotions: Promotion[]): number {
 }
 
 // Points a stay earns with its hotel programme, whatever its status (callers
-// decide whether it counts yet). Award stays and stays with no price earn none.
-export function stayPoints(h: Hotel, programmes: Pick<LoyaltyProgramme, 'name' | 'tier'>[] = [], promotions: Promotion[] = []): number {
+// decide whether it counts yet): base points on the spend, the elite bonus
+// for the tier, any multiplier promotion, then bonus promotions (a fixed
+// bonus on a second stay, per 2 nights, per stay of 2+ nights -- see
+// promoBonus.ts; `stays` is every stay, for counting across them). Award
+// stays and stays with no price earn none.
+export function stayPoints(h: Hotel, programmes: Pick<LoyaltyProgramme, 'name' | 'tier'>[] = [], promotions: Promotion[] = [], stays: Hotel[] = [h]): number {
   const def = BASE_PROGRAMS.find((d) => d.brand === h.brand);
   if (!def || !h.total || h.award) return 0;
   const fx = def.currency === 'USD' ? GBP_TO_USD : GBP_TO_EUR;
   const rate = def.reducedBrands?.pattern.test(h.name) ? def.reducedBrands.ratePerUnit : def.baseRatePerUnit;
   const tier = programmes.find((p) => p.name === h.brand)?.tier;
-  return Math.round(h.total * fx * rate * tierMultiplier(h.brand, tier, h.date) * activeMultiplierFor(h, promotions));
+  const earned = Math.round(h.total * fx * rate * tierMultiplier(h.brand, tier, h.date) * activeMultiplierFor(h, promotions));
+  return earned + promoBonusForStay(h, stays, promotions);
 }
 
 // Completed stays only -- what trip totals count as earned.
-export function basePointsForHotel(h: Hotel, promotions: Promotion[] = [], programmes: Pick<LoyaltyProgramme, 'name' | 'tier'>[] = []): number {
-  return h.status === 'Completed' ? stayPoints(h, programmes, promotions) : 0;
+export function basePointsForHotel(h: Hotel, promotions: Promotion[] = [], programmes: Pick<LoyaltyProgramme, 'name' | 'tier'>[] = [], stays: Hotel[] = [h]): number {
+  return h.status === 'Completed' ? stayPoints(h, programmes, promotions, stays) : 0;
 }
 
 export function computeBaseProgramPoints(hotels: Hotel[], brand: string, promotions: Promotion[] = [], programmes: Pick<LoyaltyProgramme, 'name' | 'tier'>[] = []): number {
@@ -104,7 +110,7 @@ export function pointsFromStays(p: LoyaltyProgramme, hotels: Hotel[], promotions
   let pending = 0;
   for (const h of hotels) {
     if (h.brand !== p.name) continue;
-    const pts = stayPoints(h, [p], promotions);
+    const pts = stayPoints(h, [p], promotions, hotels);
     if (!pts) continue;
     if (h.status === 'Completed') {
       if (p.nightsBaselineDate && h.date > p.nightsBaselineDate) earned += pts;

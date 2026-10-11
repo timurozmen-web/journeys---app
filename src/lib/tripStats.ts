@@ -1,5 +1,5 @@
 import { CARDS_STATIC, defaultCardFor, isEuropeOrUK, isIHGPremiumCountry } from '../data/cardDefs';
-import { basePointsForHotel } from './loyaltyPoints';
+import { basePointsForHotel, stayPoints } from './loyaltyPoints';
 import type { Trip, Hotel, LoyaltyProgramme, Promotion } from '../types';
 // The shared UTC helper: a local copy here added days in local time and
 // read the date back in UTC, so a stay running over the clocks going
@@ -12,7 +12,10 @@ export interface TripPointsResult {
   centsPerPoint: number; // pence per point, blended
 }
 
-export function computeTripPoints(trip: Trip, loyaltyProgrammes: LoyaltyProgramme[], promotions: Promotion[] = []): TripPointsResult {
+// `allStays` is every logged stay, so a bonus like "10,000 on your second
+// stay" counts stays outside this trip. `upcoming` estimates a trip not yet
+// taken: its booked stays count, where a past trip counts completed ones.
+export function computeTripPoints(trip: Trip, loyaltyProgrammes: LoyaltyProgramme[], promotions: Promotion[] = [], allStays: Hotel[] = trip.hotels, upcoming = false): TripPointsResult {
   const ptValueByBrand = new Map(loyaltyProgrammes.map((p) => [p.name, p.ptValue]));
   let totalPoints = 0;
   let totalValue = 0;
@@ -22,7 +25,9 @@ export function computeTripPoints(trip: Trip, loyaltyProgrammes: LoyaltyProgramm
 
     // Base hotel-loyalty-program points (rate × elite tier bonus) --
     // earned by staying, independent of which card paid.
-    const basePts = basePointsForHotel(h, promotions, loyaltyProgrammes);
+    const basePts = upcoming
+      ? (h.status === 'needs-confirm' ? 0 : stayPoints(h, loyaltyProgrammes, promotions, allStays))
+      : basePointsForHotel(h, promotions, loyaltyProgrammes, allStays);
     if (basePts > 0) {
       const basePtVal = ptValueByBrand.get(h.brand) ?? 1;
       totalPoints += basePts;

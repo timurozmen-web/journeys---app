@@ -1,6 +1,6 @@
 import { Fragment, useState, useEffect, useRef, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTrips, useLoyaltyProgrammes, usePromotions } from '../lib/useLiveData';
+import { useTrips, useLoyaltyProgrammes, usePromotions, useAllHotels } from '../lib/useLiveData';
 import { uploadTripPhoto, fetchTripPhotos, splitTrip, deleteHotel, deleteFlight } from '../lib/queries';
 import { SwipeToDelete } from '../components/SwipeToDelete';
 import type { TripPhoto } from '../lib/queries';
@@ -27,6 +27,7 @@ export function TripDetail() {
   const [seg, setSeg] = useState<Seg>('overview');
   const [view, setView] = useState<'itinerary' | 'map'>('itinerary');
   const { data: trips, refetch: refetchTrips } = useTrips();
+  const { data: allHotels } = useAllHotels();
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
   const { data: promotions } = usePromotions();
   const trip = trips.find((t) => t.id === id);
@@ -85,7 +86,8 @@ export function TripDetail() {
   }
 
   const spend = trip.hotels.reduce((s, h) => s + (h.total ?? 0), 0) + trip.flights.reduce((s, f) => s + (f.cost ?? 0), 0);
-  const points = computeTripPoints(trip, loyaltyProgrammes, promotions);
+  const upcoming = trip.start > new Date().toISOString().slice(0, 10);
+  const points = computeTripPoints(trip, loyaltyProgrammes, promotions, allHotels, upcoming);
   const savings = computeTripSavings(trip);
   const destinations = groupDestinations(trip);
   const gaps = findGaps(trip);
@@ -339,8 +341,8 @@ export function TripDetail() {
             <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 600, marginBottom: 12 }}>Trip summary</div>
             <div style={{ display: 'grid', gap: 9 }}>
               <SummaryRow label="Total cash spent" value={formatMoney(spend)} />
-              <SummaryRow label="Points earned" value={`${points.totalPoints.toLocaleString()} pts`} />
-              <SummaryRow label="Value of points earned" value={formatMoney(points.totalValue)} />
+              <SummaryRow label={upcoming ? 'Points to earn' : 'Points earned'} value={`${upcoming ? '~' : ''}${Math.round(points.totalPoints).toLocaleString()} pts`} />
+              <SummaryRow label={upcoming ? 'Value of points to earn' : 'Value of points earned'} value={formatMoney(points.totalValue)} />
               <SummaryRow label="Total savings" value={formatMoney(savings)} valueColor="var(--green)" />
               <SummaryRow label="Pence per point (earned)" value={points.totalPoints > 0 ? `${points.centsPerPoint.toFixed(2)}p` : '—'} />
             </div>

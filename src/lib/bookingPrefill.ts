@@ -1,4 +1,6 @@
 import { normalizeBrand } from '../data/brandMap';
+import { airlineBadge } from '../data/airlineBrand';
+import { awardCabin } from './fareClass';
 
 export interface ExtractedBooking {
   type: 'hotel' | 'flight';
@@ -30,10 +32,17 @@ export function bookingRoute(b: ExtractedBooking, ctx: { tripId?: string; return
       },
     };
   }
+  // The booking class says whether a seat was bought with points: a Qatar
+  // "U" is a business award, where on LOT the same letter is a cash fare.
+  const code = airlineBadge((b.flightNo as string) ?? null, (b.airline as string) ?? null).code;
+  const award = awardCabin(code, b.bookingClass as string | null);
   return {
     to: '/log-flight',
     state: {
-      prefill: { date: b.date, from: b.from, to: b.to, airline: b.airline, flightNo: b.flightNo, cabin: b.cabin, cost: b.cost },
+      prefill: {
+        date: b.date, from: b.from, to: b.to, airline: b.airline, flightNo: b.flightNo,
+        cabin: award ?? b.cabin, cost: b.cost, award: award != null || b.award === true,
+      },
       extractNote, tripId: ctx.tripId, returnTo: ctx.returnTo,
     },
   };
