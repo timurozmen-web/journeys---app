@@ -4,7 +4,7 @@ import { deleteLoyaltyProgramme, setVoucherRedeemed, updateLoyaltyProgramme } fr
 import { SwipeToDelete } from './SwipeToDelete';
 import { ErrorText } from './ui';
 import { computeStatusProgress, type StatusProgress } from '../lib/statusProgress';
-import { ringTicks, spendTicks, type RingSegment } from '../lib/statusRing';
+import { nightSegments, ringTicks, spendTicks } from '../lib/statusRing';
 import { StatusRing } from './StatusRing';
 import { computeLoyaltyInsights } from '../lib/loyaltyInsights';
 import { voucherDates } from '../lib/voucherDates';
@@ -108,7 +108,7 @@ export function LoyaltyTab({
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(isOpen ? null : p.name); } }}
             >
               {progress && progress.total > 0 && (
-                <StatusRing ticks={ringTicks(progress.total, nightSegments(progress))} size={46} label={`${progress.currentNights} of ${progress.total} nights`}>
+                <StatusRing ticks={ringTicks(progress.total, nightSegments(progress.breakdown))} size={46} label={`${progress.currentNights} of ${progress.total} nights`}>
                   <span className="prog-ringnum">{progress.currentNights}</span>
                 </StatusRing>
               )}
@@ -135,12 +135,14 @@ export function LoyaltyTab({
                     defaultValue={p.points}
                     onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                     // Entering a balance records it as of today: stays up to now are
-                    // in it, so the baseline moves to today (nights too, kept in step)
-                    // and only later stays are added on top.
+                    // in it, so the baseline moves to today (nights stayed too, kept
+                    // in step) and only later stays are added on top. Only stays are
+                    // stored: bonus nights are added from their sources on every read,
+                    // so storing the full total counted them twice.
                     onBlur={(e) => {
                       const v = parseInt(e.target.value, 10);
                       if (!Number.isFinite(v) || v === p.points) return;
-                      save(p.name, { points: v, nightsBaselineDate: today, ...(p.nights != null && progress ? { nights: progress.currentNights } : {}) });
+                      save(p.name, { points: v, nightsBaselineDate: today, ...(p.nights != null && progress ? { nights: progress.breakdown.stays } : {}) });
                     }}
                   />
                 </div>
@@ -179,33 +181,40 @@ export function LoyaltyTab({
                   </div>
                 )}
 
-                {progress && progress.cardEliteNights.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>
-                      Elite nights from cards
-                    </div>
-                    <div style={{ display: 'grid', gap: 4 }}>
-                      {progress.cardEliteNights.map((c, idx) => (
-                        <div key={`${c.cardId}-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 'var(--fs-small)' }}>
-                          <span style={{ color: c.earned ? 'var(--ink2)' : 'var(--amber)' }}>
-                            {c.earned ? '✓' : '○'} {c.note}
-                          </span>
-                          <span style={{ fontWeight: 700, color: c.earned ? 'var(--ink)' : 'var(--amber)', flexShrink: 0 }}>
-                            +{c.nights}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                {progress && progress.total > 0 && (
+                  <div className="dd-row">
+                    <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Nights stayed this year</span>
+                    <input
+                      key={progress.breakdown.stays}
+                      className="input compact inline-value" type="number" inputMode="numeric" aria-label={`${p.name} nights stayed this year`}
+                      defaultValue={progress.breakdown.stays}
+                      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                      // Stays only: card, membership and promotion nights are added
+                      // from their own sources. The baseline moves to today, so the
+                      // live points balance is stored with it to keep stays since the
+                      // old baseline in the points too.
+                      onBlur={(e) => {
+                        const v = parseInt(e.target.value, 10);
+                        if (!Number.isFinite(v) || v < 0 || v === progress.breakdown.stays) return;
+                        save(p.name, { nights: v, nightsBaselineDate: today, points: p.points });
+                      }}
+                    />
                   </div>
                 )}
 
-                {progress && progress.appliedPromoNights > 0 && (
-                  <div style={{ padding: '10px 12px', borderRadius: 'var(--r-control)', background: 'rgba(111,207,151,.12)', border: '1px solid rgba(111,207,151,.3)' }}>
-                    <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--green)' }}>
-                      ✓ {progress.appliedPromoNights} promotion night{progress.appliedPromoNights === 1 ? '' : 's'} marked applied
+                {progress && progress.bonusNights.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>
+                      Bonus nights
                     </div>
-                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 2 }}>
-                      Make sure your nights total above already reflects this — {p.name} should have credited it directly to your account.
+                    <div className="bonuslist">
+                      {progress.bonusNights.map((b, idx) => (
+                        <div key={`${b.from}-${idx}`} className={b.earned ? 'bonusrow' : 'bonusrow tocome'}>
+                          <span className="sw" style={{ background: b.earned ? BONUS_COLOUR[b.source] : undefined }} aria-hidden="true" />
+                          <span className="what">{b.note}</span>
+                          <span className="n">{b.earned ? `+${b.nights}` : `+${b.nights} to come`}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -292,16 +301,7 @@ export function LoyaltyTab({
   );
 }
 
-// Where the nights came from, in ring order: stays, card nights,
-// promotions, then booked stays still to come.
-function nightSegments(p: StatusProgress): RingSegment[] {
-  return [
-    { key: 'stays', label: 'Stays', count: p.breakdown.stays, colour: 'var(--ink)' },
-    { key: 'card', label: 'Card', count: p.breakdown.card, colour: 'var(--brand2)' },
-    { key: 'promos', label: 'Promos', count: p.breakdown.promos, colour: 'var(--promo)' },
-    { key: 'pending', label: 'Booked', count: p.breakdown.pending, colour: 'var(--pending)' },
-  ];
-}
+const BONUS_COLOUR = { card: 'var(--brand2)', membership: 'var(--member)', promo: 'var(--promo)' } as const;
 
 function Legend({ items }: { items: { label: string; value: string; colour: string; zero?: boolean }[] }) {
   return (
@@ -323,7 +323,7 @@ function RingPager({ progress }: { progress: StatusProgress }) {
   const ref = useRef<HTMLDivElement>(null);
   const sp = progress.spendProgress;
   const pages = sp ? ['Nights', sp.unit === 'points' ? 'Status points' : 'Spend'] : ['Nights'];
-  const segs = nightSegments(progress);
+  const segs = nightSegments(progress.breakdown);
   const toGo = Math.max(0, progress.total - progress.currentNights);
   const money = (n: number) => `${sp?.currencySymbol ?? ''}${Math.round(n).toLocaleString()}`;
   const go = (i: number) => ref.current?.scrollTo({ left: i * ref.current.clientWidth, behavior: 'smooth' });
@@ -340,7 +340,8 @@ function RingPager({ progress }: { progress: StatusProgress }) {
             <div className="ring-of">of {progress.total} nights</div>
             <div className="ring-go">{toGo > 0 ? `${toGo} to go` : `${progress.targetTier ?? 'Tier'} reached`}</div>
           </StatusRing>
-          <Legend items={segs.map((s) => ({ label: s.label, value: String(s.count), colour: s.colour, zero: s.count === 0 }))} />
+          {/* Stays always; each other source only when it has nights. */}
+          <Legend items={segs.filter((s) => s.key === 'stays' || s.count > 0).map((s) => ({ label: s.label, value: String(s.count), colour: s.colour }))} />
         </div>
         {sp && (() => {
           const t = spendTicks(sp.currentAmount, sp.pendingAmount, sp.requiredAmount);

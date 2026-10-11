@@ -102,10 +102,15 @@ function resolveTargetTier(
   return { targetTier: storedNextTier ?? null, nightsNeeded: null };
 }
 
-export interface CardEliteNights {
-  cardId: string;
+// A night credited on top of stays: from a card, a paid membership (ALL
+// Accor+ Explorer) or a status promotion. `earned` is credited; otherwise
+// it is still to come (a welcome bonus not yet met, a renewal later this
+// year, the next spend threshold).
+export interface BonusNight {
+  source: 'card' | 'membership' | 'promo';
+  from: string; // the card, membership or promotion it comes from
   nights: number;
-  earned: boolean; // already banked vs still pending a spend threshold
+  earned: boolean;
   note: string;
 }
 
@@ -120,16 +125,15 @@ export interface BrandExplorerProgress {
 
 export interface StatusProgress {
   total: number;
-  currentNights: number; // static baseline + newly-completed stays since the baseline date
+  currentNights: number; // stays plus every bonus night already credited this year
   pct: number | null; // current, solid segment
   pct2: number | null; // + booked nights, projected
   pct3: number | null; // + pending promotion bonus nights, projected
   pendingPct: number | null; // + booked and/or promo nights combined, whichever is present -- always populated when either exists
   bookedNights: number;
   pendingPromo: Promotion | null;
-  appliedPromoNights: number; // status-boost bonus nights confirmed applied -- not auto-added to the total, since the user's own nights baseline should already reflect it once genuinely credited by the programme; shown as a visible confirmation instead
   pendingNights: number;
-  cardEliteNights: CardEliteNights[];
+  bonusNights: BonusNight[];
   cardGrantedTier: string | null; // status held outright via a card, if any
   effectiveTier: string | null; // the tier actually held, card grant included
   targetTier: string | null; // the tier genuinely being worked toward
@@ -137,27 +141,50 @@ export interface StatusProgress {
   uniqueBrandCount: number;
   spendProgress: SpendProgress | null;
   brandExplorer: BrandExplorerProgress | null;
-  // Where the nights toward the target came from, for the status ring.
-  // stays + card + promos = currentNights; pending is booked stays plus
-  // card and promotion nights not yet credited.
-  breakdown: { stays: number; card: number; promos: number; pending: number };
+  // Where this year's nights came from, for the status ring.
+  // stays + card + membership + promos = currentNights; pending is booked
+  // stays plus bonus nights still to come.
+  breakdown: { stays: number; card: number; membership: number; promos: number; pending: number };
 }
 
+type StatusCardInput = {
+  card: { id: string; programmeBrand: string; kind?: 'card' | 'subscription'; perks?: { id: string; label: string }[]; eliteNights: { auto: number; perSpendAmount: number | null; perSpendCap: number | null } };
+  autoSpend: number;
+  cardRow?: { closedDate?: string | null; openDate?: string | null } | null;
+  milestoneResults?: { m: { id: string }; hit: boolean }[];
+};
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const dayMonth = (iso: string) => `${Number(iso.slice(8, 10))} ${MONTHS[Number(iso.slice(5, 7)) - 1]}`;
+
+// The stored `nights` are the nights *stayed* this year as of the
+// programme's baseline date. Bonus nights (cards, memberships, promotions)
+// are never part of it: they are added here from their own source, each
+// once. Rolling the baseline forward used to store the full total, bonuses
+// included, and the next read added them again -- how a real 81 came to
+// show as 111.
 export function computeStatusProgress(
   p: LoyaltyProgramme,
   hotels: Hotel[],
   promotions: Promotion[],
-  cardResults: { card: { id: string; programmeBrand: string; perks?: { id: string; label: string }[]; eliteNights: { auto: number; perSpendAmount: number | null; perSpendCap: number | null } }; autoSpend: number; cardRow?: { closedDate?: string | null } | null; milestoneResults?: { m: { id: string }; hit: boolean }[] }[] = []
+  cardResults: StatusCardInput[] = [],
+  today: string = new Date().toISOString().slice(0, 10),
 ): StatusProgress {
-  const currentYear = new Date().getFullYear();
-  const today = new Date().toISOString().slice(0, 10);
+  const currentYear = Number(today.slice(0, 4));
+  const yearStart = `${currentYear}-01-01`;
 
-  const newlyCompletedNights = p.nightsBaselineDate
+  // Every programme here counts status nights per calendar year, so a
+  // figure entered last year says nothing about this one: once the year
+  // turns, count from this year's stays alone rather than carrying last
+  // year's total forward.
+  const baseline = p.nightsBaselineDate;
+  const staleBaseline = !!baseline && baseline < yearStart;
+  const newlyCompletedNights = baseline
     ? hotels
-        .filter((h) => h.brand === p.name && h.status === 'Completed' && h.date > p.nightsBaselineDate! && !h.award)
+        .filter((h) => h.brand === p.name && h.status === 'Completed' && h.date > baseline && h.date >= yearStart && !h.award)
         .reduce((s, h) => s + h.nights, 0)
     : 0;
-  const currentNights = (p.nights ?? 0) + newlyCompletedNights;
+  const currentNights = (staleBaseline ? 0 : p.nights ?? 0) + newlyCompletedNights;
 
   // A card may grant status outright (the IHG card gives Platinum, the
   // Marriott Debit gives Gold). Take the highest such grant from any open
@@ -207,26 +234,42 @@ export function computeStatusProgress(
   // nights are real, banked progress -- not just "no longer pending".
   // Previously nothing added them anywhere once applied, so the bonus
   // silently vanished from the display entirely when ticked complete.
-  const appliedPromoNights = promotions
-    .filter(
-      (promo) =>
-        promo.promoType === 'status_boost' &&
-        promo.statusNightsBonus != null &&
-        promo.statusNightsApplied &&
-        (!promo.brand || promo.brand === p.name)
-    )
-    .reduce((s, promo) => s + promo.statusNightsBonus!, 0);
+  // Only a promotion that ran this year counts toward this year's nights.
+  const appliedPromos = promotions.filter(
+    (promo) =>
+      promo.promoType === 'status_boost' &&
+      promo.statusNightsBonus != null &&
+      promo.statusNightsApplied &&
+      (!promo.brand || promo.brand === p.name) &&
+      (!promo.endDate || promo.endDate >= yearStart)
+  );
 
-  // Elite nights granted by holding a card for this programme. These are
-  // real, ongoing status progress -- an IHG card's 15 elite nights apply
-  // every year the card stays open, and spend-earned nights accrue on top.
-  // Only open (non-closed) cards count, since the benefit stops when the
-  // card is closed.
-  const cardEliteNights: CardEliteNights[] = [];
+  // Elite nights granted by holding a card or membership for this
+  // programme. These are real, ongoing status progress -- an IHG card's 15
+  // elite nights apply every year the card stays open, and spend-earned
+  // nights accrue on top. Only open (non-closed) ones count, since the
+  // benefit stops when the card or membership ends.
+  const bonusNights: BonusNight[] = [];
   for (const r of cardResults) {
     if (r.card.programmeBrand !== p.name) continue;
     if (r.cardRow?.closedDate) continue; // benefit ends with the card
     const en = r.card.eliteNights;
+
+    // A membership (ALL Accor+ Explorer) credits its nights when it starts
+    // and again at each renewal. Nights count per calendar year, so this
+    // year's credit is the one from a start or renewal dated this year:
+    // one still ahead is to come, not credited.
+    if (r.card.kind === 'subscription') {
+      if (en.auto <= 0) continue;
+      const open = r.cardRow?.openDate ?? null;
+      const credit = !open ? null : open >= yearStart ? open : `${currentYear}${open.slice(4)}`;
+      const earned = !credit || credit <= today;
+      bonusNights.push({
+        source: 'membership', from: r.card.id, nights: en.auto, earned,
+        note: !credit ? r.card.id : earned ? `${r.card.id}, ${dayMonth(credit)}` : `${r.card.id} renews ${dayMonth(credit)}`,
+      });
+      continue;
+    }
 
     // Auto nights are granted for holding the card, but only actually
     // credit once the card's welcome requirement has been met. Until then
@@ -235,11 +278,9 @@ export function computeStatusProgress(
     if (en.auto > 0) {
       const welcomeMilestone = r.milestoneResults?.find((m) => m.m.id.startsWith('welcome'));
       const welcomeMet = welcomeMilestone ? welcomeMilestone.hit : true;
-      cardEliteNights.push({
-        cardId: r.card.id, nights: en.auto, earned: welcomeMet,
-        note: welcomeMet
-          ? `${en.auto} elite nights for holding ${r.card.id}`
-          : `${en.auto} elite nights once the ${r.card.id} welcome bonus is met`,
+      bonusNights.push({
+        source: 'card', from: r.card.id, nights: en.auto, earned: welcomeMet,
+        note: welcomeMet ? r.card.id : `${r.card.id}, once the welcome bonus is met`,
       });
     }
 
@@ -247,9 +288,9 @@ export function computeStatusProgress(
       let earnedFromSpend = Math.floor(r.autoSpend / en.perSpendAmount);
       if (en.perSpendCap != null) earnedFromSpend = Math.min(earnedFromSpend, en.perSpendCap);
       if (earnedFromSpend > 0) {
-        cardEliteNights.push({
-          cardId: r.card.id, nights: earnedFromSpend, earned: true,
-          note: `${earnedFromSpend} elite nights from £${Math.round(r.autoSpend).toLocaleString()} card spend`,
+        bonusNights.push({
+          source: 'card', from: r.card.id, nights: earnedFromSpend, earned: true,
+          note: `${r.card.id}, £${Math.round(r.autoSpend).toLocaleString()} spent`,
         });
       }
       // Only surface the next spend threshold once there's real spend on
@@ -257,12 +298,15 @@ export function computeStatusProgress(
       const atCap = en.perSpendCap != null && earnedFromSpend >= en.perSpendCap;
       if (!atCap && r.autoSpend > 0) {
         const spendToNext = en.perSpendAmount - (r.autoSpend % en.perSpendAmount);
-        cardEliteNights.push({
-          cardId: r.card.id, nights: 1, earned: false,
-          note: `+1 elite night at £${Math.round(spendToNext).toLocaleString()} more spend`,
+        bonusNights.push({
+          source: 'card', from: r.card.id, nights: 1, earned: false,
+          note: `${r.card.id}, £${Math.round(spendToNext).toLocaleString()} more spend`,
         });
       }
     }
+  }
+  for (const promo of appliedPromos) {
+    bonusNights.push({ source: 'promo', from: promo.title, nights: promo.statusNightsBonus!, earned: true, note: promo.title });
   }
   // Some promotions award a bonus elite night per *unique brand* stayed
   // within a window (Marriott ran exactly this). Counted from real logged
@@ -289,12 +333,22 @@ export function computeStatusProgress(
     }
     uniqueBrandCount = brandsInWindow.size;
     uniqueBrandNights = uniqueBrandCount;
+    if (uniqueBrandNights > 0) {
+      bonusNights.push({ source: 'promo', from: uniqueBrandPromo.title, nights: uniqueBrandNights, earned: true, note: `${uniqueBrandPromo.title}, ${uniqueBrandCount} brands` });
+    }
+  }
+  if (pendingPromo) {
+    bonusNights.push({ source: 'promo', from: pendingPromo.title, nights: promoNights, earned: false, note: `${pendingPromo.title}, after your next stay` });
   }
 
-  const earnedCardNights = cardEliteNights.filter((c) => c.earned).reduce((s, c) => s + c.nights, 0);
-  const pendingCardNights = cardEliteNights.filter((c) => !c.earned).reduce((s, c) => s + c.nights, 0);
+  const credited = (source: BonusNight['source']) =>
+    bonusNights.filter((b) => b.source === source && b.earned).reduce((s, b) => s + b.nights, 0);
+  const earnedCardNights = credited('card');
+  const membershipNights = credited('membership');
+  const promoCreditedNights = credited('promo');
+  const pendingBonusNights = bonusNights.filter((b) => !b.earned && b.source !== 'promo').reduce((s, b) => s + b.nights, 0);
 
-  const pendingNights = promoNights + pendingCardNights;
+  const pendingNights = promoNights + pendingBonusNights;
 
   // Total nights needed for the tier genuinely being targeted -- uses the
   // resolved requirement when a card grants status outright, since the
@@ -309,13 +363,7 @@ export function computeStatusProgress(
   const effectiveTargetTier = targetTier ?? p.nextTier;
   const authoritativeTotal = effectiveTargetTier ? TIER_NIGHT_REQUIREMENTS[p.name]?.[effectiveTargetTier] : undefined;
   const total = authoritativeTotal ?? resolvedNightsNeeded ?? ((p.nights ?? 0) + (p.nightsNeeded ?? 0));
-  // The stored nights value is the complete, real current total -- it
-  // already reflects everything genuinely credited so far, including
-  // card elite nights already earned and any past promotion bonus that's
-  // already happened. Re-adding earned card nights on top double-counts
-  // them (this was the exact cause of a real 81 showing as 111). Only
-  // card nights genuinely not yet earned count separately, as pending.
-  const effectiveCurrentNights = currentNights + uniqueBrandNights + earnedCardNights + appliedPromoNights;
+  const effectiveCurrentNights = currentNights + earnedCardNights + membershipNights + promoCreditedNights;
   const projectedBooked = Math.min(total, effectiveCurrentNights + bookedNights);
   const projectedWithPromo = Math.min(total, projectedBooked + pendingNights);
 
@@ -390,9 +438,8 @@ export function computeStatusProgress(
     pendingPct: bookedNights + pendingNights > 0 ? (projectedWithPromo / total) * 100 : null,
     bookedNights,
     pendingPromo,
-    appliedPromoNights,
     pendingNights,
-    cardEliteNights,
+    bonusNights,
     cardGrantedTier,
     effectiveTier,
     targetTier,
@@ -403,7 +450,8 @@ export function computeStatusProgress(
     breakdown: {
       stays: currentNights,
       card: earnedCardNights,
-      promos: uniqueBrandNights + appliedPromoNights,
+      membership: membershipNights,
+      promos: promoCreditedNights,
       pending: bookedNights + pendingNights,
     },
   };

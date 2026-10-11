@@ -154,7 +154,7 @@ export function Profile() {
 
   return (
     <div>
-      <div style={{ background: 'var(--bg)', height: 'env(safe-area-inset-top, 0px)' }} />
+      <div className="topspace" />
       <div style={{ padding: '20px 20px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div>
           <h1 className="h1" style={{ margin: 0 }}>Then</h1>

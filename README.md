@@ -17,9 +17,10 @@ ready for an iOS build.
   a sketched map, photos, points earned and savings; flags trips missing
   an outbound or return flight.
 - **Loyalty / Home**: wallet value, a status ring per programme and
-  what's worth acting on (status within reach, card milestones,
-  renewals, expiring vouchers).
-- **Loyalty / Wallet**: loyalty programmes, payment cards, vouchers and
+  what's worth acting on (card milestones, renewals, expiring vouchers).
+- **Loyalty / Wallet**: loyalty programmes (nights from stays, cards,
+  memberships and promotions, each shown), payment cards on a ring
+  carousel, memberships such as ALL Accor+ Explorer, vouchers and
   promotions, with points valued in £.
 - **Logging**: add a hotel, flight, trip or loyalty programme by hand,
   or **scan a booking email / screenshot** (Claude extracts the
@@ -31,9 +32,10 @@ ready for an iOS build.
   "Everyday in the UK") and tracked live against its spending goals,
   welcome bonuses and renewal vouchers. Individual transactions are
   never listed, and accounts not mapped to a rewards card are never read.
-- **Plan a trip**: season and weather guide, crowd and price levels
-  around holidays, annual leave needed (UK bank holidays), budget
-  estimate, map, rail connections, and points-vs-cash comparisons.
+- **Plan a trip**: weather, season and crowd levels for the month you'd
+  go, annual leave needed (UK bank holidays), a route of stops with the
+  hops between (rail where it's likely), the best-value hotel programme,
+  costs and a live budget check, with points-vs-cash for the city.
 - **Credit advisor**: which programme (BA, Qatar, Qantas, KrisFlyer) a
   flight should be credited to.
 - **Discover**: card offers and loyalty news.

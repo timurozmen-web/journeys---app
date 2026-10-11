@@ -6,7 +6,7 @@ import { computeStatusProgress } from '../lib/statusProgress';
 import { withLiveOverrides } from '../lib/walletValue';
 import { loyaltyHighlights } from '../lib/loyaltyHighlights';
 import { computeWalletValueChange } from '../lib/hotelPlanner';
-import { ringTicks } from '../lib/statusRing';
+import { nightSegments, ringTicks } from '../lib/statusRing';
 import { StatusRing } from '../components/StatusRing';
 import { SectionSwitch } from '../components/SectionSwitch';
 import { SettingsIcon } from '../components/Icons';
@@ -39,7 +39,7 @@ export function LoyaltyHome() {
 
   return (
     <div>
-      <div style={{ background: 'var(--bg)', height: 'env(safe-area-inset-top, 0px)' }} />
+      <div className="topspace" />
       <div style={{ padding: '20px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h1 className="h1" style={{ margin: 0 }}>Loyalty</h1>
         <div className="headtools">
@@ -64,14 +64,12 @@ export function LoyaltyHome() {
       {statuses.length > 0 && (
         <>
           <div className="lh-section">Status</div>
-          <div className="lh-rings">
+          {/* Keyed by the order: when live data reorders the rings, scroll
+              snapping kept the old first ring in view and the new first
+              one (Accor, at 60 of 60) opened scrolled off to the left. */}
+          <div className="lh-rings" key={statuses.map((x) => x.p.name).join('|')}>
             {statuses.map(({ p, progress }) => {
-              const segs = [
-                { key: 'stays', label: 'Stays', count: progress.breakdown.stays, colour: 'var(--ink)' },
-                { key: 'card', label: 'Card', count: progress.breakdown.card, colour: 'var(--brand2)' },
-                { key: 'promos', label: 'Promos', count: progress.breakdown.promos, colour: 'var(--promo)' },
-                { key: 'pending', label: 'Booked', count: progress.breakdown.pending, colour: 'var(--pending)' },
-              ];
+              const segs = nightSegments(progress.breakdown);
               const toGo = Math.max(0, progress.total - progress.currentNights);
               return (
                 <button key={p.name} className="lh-ring" onClick={() => navigate('/wallet', { state: { open: p.name } })}>

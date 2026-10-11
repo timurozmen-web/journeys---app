@@ -74,6 +74,10 @@ export interface CardDef {
   // A card added by hand (not in the catalogue): spend is tracked but its
   // earning rate isn't known, so no points are worked out for it.
   custom?: boolean;
+  // A paid membership rather than a payment card (ALL Accor+ Explorer):
+  // no spend or earning, just what holding it gives. Shown apart from the
+  // cards in the wallet, never as archived.
+  kind?: 'card' | 'subscription';
   eliteNights: { auto: number; perSpendAmount: number | null; perSpendCap: number | null };
   milestones: Milestone[];
   perks: { id: string; label: string }[];
@@ -250,6 +254,22 @@ export const CARDS_STATIC: CardDef[] = [
       },
       { id: 'companion', type: 'spend', spendRequired: 15000, rewardPoints: 0, rewardLabel: '2-4-1 companion voucher, economy only (£15k spend in a card year)' },
     ],
+    perks: [],
+  },
+  {
+    // ALL Accor+ Explorer is a paid membership, not a payment card. It
+    // gives 30 status nights each membership year, credited when it starts
+    // and at each renewal (enough for Gold on its own). Sources, checked
+    // 11 Oct 2026: accorplus.com (Explorer replaced Accor Plus from 1 Oct
+    // 2025), Prince of Travel's ALL Accor+ Explorer guide, AwardWallet's
+    // ALL Accor+ write-up. Its price is set per region (US$229-249, EUR200,
+    // AU$349) and none of those sources gives a UK price, so no fee is
+    // shown or counted for it.
+    id: 'Accor Explorer', kind: 'subscription', programmeBrand: 'Accor ALL', annualFee: 0, feeLabel: '',
+    rateFor: () => 0,
+    earnCategories: [{ id: 'all', label: 'All spend', regions: ALL }],
+    eliteNights: { auto: 30, perSpendAmount: null, perSpendCap: null },
+    milestones: [],
     perks: [],
   },
 ];
