@@ -54,9 +54,51 @@ export const AIRPORTS: Record<string, { lat: number; lng: number; name: string }
 
 // Country-name normalization between our data and the Natural Earth atlas,
 // which uses slightly different official names in places.
+// The airport dataset's names are mapped too, since a country reached only
+// by flight is scratched off by its arrival airport's country: "United
+// States" there didn't match the atlas, so San Diego never coloured the US.
 export const COUNTRY_NAME_MAP: Record<string, string> = {
   'United States of America': 'United States of America',
+  'United States': 'United States of America',
+  USA: 'United States of America',
   'Czech Republic': 'Czechia',
   Turkey: 'Turkey',
   Türkiye: 'Turkey',
+  'Dominican Republic': 'Dominican Rep.',
+  'Democratic Republic of the Congo': 'Dem. Rep. Congo',
+  'Republic of the Congo': 'Congo',
+  'Central African Republic': 'Central African Rep.',
+  'Bosnia and Herzegovina': 'Bosnia and Herz.',
+  'Equatorial Guinea': 'Eq. Guinea',
+  'Cape Verde': 'Cabo Verde',
+  'North Macedonia': 'Macedonia',
+  'South Sudan': 'S. Sudan',
+  Eswatini: 'eSwatini',
+  Macau: 'Macao',
+  'Antigua and Barbuda': 'Antigua and Barb.',
+  'Saint Kitts and Nevis': 'St. Kitts and Nevis',
+  'Saint Vincent and the Grenadines': 'St. Vin. and Gren.',
+  'Cayman Islands': 'Cayman Is.',
+  'British Virgin Islands': 'British Virgin Is.',
+  'U.S. Virgin Islands': 'U.S. Virgin Is.',
+  'Turks and Caicos Islands': 'Turks and Caicos Is.',
+  'Faroe Islands': 'Faeroe Is.',
+  'Falkland Islands': 'Falkland Is.',
+  'Solomon Islands': 'Solomon Is.',
+  'Marshall Islands': 'Marshall Is.',
+  'Cook Islands': 'Cook Is.',
+  'Northern Mariana Islands': 'N. Mariana Is.',
+  'French Polynesia': 'Fr. Polynesia',
+  'Saint Pierre and Miquelon': 'St. Pierre and Miquelon',
+  'Wallis and Futuna': 'Wallis and Futuna Is.',
+  'Saint Barthélemy': 'St-Barthélemy',
+  'Saint Martin': 'St-Martin',
+  'Western Sahara (disputed territory)': 'W. Sahara',
+  'Saint Helena, Ascension and Tristan da Cunha': 'Saint Helena',
 };
+
+/** A country name as the world atlas spells it. */
+export function atlasCountry(name: string): string {
+  const c = name.trim();
+  return COUNTRY_NAME_MAP[c] ?? c;
+}

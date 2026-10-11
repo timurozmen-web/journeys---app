@@ -1,6 +1,6 @@
-import { describe, expect, test } from 'vitest';
-import { averageOverall, nightsByCountry, nightsByYear, shareOfWorld, travellingSince, tripsTaken } from './logbook';
-import { makeHotel, makeTrip } from '../test/fixtures';
+import { describe, expect, it, test } from 'vitest';
+import { averageOverall, nightsByCountry, nightsByYear, shareOfWorld, travellingSince, tripsTaken, visitedCountries } from './logbook';
+import { makeFlight, makeHotel, makeTrip } from '../test/fixtures';
 import type { Review } from '../types';
 
 const stays = [
@@ -59,5 +59,35 @@ describe('averageOverall', () => {
   test('averages overall ratings only', () => {
     expect(averageOverall([r(8), r(10), r(2, 'food')])).toEqual({ avg: 9, count: 2 });
     expect(averageOverall([])).toEqual({ avg: null, count: 0 });
+  });
+});
+
+describe('visitedCountries', () => {
+  const where: Record<string, string> = { SAN: 'United States', LIM: 'Peru', AUH: 'United Arab Emirates', BKK: 'Thailand', IST: 'Turkey', SIN: 'Singapore', KUL: 'Malaysia', LHR: 'United Kingdom' };
+  const countryOf = (c: string) => where[c] ?? null;
+
+  it('scratches off a country reached only by flight (San Diego, Lima)', () => {
+    const flights = [
+      makeFlight({ id: 'a', date: '2023-06-12', from: 'LHR', to: 'SAN' }),
+      makeFlight({ id: 'b', date: '2024-10-10', from: 'LHR', to: 'LIM' }),
+    ];
+    expect([...visitedCountries([], flights, countryOf)].sort()).toEqual(['Peru', 'United States of America']);
+  });
+
+  it("doesn't count changing planes as a visit", () => {
+    const flights = [
+      makeFlight({ id: 'a', date: '2025-07-23', from: 'IST', to: 'AUH' }),
+      makeFlight({ id: 'b', date: '2025-07-23', from: 'AUH', to: 'BKK' }),
+      // An overnight flight lands the next day; leaving that day is a connection too.
+      makeFlight({ id: 'c', date: '2026-05-03', from: 'LHR', to: 'SIN', overnight: true }),
+      makeFlight({ id: 'd', date: '2026-05-04', from: 'SIN', to: 'KUL' }),
+    ];
+    expect([...visitedCountries([], flights, countryOf)].sort()).toEqual(['Malaysia', 'Thailand']);
+  });
+
+  it('counts stays, skips flights not yet taken, and spells countries as the atlas does', () => {
+    const hotels = [makeHotel({ country: 'United States', status: 'Completed' }), makeHotel({ id: 'b', country: 'Japan', status: 'Booked' })];
+    const flights = [makeFlight({ id: 'x', to: 'LIM', status: 'Booked' })];
+    expect([...visitedCountries(hotels, flights, countryOf)]).toEqual(['United States of America']);
   });
 });

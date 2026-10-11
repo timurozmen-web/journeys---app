@@ -117,7 +117,7 @@ textarea.input{resize:vertical;line-height:1.45}
 .glass{display:block;font:inherit;border-radius:var(--r-lg);background:var(--card);border:1px solid var(--line)}
 
 /* Profile logbook. */
-.lb-head{display:flex;align-items:center;gap:12px;padding:calc(var(--safe-top) + 14px) 20px 0}
+.lb-head{display:flex;align-items:center;gap:12px;padding:calc(var(--safe-top) + var(--s4)) 20px 0}
 .lb-avatar{width:48px;height:48px;border-radius:50%;border:1.5px solid var(--brand);display:grid;place-items:center;
   font-size:var(--fs-title);font-weight:300;color:var(--brand);flex-shrink:0}
 .lb-iconbtn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--ink);
@@ -333,10 +333,10 @@ input[type=date].input.inline-date:focus{border-color:var(--brand2)}
 .start-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.25) 0%,rgba(0,0,0,0) 35%,rgba(0,0,0,.65) 100%)}
 .start-half.travel .start-scrim{background:linear-gradient(180deg,rgba(0,0,0,.45) 0%,rgba(0,0,0,0) 40%,rgba(0,0,0,.6) 100%)}
 .start-text{position:absolute;left:24px;right:24px;bottom:26px;display:grid;gap:6px;text-shadow:var(--text-on-photo-shadow)}
-.start-half.travel .start-text{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 34px)}
+.start-half.travel .start-text{bottom:auto;top:calc(var(--safe-top) + var(--s5))}
 .start-title{font-size:52px;line-height:1;letter-spacing:-.04em;font-weight:700}
-.start-title.travel{font-family:'Space Mono',ui-monospace,monospace}
-.start-title.loyalty{font-family:var(--font-body);letter-spacing:-.05em}
+.start-title.travel{font-family:var(--font-display)}
+.start-title.loyalty{font-family:var(--font-display)}
 .start-desc{font-size:var(--fs-body-lg);font-weight:500;max-width:30ch}
 .start-live{justify-self:start;margin-top:6px;padding:5px 12px;border-radius:var(--r-pill);background:rgba(255,255,255,.92);color:#121212;
   font-size:var(--fs-small);font-weight:600;text-shadow:none}
@@ -567,3 +567,25 @@ input[type=date].input.inline-date:focus{border-color:var(--brand2)}
 .plan-row{display:flex;justify-content:space-between;gap:8px;font-size:var(--fs-small);color:var(--ink2)}
 .plan-row b{color:var(--ink);font-family:var(--font-display)}
 .plan-row.strong{padding-top:8px;border-top:1px solid var(--line);font-weight:700;color:var(--ink)}
+
+/* Now: the open card at the end of the timeline, inviting the next trip. */
+.tl-next{position:relative;display:grid;gap:10px;padding:16px 14px 14px;border:1.5px dashed var(--ink);border-radius:var(--r-md);
+  background:var(--card);overflow:hidden}
+.tl-next-route{position:absolute;right:12px;top:12px;width:84px;height:28px}
+.tl-next-plane{position:absolute;right:6px;top:22px;transform:rotate(30deg)}
+.tl-next-title{font-family:var(--font-display);font-weight:700;font-size:var(--fs-heading);letter-spacing:-.04em;line-height:1.1;padding-right:92px}
+.tl-next-actions{display:flex;gap:8px;flex-wrap:wrap}
+.tl-dot.open{border-style:dashed;border-color:var(--ink)}
+
+/* ---- Type: one system everywhere ----
+   Space Mono (--font-display, bold) for screen titles, trip and programme
+   names, section labels and every headline figure; Archivo (--font-body)
+   for everything else. Now and Then had drifted apart: Then's logbook
+   figures were light Archivo, its labels a wider-tracked eyebrow, and a
+   trip's name was typewriter on Now's cards but not in its rows. Set once
+   here so every screen reads the same. */
+.sectionlabel,.nf-eyebrow,.lh-section,.lh-label,.ph-eyebrow,.dd-lab{font-family:var(--font-display);font-size:var(--fs-caption);
+  font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.figure,.lb-num,.lh-big,.lh-ring-num,.ring-big,.tile .val,.hero .tier,.hero .bignum,.wtotal .val,.chartwrap .big,.datestack .ds-day{
+  font-family:var(--font-display);font-weight:700;letter-spacing:-.04em}
+.tl-title,.tl-tonight .n{font-family:var(--font-display);font-weight:700;letter-spacing:-.02em}

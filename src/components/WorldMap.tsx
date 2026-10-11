@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect, useId } from 'react';
 import { geoNaturalEarth1, geoPath } from 'd3-geo';
 import { worldGeo } from '../data/worldGeo';
-import { COUNTRY_NAME_MAP } from '../data/airports';
+import { atlasCountry } from '../data/airports';
 import { flightLegs, projectLegs } from '../lib/flightPath';
 import { useGlobalAirports } from '../lib/useGlobalAirports';
 import { MapBackdrop, RouteLayer, type DrawnLeg } from './MapLayers';
@@ -23,18 +23,18 @@ const countryPaths: { name: string; d: string; centroid: [number, number]; bound
   }))
   .filter((c: { d: string }) => c.d);
 
-function normalizeCountry(c: string) {
-  return COUNTRY_NAME_MAP[c] ?? c;
-}
+const normalizeCountry = atlasCountry;
 function project(lat: number, lng: number): [number, number] | null {
   const p = projection([lng, lat]);
   return p as [number, number] | null;
 }
 
 export function WorldMap({
-  hotels, flights, reviews, focusCountries, scratch = false, caption,
+  hotels, flights, reviews, focusCountries, scratch = false, caption, visited,
 }: {
   hotels: Hotel[]; flights: Flight[]; reviews: Review[]; focusCountries?: string[] | null;
+  /** Every country reached (atlas names), stays or not: scratched off too. */
+  visited?: Set<string>;
   /** Shown over the map only at full size with nothing selected, so it never sits under a country's card. */
   caption?: React.ReactNode;
   /** Draw visited countries scratched off (Then) rather than shaded by nights. */
@@ -160,7 +160,7 @@ export function WorldMap({
   function selectCountry(name: string) {
     if (wasDragged.current) { wasDragged.current = false; return; } // a drag just ended here, not a tap
     const nights = nightsByCountry.get(name);
-    if (!nights) return; // only countries actually visited are interactive
+    if (!nights && !visited?.has(name)) return; // only countries actually visited are interactive
     setSelected(name === selected ? null : name);
     if (name !== selected) {
       const country = countryPaths.find((c) => c.name === name);
@@ -205,9 +205,10 @@ export function WorldMap({
               countries={countryPaths.map((c) => {
                 const nights = nightsByCountry.get(c.name);
                 const isSelected = selected === c.name;
+                const reached = !!nights || !!visited?.has(c.name);
                 return {
                   key: c.name, d: c.d,
-                  fill: nights ? (scratch ? `url(#${scratchId})` : shadeFor(nights, maxNights)) : undefined,
+                  fill: scratch ? (reached ? `url(#${scratchId})` : undefined) : nights ? shadeFor(nights, maxNights) : undefined,
                   stroke: isSelected ? MAP.text : MAP.landBorder, strokeWidth: isSelected ? 1.2 / zoom : 0.4 / zoom,
                   onClick: () => selectCountry(c.name),
                 };
@@ -234,7 +235,7 @@ export function WorldMap({
               <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--ink3)', cursor: 'pointer', fontSize: 'var(--fs-body)', padding: 0, lineHeight: 1 }}>✕</button>
             </div>
             <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--brand)', fontWeight: 700, marginTop: 2 }}>
-              {selectedDetail.nights} nights · {selectedDetail.stayCount} stay{selectedDetail.stayCount === 1 ? '' : 's'}
+              {selectedDetail.nights > 0 ? `${selectedDetail.nights} nights · ${selectedDetail.stayCount} stay${selectedDetail.stayCount === 1 ? '' : 's'}` : 'Flew in'}
             </div>
             {selectedDetail.topPlaces.length > 0 ? (
               <div style={{ marginTop: 6, display: 'grid', gap: 3 }}>

@@ -49,12 +49,18 @@ Run all three; all must be clean:
   Mono, a modern typewriter face; other text is Archivo. Every control
   follows it: ink-outlined, square-cornered Space Mono tags (`.maptag`,
   `.tagbtn`, `.mapbtn`, and the `:root` control overrides in
-  components.css).
+  components.css). Type is one system (the block at the end of
+  components.css): Space Mono bold for titles, trip and programme
+  names, section labels (`SectionLabel`, never a hand-styled uppercase
+  div) and every headline figure (`.figure`); Archivo for the rest.
   - **Travel** (`/now`, `/then`, trips, Plan). Tab bar:
     "Now" and "Then" either side of +, which offers Add and Plan. Now (`Trips.tsx`, `src/lib/tripTimeline.ts`) is trips
-    under way, the today line with tonight's stay, and what's coming.
-    Then (`Profile.tsx`) is the past: a scratch-off world map, a
-    polaroid scrapbook by year, ratings to do and the logbook.
+    under way, the today line with tonight's stay, and what's coming,
+    ending in a "Where next?" card (add or plan a trip).
+    Then (`Profile.tsx`) is the past: a scratch-off world map (every
+    country stayed in or flown to, connections excluded:
+    `visitedCountries` in `src/lib/logbook.ts`), a polaroid scrapbook
+    by year, ratings to do and the logbook.
   - **Loyalty** (`/loyalty`, `/wallet`, Discover, Credit, bank sync).
     Tab bar: Home and Wallet icons either side of +, which
     offers Discover and Credit. Home (`LoyaltyHome`) shows wallet value
@@ -70,6 +76,10 @@ Run all three; all must be clean:
   `--safe-top` (the safe area plus 12px, as iOS blurs a little below
   it; home screens use `.topspace`, others `.head`), and
   `StatusBarCover` fills it, fading at its foot, once the page scrolls.
+  Every screen's first row is the same distance below it (`--safe-top`
+  then `--s4`: `.homehead` on home screens, `.head`, `.tdback`).
+  Destination photos are the first Unsplash result with no people in
+  it (`pickPlacePhoto`); none means the drawn scene.
   Wallet cards take
   each programme's own brand colour (`src/lib/cardTheme.ts`); map
   colours live in `src/data/mapTheme.ts` because Leaflet and SVG
@@ -93,6 +103,9 @@ Run all three; all must be clean:
   'subscription'` (ALL Accor+ Explorer: 30 status nights each
   membership year, sourced) has its own Memberships section in the
   wallet, never the carousel or Archived, and no fee or earning.
+- **Spent things archive.** Closed cards and promotions that have ended,
+  been used or been applied (`promoArchiveReason`) move to an Archived
+  list of compact swipe-to-delete rows that open in place.
 - **Status rings** (`src/lib/statusRing.ts`, `StatusRing`): one tick
   per night toward the next tier, coloured by source (`nightSegments`:
   stays, cards, membership, promos, to come) from
@@ -129,6 +142,9 @@ Run all three; all must be clean:
 - Screens read through hooks in `src/lib/useLiveData.ts` (cache, then
   Supabase, then mock fallback). Each `useLive` call needs an explicit
   string cache key, not `fetcher.name`, which production builds minify.
+- Loading tidies two things (`src/lib/tripFold.ts`): a stay logged twice
+  (same hotel, same check-in) counts once, and an empty trip inside
+  another trip of the same name is folded into it.
 - All Supabase reads and writes are in `src/lib/queries.ts`. Writes made
   offline go through `src/lib/offlineQueue.ts`.
 - Stays are read through `canonicalStay` (`src/lib/stayNormalise.ts`):

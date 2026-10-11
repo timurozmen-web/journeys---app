@@ -25,7 +25,7 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.error) {
       return (
-        <div style={{ padding: '40px 20px', fontFamily: 'system-ui, sans-serif', color: 'var(--ink, #F4F2EE)', background: 'var(--bg, #0B0D12)', minHeight: '100vh', boxSizing: 'border-box' }}>
+        <div style={{ padding: '40px 20px', fontFamily: 'var(--font-body)', color: 'var(--ink, #F4F2EE)', background: 'var(--bg, #0B0D12)', minHeight: '100vh', boxSizing: 'border-box' }}>
           <div style={{ fontSize: 'var(--fs-title)', fontWeight: 600, marginBottom: 12 }}>Something went wrong</div>
           <p style={{ fontSize: 'var(--fs-body-lg)', color: 'var(--ink2, #B3B0AA)', lineHeight: 1.5, marginBottom: 16 }}>
             The app hit an error and couldn't continue. The details below are safe to screenshot and share.

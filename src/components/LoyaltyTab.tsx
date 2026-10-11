@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useVouchers } from '../lib/useLiveData';
 import { deleteLoyaltyProgramme, setVoucherRedeemed, updateLoyaltyProgramme } from '../lib/queries';
 import { SwipeToDelete } from './SwipeToDelete';
-import { ErrorText } from './ui';
+import { ErrorText, SectionLabel } from './ui';
 import { computeStatusProgress, type StatusProgress } from '../lib/statusProgress';
 import { nightSegments, ringTicks, spendTicks } from '../lib/statusRing';
 import { StatusRing } from './StatusRing';
@@ -204,9 +204,7 @@ export function LoyaltyTab({
 
                 {progress && progress.bonusNights.length > 0 && (
                   <div>
-                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>
-                      Bonus nights
-                    </div>
+                    <SectionLabel style={{ marginBottom: 6 }}>Bonus nights</SectionLabel>
                     <div className="bonuslist">
                       {progress.bonusNights.map((b, idx) => (
                         <div key={`${b.from}-${idx}`} className={b.earned ? 'bonusrow' : 'bonusrow tocome'}>
@@ -221,9 +219,7 @@ export function LoyaltyTab({
 
                 {progress?.brandExplorer && (
                   <div>
-                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>
-                      Brand Explorer
-                    </div>
+                    <SectionLabel style={{ marginBottom: 6 }}>Brand Explorer</SectionLabel>
                     <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginBottom: 6 }}>
                       {progress.brandExplorer.completedCount} distinct brand{progress.brandExplorer.completedCount === 1 ? '' : 's'} stayed
                       {progress.brandExplorer.pendingCount > 0 && (
@@ -253,9 +249,7 @@ export function LoyaltyTab({
 
                 {relevantVouchers.length > 0 && (
                   <div>
-                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>
-                      Vouchers
-                    </div>
+                    <SectionLabel style={{ marginBottom: 6 }}>Vouchers</SectionLabel>
                     <div style={{ display: 'grid', gap: 6 }}>
                       {relevantVouchers.map((v) => (
                         <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 'var(--r-xs)', background: 'var(--card2)' }}>
@@ -278,9 +272,7 @@ export function LoyaltyTab({
 
                 {brandInsight && (brandInsight.loyaltyValue > 0 || brandInsight.rateSavings > 0) && (
                   <div>
-                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>
-                      Value gained this year
-                    </div>
+                    <SectionLabel style={{ marginBottom: 6 }}>Value gained this year</SectionLabel>
                     <div style={{ display: 'grid', gap: 5 }}>
                       {brandInsight.benefitsByType.breakfast > 0 && <div className="dd-row"><span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)' }}>Free breakfast</span><span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>£{Math.round(brandInsight.benefitsByType.breakfast)}</span></div>}
                       {brandInsight.benefitsByType.upgrade > 0 && <div className="dd-row"><span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)' }}>Room upgrades</span><span style={{ fontSize: 'var(--fs-small)', fontWeight: 700 }}>£{Math.round(brandInsight.benefitsByType.upgrade)}</span></div>}

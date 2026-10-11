@@ -1,7 +1,9 @@
 // Totals for the Profile "logbook": what's actually been travelled, so
 // only completed stays and trips that have begun count -- a booked trip
 // next spring isn't in the logbook yet.
-import type { Hotel, Review, Trip } from '../types';
+import type { Flight, Hotel, Review, Trip } from '../types';
+import { atlasCountry } from '../data/airports';
+import { addDays } from './tripDay';
 
 export interface CountryNights { country: string; nights: number; stays: number }
 export interface YearNights { year: number; nights: number; countries: number }
@@ -34,6 +36,34 @@ export function nightsByYear(hotels: Hotel[]): YearNights[] {
     m.set(year, row);
   }
   return [...m.entries()].sort((a, b) => a[0] - b[0]).map(([year, r]) => ({ year, nights: r.nights, countries: r.countries.size }));
+}
+
+/**
+ * Every country actually reached, as the world atlas names them: each
+ * country stayed in, plus each country a completed flight landed in that
+ * wasn't only a connection. Flights to San Diego and Lima had no logged
+ * hotel, so the US and Peru were never scratched off though the routes
+ * were drawn. A connection is a stop (`via`) or an arrival airport the
+ * next flight leaves from on the day you landed, so changing planes in
+ * Abu Dhabi or Doha doesn't count as visiting.
+ */
+export function visitedCountries(
+  hotels: Hotel[], flights: Flight[], countryOfAirport: (iata: string) => string | null,
+): Set<string> {
+  const out = new Set<string>();
+  for (const h of completedStays(hotels)) {
+    if (h.country.trim()) out.add(atlasCountry(h.country));
+  }
+  const done = flights.filter((f) => f.status === 'Completed' && f.date && f.to);
+  for (const f of done) {
+    const arrives = f.overnight ? addDays(f.date!, 1) : f.date!;
+    const to = f.to.trim().toUpperCase();
+    const onward = done.some((g) => g !== f && g.from.trim().toUpperCase() === to && g.date === arrives);
+    if (onward) continue;
+    const country = countryOfAirport(to);
+    if (country) out.add(atlasCountry(country));
+  }
+  return out;
 }
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];

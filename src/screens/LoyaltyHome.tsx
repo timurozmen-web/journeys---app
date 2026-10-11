@@ -40,7 +40,7 @@ export function LoyaltyHome() {
   return (
     <div>
       <div className="topspace" />
-      <div style={{ padding: '20px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="homehead">
         <h1 className="h1" style={{ margin: 0 }}>Loyalty</h1>
         <div className="headtools">
           <SectionSwitch />

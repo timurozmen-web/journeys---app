@@ -13,8 +13,8 @@ import {
   buildTripTimeline, countdownLabel, emptyMonthsBetween, monthKey, monthLabel, tonightStay,
 } from '../lib/tripTimeline';
 import { SectionSwitch } from '../components/SectionSwitch';
-import { SettingsIcon } from '../components/Icons';
-import { EmptyState, ErrorText } from '../components/ui';
+import { PlaneIcon, SettingsIcon } from '../components/Icons';
+import { ErrorText } from '../components/ui';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -35,6 +35,25 @@ function TripPhoto({ trip, height }: { trip: Trip; height: number }) {
   return trip.heroImageUrl
     ? <img src={trip.heroImageUrl} alt="" style={{ width: '100%', height, objectFit: 'cover', display: 'block' }} />
     : <DestinationPhoto query={destinationQuery(trip)} seed={trip.id} height={height} />;
+}
+
+// The end of the line: an open invitation to the next trip, with the two
+// ways to start one right there rather than only behind the +.
+function NextTrip({ onAdd, onPlan }: { onAdd: () => void; onPlan: () => void }) {
+  return (
+    <div className="tl-next">
+      <svg className="tl-next-route" viewBox="0 0 120 40" aria-hidden="true">
+        <path d="M4 34 C 34 2, 78 2, 108 22" fill="none" stroke="var(--brand2)" strokeWidth="1.6" strokeDasharray="4 4" strokeLinecap="round" />
+        <circle cx="4" cy="34" r="3" fill="var(--ink)" />
+      </svg>
+      <span className="tl-next-plane" aria-hidden="true"><PlaneIcon size={18} color="var(--brand2)" /></span>
+      <span className="tl-next-title">Where next?</span>
+      <span className="tl-next-actions">
+        <button className="tagbtn on" onClick={onAdd}>Add a trip</button>
+        <button className="tagbtn" onClick={onPlan}>Plan one</button>
+      </span>
+    </div>
+  );
 }
 
 export function Trips() {
@@ -75,7 +94,7 @@ export function Trips() {
   return (
     <div>
       <div className="topspace" />
-      <div style={{ padding: '20px 20px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="homehead">
         <h1 className="h1" style={{ margin: 0 }}>Now</h1>
         <div className="headtools">
           <SectionSwitch />
@@ -83,8 +102,9 @@ export function Trips() {
         </div>
       </div>
       {error && <ErrorText style={{ padding: '0 20px 10px' }}>{error}</ErrorText>}
-      {trips.length > 0 && above.length === 0 && timeline.upcoming.length === 0 && !tonight && <EmptyState>Nothing booked.</EmptyState>}
-      {trips.length === 0 && <EmptyState>No trips yet.</EmptyState>}
+      {trips.length === 0 && (
+        <div style={{ padding: '0 20px' }}><NextTrip onAdd={() => navigate('/log-trip')} onPlan={() => navigate('/action/plan')} /></div>
+      )}
 
       {trips.length > 0 && (
         <div className="tl">
@@ -158,6 +178,12 @@ export function Trips() {
               </div>
             );
           })}
+
+          <div className="tl-row top">
+            <span />
+            <span className="tl-dot open" />
+            <NextTrip onAdd={() => navigate('/log-trip')} onPlan={() => navigate('/action/plan')} />
+          </div>
         </div>
       )}
     </div>

@@ -148,7 +148,7 @@ export function ReviewTrip() {
         <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, marginBottom: 16, textAlign: 'center' }}>
           {step + 1} of {categories.length}
         </div>
-        <div style={{ fontSize: 'var(--fs-heading)', fontWeight: 600, marginBottom: 28, textAlign: 'center', color: 'var(--brand)' }}>{category.label}</div>
+        <div className="figure" style={{ fontSize: 'var(--fs-heading)', marginBottom: 28, textAlign: 'center', color: 'var(--brand)' }}>{category.label}</div>
 
         {phase === 'sentiment' && (
           <div>
@@ -237,7 +237,7 @@ export function ReviewTrip() {
               <div style={{ fontSize: 'var(--fs-input)', color: 'var(--ink3)', fontWeight: 600 }}>Skipped</div>
             ) : (
               <>
-                <div style={{ fontSize: 'var(--fs-hero)', fontWeight: 600, color: 'var(--brand)' }}>{current.score!.toFixed(1)}</div>
+                <div className="figure" style={{ fontSize: 'var(--fs-hero)', color: 'var(--brand)' }}>{current.score!.toFixed(1)}</div>
                 <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink3)', marginTop: 4 }}>
                   {current.sameBand.length === 0 ? 'First rating in this category' : 'Ranked against your other stays'}
                 </div>

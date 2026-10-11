@@ -3,7 +3,7 @@ import { BrandLogo } from './BrandLogo';
 import { updateManualSpendAdjustment, updateCardClosedDate, updateCardOpenDate, deletePaymentCard } from '../lib/queries';
 import { SwipeToDelete } from './SwipeToDelete';
 import { useNavigate } from 'react-router-dom';
-import { Button, ErrorText } from './ui';
+import { Button, ErrorText, SectionLabel } from './ui';
 import { CardCarousel } from './CardCarousel';
 import type { CardResult } from '../lib/cardMath';
 import type { LoyaltyProgramme } from '../types';
@@ -414,18 +414,14 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
 
       {memberships.length > 0 && (
         <>
-          <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginTop: 18 }}>
-            Memberships
-          </div>
+          <SectionLabel style={{ marginTop: 18 }}>Memberships</SectionLabel>
           <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>{memberships.map(renderMembership)}</div>
         </>
       )}
 
       {archived.length > 0 && (
         <>
-          <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginTop: 10 }}>
-            Archived
-          </div>
+          <SectionLabel style={{ marginTop: 10 }}>Archived</SectionLabel>
           <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>{archived.map(renderArchived)}</div>
         </>
       )}
