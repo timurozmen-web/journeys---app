@@ -95,11 +95,9 @@ export function CitySearchInput({
         value={query}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
-        placeholder={selected.length > 0 ? 'Add another city…' : 'Search cities, or leave blank to let us suggest'}
-        style={{
-          background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 'var(--r-control)',
-          color: 'var(--ink)', fontSize: 'var(--fs-body)', padding: '10px 11px', width: '100%', outline: 'none', boxSizing: 'border-box',
-        }}
+        placeholder={selected.length > 0 ? 'Another city' : 'Cities (optional)'}
+        aria-label="Cities"
+        className="input"
       />
 
       {open && (cityMatches.length > 0 || landmarkMatches.length > 0) && (

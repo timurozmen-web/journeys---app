@@ -45,7 +45,7 @@ export function AddCard() {
     <div>
       <ScreenHeader title="Add a card" />
       <div style={{ padding: '6px 20px 30px', display: 'grid', gap: 10 }}>
-        {[...choices.map((c) => ({ id: c.id, label: c.id, sub: c.feeLabel, face: CARD_FACES[c.id] ?? DEFAULT_FACE })), { id: OTHER, label: 'Another card', sub: '', face: DEFAULT_FACE }].map((c) => (
+        {[...choices.map((c) => ({ id: c.id, label: c.id, sub: c.kind === 'subscription' ? 'Membership' : c.feeLabel, face: CARD_FACES[c.id] ?? DEFAULT_FACE })), { id: OTHER, label: 'Another card', sub: '', face: DEFAULT_FACE }].map((c) => (
           <button
             key={c.id} type="button" className={`optionrow${picked === c.id ? ' picked' : ''}`}
             onClick={() => setPicked(c.id)} aria-pressed={picked === c.id}
@@ -66,9 +66,9 @@ export function AddCard() {
                 <Field label="Annual fee (£)"><input className="input" type="number" min="0" step="1" inputMode="decimal" value={fee} onChange={(e) => setFee(e.target.value)} /></Field>
               </>
             )}
-            <Field label="Opened"><input className="input" type="date" value={openDate} onChange={(e) => setOpenDate(e.target.value)} /></Field>
+            <Field label={CARDS_STATIC.find((c) => c.id === picked)?.kind === 'subscription' ? 'Started' : 'Opened'}><input className="input" type="date" value={openDate} onChange={(e) => setOpenDate(e.target.value)} /></Field>
             {error && <ErrorText style={{ marginBottom: 10 }}>{error}</ErrorText>}
-            <Button block disabled={!ready || saving} onClick={save}>{saving ? 'Adding…' : 'Add card'}</Button>
+            <Button block disabled={!ready || saving} onClick={save}>{saving ? 'Adding…' : CARDS_STATIC.find((c) => c.id === picked)?.kind === 'subscription' ? 'Add membership' : 'Add card'}</Button>
           </div>
         )}
       </div>

@@ -117,7 +117,7 @@ textarea.input{resize:vertical;line-height:1.45}
 .glass{display:block;font:inherit;border-radius:var(--r-lg);background:var(--card);border:1px solid var(--line)}
 
 /* Profile logbook. */
-.lb-head{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top,0px) + 22px) 20px 0}
+.lb-head{display:flex;align-items:center;gap:12px;padding:calc(var(--safe-top) + 14px) 20px 0}
 .lb-avatar{width:48px;height:48px;border-radius:50%;border:1.5px solid var(--brand);display:grid;place-items:center;
   font-size:var(--fs-title);font-weight:300;color:var(--brand);flex-shrink:0}
 .lb-iconbtn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--ink);
@@ -340,7 +340,6 @@ input[type=date].input.inline-date:focus{border-color:var(--brand2)}
 .start-desc{font-size:var(--fs-body-lg);font-weight:500;max-width:30ch}
 .start-live{justify-self:start;margin-top:6px;padding:5px 12px;border-radius:var(--r-pill);background:rgba(255,255,255,.92);color:#121212;
   font-size:var(--fs-small);font-weight:600;text-shadow:none}
-html[data-mode="loyalty"] .tabs{background:var(--card2);border-color:var(--line)}
 /* Travel's tab bar: two words either side of the + */
 .tab.word{width:auto;min-width:72px;padding:0 10px;font-family:var(--font-display);font-weight:700;font-size:var(--fs-input);letter-spacing:-.02em}
 .tab.word .badge{top:4px;right:-2px}
@@ -372,7 +371,7 @@ html[data-mode="loyalty"] .tabs{background:var(--card2);border-color:var(--line)
 .lh-big{font-size:var(--fs-hero);font-weight:600;letter-spacing:-.04em;line-height:1.05}
 .lh-sub{font-size:var(--fs-small);color:var(--ink2)}
 .lh-section{font-size:var(--fs-caption);font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2);padding:24px 20px 10px}
-.lh-rings{display:flex;gap:10px;overflow-x:auto;padding:0 16px 4px;scrollbar-width:none;scroll-snap-type:x mandatory}
+.lh-rings{display:flex;gap:10px;overflow-x:auto;padding:0 16px 4px;scroll-padding-inline:16px;scrollbar-width:none;scroll-snap-type:x mandatory}
 .lh-rings::-webkit-scrollbar{display:none}
 .lh-ring{flex:0 0 132px;display:grid;justify-items:center;gap:4px;padding:14px 8px 12px;border-radius:var(--r-lg);border:1px solid var(--line);
   background:var(--card);color:var(--ink);font:inherit;cursor:pointer;scroll-snap-align:start;text-align:center}
@@ -396,7 +395,10 @@ html[data-mode="loyalty"] .tabs{background:var(--card2);border-color:var(--line)
 .destnote{display:flex;align-items:center;gap:8px;margin:6px 0 0;font-family:var(--font-display);font-weight:700;font-size:var(--fs-small);
   color:var(--brand)}
 .destnote::after{content:"";flex:1;border-top:1.5px dashed var(--line)}
-.statuscover{position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:58;opacity:0;
+/* Once the page scrolls, paper fills the status bar and fades out just
+   below it, so text passing underneath fades rather than being cut. */
+.statuscover{position:fixed;top:0;left:0;right:0;height:var(--safe-top);z-index:58;opacity:0;
+  background:linear-gradient(180deg,var(--bg) calc(100% - 12px),transparent);
   pointer-events:none;transition:opacity .15s ease}
 .statuscover.on{opacity:1}
 .map-caption{position:absolute;left:12px;bottom:10px;display:flex;flex-direction:column;gap:2px;pointer-events:none;
@@ -412,31 +414,34 @@ html[data-mode="loyalty"] .tabs{background:var(--card2);border-color:var(--line)
 .mapcard{position:absolute;left:10px;right:10px;bottom:10px;background:var(--card);border:1.5px solid var(--ink);border-radius:6px;
   padding:10px 12px;box-shadow:var(--shadow-raised)}
 .mapcard-title{font-family:var(--font-display);font-weight:700;font-size:var(--fs-body);color:var(--ink)}
-html[data-mode="travel"] .segmented{border:1.5px solid var(--ink);border-radius:8px;background:var(--card)}
-html[data-mode="travel"] .segmented button{font-family:var(--font-display);border-radius:5px}
-html[data-mode="travel"] .segmented.dark button.on,html[data-mode="travel"] .segmented.brand button.on{background:var(--ink);color:var(--bg)}
-html[data-mode="travel"] .segmented.pills{border:0;background:none}
-html[data-mode="travel"] .segmented.pills button,html[data-mode="travel"] .catchip button{border:1.5px solid var(--ink);border-radius:6px;
+:root .segmented{border:1.5px solid var(--ink);border-radius:8px;background:var(--card)}
+:root .segmented button{font-family:var(--font-display);border-radius:5px}
+:root .segmented.dark button.on,:root .segmented.brand button.on{background:var(--ink);color:var(--bg)}
+:root .segmented.pills{border:0;background:none}
+:root .segmented.pills button,:root .catchip button{border:1.5px solid var(--ink);border-radius:6px;
   background:var(--card);color:var(--ink);font-family:var(--font-display);font-weight:700}
-html[data-mode="travel"] .segmented.pills button.on,html[data-mode="travel"] .catchip button.won{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-html[data-mode="travel"] .lb-iconbtn{border:1.5px solid var(--ink)}
-html[data-mode="travel"] .modeswitch{border:1.5px solid var(--ink);background:var(--card)}
-html[data-mode="travel"] .btn.secondary{border:1.5px solid var(--ink);font-family:var(--font-display)}
-html[data-mode="travel"] .input{border:1.5px solid var(--ink);border-radius:6px}
-html[data-mode="travel"] .field-label,html[data-mode="travel"] .sectionlabel{font-family:var(--font-display)}
+:root .segmented.pills button.on,:root .catchip button.won{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+:root .lb-iconbtn{border:1.5px solid var(--ink)}
+:root .modeswitch{border:1.5px solid var(--ink);background:var(--card)}
+:root .btn.secondary{border:1.5px solid var(--ink);font-family:var(--font-display)}
+:root .input{border:1.5px solid var(--ink);border-radius:6px}
+:root .field-label,:root .sectionlabel{font-family:var(--font-display)}
 
 /* ---- Cards carousel ----
-   Each slot is 80% of the rail and snaps to its centre; the padding lets
-   the first and last cards reach the middle too. Poses are set from JS as
-   the rail scrolls (CardCarousel). */
+   Card faces stood round a ring seen from a little above: the lead card at
+   the front, the rest behind it, smaller, higher and paler (--shade fades
+   each one into the page). Positions are set per frame from
+   src/lib/cardCarousel.ts; the stage only sets the size. pan-y leaves
+   vertical scrolling to the page while a sideways drag turns the ring. */
 .carousel{display:grid;gap:12px}
-.carousel-rail{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;
-  padding:10px 10% 14px;scrollbar-width:none;outline:none}
-.carousel-rail::-webkit-scrollbar{display:none}
-.carousel-rail:focus-visible{box-shadow:inset 0 0 0 2px var(--brand2);border-radius:var(--r-lg)}
-.carousel-slot{position:relative;flex:0 0 80%;scroll-snap-align:center;scroll-snap-stop:always;transform-origin:center;will-change:transform,opacity;cursor:pointer}
-.carousel-slot.lead{cursor:default}
-.carousel-slot .walletcard{box-shadow:0 14px 28px -12px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.12)}
+.carousel-stage{position:relative;width:100%;aspect-ratio:100/62;perspective:1100px;touch-action:pan-y;user-select:none;-webkit-user-select:none;outline:none}
+.carousel-stage:not(.ring){aspect-ratio:100/48}
+.carousel-stage:focus-visible{box-shadow:inset 0 0 0 2px var(--brand2);border-radius:var(--r-lg)}
+.carousel-slot{position:absolute;left:17%;width:66%;bottom:7%;transform-origin:50% 60%;will-change:transform;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.carousel-stage:not(.ring) .carousel-slot{left:8%;width:84%;bottom:8%}
+.carousel-slot.lead{cursor:grab}
+.carousel-slot::after{content:'';position:absolute;inset:0;border-radius:var(--r-lg);background:var(--bg);opacity:var(--shade,0);pointer-events:none}
+.carousel-slot .walletcard{box-shadow:0 14px 28px -12px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.12)}
 .carousel-dots{display:flex;justify-content:center;gap:6px}
 .carousel-dots button{width:6px;height:6px;padding:0;border:0;border-radius:3px;background:var(--line);cursor:pointer;transition:width .25s ease,background .25s ease}
 .carousel-dots button.on{width:18px;background:var(--ink)}
@@ -446,3 +451,119 @@ html[data-mode="travel"] .field-label,html[data-mode="travel"] .sectionlabel{fon
 @media (prefers-reduced-motion: reduce){.leaddetail{animation:none}.carousel-dots button{transition:none}}
 .removecard{background:none;border:0;padding:0;font:inherit;font-size:var(--fs-small);font-weight:700;color:var(--ink3);cursor:pointer}
 .removecard.confirm{color:var(--red)}
+
+/* Bonus nights under a programme's ring: one row per card, membership or
+   promotion, in its ring colour; still to come is hollow and quieter. */
+.bonuslist{display:grid;gap:6px}
+.bonusrow{display:flex;align-items:center;gap:8px;font-size:var(--fs-small);color:var(--ink2)}
+.bonusrow .sw{width:9px;height:9px;border-radius:2px;flex-shrink:0;border:1.5px solid transparent}
+.bonusrow .what{min-width:0;flex:1}
+.bonusrow .n{font-weight:700;color:var(--ink);flex-shrink:0}
+.bonusrow.tocome{color:var(--ink3)}
+.bonusrow.tocome .sw{border-color:var(--pending)}
+.bonusrow.tocome .n{color:var(--ink3);font-weight:600}
+.membernights{flex-shrink:0;text-align:right;font-size:var(--fs-caption);color:var(--ink3);line-height:1.15}
+.membernights b{display:block;font-family:var(--font-display);font-size:var(--fs-title);color:var(--ink)}
+
+/* ---- Plan a trip ----
+   One form card, then (before a plan) each destination at a glance, then
+   (after) a summary card with Save, the map, the route as stop cards with
+   the hops between, the best place to stay and the cost. Extras fold away
+   under "Search options", "Other programmes" and "Cash or points". */
+.plan{padding:0 16px 28px;display:grid;gap:12px}
+.plan-results{display:grid;gap:12px}
+.plan-card{background:var(--card);border:1.5px solid var(--ink);border-radius:8px;padding:14px;display:grid;gap:12px}
+.plan-dest{display:grid;gap:8px}
+.plan-dest + .plan-dest{padding-top:12px;border-top:1px solid var(--line)}
+.plan-dest-row{display:flex;gap:8px;align-items:stretch}
+.plan-dest-row .input{flex:1;min-width:0}
+.plan-x{width:36px;flex-shrink:0;border:1.5px solid var(--ink);border-radius:6px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit}
+.stepper{display:flex;align-items:center;flex-shrink:0;border:1.5px solid var(--ink);border-radius:6px;background:var(--card)}
+.stepper button{width:32px;align-self:stretch;border:0;background:none;padding:0;cursor:pointer;color:var(--ink);
+  font-family:var(--font-display);font-size:var(--fs-title);font-weight:700}
+.stepper span{min-width:40px;text-align:center;line-height:1.05}
+.stepper b{display:block;font-family:var(--font-display);font-size:var(--fs-body-lg)}
+.stepper small{display:block;font-size:var(--fs-micro);color:var(--ink3);font-weight:600}
+.plan-when{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.plan-field{display:grid;gap:4px;min-width:0}
+.plan-field .input{min-width:0;width:100%}
+.plan-leave{font-size:var(--fs-small);color:var(--ink2);margin-top:-4px}
+.plan-leave b{color:var(--brand)}
+.glance{gap:10px}
+.glance-title{font-family:var(--font-display);font-weight:700;font-size:var(--fs-body-lg)}
+.glance-sum{font-size:var(--fs-small);color:var(--ink2);margin-top:-6px}
+.glance-note{font-size:var(--fs-caption);color:var(--ink3)}
+.wx{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:var(--fs-small);color:var(--ink2);align-items:center}
+.wx span{display:inline-flex;align-items:center;gap:4px}
+.wx svg{color:var(--ink3)}
+.wx b{color:var(--ink);font-weight:700}
+.flags{display:flex;flex-wrap:wrap;gap:6px}
+.flag{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:5px;font-size:var(--fs-caption);font-weight:700}
+.flag.plain{background:var(--card2);color:var(--ink2);font-weight:600}
+.seasonstrip{display:grid;grid-template-columns:repeat(12,1fr);gap:3px}
+.seasonstrip i{height:16px;border-radius:3px}
+.seasonstrip i.now{outline:2px solid var(--ink);outline-offset:1px}
+.seasonstrip-labels{display:grid;grid-template-columns:repeat(12,1fr);margin-top:3px;font-size:var(--fs-micro);color:var(--ink3);text-align:center}
+.plan-sum{gap:10px}
+.plan-sum-title{font-family:var(--font-display);font-weight:700;font-size:var(--fs-heading);letter-spacing:-.03em;line-height:1.15}
+.plan-sum-dates{font-size:var(--fs-small);color:var(--ink2);margin-top:-6px}
+.plan-stats{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:10px 0}
+.plan-stats div{text-align:center}
+.plan-stats div + div{border-left:1px solid var(--line)}
+.plan-stats b{display:block;font-family:var(--font-display);font-size:var(--fs-h1);line-height:1.1}
+.plan-stats span{font-size:var(--fs-caption);color:var(--ink3)}
+.plan-tags{display:flex;flex-wrap:wrap;gap:6px}
+.route{display:grid;position:relative}
+.stopcard{display:grid;grid-template-columns:auto 30px minmax(0,1fr);align-items:start;gap:8px;padding:12px 12px 12px 4px;
+  background:var(--card);border:1.5px solid var(--ink);border-radius:8px;transition:opacity .15s}
+.stopcard.dragging{opacity:.4}
+.stopcard.target{border-color:var(--brand2);box-shadow:0 0 0 2px var(--brand2)}
+.stopcard-grip{background:none;border:0;padding:4px 2px;cursor:grab;touch-action:none;display:grid;place-items:center;margin-top:4px}
+.stopcard-badge{width:30px;height:30px;border-radius:6px;background:var(--ink);color:var(--bg);display:grid;place-items:center;
+  font-family:var(--font-display);font-weight:700;font-size:var(--fs-body)}
+.stopcard-main{display:grid;gap:6px;min-width:0}
+.stopcard-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.stopcard-city{font-family:var(--font-display);font-weight:700;font-size:var(--fs-title);letter-spacing:-.02em;line-height:1.2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stopcard .moons{flex-shrink:0;align-items:center}
+.stopcard .moons small{font-size:var(--fs-micro);font-weight:700;margin-left:2px}
+.stopcard-sub{font-size:var(--fs-small);color:var(--ink2);margin-top:-4px}
+.stopcard-why{font-size:var(--fs-small);color:var(--ink3);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.plan-link{display:inline-flex;align-items:center;gap:4px;justify-self:start;color:var(--brand);font-size:var(--fs-caption);font-weight:700;text-decoration:none;
+  font-family:var(--font-display)}
+.routeleg{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 22px;margin-left:18px;border-left:1.5px dashed var(--brand2);
+  font-size:var(--fs-small);color:var(--ink2)}
+.routeleg.intl{margin:0;border:1.5px solid var(--ink);border-radius:8px;background:var(--card);padding:10px 12px}
+.route > .routeleg.intl:first-child{margin-bottom:10px}
+.route > .routeleg.intl:last-child{margin-top:10px}
+.routeleg-icon{display:grid;place-items:center;color:var(--ink)}
+.routeleg-text{flex:1;min-width:0}
+.routeleg-text b{color:var(--ink);font-family:var(--font-display)}
+.plan-more{border:1.5px solid var(--ink);border-radius:8px;background:var(--card)}
+.plan-more summary{list-style:none;cursor:pointer;padding:11px 14px;font-family:var(--font-display);font-weight:700;font-size:var(--fs-small);
+  display:flex;justify-content:space-between;align-items:center}
+.plan-more summary::-webkit-details-marker{display:none}
+.plan-more summary::after{content:'+';font-size:var(--fs-title);line-height:1}
+.plan-more[open] summary::after{content:'−'}
+.plan-more > div{padding:0 14px 14px}
+.plan-options{display:grid;gap:8px}
+.staybest{gap:10px}
+.staybest-head{display:flex;align-items:center;gap:12px}
+.staybest-name{font-weight:700;font-size:var(--fs-body-lg)}
+.staybest-sub{font-size:var(--fs-caption);color:var(--ink3);margin-top:2px}
+.staybest-rate{text-align:right;flex-shrink:0}
+.staybest-rate b{display:block;font-family:var(--font-display);font-size:var(--fs-title)}
+.staybest-rate span{font-size:var(--fs-caption);color:var(--ink3)}
+.staybest-back{font-size:var(--fs-small);color:var(--ink2)}
+.stayothers{display:grid;gap:10px}
+.stayother{display:flex;align-items:center;gap:10px;font-size:var(--fs-small)}
+.stayother b{display:block;font-weight:700}
+.stayother small{display:block;color:var(--ink3);font-size:var(--fs-caption)}
+.stayother-rate{font-family:var(--font-display);font-weight:700}
+.cashpts{display:grid;gap:10px}
+.cashpts-tier{display:flex;justify-content:space-between;font-size:var(--fs-small)}
+.cashpts-tier b{font-family:var(--font-display)}
+.cashpts-pts{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:var(--fs-caption);color:var(--ink3);margin-top:3px}
+.plan-costs{gap:9px}
+.plan-row{display:flex;justify-content:space-between;gap:8px;font-size:var(--fs-small);color:var(--ink2)}
+.plan-row b{color:var(--ink);font-family:var(--font-display)}
+.plan-row.strong{padding-top:8px;border-top:1px solid var(--line);font-weight:700;color:var(--ink)}

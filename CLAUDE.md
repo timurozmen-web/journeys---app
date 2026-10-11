@@ -42,21 +42,21 @@ Run all three; all must be clean:
   `SectionSwitch` (two icons) switches, beside the gear on each home
   screen and in Settings. Every route belongs to one
   section (`modeForPath`); shared screens keep the current one. The
-  section is set on `<html data-mode>`, which switches the theme.
-  - **Travel** (`/now`, `/then`, trips, Plan): the Paper theme.
-    Off-white ground (`--bg`), black text, orange as the single accent
-    (`--brand` for text, `--brand2` for fills). Headings, trip names and
-    map labels are Space Mono, a modern typewriter face; other text is
-    Archivo. Every control follows it: ink-outlined, square-cornered
-    Space Mono tags (`.maptag`, `.tagbtn`, `.mapbtn`, and the
-    `html[data-mode="travel"]` overrides in components.css). Tab bar:
+  section is set on `<html data-mode>` (tab bar and + menu read it).
+  Both sections use the one Paper theme: off-white ground (`--bg`),
+  black text, orange as the single accent (`--brand` for text,
+  `--brand2` for fills). Headings, trip names and map labels are Space
+  Mono, a modern typewriter face; other text is Archivo. Every control
+  follows it: ink-outlined, square-cornered Space Mono tags (`.maptag`,
+  `.tagbtn`, `.mapbtn`, and the `:root` control overrides in
+  components.css).
+  - **Travel** (`/now`, `/then`, trips, Plan). Tab bar:
     "Now" and "Then" either side of +, which offers Add and Plan. Now (`Trips.tsx`, `src/lib/tripTimeline.ts`) is trips
     under way, the today line with tonight's stay, and what's coming.
     Then (`Profile.tsx`) is the past: a scratch-off world map, a
     polaroid scrapbook by year, ratings to do and the logbook.
-  - **Loyalty** (`/loyalty`, `/wallet`, Discover, Credit, bank sync):
-    graphite theme (`html[data-mode="loyalty"]` in tokens.css), Archivo
-    throughout. Tab bar: Home and Wallet icons either side of +, which
+  - **Loyalty** (`/loyalty`, `/wallet`, Discover, Credit, bank sync).
+    Tab bar: Home and Wallet icons either side of +, which
     offers Discover and Credit. Home (`LoyaltyHome`) shows wallet value
     with its change on last month, a status ring per programme (no
     logos; tapping one opens that programme in Wallet) and "worth
@@ -66,8 +66,11 @@ Run all three; all must be clean:
   Anything on an orange fill uses `--on-brand` (white). Photos carry a
   dark scrim so white text on them stays readable; photos under 90px
   tall are drawn scenes instead, as the photographer credit would cover
-  them. The status bar is translucent, so `StatusBarCover` fills it
-  once the page scrolls. Wallet cards take
+  them. The status bar is translucent: every screen starts below
+  `--safe-top` (the safe area plus 12px, as iOS blurs a little below
+  it; home screens use `.topspace`, others `.head`), and
+  `StatusBarCover` fills it, fading at its foot, once the page scrolls.
+  Wallet cards take
   each programme's own brand colour (`src/lib/cardTheme.ts`); map
   colours live in `src/data/mapTheme.ts` because Leaflet and SVG
   attributes can't read CSS variables. Maps are drawn as a pencil
@@ -76,21 +79,44 @@ Run all three; all must be clean:
   badge in the airline's colour (`src/data/airlineBrand.ts`) or the
   hotel programme's colour (`src/lib/bookingBadge.ts`), then a plane and
   the flight number, or one moon per night.
-- **Cards are a carousel** (`CardCarousel`, `src/lib/cardCarousel.ts`):
-  faces in a horizontal rail that scroll-snaps each card to the centre;
-  neighbours are posed from their live distance (tilted, smaller,
-  dimmer) so it turns smoothly, and tapping one brings it forward. The
-  lead card's details sit below. Swiping sideways turns the carousel,
-  so an active card is removed with a two-tap button in its details;
-  archived cards stay as swipe-to-delete rows.
+- **Cards are a ring carousel** (`CardCarousel`, `src/lib/cardCarousel.ts`):
+  faces stood round a ring seen from slightly above, the lead card at
+  the front and the rest visible behind it (smaller, higher, paler).
+  A sideways drag turns the ring with the finger (`touch-action:
+  pan-y` keeps vertical scrolling); letting go hands it to a spring
+  that snaps the nearest card to the front like a magnet. Tapping a
+  card behind brings it forward the short way round; dots and arrow
+  keys too. Pose maths, snapping and the spring are pure functions with
+  tests. The lead card's details sit below; an active card is removed
+  with a two-tap button there; archived cards are swipe-to-delete rows.
+- **Memberships are not cards.** A catalogue entry with `kind:
+  'subscription'` (ALL Accor+ Explorer: 30 status nights each
+  membership year, sourced) has its own Memberships section in the
+  wallet, never the carousel or Archived, and no fee or earning.
 - **Status rings** (`src/lib/statusRing.ts`, `StatusRing`): one tick
-  per night toward the next tier, coloured by source (stays, card
-  nights, promotions, booked) from `computeStatusProgress().breakdown`;
-  swipe across for the spend requirement on the same kind of ring (the
-  Nights / Spend tabs stay put; only the rings slide).
+  per night toward the next tier, coloured by source (`nightSegments`:
+  stays, cards, membership, promos, to come) from
+  `computeStatusProgress().breakdown`; swipe across for the spend
+  requirement on the same kind of ring (the Nights / Spend tabs stay
+  put; only the rings slide).
+- **Nights: stays are stored, bonuses are added.** A programme's stored
+  `nights` are nights *stayed* this year as of its baseline date
+  (editable as "Nights stayed this year"). Card, membership and
+  promotion nights are never stored; `computeStatusProgress` adds each
+  from its source (`bonusNights`, listed under the ring), so a baseline
+  roll-forward must save `breakdown.stays`, not the total. Status
+  nights reset each calendar year: a baseline from last year counts for
+  nothing this year.
 - **No explanatory copy in the UI.** Labels, buttons, empty states and
   errors only. No intro paragraphs, how-it-works blurbs, confirmation
   banners or hint text unless it is needed to complete the task.
+- **Plan a trip** (`Plan.tsx`, helpers in `src/lib/planFormat.ts`): one
+  form card (destination, nights stepper, cities, from, leave date),
+  then each destination at a glance (weather icons, season and crowd
+  flags, year strip). After planning: a summary card with Save, the
+  map, the route as numbered stop cards with the hops between, the
+  best-value programme with its logo, and cost. Anything else folds
+  away under "Search options", "Other programmes" and "Cash or points".
 - **Fewest taps.** Lists delete by swipe-left then tapping Delete
   (`SwipeToDelete`, with `itemLabel`); values edit in place where they're
   shown; forms show only essentials with the rest under "More details",

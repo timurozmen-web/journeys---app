@@ -10,6 +10,19 @@ export interface RingSegment {
   colour: string; // a CSS colour, usually a token: 'var(--ink)'
 }
 
+// Where a programme's nights came from, in ring order: stays, then each
+// kind of bonus night, then everything still to come (booked stays, a
+// welcome bonus not yet met, a renewal later in the year).
+export function nightSegments(b: { stays: number; card: number; membership: number; promos: number; pending: number }): RingSegment[] {
+  return [
+    { key: 'stays', label: 'Stays', count: b.stays, colour: 'var(--ink)' },
+    { key: 'card', label: 'Cards', count: b.card, colour: 'var(--brand2)' },
+    { key: 'membership', label: 'Membership', count: b.membership, colour: 'var(--member)' },
+    { key: 'promos', label: 'Promos', count: b.promos, colour: 'var(--promo)' },
+    { key: 'pending', label: 'To come', count: b.pending, colour: 'var(--pending)' },
+  ];
+}
+
 /** One entry per tick: the segment it belongs to, or null for an empty tick. */
 export function ringTicks(total: number, segments: RingSegment[]): (RingSegment | null)[] {
   const n = Math.max(0, Math.round(total));

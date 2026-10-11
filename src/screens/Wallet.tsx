@@ -57,7 +57,7 @@ export function Wallet() {
 
   return (
     <div>
-      <div style={{ background: 'var(--bg)', height: 'env(safe-area-inset-top, 0px)' }} />
+      <div className="topspace" />
       <div style={{ padding: '20px 20px 18px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
           <div>

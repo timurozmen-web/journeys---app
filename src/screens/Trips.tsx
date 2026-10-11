@@ -74,7 +74,7 @@ export function Trips() {
 
   return (
     <div>
-      <div style={{ background: 'var(--bg)', height: 'env(safe-area-inset-top, 0px)' }} />
+      <div className="topspace" />
       <div style={{ padding: '20px 20px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h1 className="h1" style={{ margin: 0 }}>Now</h1>
         <div className="headtools">

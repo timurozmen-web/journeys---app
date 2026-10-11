@@ -182,7 +182,7 @@ function ConnectionCard({ connection, accounts, liveCardIds, customCards, onRefr
           <Field key={a.id} label={`${a.displayName}${a.last4 ? ` ····${a.last4}` : ''}`}>
             <select className="input" value={choice} disabled={busy} onChange={(e) => setChoices({ ...choices, [a.id]: e.target.value })}>
               <option value="">Not a rewards card</option>
-              {CARDS_STATIC.map((c) => <option key={c.id} value={c.id}>{c.id}</option>)}
+              {CARDS_STATIC.filter((c) => c.kind !== 'subscription').map((c) => <option key={c.id} value={c.id}>{c.id}</option>)}
               {customCards.map((c) => <option key={c.id} value={c.id}>{c.id}</option>)}
               <option value={NEW_CARD}>Add a new card…</option>
             </select>

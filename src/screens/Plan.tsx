@@ -1,14 +1,14 @@
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addDays } from '../lib/tripDay';
 import { calculateLeaveNeeded } from '../lib/annualLeave';
 import { blendedGuideForMonth, dominantMonth, PRICE_COLOR, PRICE_TINT, CROWD_COLOR, CROWD_TINT, MONTH_NAMES, type BlendedMonthGuide } from '../lib/destinationGuide';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
-import { PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon, TripsIcon, ThermometerIcon, DropletIcon, CloudRainIcon, TagIcon, UsersIcon } from '../components/Icons';
+import { PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon, ThermometerIcon, DropletIcon, CloudRainIcon, TagIcon, UsersIcon, MoonIcon } from '../components/Icons';
 import { googleFlightsSearchUrl, googleHotelsSearchUrl, brandHotelSearchUrl, ALLIANCE_LABELS, type StopsFilter, type CabinFilter, type AllianceFilter } from '../lib/externalSearchLinks';
 import { planningCountries, PLANNING_AIRPORTS_BY_IATA } from '../data/planningAirports';
 import { allPlanningCountries } from '../data/globalAirportsLoader';
-import { planLeg, STRONG_RAIL_COUNTRIES, estimateTravelHours, estimateOverheadHours, type LegPlan } from '../lib/tripPlanner';
+import { planLeg, STRONG_RAIL_COUNTRIES, estimateTravelHours, type LegPlan } from '../lib/tripPlanner';
 import { nearestAirportToCity, type NearestAirportResult } from '../data/worldCitiesLoader';
 import { planHotelOptions } from '../lib/hotelPlanner';
 import { useLoyaltyProgrammes, useAllHotels, useHomeLocation, useClimateData, useCrowdPriceData, usePointsValueData, useCityCashRates } from '../lib/useLiveData';
@@ -16,13 +16,17 @@ import { haversineKm } from '../lib/travelStats';
 import { addTrip, addHotel, addFlight, type PointsValueProgramme, type CityCashRate, type RealClimateMonth, type RealCrowdPriceMonth } from '../lib/queries';
 import { useCurrency } from '../lib/currency';
 import { getBudgetEstimate, type BudgetEstimate } from '../lib/budgetEstimate';
+import { civilianAirportName, formatHours, roundPointsEstimate, shortProgramme, stayRange } from '../lib/planFormat';
+import { formatShortRange } from '../lib/format';
 import { CitySearchInput } from '../components/CitySearchInput';
+import { BrandLogo } from '../components/BrandLogo';
 import type { WorldCity } from '../data/worldCitiesLoader';
-import { ErrorText, ScreenHeader } from '../components/ui';
+import { Button, ErrorText, ScreenHeader, SectionLabel } from '../components/ui';
 
 const PlanMap = lazyWithRetry(() => import('../components/PlanMap').then((m) => ({ default: m.PlanMap })));
 
 const HOME_AIRPORTS = ['LHR', 'LGW', 'STN', 'LTN', 'LCY'];
+const MONTH_LETTERS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 
 interface SuggestedCity {
   city: string;
@@ -34,11 +38,6 @@ interface SuggestedCity {
   nearestAirport: string | null;
 }
 
-interface SeasonalGuidance {
-  months: { month: string; priceLevel: 'low' | 'medium' | 'high'; note: string }[];
-  summary: string;
-}
-
 interface Destination {
   id: string;
   country: string;
@@ -46,171 +45,122 @@ interface Destination {
   cities: WorldCity[];
 }
 
-
-// Anything over an hour rounds to the nearest 15 minutes -- a formula
-// estimate has no business claiming false precision like "12h 46m";
-// under an hour, exact minutes are kept since that level of precision
-// is normal for a short local hop.
-// Several airports in the dataset are genuine dual-use civilian/military
-// fields (Komatsu, Nagoya-Komaki, etc.) named with a "/ JASDF ... Air
-// Base" or similar suffix -- accurate for an aviation reference, but
-// alarming and irrelevant to a traveller booking a real commercial
-// flight. Strips that back to the plain civilian name actually used for
-// booking and check-in.
-function civilianAirportName(name: string): string {
-  return name.split(' / ')[0];
-}
-
-// No hotel loyalty programme, dynamic or fixed-chart, actually prices a
-// night at an exact figure like 58,434 points -- Hyatt's real chart
-// values land on round 500-multiples (3,500, 6,500, 40,000, etc.) and
-// the dynamic programmes (Marriott, Hilton, IHG) round to similarly
-// clean numbers in practice. Snapping the estimate to the nearest 500
-// reads as a realistic figure instead of false formula precision.
-function roundPointsEstimate(points: number): number {
-  return Math.round(points / 500) * 500;
-}
-
-function formatHours(h: number): string {
-  const totalMins = h * 60;
-  const rounded = totalMins > 60 ? Math.round(totalMins / 15) * 15 : Math.round(totalMins);
-  const hours = Math.floor(rounded / 60);
-  const mins = rounded % 60;
-  return mins === 0 ? `${hours}h` : `${hours}h ${mins}m`;
-}
-
-function GuideTile({ icon, label, value, color, bg }: { icon: React.ReactNode; label: string; value: string; color?: string; bg?: string }) {
+// The weather for a stay on one line, each figure behind its icon:
+// highs and lows, humidity, rain.
+function WeatherLine({ blended }: { blended: BlendedMonthGuide }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: bg ?? 'var(--card2)', borderRadius: 'var(--r-control)', padding: '8px 10px' }}>
-      <span style={{ flexShrink: 0, color: color ?? 'var(--ink3)' }}>{icon}</span>
-      <div>
-        <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</div>
-        <div style={{ fontSize: 'var(--fs-input)', fontWeight: 600, color: color ?? 'var(--ink)', marginTop: 1 }}>{value}</div>
-      </div>
+    <div className="wx">
+      <span><ThermometerIcon size={14} /><b>{Math.round(blended.tempHigh)}°</b>/{Math.round(blended.tempLow)}°</span>
+      {blended.humidityPct != null && <span><DropletIcon size={14} /><b>{Math.round(blended.humidityPct)}%</b></span>}
+      <span><CloudRainIcon size={14} /><b>{blended.rainLabel}</b></span>
     </div>
   );
 }
 
-// The shared display for both guide locations in Plan a trip (the
-// destination row and the per-city results) -- six tiles at a glance
-// (temperature, humidity, rain as plain facts; season and crowds
-// colour-coded since those are judgement calls, not just numbers) plus
-// the specific real event driving the season/crowd rating, when there
-// is one.
-function GuideTileGrid({ blended, heading }: { blended: BlendedMonthGuide; heading?: string }) {
-  const priceLabel = blended.price === 'high' ? 'Peak' : blended.price === 'shoulder' ? 'Shoulder' : blended.price === 'low' ? 'Low' : '—';
-  const crowdLabel = blended.crowd ? blended.crowd[0].toUpperCase() + blended.crowd.slice(1) : '—';
+// Season and crowds, the two judgement calls, as coloured flags.
+function SeasonFlags({ blended }: { blended: BlendedMonthGuide }) {
+  const price = blended.price === 'high' ? 'Peak' : blended.price === 'shoulder' ? 'Shoulder' : blended.price === 'low' ? 'Low season' : null;
+  const crowd = blended.crowd ? `${blended.crowd[0].toUpperCase()}${blended.crowd.slice(1)} crowds` : null;
+  if (!price && !crowd) return null;
   return (
-    <div style={{ marginTop: 8 }}>
-      {heading && <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>{heading}</div>}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-        <GuideTile icon={<ThermometerIcon size={16} />} label="Avg high" value={`${Math.round(blended.tempHigh)}°C`} />
-        <GuideTile icon={<ThermometerIcon size={16} />} label="Avg low" value={`${Math.round(blended.tempLow)}°C`} />
-        <GuideTile icon={<DropletIcon size={16} />} label="Humidity" value={blended.humidityPct != null ? `${Math.round(blended.humidityPct)}%` : '—'} />
-        <GuideTile icon={<CloudRainIcon size={16} />} label="Rain" value={blended.rainLabel} />
-        <GuideTile icon={<TagIcon size={16} />} label="Season" value={priceLabel} color={blended.price ? PRICE_COLOR[blended.price] : undefined} bg={blended.price ? PRICE_TINT[blended.price] : undefined} />
-        <GuideTile icon={<UsersIcon size={16} />} label="Crowds" value={crowdLabel} color={blended.crowd ? CROWD_COLOR[blended.crowd] : undefined} bg={blended.crowd ? CROWD_TINT[blended.crowd] : undefined} />
-      </div>
-      {blended.crowdDriver && (
-        <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', marginTop: 6, lineHeight: 1.4 }}>
-          Watch out: {blended.crowdDriver}{blended.crowdDriverDates ? `, ${blended.crowdDriverDates}` : ''}
-        </div>
+    <div className="flags">
+      {price && blended.price && (
+        <span className="flag" style={{ color: PRICE_COLOR[blended.price], background: PRICE_TINT[blended.price] }}><TagIcon size={13} />{price}</span>
+      )}
+      {crowd && blended.crowd && (
+        <span className="flag" style={{ color: CROWD_COLOR[blended.crowd], background: CROWD_TINT[blended.crowd] }}><UsersIcon size={13} />{crowd}</span>
       )}
     </div>
   );
 }
 
-// Real cash rates for the destination, tier by tier, next to what that
-// same money is worth in points at the programmes actually researched
-// (Marriott, Hilton) -- lets a redemption be checked against what the
-// cash price would actually have been, not just the raw points number.
-function PointsValueCard({ country, city, rates, programmes }: { country: string; city: string | null; rates: CityCashRate[]; programmes: PointsValueProgramme[] }) {
-  const { format, fromUsd, currency, isLive } = useCurrency();
+// The whole year at once, coloured by season, with the month of the trip
+// (or this month, before a date is picked) outlined.
+function SeasonStrip({ country, city, climateData, crowdPriceData, highlightMonth }: {
+  country: string; city: string | null; climateData: RealClimateMonth[]; crowdPriceData: RealCrowdPriceMonth[]; highlightMonth: number;
+}) {
+  const months = Array.from({ length: 12 }, (_, i) => {
+    // A representative date within the month, just to drive the lookup:
+    // the strip shows the seasonal pattern, so the exact day doesn't matter.
+    const rep = `2026-${String(i + 1).padStart(2, '0')}-15`;
+    return blendedGuideForMonth(climateData, crowdPriceData, city, country, i, rep, rep);
+  });
+  if (months.every((m) => m === null)) return null;
+  return (
+    <div>
+      <div className="seasonstrip">
+        {months.map((m, i) => (
+          <i
+            key={i} className={i === highlightMonth ? 'now' : ''} title={`${MONTH_NAMES[i]}${m?.price ? `: ${m.price} season` : ''}`}
+            style={{ background: m?.price ? PRICE_COLOR[m.price] : 'var(--line)' }}
+          />
+        ))}
+      </div>
+      <div className="seasonstrip-labels" aria-hidden="true">{MONTH_LETTERS.map((l, i) => <span key={i}>{l}</span>)}</div>
+    </div>
+  );
+}
+
+// Real cash rates for a city, tier by tier, next to what that same money
+// is worth in points at each programme researched -- to check a
+// redemption against what the cash price would have been.
+function CashVsPoints({ country, city, rates, programmes }: { country: string; city: string | null; rates: CityCashRate[]; programmes: PointsValueProgramme[] }) {
+  const { format, fromUsd } = useCurrency();
   const cq = city?.trim().toLowerCase();
   const candidates = rates.filter((r) => r.country.toLowerCase() === country.toLowerCase() && (!cq || r.city.toLowerCase().includes(cq) || cq.includes(r.city.toLowerCase())));
   if (candidates.length === 0) return null;
-  // With no city chosen (or a loose match), several cities can match.
-  // Tiers must all come from ONE city -- previously each tier was taken
-  // from whichever row came first, so a card headed "Amalfi" could show
-  // Rome's mid-range and Venice's luxury price. Pick the city with the
-  // most complete tier set (then alphabetical, for a stable choice).
+  // Tiers must all come from ONE city -- each tier was once taken from
+  // whichever row came first, so a card headed "Amalfi" could show Rome's
+  // mid-range and Venice's luxury price. Pick the city with the most
+  // complete tier set (then alphabetical, for a stable choice).
   const byCity = new Map<string, CityCashRate[]>();
   for (const r of candidates) byCity.set(r.city, [...(byCity.get(r.city) ?? []), r]);
   const bestCity = [...byCity.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))[0][0];
   const matched = byCity.get(bestCity)!;
-  const tierOrder: Array<'budget' | 'mid' | 'luxury'> = ['budget', 'mid', 'luxury'];
-  const tierLabel = { budget: 'Budget', mid: 'Mid-range', luxury: 'Luxury' };
+  const tierLabel = { budget: 'Budget', mid: 'Mid-range', luxury: 'Luxury' } as const;
   const priorityOrder = ['Marriott Bonvoy', 'Hilton Honors', 'World of Hyatt', 'IHG One Rewards', 'Accor ALL'];
   const mainProgrammes = programmes
     .filter((p) => priorityOrder.includes(p.programme))
     .sort((a, b) => priorityOrder.indexOf(a.programme) - priorityOrder.indexOf(b.programme));
 
   return (
-    <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 'var(--r-sm)', background: 'var(--card2)' }}>
-      <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>{matched[0].city}: cash vs. points value</div>
-      <div style={{ display: 'grid', gap: 10 }}>
-        {tierOrder.map((tier) => {
+    <details className="plan-more">
+      <summary>Cash or points in {matched[0].city}</summary>
+      <div className="cashpts">
+        {(['budget', 'mid', 'luxury'] as const).map((tier) => {
           const rate = matched.find((r) => r.tier === tier);
           if (!rate) return null;
           const midCashUsd = (rate.priceLowUsd + rate.priceHighUsd) / 2;
           return (
             <div key={tier}>
-              <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, color: 'var(--ink)' }}>{tierLabel[tier]}: {rate.priceLowUsd === rate.priceHighUsd ? `~${format(fromUsd(rate.priceLowUsd))}` : `${format(fromUsd(rate.priceLowUsd))}–${format(fromUsd(rate.priceHighUsd))}`}/night</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginTop: 4 }}>
+              <div className="cashpts-tier">
+                <span>{tierLabel[tier]}</span>
+                <b>{rate.priceLowUsd === rate.priceHighUsd ? `~${format(fromUsd(rate.priceLowUsd))}` : `${format(fromUsd(rate.priceLowUsd))}–${format(fromUsd(rate.priceHighUsd))}`}</b>
+              </div>
+              <div className="cashpts-pts">
                 {mainProgrammes.map((p) => (
-                  <div key={p.programme} style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink2)' }}>
-                    {p.programme.replace('World of ', '').replace(' Bonvoy', '').replace(' Honors', '').replace(' One Rewards', '').replace(' ALL', '')}: {roundPointsEstimate(Math.round((midCashUsd * 100) / p.avgCentsPerPoint)).toLocaleString()} pts
-                  </div>
+                  <span key={p.programme}>{shortProgramme(p.programme)} {roundPointsEstimate(Math.round((midCashUsd * 100) / p.avgCentsPerPoint)).toLocaleString()}</span>
                 ))}
               </div>
             </div>
           );
         })}
       </div>
-      <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', marginTop: 8, lineHeight: 1.4 }}>
-        Based on estimated fair value.
-        {currency !== 'USD' && ` Converted at ${isLive ? 'live' : 'cached'} rates.`}
-      </div>
-    </div>
+    </details>
   );
 }
 
-// A whole-year overview shown the moment a destination is picked --
-// before any date is chosen, not gated behind it. Twelve segments,
-// colour-coded the same way as the season tile, with today's month
-// (or the month a date has actually been picked in) picked out
-// clearly so there's an obvious "you are here" reference point.
-function SeasonHeatmap({ country, city, climateData, crowdPriceData, highlightMonth }: {
-  country: string; city: string | null; climateData: RealClimateMonth[]; crowdPriceData: RealCrowdPriceMonth[]; highlightMonth: number;
-}) {
-  const months = Array.from({ length: 12 }, (_, i) => {
-    // A representative date within the month, just to drive the
-    // lookup -- the heatmap shows the general seasonal pattern, not a
-    // specific trip's holiday-proximity, so the exact day doesn't matter.
-    const rep = `2026-${String(i + 1).padStart(2, '0')}-15`;
-    return blendedGuideForMonth(climateData, crowdPriceData, city, country, i, rep, rep);
-  });
-  if (months.every((m) => m === null)) return null;
+function ModeIcon({ mode, size = 15 }: { mode: LegPlan['recommendedMode']; size?: number }) {
+  if (mode === 'flight') return <PlaneIcon size={size} color="currentColor" />;
+  if (mode === 'rail') return <TrainIcon size={size} color="currentColor" />;
+  return <CarIcon size={size} color="currentColor" />;
+}
+
+function SearchLink({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <div style={{ marginTop: 8 }}>
-      <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 4 }}>Season at a glance</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3 }}>
-        {months.map((m, i) => (
-          <div
-            key={i}
-            title={`${MONTH_NAMES[i]}${m ? `: ${m.price ?? 'unknown'} season` : ''}`}
-            style={{
-              height: 22, borderRadius: 4, background: m?.price ? PRICE_COLOR[m.price] : 'var(--line)',
-              opacity: m?.price ? 1 : 0.3,
-              outline: i === highlightMonth ? '2px solid var(--ink)' : 'none', outlineOffset: 1,
-            }}
-          />
-        ))}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-micro)', color: 'var(--ink3)', marginTop: 3 }}>
-        <span>J</span><span>F</span><span>M</span><span>A</span><span>M</span><span>J</span><span>J</span><span>A</span><span>S</span><span>O</span><span>N</span><span>D</span>
-      </div>
-    </div>
+    <a className="plan-link" href={href} target="_blank" rel="noreferrer">
+      {children}<ExternalLinkIcon size={11} color="currentColor" />
+    </a>
   );
 }
 
@@ -228,11 +178,10 @@ export function Plan() {
   const [saveError, setSaveError] = useState('');
   const [allCountries, setAllCountries] = useState<string[]>(planningCountries());
   const [cityAirports, setCityAirports] = useState<Record<string, NearestAirportResult>>({});
-  const [seasonalGuidance, setSeasonalGuidance] = useState<Record<string, SeasonalGuidance>>({});
-  const [loadingSeasonal, setLoadingSeasonal] = useState(false);
   const [stopsFilter, setStopsFilter] = useState<StopsFilter>('any');
   const [cabinFilter, setCabinFilter] = useState<CabinFilter>('any');
   const [allianceFilter, setAllianceFilter] = useState<AllianceFilter>('any');
+  const [airlineFilter, setAirlineFilter] = useState('');
   const { data: homeLocation } = useHomeLocation();
   const { data: climateData } = useClimateData();
   const { data: crowdPriceData } = useCrowdPriceData();
@@ -243,20 +192,22 @@ export function Plan() {
   const [budgetError, setBudgetError] = useState('');
   const [hotelBrandFilter, setHotelBrandFilter] = useState<string>('any');
   const [smartQueries, setSmartQueries] = useState<Record<string, string>>({});
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [mapFocus, setMapFocus] = useState<string | null>(null);
+  const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const today = new Date().toISOString().slice(0, 10);
 
-  // Fetches an AI-constructed search query and caches it by key, used only
-  // where the plain client-side query text is known to be unreliable --
-  // an alliance name isn't a single searchable entity, so it needs a real
-  // member airline substituted in; hotel programme names often don't match
-  // how people actually search for the brand.
-  function smartFlightUrl(
-    fromCity: string, toCity: string, departDate: string | null, returnDate: string | null | undefined
-  ): string {
+  function smartFlightUrl(fromCity: string, toCity: string, departDate: string | null, returnDate: string | null | undefined): string {
     return googleFlightsSearchUrl(fromCity, toCity, departDate, returnDate, {
       stops: stopsFilter, cabin: cabinFilter, airline: airlineFilter || undefined,
     });
   }
 
+  // Hotel programme names often don't match how people search for the
+  // brand, so a programme search asks the server for a better query and
+  // caches it; the plain link is used until it arrives.
   function smartHotelUrl(city: string, country: string, checkIn: string | null, nights: number | null): string {
     if (hotelBrandFilter === 'any') return googleHotelsSearchUrl(city, country, checkIn, nights);
     if (hotelBrandFilter === 'Marriott Bonvoy') return brandHotelSearchUrl(hotelBrandFilter, city, country); // verified direct link, no AI needed
@@ -264,12 +215,12 @@ export function Plan() {
     const cached = smartQueries[key];
     if (cached) return `https://www.google.com/travel/hotels?q=${encodeURIComponent(cached)}`;
     fetchSmartQuery(key, 'hotel', { brand: hotelBrandFilter, city, country });
-    return brandHotelSearchUrl(hotelBrandFilter, city, country); // plain fallback shown while the smarter version loads
+    return brandHotelSearchUrl(hotelBrandFilter, city, country);
   }
 
   function fetchSmartQuery(key: string, type: 'flight' | 'hotel', params: Record<string, unknown>) {
     if (smartQueries[key] !== undefined) return; // already fetched or in flight
-    setSmartQueries((prev) => ({ ...prev, [key]: '' })); // mark in-flight so we don't refetch
+    setSmartQueries((prev) => ({ ...prev, [key]: '' }));
     fetch('/.netlify/functions/smart-search-query', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -280,23 +231,17 @@ export function Plan() {
         if (data.query) setSmartQueries((prev) => ({ ...prev, [key]: data.query }));
       })
       .catch(() => {
-        // Leave the cache entry empty -- caller falls back to the plain
-        // client-side query rather than showing a broken link.
+        // Leave the cache entry empty: the plain query is used instead.
       });
   }
-  const [airlineFilter, setAirlineFilter] = useState('');
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [mapFocus, setMapFocus] = useState<string | null>(null);
-  const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  function handleDragStart(index: number, e: React.PointerEvent) {
+  function handleDragStart(index: number, e: ReactPointerEvent) {
     setDraggedIndex(index);
     setDragOverIndex(index);
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
   }
 
-  function handleDragMove(e: React.PointerEvent) {
+  function handleDragMove(e: ReactPointerEvent) {
     if (draggedIndex === null) return;
     for (let i = 0; i < rowRefs.current.length; i++) {
       const el = rowRefs.current[i];
@@ -323,8 +268,7 @@ export function Plan() {
   }
 
   // Once cities are suggested, verify the real nearest airport for each --
-  // more reliable than trusting Claude's own airport guess, and works for
-  // any city regardless of whether it's in the originally curated set.
+  // more reliable than trusting the model's own airport guess.
   useEffect(() => {
     if (cities.length === 0) return;
     let cancelled = false;
@@ -376,10 +320,9 @@ export function Plan() {
     setError('');
     try {
       // Each country's cities are suggested independently, then joined in
-      // the order the user added them -- keeps each request focused and
-      // means one slow/failed country doesn't block the others we already got.
-      // Destinations where the user picked their own cities skip Claude
-      // entirely -- their explicit choice takes priority over a suggestion.
+      // the order the user added them -- keeps each request focused.
+      // Destinations where the user picked their own cities skip the
+      // suggestion entirely: their explicit choice takes priority.
       const results: SuggestedCity[] = [];
       for (const dest of destinations) {
         const totalNights = dest.nights ? parseInt(dest.nights, 10) : 10;
@@ -387,10 +330,7 @@ export function Plan() {
         if (dest.cities.length > 0) {
           const perCity = Math.max(1, Math.round(totalNights / dest.cities.length));
           for (const c of dest.cities) {
-            results.push({
-              city: c.name, country: dest.country, lat: c.lat, lng: c.lng,
-              nights: perCity, why: 'Selected by you', nearestAirport: null,
-            });
+            results.push({ city: c.name, country: dest.country, lat: c.lat, lng: c.lng, nights: perCity, why: '', nearestAirport: null });
           }
           continue;
         }
@@ -407,32 +347,8 @@ export function Plan() {
         }
       }
       setCities(results);
-
-      // Seasonal guidance fetched independently per country -- a failure
-      // here shouldn't block the trip planning that already succeeded.
-      setLoadingSeasonal(true);
-      Promise.all(
-        destinations.map(async (dest) => {
-          try {
-            const res = await fetch('/.netlify/functions/seasonal-guidance', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ country: dest.country }),
-            });
-            const data = await res.json();
-            // A reply without a months list (e.g. the model returned
-            // something unexpected) used to crash the whole screen when
-            // rendered -- treat it like a failed fetch instead.
-            return res.ok && Array.isArray(data?.months) ? ([dest.country, data] as const) : null;
-          } catch {
-            return null;
-          }
-        })
-      ).then((results) => {
-        const entries = results.filter((r): r is [string, SeasonalGuidance] => r !== null);
-        setSeasonalGuidance(Object.fromEntries(entries));
-        setLoadingSeasonal(false);
-      });
+      // The answer is below the form: take you to it.
+      requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -442,10 +358,9 @@ export function Plan() {
 
   const home = PLANNING_AIRPORTS_BY_IATA[homeAirport];
 
-  // Domestic legs between consecutive suggested cities. Rail is only
-  // considered when both ends of a leg are in the same strong-rail
-  // country -- crossing a border defaults to flight, which is realistic
-  // for the vast majority of country pairs.
+  // Legs between consecutive cities. Rail is only considered when both
+  // ends are in the same strong-rail country -- crossing a border defaults
+  // to flight, which is realistic for the vast majority of country pairs.
   const legs: LegPlan[] = [];
   for (let i = 0; i < cities.length - 1; i++) {
     const sameCountry = cities[i].country === cities[i + 1].country;
@@ -455,7 +370,6 @@ export function Plan() {
 
   const outboundKm = home && cities.length > 0 ? haversineKm(home.lat, home.lng, cities[0].lat, cities[0].lng) : 0;
   const returnKm = home && cities.length > 0 ? haversineKm(cities[cities.length - 1].lat, cities[cities.length - 1].lng, home.lat, home.lng) : 0;
-  const domesticKm = legs.reduce((s, l) => s + l.distanceKm, 0);
   const domesticCost = legs.reduce((s, l) => s + l.estimatedCostGBP, 0);
   const totalNights = cities.reduce((s, c) => s + c.nights, 0);
   const uniqueCountries = [...new Set(cities.map((c) => c.country))];
@@ -467,20 +381,17 @@ export function Plan() {
   const mapLegs: LegPlan[] = mapFocus
     ? (() => {
         const out: LegPlan[] = [];
-        for (let i = 0; i < mapCities.length - 1; i++) {
-          out.push(planLeg(mapCities[i], mapCities[i + 1], STRONG_RAIL_COUNTRIES.has(mapFocus)));
-        }
+        for (let i = 0; i < mapCities.length - 1; i++) out.push(planLeg(mapCities[i], mapCities[i + 1], STRONG_RAIL_COUNTRIES.has(mapFocus)));
         return out;
       })()
     : legs;
-  const mapHome = mapFocus ? null : (home ?? null); // the international leg isn't part of a single country's domestic view
+  const mapHome = mapFocus ? null : (home ?? null); // the international leg isn't part of a single country's view
   const hotelOptions = totalNights > 0 ? planHotelOptions(loyaltyProgrammes, allHotels, totalNights) : [];
   const bestHotel = hotelOptions[0] ?? null;
 
-  // Real calendar dates for each city, computed from cumulative nights
-  // starting at the given date -- this is what turns "4 nights in Tokyo"
-  // into an actual bookable check-in/check-out. Shared by both the flight
-  // search links and the save-to-trips flow, rather than computed twice.
+  // Real calendar dates for each city, from cumulative nights after the
+  // start date: "4 nights in Tokyo" becomes a bookable check-in. Shared by
+  // the search links and the save-to-trips flow.
   const cityDates = (() => {
     if (!startDate) return cities.map((c) => ({ city: c, checkIn: null as string | null }));
     let cursor = startDate;
@@ -496,12 +407,12 @@ export function Plan() {
     for (const c of cities) cursor = addDays(cursor, c.nights);
     return cursor;
   })();
-  // For the leave estimate specifically: use the real per-city plan once
-  // one exists, but fall back to the total nights already entered per
-  // destination so the estimate is useful immediately while filling in
-  // the form, not just after "Plan this trip" has been pressed.
+  // The leave estimate uses the per-city plan once there is one, and the
+  // nights entered per destination before that, so it's useful while
+  // filling in the form.
   const totalPlannedNights = destinations.reduce((sum, d) => sum + (Number(d.nights) || 0), 0);
   const leaveEstimateEndDate = cities.length > 0 ? tripEndDate : (startDate && totalPlannedNights > 0 ? addDays(startDate, totalPlannedNights) : null);
+  const leave = startDate && leaveEstimateEndDate ? calculateLeaveNeeded(startDate, leaveEstimateEndDate) : null;
 
   async function saveToTrips() {
     if (!startDate || cities.length === 0) return;
@@ -528,7 +439,7 @@ export function Plan() {
 
       // Outbound and return flights, plus any inter-city leg recommended
       // as air travel -- ground legs (rail/road) aren't logged as flights.
-      // Verified airport codes are preferred over Claude's own guess.
+      // Verified airport codes are preferred over the model's own guess.
       const airportFor = (c: SuggestedCity) => cityAirports[c.city]?.airport.iata ?? c.nearestAirport;
 
       if (home && airportFor(cities[0])) {
@@ -566,552 +477,314 @@ export function Plan() {
     }
   }
 
+  const programmeFor = (name: string) => loyaltyProgrammes.find((p) => p.name === name);
+  const airportOf = (c: SuggestedCity) => cityAirports[c.city]?.airport ?? null;
+
+  // A flight to or from home: where from and to, the flying time, and a
+  // search for it.
+  const homeLeg = (from: string, to: string, km: number, href: string) => (
+    <div className="routeleg intl">
+      <span className="routeleg-icon"><PlaneIcon size={15} color="currentColor" /></span>
+      <span className="routeleg-text"><b>{from} → {to}</b> · ~{formatHours(estimateTravelHours(km, 'flight'))}</span>
+      <SearchLink href={href}>Flights</SearchLink>
+    </div>
+  );
+
   return (
     <div>
       <ScreenHeader title="Plan a trip" />
 
-      <div style={{ padding: '0 20px', display: 'grid', gap: 10 }}>
-        {destinations.map((dest, i) => (
-          <div key={dest.id}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 30px', gap: 8, alignItems: 'end' }}>
-              <div>
-                {i === 0 && <label className="field-label">Destination</label>}
-                <select
-                  className="input"
-                  value={dest.country}
-                  onChange={(e) => { updateDestination(dest.id, { country: e.target.value, cities: [] }); setCities([]); }}
-                >
-                  {allCountries.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
+      <div className="plan">
+        {/* What you want: where, how long, from where and when. */}
+        <div className="plan-card">
+          {destinations.map((dest) => {
+            const nights = Number(dest.nights) || 0;
+            const setNights = (n: number) => { updateDestination(dest.id, { nights: String(Math.max(1, Math.min(60, n))) }); setCities([]); };
+            return (
+              <div key={dest.id} className="plan-dest">
+                <div className="plan-dest-row">
+                  <select
+                    className="input" aria-label="Destination" value={dest.country}
+                    onChange={(e) => { updateDestination(dest.id, { country: e.target.value, cities: [] }); setCities([]); }}
+                  >
+                    {allCountries.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <div className="stepper" role="group" aria-label={`Nights in ${dest.country}`}>
+                    <button type="button" aria-label="One night fewer" onClick={() => setNights(nights - 1)}>−</button>
+                    <span><b>{nights}</b><small>nights</small></span>
+                    <button type="button" aria-label="One night more" onClick={() => setNights(nights + 1)}>+</button>
+                  </div>
+                  {destinations.length > 1 && (
+                    <button type="button" className="plan-x" aria-label={`Remove ${dest.country}`} onClick={() => { removeDestination(dest.id); setCities([]); }}>✕</button>
+                  )}
+                </div>
+                <CitySearchInput country={dest.country} selected={dest.cities} onChange={(picked) => { updateDestination(dest.id, { cities: picked }); setCities([]); }} />
               </div>
-              <div>
-                {i === 0 && <label className="field-label">Nights</label>}
-                <input
-                  type="number" className="input" value={dest.nights}
-                  onChange={(e) => updateDestination(dest.id, { nights: e.target.value })}
-                />
-              </div>
-              {destinations.length > 1 ? (
-                <button
-                  onClick={() => { removeDestination(dest.id); setCities([]); }}
-                  style={{ height: 42, background: 'var(--card2)', border: 'none', borderRadius: 'var(--r-xs)', color: 'var(--ink3)', fontSize: 'var(--fs-input)', cursor: 'pointer' }}
-                >
-                  ✕
-                </button>
-              ) : <div />}
-            </div>
-            <div style={{ marginTop: 8 }}>
-              <CitySearchInput
-                country={dest.country}
-                selected={dest.cities}
-                onChange={(cities) => { updateDestination(dest.id, { cities }); setCities([]); }}
-              />
-            </div>
-            {(() => {
-              const today = new Date().toISOString().slice(0, 10);
-              const effectiveStart = startDate || today;
-              const nightsNum = Number(dest.nights) || 0;
-              const approxCheckOut = nightsNum > 0 ? addDays(effectiveStart, nightsNum) : effectiveStart;
-              const monthIdx = dominantMonth(effectiveStart, approxCheckOut);
-              const blended = blendedGuideForMonth(climateData, crowdPriceData, dest.cities[0]?.name ?? null, dest.country, monthIdx, effectiveStart, approxCheckOut);
-              const heading = startDate
-                ? `${blended?.label ?? dest.country} in ${MONTH_NAMES[monthIdx]}: ${blended?.summary ?? ''}`
-                : `${blended?.label ?? dest.country} right now: ${blended?.summary ?? ''}`;
-              return (
-                <>
-                  <SeasonHeatmap country={dest.country} city={dest.cities[0]?.name ?? null} climateData={climateData} crowdPriceData={crowdPriceData} highlightMonth={monthIdx} />
-                  {blended && <GuideTileGrid blended={blended} heading={heading} />}
-                  <PointsValueCard country={dest.country} city={dest.cities[0]?.name ?? null} rates={cityCashRates} programmes={pointsValueData} />
-                </>
-              );
-            })()}
+            );
+          })}
+          <button type="button" className="tagbtn" style={{ justifySelf: 'start' }} onClick={addDestination}>+ Country</button>
+
+          <div className="plan-when">
+            <label className="plan-field">
+              <span className="field-label">From</span>
+              <select className="input" value={homeAirport} onChange={(e) => setHomeAirport(e.target.value)}>
+                {HOME_AIRPORTS.map((code) => {
+                  const a = PLANNING_AIRPORTS_BY_IATA[code];
+                  return <option key={code} value={code}>{a ? `${civilianAirportName(a.name).replace(/ Airport$/, '')} (${code})` : code}</option>;
+                })}
+              </select>
+            </label>
+            <label className="plan-field">
+              <span className="field-label">Leave</span>
+              <input type="date" className="input" value={startDate} min={today} onChange={(e) => setStartDate(e.target.value)} />
+            </label>
           </div>
-        ))}
-
-        <button
-          onClick={addDestination}
-          style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer', padding: '2px 0', textAlign: 'left' }}
-        >
-          + Add another country
-        </button>
-
-        <div>
-          <label className="field-label">Flying from</label>
-          <select className="input" value={homeAirport} onChange={(e) => setHomeAirport(e.target.value)}>
-            {HOME_AIRPORTS.map((code) => {
-              const a = PLANNING_AIRPORTS_BY_IATA[code];
-              return <option key={code} value={code}>{a ? `${a.city} ${civilianAirportName(a.name)} (${code})` : code}</option>;
-            })}
-          </select>
+          {leave && (
+            <div className="plan-leave">
+              <b>{leave.leaveDaysNeeded} day{leave.leaveDaysNeeded === 1 ? '' : 's'}</b> annual leave
+              {leave.bankHolidays > 0 && ` · ${leave.bankHolidays} bank holiday${leave.bankHolidays === 1 ? '' : 's'}`}
+            </div>
+          )}
+          <Button block onClick={suggest} disabled={loading}>{loading ? 'Planning…' : cities.length > 0 ? 'Suggest again' : 'Plan this trip'}</Button>
+          {error && <ErrorText>{error}</ErrorText>}
         </div>
 
-        <div>
-          <label className="field-label">Departure date</label>
-          <input type="date" className="input" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-        </div>
-
-        {startDate && leaveEstimateEndDate && (() => {
-          const leave = calculateLeaveNeeded(startDate, leaveEstimateEndDate);
+        {/* Before there's a plan: each destination at a glance in the
+            month you'd go. */}
+        {cities.length === 0 && destinations.map((dest) => {
+          const start = startDate || today;
+          const nights = Number(dest.nights) || 0;
+          const end = nights > 0 ? addDays(start, nights) : start;
+          const monthIdx = dominantMonth(start, end);
+          const city = dest.cities[0]?.name ?? null;
+          const blended = blendedGuideForMonth(climateData, crowdPriceData, city, dest.country, monthIdx, start, end);
+          if (!blended) return null;
           return (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 'var(--r-sm)', background: 'rgba(217,183,124,.1)', border: '1px solid rgba(217,183,124,.25)' }}>
-              <TripsIcon size={18} color="var(--brand)" style={{ flexShrink: 0 }} />
-              <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink)', lineHeight: 1.45 }}>
-                <b>{leave.leaveDaysNeeded} day{leave.leaveDaysNeeded === 1 ? '' : 's'} annual leave</b>
-                {leave.bankHolidays > 0 && ` (${leave.bankHolidays} bank holiday${leave.bankHolidays === 1 ? '' : 's'})`}
+            <div key={dest.id} className="plan-card glance">
+              <div className="glance-head">
+                <span className="glance-title">{blended.label} in {MONTH_NAMES[monthIdx]}</span>
               </div>
+              {blended.summary && <div className="glance-sum">{blended.summary}</div>}
+              <WeatherLine blended={blended} />
+              <SeasonFlags blended={blended} />
+              <SeasonStrip country={dest.country} city={city} climateData={climateData} crowdPriceData={crowdPriceData} highlightMonth={monthIdx} />
+              {blended.crowdDriver && <div className="glance-note">{blended.crowdDriver}{blended.crowdDriverDates ? `, ${blended.crowdDriverDates}` : ''}</div>}
             </div>
           );
-        })()}
+        })}
 
-        <button
-          onClick={suggest}
-          disabled={loading}
-          style={{
-            padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none', fontSize: 'var(--fs-input)', fontWeight: 700,
-            background: loading ? 'var(--card2)' : 'var(--brand)', color: loading ? 'var(--ink2)' : 'var(--on-brand)',
-            cursor: loading ? 'default' : 'pointer',
-          }}
-        >
-          {loading ? 'Planning…' : cities.length > 0 ? 'Suggest again' : 'Plan this trip'}
-        </button>
+        {cities.length > 0 && (
+          <div ref={resultsRef} className="plan-results">
+            {/* The plan in one card: where, when, and saving it. */}
+            <div className="plan-card plan-sum">
+              <div className="plan-sum-title">{uniqueCountries.join(' · ')}</div>
+              <div className="plan-sum-dates">{startDate && tripEndDate ? formatShortRange(startDate, tripEndDate, today) : 'No dates yet'}</div>
+              <div className="plan-stats">
+                <div><b>{totalNights}</b><span>nights</span></div>
+                <div><b>{cities.length}</b><span>{cities.length === 1 ? 'stop' : 'stops'}</span></div>
+                <div><b>{leave ? leave.leaveDaysNeeded : '–'}</b><span>days off</span></div>
+              </div>
+              <Button block onClick={saveToTrips} disabled={!startDate || saving}>{saving ? 'Saving…' : 'Save to Trips'}</Button>
+              {saveError && <ErrorText>{saveError}</ErrorText>}
+            </div>
 
-        {error && <ErrorText>{error}</ErrorText>}
-      </div>
-
-      {cities.length > 0 && (
-        <>
-          <div style={{ padding: '16px 20px 0' }}>
-            {cities.length > 1 && (
-              <div className="catchip" style={{ margin: '0 0 10px' }}>
-                <button className={mapFocus === null ? 'won' : ''} onClick={() => setMapFocus(null)}>
-                  All
-                </button>
+            {uniqueCountries.length > 1 && (
+              <div className="plan-tags">
+                <button className={mapFocus === null ? 'tagbtn on' : 'tagbtn'} onClick={() => setMapFocus(null)}>All</button>
                 {uniqueCountries.map((c) => (
-                  <button key={c} className={mapFocus === c ? 'won' : ''} onClick={() => setMapFocus(c)}>
-                    {c}
-                  </button>
+                  <button key={c} className={mapFocus === c ? 'tagbtn on' : 'tagbtn'} onClick={() => setMapFocus(c)}>{c}</button>
                 ))}
               </div>
             )}
-            <Suspense fallback={<div style={{ height: 220, background: 'var(--map-bg)', borderRadius: 'var(--r-md)' }} />}>
+            <Suspense fallback={<div style={{ height: 320, background: 'var(--map-bg)', borderRadius: 'var(--r-md)' }} />}>
               <PlanMap
                 home={mapHome}
                 cities={mapCities}
                 departDate={startDate || null}
                 returnDate={tripEndDate}
                 domesticLegs={mapLegs.map((l) => ({ mode: l.recommendedMode, distanceKm: l.distanceKm, hours: l.estimatedTravelHours }))}
-                internationalLeg={
-                  !mapFocus && home && cities.length > 0
-                    ? { mode: 'flight', distanceKm: outboundKm, hours: estimateTravelHours(outboundKm, 'flight') }
-                    : null
-                }
+                internationalLeg={!mapFocus && home && cities.length > 0 ? { mode: 'flight', distanceKm: outboundKm, hours: estimateTravelHours(outboundKm, 'flight') } : null}
               />
             </Suspense>
-          </div>
 
-          <div className="sect"><h2>Route</h2></div>
-          {cities.length > 1 && (
-            <div style={{ padding: '0 20px 8px', fontSize: 'var(--fs-caption)', color: 'var(--ink3)' }}>
-              Drag the grip to reorder stops
-            </div>
-          )}
+            {/* The route: out, each stop, the hops between, and home. */}
+            <SectionLabel style={{ marginTop: 8 }}>Route</SectionLabel>
+            <div className="route">
+              {home && homeLeg(homeAirport, airportOf(cities[0])?.iata ?? cities[0].city, outboundKm,
+                smartFlightUrl(home.city ?? 'London', cities[0].city, startDate || null, uniqueCountries.length === 1 ? tripEndDate : null))}
 
-          <div style={{ padding: '0 20px 12px', display: 'grid', gap: 8 }}>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {(['any', 'nonstop', 'one-stop'] as StopsFilter[]).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setStopsFilter(s)}
-                  style={{
-                    padding: '5px 12px', borderRadius: 'var(--r-pill)', fontSize: 'var(--fs-caption)', fontWeight: 700, cursor: 'pointer',
-                    border: stopsFilter === s ? '1px solid var(--brand)' : '1px solid var(--line)',
-                    background: stopsFilter === s ? 'var(--brand-soft)' : 'var(--card)',
-                    color: stopsFilter === s ? 'var(--brand)' : 'var(--ink2)',
-                  }}
-                >
-                  {s === 'any' ? 'Any stops' : s === 'nonstop' ? 'Nonstop' : '1 stop or fewer'}
-                </button>
-              ))}
-            </div>
-            <input
-              value={airlineFilter}
-              onChange={(e) => setAirlineFilter(e.target.value)}
-              placeholder="Preferred airline (optional)"
-              className="input" style={{ fontSize: 'var(--fs-small)', padding: '8px 11px' }}
-            />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              <select
-                value={cabinFilter}
-                onChange={(e) => setCabinFilter(e.target.value as CabinFilter)}
-                className="input" style={{ fontSize: 'var(--fs-small)', padding: '8px 9px' }}
-              >
-                <option value="any">Any cabin</option>
-                <option value="economy">Economy</option>
-                <option value="premium-economy">Premium economy</option>
-                <option value="business">Business</option>
-                <option value="first">First</option>
-              </select>
-              <select
-                value={allianceFilter}
-                onChange={(e) => setAllianceFilter(e.target.value as AllianceFilter)}
-                className="input" style={{ fontSize: 'var(--fs-small)', padding: '8px 9px' }}
-              >
-                <option value="any">Any alliance</option>
-                <option value="star-alliance">Star Alliance</option>
-                <option value="oneworld">Oneworld</option>
-                <option value="skyteam">SkyTeam</option>
-              </select>
-            </div>
-            {allianceFilter !== 'any' && (
-              <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', lineHeight: 1.4 }}>
-                Google Flights doesn't support pre-selecting an alliance via a link -- once the search opens, use its own "Airlines" filter and choose {ALLIANCE_LABELS[allianceFilter]} there to see every carrier in the alliance together.
-              </div>
-            )}
-            {loyaltyProgrammes.filter((p) => p.category === 'hotel').length > 0 && (
-              <select
-                value={hotelBrandFilter}
-                onChange={(e) => setHotelBrandFilter(e.target.value)}
-                className="input" style={{ fontSize: 'var(--fs-small)', padding: '8px 9px' }}
-              >
-                <option value="any">Search hotels generally</option>
-                {loyaltyProgrammes.filter((p) => p.category === 'hotel').map((p) => (
-                  <option key={p.name} value={p.name}>Search on {p.name}</option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          <div className="stack" style={{ display: 'grid', gap: 10 }}>
-            {home && cities.length > 0 && (
-              <div style={{ padding: '12px 14px', borderRadius: 'var(--r-sm)', background: 'var(--card)', border: '1px solid var(--line)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                  <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700 }}>{home.city} → {cities[0].city}</div>
-                  <a
-                    href={smartFlightUrl(
-                      home?.city ?? 'London', cities[0].city, startDate || null,
-                      uniqueCountries.length === 1 ? tripEndDate : null
-                    )} style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 'var(--fs-caption)', fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
-                  >
-                    Search <ExternalLinkIcon size={12} color="var(--brand)" />
-                  </a>
-                </div>
-                <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 3 }}>
-                  {Math.round(outboundKm).toLocaleString()} km · flight · est. {formatHours(estimateTravelHours(outboundKm, 'flight'))} flying + ~{formatHours(estimateOverheadHours('flight'))} airports
-                </div>
-              </div>
-            )}
-
-            {cities.map((c, i) => {
-              const transfer = cityAirports[c.city];
-              const leg = legs[i];
-              const showCountry = i === 0 || cities[i - 1].country !== c.country;
-              return (
-                <div key={`${c.city}-${i}`}>
-                  {showCountry && (
-                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', margin: '10px 0 6px' }}>
-                      {c.country}
-                    </div>
-                  )}
-                  <div
-                    ref={(el) => { rowRefs.current[i] = el; }}
-                    style={{
-                      padding: '12px 14px', borderRadius: 'var(--r-sm)', background: 'var(--card)',
-                      border: dragOverIndex === i && draggedIndex !== null && draggedIndex !== i ? '2px solid var(--brand)' : '1px solid var(--line)',
-                      display: 'flex', alignItems: 'flex-start', gap: 8,
-                      opacity: draggedIndex === i ? 0.4 : 1,
-                      transition: 'opacity .15s, border-color .15s',
-                    }}
-                  >
-                    <button
-                      onPointerDown={(e) => handleDragStart(i, e)}
-                      onPointerMove={handleDragMove}
-                      onPointerUp={handleDragEnd}
-                      onPointerCancel={handleDragEnd}
-                      aria-label={`Reorder ${c.city}`}
-                      style={{
-                        background: 'none', border: 'none', padding: '4px 2px', cursor: 'grab',
-                        touchAction: 'none', flexShrink: 0, marginTop: 2,
-                      }}
-                    >
-                      <GripIcon size={18} color="var(--ink3)" />
-                    </button>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                        <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 600 }}>{c.city}</div>
-                        <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--brand)' }}>{c.nights}n</div>
-                      </div>
-                      <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 4, lineHeight: 1.5 }}>{c.why}</div>
-                      {transfer && (
-                        <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 6 }}>
-                          {civilianAirportName(transfer.airport.name || transfer.airport.city)} ({transfer.airport.iata}) · {Math.round(transfer.distanceKm)} km to centre · ~{Math.round((transfer.distanceKm / 45) * 60 + 10)} min transfer
-                        </div>
-                      )}
-                      <a
-                        href={smartHotelUrl(c.city, c.country, cityDates[i]?.checkIn ?? null, c.nights)} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--brand)', fontSize: 'var(--fs-caption)', fontWeight: 700, textDecoration: 'none', marginTop: 8 }}
+              {cities.map((c, i) => {
+                const leg = legs[i];
+                const checkIn = cityDates[i]?.checkIn ?? null;
+                const checkOut = checkIn ? addDays(checkIn, c.nights) : null;
+                const monthIdx = checkIn && checkOut ? dominantMonth(checkIn, checkOut) : null;
+                const blended = checkIn && checkOut && monthIdx != null
+                  ? blendedGuideForMonth(climateData, crowdPriceData, c.city, c.country, monthIdx, checkIn, checkOut)
+                  : null;
+                const dragging = draggedIndex === i;
+                const target = dragOverIndex === i && draggedIndex !== null && draggedIndex !== i;
+                return (
+                  <div key={`${c.city}-${i}`}>
+                    <div ref={(el) => { rowRefs.current[i] = el; }} className={`stopcard${dragging ? ' dragging' : ''}${target ? ' target' : ''}`}>
+                      <button
+                        className="stopcard-grip" aria-label={`Reorder ${c.city}`}
+                        onPointerDown={(e) => handleDragStart(i, e)} onPointerMove={handleDragMove}
+                        onPointerUp={handleDragEnd} onPointerCancel={handleDragEnd}
                       >
-                        Search {hotelBrandFilter !== 'any' ? hotelBrandFilter : 'hotels'} <ExternalLinkIcon size={11} color="var(--brand)" />
-                      </a>
-                      {(() => {
-                        const checkIn = cityDates[i]?.checkIn;
-                        if (!checkIn) return null;
-                        const checkOut = addDays(checkIn, c.nights);
-                        const monthIdx = dominantMonth(checkIn, checkOut);
-                        const blended = blendedGuideForMonth(climateData, crowdPriceData, c.city, c.country, monthIdx, checkIn, checkOut);
-                        if (!blended) return null;
-                        return <GuideTileGrid blended={blended} heading={blended.summary} />;
-                      })()}
+                        <GripIcon size={16} color="var(--ink3)" />
+                      </button>
+                      <span className="stopcard-badge">{i + 1}</span>
+                      <div className="stopcard-main">
+                        <div className="stopcard-top">
+                          <span className="stopcard-city">{c.city}</span>
+                          <span className="moons" aria-label={`${c.nights} nights`}>
+                            {Array.from({ length: Math.min(c.nights, 7) }, (_, k) => <MoonIcon key={k} size={12} />)}
+                            {c.nights > 7 && <small>+{c.nights - 7}</small>}
+                          </span>
+                        </div>
+                        <div className="stopcard-sub">
+                          {checkIn && checkOut ? stayRange(checkIn, checkOut) : `${c.nights} night${c.nights === 1 ? '' : 's'}`}
+                          {uniqueCountries.length > 1 ? ` · ${c.country}` : ''}
+                        </div>
+                        {c.why && <div className="stopcard-why">{c.why}</div>}
+                        {blended && <WeatherLine blended={blended} />}
+                        {blended && <SeasonFlags blended={blended} />}
+                        <SearchLink href={smartHotelUrl(c.city, c.country, checkIn, c.nights)}>{hotelBrandFilter !== 'any' ? shortProgramme(hotelBrandFilter) : 'Hotels'}</SearchLink>
+                      </div>
                     </div>
-                  </div>
 
-                  {leg && (
-                    <div style={{ padding: '8px 14px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {leg.recommendedMode === 'flight' ? (
-                        <PlaneIcon size={16} color="var(--ink3)" />
-                      ) : leg.recommendedMode === 'rail' ? (
-                        <TrainIcon size={16} color="var(--ink3)" />
-                      ) : (
-                        <CarIcon size={16} color="var(--ink3)" />
-                      )}
-                      <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', flex: 1 }}>
-                        {Math.round(leg.distanceKm)} km · est. {formatHours(leg.estimatedTravelHours)}
-                        {leg.estimatedOverheadHours > 0 && ` + ~${formatHours(leg.estimatedOverheadHours)} ${leg.recommendedMode === 'flight' ? 'airports' : 'station'}`}
-                        · ~£{Math.round(leg.estimatedCostGBP)}
-                      </div>
-                      {leg.recommendedMode === 'flight' && (
-                        <a
-                          href={smartFlightUrl(cities[i].city, cities[i + 1].city, cityDates[i + 1]?.checkIn ?? null, null)} style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'var(--brand)', fontSize: 'var(--fs-caption)', fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
-                        >
-                          Search <ExternalLinkIcon size={11} color="var(--brand)" />
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {home && cities.length > 0 && uniqueCountries.length > 1 && (
-              <div style={{ padding: '12px 14px', borderRadius: 'var(--r-sm)', background: 'var(--card)', border: '1px solid var(--line)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                  <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700 }}>{cities[cities.length - 1].city} → {home.city}</div>
-                  <a
-                    href={smartFlightUrl(cities[cities.length - 1].city, home.city, tripEndDate, null)} style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontSize: 'var(--fs-caption)', fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}
-                  >
-                    Search <ExternalLinkIcon size={12} color="var(--brand)" />
-                  </a>
-                </div>
-                <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 3 }}>
-                  {Math.round(returnKm).toLocaleString()} km · flight · est. {formatHours(estimateTravelHours(returnKm, 'flight'))} flying + ~{formatHours(estimateOverheadHours('flight'))} airports
-                </div>
-              </div>
-            )}
-          </div>
-
-          {(loadingSeasonal || Object.keys(seasonalGuidance).length > 0) && (
-            <>
-              <div className="sect"><h2>Best time to go</h2></div>
-              <div className="stack" style={{ display: 'grid', gap: 12 }}>
-                {loadingSeasonal && Object.keys(seasonalGuidance).length === 0 && (
-                  <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink3)' }}>Checking seasonal patterns…</div>
-                )}
-                {destinations.map((dest) => {
-                  const g = seasonalGuidance[dest.country];
-                  if (!g) return null;
-                  return (
-                    <div key={dest.country} className="card">
-                      <div style={{ fontSize: 'var(--fs-body)', fontWeight: 600, marginBottom: 8 }}>{dest.country}</div>
-                      <div style={{ display: 'flex', gap: 3 }}>
-                        {g.months.map((m) => (
-                          <div key={m.month} style={{ flex: 1, textAlign: 'center' }} title={m.note}>
-                            <div
-                              style={{
-                                height: 28, borderRadius: 'var(--r-xs)',
-                                background: m.priceLevel === 'high' ? 'var(--red)' : m.priceLevel === 'medium' ? 'var(--amber)' : 'var(--green)',
-                                opacity: m.priceLevel === 'high' ? 0.85 : m.priceLevel === 'medium' ? 0.6 : 0.5,
-                              }}
-                            />
-                            <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', marginTop: 3, fontWeight: 700 }}>{m.month}</div>
-                          </div>
-                        ))}
-                      </div>
-                      <div style={{ display: 'flex', gap: 12, marginTop: 8, fontSize: 'var(--fs-micro)', color: 'var(--ink3)' }}>
-                        <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: 'var(--green)', opacity: 0.5, marginRight: 4 }} />Lower</span>
-                        <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: 'var(--amber)', opacity: 0.6, marginRight: 4 }} />Medium</span>
-                        <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: 'var(--red)', opacity: 0.85, marginRight: 4 }} />Higher</span>
-                      </div>
-                      <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 10, lineHeight: 1.5 }}>{g.summary}</div>
-                      <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', marginTop: 8, fontStyle: 'italic' }}>
-                        General seasonal guidance, not live pricing. Real fares vary by route and booking time.
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          {hotelOptions.length > 0 && (
-            <>
-              <div className="sect"><h2>Where to stay</h2></div>
-              <div className="stack" style={{ display: 'grid', gap: 10 }}>
-                {hotelOptions.map((o, i) => (
-                  <div
-                    key={o.programme}
-                    style={{
-                      padding: '12px 14px', borderRadius: 'var(--r-sm)', background: 'var(--card)',
-                      border: i === 0 ? '2px solid var(--brand)' : '1px solid var(--line)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                      <div style={{ fontSize: 'var(--fs-body)', fontWeight: 600 }}>
-                        {o.programme}
-                        {i === 0 && <span style={{ color: 'var(--brand)', fontSize: 'var(--fs-caption)', marginLeft: 6 }}>BEST VALUE</span>}
-                      </div>
-                      <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700 }}>~£{Math.round(o.estimatedNightlyGBP)}/night</div>
-                    </div>
-                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 3 }}>
-                      {o.tier ? `${o.tier} · ` : ''}
-                      {o.rateSource === 'history'
-                        ? `rate from your ${o.historyCount} past stay${o.historyCount === 1 ? '' : 's'}`
-                        : 'no stay history, generic estimate'}
-                    </div>
-                    <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 6 }}>
-                      Earns ~{Math.round(o.pointsEarned).toLocaleString()} pts (~£{Math.round(o.pointsValueGBP)})
-                      · effective ~£{Math.round(o.effectiveNightlyGBP)}/night
-                    </div>
-                    {o.benefits.length > 0 && (
-                      <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 6, lineHeight: 1.6 }}>
-                        {o.benefits.map((b) => `• ${b}`).join('  ')}
+                    {leg && (
+                      <div className="routeleg">
+                        <span className="routeleg-icon"><ModeIcon mode={leg.recommendedMode} /></span>
+                        <span className="routeleg-text">
+                          ~{formatHours(leg.estimatedTravelHours + leg.estimatedOverheadHours)} · ~£{Math.round(leg.estimatedCostGBP)}
+                        </span>
+                        {leg.recommendedMode === 'flight' && (
+                          <SearchLink href={smartFlightUrl(cities[i].city, cities[i + 1].city, cityDates[i + 1]?.checkIn ?? null, null)}>Flights</SearchLink>
+                        )}
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
-            </>
-          )}
+                );
+              })}
 
-          <div className="sect"><h2>Estimated totals</h2></div>
-          <div className="stack">
-            <div className="card" style={{ display: 'grid', gap: 9 }}>
-              <Row label="Nights planned" value={`${totalNights}`} />
-              <Row label="International distance" value={`${Math.round(outboundKm + returnKm).toLocaleString()} km`} />
-              <Row label="Domestic distance" value={`${Math.round(domesticKm).toLocaleString()} km`} />
-              <Row label="Domestic transport" value={`~£${Math.round(domesticCost).toLocaleString()}`} />
-              {bestHotel && (
-                <Row
-                  label={`Accommodation (${bestHotel.programme})`}
-                  value={`~£${Math.round(bestHotel.estimatedNightlyGBP * totalNights).toLocaleString()}`}
-                />
-              )}
-              {bestHotel && (
-                <Row
-                  label="Points earned on stays"
-                  value={`~${Math.round(bestHotel.pointsEarned).toLocaleString()} pts`}
-                />
-              )}
-              <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', lineHeight: 1.5, marginTop: 4 }}>
-                Distances are exact great-circle calculations. Durations and costs are rough planning
-                estimates, not live fares. Real journey times vary by route and service.
-              </div>
+              {home && uniqueCountries.length > 1 && homeLeg(airportOf(cities[cities.length - 1])?.iata ?? cities[cities.length - 1].city, homeAirport, returnKm,
+                smartFlightUrl(cities[cities.length - 1].city, home.city, tripEndDate, null))}
             </div>
-          </div>
 
-          <div className="sect"><h2>Budget estimate</h2></div>
-          <div className="stack">
-            <div className="card" style={{ display: 'grid', gap: 10 }}>
-              {!budgetEstimate && !budgetLoading && (
-                <>
-                  <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', lineHeight: 1.5, margin: 0 }}>
-                    Current flight, hotel, and food prices for this route and these dates. Takes 10–30 seconds.
-                  </p>
-                  <button
-                    onClick={fetchBudgetEstimate}
-                    disabled={!startDate || cities.length === 0}
-                    style={{
-                      padding: '11px 0', borderRadius: 'var(--r-control)', border: 'none', fontSize: 'var(--fs-body)', fontWeight: 700, cursor: 'pointer',
-                      background: 'var(--brand)', color: 'var(--on-brand)', opacity: !startDate || cities.length === 0 ? 0.5 : 1,
-                    }}
-                  >
-                    Get budget estimate
-                  </button>
-                </>
-              )}
-              {budgetLoading && (
-                <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink3)', textAlign: 'center', padding: '8px 0' }}>Researching current prices…</div>
-              )}
-              {budgetError && (
-                <div style={{ fontSize: 'var(--fs-small)', color: 'var(--red)' }}>{budgetError}</div>
-              )}
+            <details className="plan-more">
+              <summary>Search options</summary>
+              <div className="plan-options">
+                <div className="plan-tags">
+                  {(['any', 'nonstop', 'one-stop'] as StopsFilter[]).map((s) => (
+                    <button key={s} className={stopsFilter === s ? 'tagbtn on' : 'tagbtn'} onClick={() => setStopsFilter(s)}>
+                      {s === 'any' ? 'Any stops' : s === 'nonstop' ? 'Nonstop' : '1 stop max'}
+                    </button>
+                  ))}
+                </div>
+                <input value={airlineFilter} onChange={(e) => setAirlineFilter(e.target.value)} placeholder="Airline" className="input" aria-label="Airline" />
+                <div className="plan-when">
+                  <select value={cabinFilter} onChange={(e) => setCabinFilter(e.target.value as CabinFilter)} className="input" aria-label="Cabin">
+                    <option value="any">Any cabin</option>
+                    <option value="economy">Economy</option>
+                    <option value="premium-economy">Premium economy</option>
+                    <option value="business">Business</option>
+                    <option value="first">First</option>
+                  </select>
+                  <select value={allianceFilter} onChange={(e) => setAllianceFilter(e.target.value as AllianceFilter)} className="input" aria-label="Alliance">
+                    <option value="any">Any alliance</option>
+                    <option value="star-alliance">Star Alliance</option>
+                    <option value="oneworld">Oneworld</option>
+                    <option value="skyteam">SkyTeam</option>
+                  </select>
+                </div>
+                {/* Google Flights links can't preselect an alliance. */}
+                {allianceFilter !== 'any' && <div className="glance-note">Choose {ALLIANCE_LABELS[allianceFilter]} under Airlines in Google Flights.</div>}
+                {loyaltyProgrammes.some((p) => p.category === 'hotel') && (
+                  <select value={hotelBrandFilter} onChange={(e) => setHotelBrandFilter(e.target.value)} className="input" aria-label="Hotel search">
+                    <option value="any">Any hotel</option>
+                    {loyaltyProgrammes.filter((p) => p.category === 'hotel').map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
+                  </select>
+                )}
+              </div>
+            </details>
+
+            {/* Where to stay: the best-value programme, the rest folded away. */}
+            {bestHotel && (
+              <>
+                <SectionLabel style={{ marginTop: 8 }}>Where to stay</SectionLabel>
+                {(() => {
+                  const prog = programmeFor(bestHotel.programme);
+                  return (
+                    <div className="plan-card staybest">
+                      <div className="staybest-head">
+                        <BrandLogo name={bestHotel.programme} shape={prog?.shape} color={prog?.color} accent={prog?.accent} size={38} />
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div className="staybest-name">{bestHotel.programme}</div>
+                          <div className="staybest-sub">{bestHotel.tier ?? 'Best value'}</div>
+                        </div>
+                        <div className="staybest-rate"><b>~£{Math.round(bestHotel.estimatedNightlyGBP)}</b><span>a night</span></div>
+                      </div>
+                      <div className="staybest-back">~{Math.round(bestHotel.pointsEarned).toLocaleString()} pts back · ~£{Math.round(bestHotel.effectiveNightlyGBP)} a night after points</div>
+                      {bestHotel.benefits.length > 0 && (
+                        <div className="flags">{bestHotel.benefits.slice(0, 3).map((b) => <span key={b} className="flag plain">{b.replace(/ \(.*\)$/, '')}</span>)}</div>
+                      )}
+                    </div>
+                  );
+                })()}
+                {hotelOptions.length > 1 && (
+                  <details className="plan-more">
+                    <summary>Other programmes</summary>
+                    <div className="stayothers">
+                      {hotelOptions.slice(1).map((o) => {
+                        const prog = programmeFor(o.programme);
+                        return (
+                          <div key={o.programme} className="stayother">
+                            <BrandLogo name={o.programme} shape={prog?.shape} color={prog?.color} accent={prog?.accent} size={28} />
+                            <span style={{ flex: 1, minWidth: 0 }}>
+                              <b>{o.programme}</b>
+                              <small>~{Math.round(o.pointsEarned).toLocaleString()} pts back</small>
+                            </span>
+                            <span className="stayother-rate">~£{Math.round(o.estimatedNightlyGBP)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </details>
+                )}
+                <CashVsPoints country={cities[0].country} city={cities[0].city} rates={cityCashRates} programmes={pointsValueData} />
+              </>
+            )}
+
+            {/* Costs: rough estimates from the plan, and a live one on request. */}
+            <SectionLabel style={{ marginTop: 8 }}>Cost</SectionLabel>
+            <div className="plan-card plan-costs">
+              {bestHotel && <Row label={`Stays, ${shortProgramme(bestHotel.programme)}`} value={`~£${Math.round(bestHotel.estimatedNightlyGBP * totalNights).toLocaleString()}`} />}
+              <Row label="Getting around" value={`~£${Math.round(domesticCost).toLocaleString()}`} />
               {budgetEstimate && (
                 <>
                   <Row label="Flights" value={`£${budgetEstimate.flightEstimateGBP[0]}–${budgetEstimate.flightEstimateGBP[1]}`} />
-                  {budgetEstimate.hotelEstimates.map((h) => (
-                    <Row key={h.city} label={`${h.city} hotel (per night)`} value={`£${h.perNightGBP[0]}–${h.perNightGBP[1]}`} />
-                  ))}
-                  <Row label="Food & drink (per day)" value={`£${budgetEstimate.foodPerDayGBP[0]}–${budgetEstimate.foodPerDayGBP[1]}`} />
-                  <div style={{ borderTop: '1px solid var(--line)', paddingTop: 8, marginTop: 2 }}>
-                    <Row label="Total estimate" value={`£${budgetEstimate.totalEstimateGBP[0].toLocaleString()}–${budgetEstimate.totalEstimateGBP[1].toLocaleString()}`} />
-                  </div>
-                  {budgetEstimate.notes && (
-                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', lineHeight: 1.5, fontStyle: 'italic' }}>{budgetEstimate.notes}</div>
-                  )}
-                  <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', lineHeight: 1.5 }}>
-                    A rough estimate from a web search, not a live quote. Prices change.
-                  </div>
-                  <button
-                    onClick={fetchBudgetEstimate}
-                    style={{ padding: '9px 0', borderRadius: 'var(--r-control)', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
-                  >
-                    Refresh estimate
-                  </button>
+                  <Row label="Food and drink a day" value={`£${budgetEstimate.foodPerDayGBP[0]}–${budgetEstimate.foodPerDayGBP[1]}`} />
+                  <Row label="Live estimate" value={`£${budgetEstimate.totalEstimateGBP[0].toLocaleString()}–${budgetEstimate.totalEstimateGBP[1].toLocaleString()}`} strong />
                 </>
               )}
+              {budgetError && <ErrorText>{budgetError}</ErrorText>}
+              <Button variant="secondary" block onClick={fetchBudgetEstimate} disabled={!startDate || budgetLoading}>
+                {budgetLoading ? 'Checking prices…' : budgetEstimate ? 'Check prices again' : 'Check live prices'}
+              </Button>
             </div>
           </div>
-
-          <div className="stack" style={{ marginTop: 4 }}>
-            <div className="card">
-              <div style={{ fontSize: 'var(--fs-small)', fontWeight: 700, marginBottom: 8 }}>Save this plan as a trip</div>
-              {!startDate ? (
-                <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginBottom: 10 }}>
-                  Set a departure date above to save this as a trip.
-                </div>
-              ) : (
-                <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginBottom: 10 }}>
-                  Departing {startDate}, returning {tripEndDate}.
-                </div>
-              )}
-              <button
-                onClick={saveToTrips}
-                disabled={!startDate || saving}
-                style={{
-                  width: '100%', padding: '12px 0', borderRadius: 'var(--r-control)', border: 'none', fontSize: 'var(--fs-body-lg)', fontWeight: 700,
-                  background: !startDate || saving ? 'var(--card2)' : 'var(--brand)', color: !startDate || saving ? 'var(--ink2)' : 'var(--on-brand)',
-                  cursor: !startDate || saving ? 'default' : 'pointer',
-                }}
-              >
-                {saving ? 'Saving…' : 'Save to Trips'}
-              </button>
-              <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 8, lineHeight: 1.5 }}>
-                Creates a real trip with a stay for each city and flights for the international legs,
-                all marked as "needs confirming" until you actually book them.
-              </div>
-              {saveError && <div style={{ color: 'var(--red)', fontSize: 'var(--fs-small)', marginTop: 6 }}>{saveError}</div>}
-            </div>
-          </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-      <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>{label}</span>
-      <span style={{ fontSize: 'var(--fs-body)', fontWeight: 700 }}>{value}</span>
+    <div className={strong ? 'plan-row strong' : 'plan-row'}>
+      <span>{label}</span>
+      <b>{value}</b>
     </div>
   );
 }

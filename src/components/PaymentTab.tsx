@@ -10,6 +10,8 @@ import type { LoyaltyProgramme } from '../types';
 import { CARD_FACES, DEFAULT_FACE } from '../data/cardFaces';
 import { cardDistinguishesAbroad } from '../lib/earning';
 import { paceLine } from '../lib/spendPace';
+import { cardYearWindow } from '../data/cardDefs';
+import { formatDate } from '../lib/format';
 
 function money(n: number) {
   const sign = n < 0 ? '−' : '';
@@ -85,8 +87,12 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
   const [closedSaveError, setClosedSaveError] = useState('');
 
   const shown = cardResults.filter((r) => !removed.has(r.card.id));
-  const active = shown.filter((r) => !r.cardRow?.closedDate);
-  const archived = shown.filter((r) => r.cardRow?.closedDate);
+  // A membership (ALL Accor+ Explorer) isn't a payment card: it has its own
+  // section, never the carousel and never Archived.
+  const memberships = shown.filter((r) => r.card.kind === 'subscription');
+  const cards = shown.filter((r) => r.card.kind !== 'subscription');
+  const active = cards.filter((r) => !r.cardRow?.closedDate);
+  const archived = cards.filter((r) => r.cardRow?.closedDate);
   const leadAt = Math.min(lead, Math.max(0, active.length - 1));
 
   // The lead card's details (and an archived card's, when opened).
@@ -341,6 +347,52 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
     );
   }
 
+  // A membership: what it gives toward status and when it renews. Tap to
+  // change when it started; swipe to remove it.
+  function renderMembership(r: CardResult) {
+    const isOpen = open === r.card.id;
+    const prog = loyaltyProgrammes.find((p) => p.name === r.card.programmeBrand);
+    const today = new Date().toISOString().slice(0, 10);
+    const renews = r.cardRow?.openDate ? cardYearWindow(r.cardRow.openDate, today)?.end ?? null : null;
+    const ended = r.cardRow?.closedDate;
+    return (
+      <div key={r.card.id} className="archslot">
+        <SwipeToDelete onClick={() => setOpen(isOpen ? null : r.card.id)} onDelete={() => removeCard(r.card.id)} itemLabel={r.card.id} wrapperStyle={{ borderRadius: 'var(--r-md)' }}>
+          <div role="button" tabIndex={0} className="archrow" aria-expanded={isOpen} aria-label={r.card.id}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(isOpen ? null : r.card.id); } }}>
+            <BrandLogo name={prog?.name ?? r.card.programmeBrand} shape={prog?.shape} color={prog?.color} accent={prog?.accent} size={34} />
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontWeight: 600 }}>{r.card.id}</span>
+              <span style={{ display: 'block', fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 2 }}>
+                {ended ? `Ended ${formatDate(ended)}` : renews ? `Renews ${formatDate(renews)}` : r.card.programmeBrand}
+              </span>
+            </span>
+            {r.card.eliteNights.auto > 0 && !ended && (
+              <span className="membernights"><b>{r.card.eliteNights.auto}</b> nights a year</span>
+            )}
+          </div>
+        </SwipeToDelete>
+        {isOpen && (
+          <div className="walletdetail">
+            <div className="dd-row">
+              <span style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', fontWeight: 600 }}>Started</span>
+              <input
+                type="date" className="input compact inline-date" aria-label="Date started"
+                defaultValue={r.cardRow?.openDate ?? ''}
+                onChange={(e) => e.target.value && updateCardOpenDate(r.card.id, e.target.value).then(refetchCards).catch((err) => setCardError(err instanceof Error ? err.message : 'Could not save.'))}
+              />
+            </div>
+            {ended && (
+              <button className="removecard" onClick={() => updateCardClosedDate(r.card.id, null).then(refetchCards).catch((err) => setCardError(err instanceof Error ? err.message : 'Could not save.'))}>
+                Still a member
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="walletstack">
       {cardError && <ErrorText style={{ marginBottom: 10 }}>{cardError}</ErrorText>}
@@ -359,6 +411,15 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
         </>
       )}
       <Button variant="secondary" block onClick={() => navigate('/add-card')} style={{ marginTop: 14 }}>Add a card</Button>
+
+      {memberships.length > 0 && (
+        <>
+          <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', marginTop: 18 }}>
+            Memberships
+          </div>
+          <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>{memberships.map(renderMembership)}</div>
+        </>
+      )}
 
       {archived.length > 0 && (
         <>
