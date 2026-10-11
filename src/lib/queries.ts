@@ -3,6 +3,7 @@
 import { supabase } from './supabase';
 import { addDays } from './tripDay';
 import { canonicalStay } from './stayNormalise';
+import { dedupeStays, foldEmptyTrips } from './tripFold';
 import { notifyDataChanged } from './dataEvents';
 import type { CardDef } from '../data/cardDefs';
 import type { SpendRecord } from './bankSpend';
@@ -15,7 +16,8 @@ export async function fetchTrips(): Promise<Trip[]> {
   const { data: flights } = await supabase.from('flights').select('*');
   const today = new Date().toISOString().slice(0, 10);
 
-  return (trips ?? []).map((t): Trip => ({
+  const stays = dedupeStays((hotels ?? []).map((h) => ({ row: h, name: h.name as string, date: h.date as string, total: h.total == null ? null : Number(h.total) }))).map((x) => x.row);
+  return foldEmptyTrips((trips ?? []).map((t): Trip => ({
     id: t.id,
     title: t.title,
     start: t.start_date,
@@ -30,9 +32,9 @@ export async function fetchTrips(): Promise<Trip[]> {
     tripType: (t.trip_type as 'work' | 'leisure') ?? 'leisure',
     notes: t.notes ?? '',
     heroImageUrl: t.hero_image_url,
-    hotels: (hotels ?? []).filter((h) => h.trip_id === t.id).map(mapHotel),
+    hotels: stays.filter((h) => h.trip_id === t.id).map(mapHotel),
     flights: (flights ?? []).filter((f) => f.trip_id === t.id).map(mapFlight),
-  }));
+  })));
 }
 
 function computeSection(start: string, end: string, today: string): 'current' | 'upcoming' | 'past' {
@@ -208,7 +210,7 @@ function mapFlight(f: any): Flight {
 export async function fetchAllHotels(): Promise<Hotel[]> {
   const { data, error } = await supabase.from('hotels').select('*');
   if (error) throw error;
-  return (data ?? []).map(mapHotel);
+  return dedupeStays((data ?? []).map(mapHotel));
 }
 
 export async function fetchAllFlights(): Promise<Flight[]> {

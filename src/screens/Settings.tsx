@@ -4,7 +4,7 @@ import { setProgrammeTier, setHomeLocation, setCurrencyPreference } from '../lib
 import { SUPPORTED_CURRENCIES, CURRENCY_SYMBOL } from '../lib/currency';
 import { BA_TIERS, QR_TIERS, QF_TIERS, KF_TIERS } from '../lib/creditingEngine';
 import { loadWorldCities, type WorldCity } from '../data/worldCitiesLoader';
-import { ScreenHeader } from '../components/ui';
+import { ScreenHeader, SectionLabel } from '../components/ui';
 import { SectionSwitch } from '../components/SectionSwitch';
 
 
@@ -74,9 +74,7 @@ export function Settings() {
       />
 
       <div style={{ padding: '4px 20px 24px' }}>
-        <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)', marginBottom: 4 }}>
-          Home location
-        </div>
+        <SectionLabel style={{ marginBottom: 4 }}>Home location</SectionLabel>
         <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
           Trips within a short domestic hop of here won't be flagged for missing flights.
         </p>
@@ -107,9 +105,7 @@ export function Settings() {
       </div>
 
       <div style={{ padding: '4px 20px 24px', borderTop: '1px solid var(--line)' }}>
-        <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)', marginBottom: 4, marginTop: 20 }}>
-          Display currency
-        </div>
+        <SectionLabel style={{ marginBottom: 4, marginTop: 20 }}>Display currency</SectionLabel>
         <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
           Prices researched in another currency (like Plan a trip's cash-vs-points figures) convert to this using live exchange rates.
         </p>
@@ -125,9 +121,7 @@ export function Settings() {
       </div>
 
       <div style={{ padding: '4px 20px 32px', borderTop: '1px solid var(--line)' }}>
-        <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)', marginBottom: 4, marginTop: 20 }}>
-          Airline elite status
-        </div>
+        <SectionLabel style={{ marginBottom: 4, marginTop: 20 }}>Airline elite status</SectionLabel>
         <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
           Set once here and Where to Credit picks it up automatically. No need to enter it twice.
         </p>

@@ -10,9 +10,11 @@ ready for an iOS build.
 - **Two sections, one set of data**: the start page splits into Travel
   and Loyalty; Settings switches between them.
 - **Travel / Now**: trips under way, tonight's stay and what's coming,
-  as a timeline with photo cards and countdowns.
-- **Travel / Then**: a scratch-off world map of countries stayed in, a
-  scrapbook of past trips by year, stays to rate and the logbook.
+  as a timeline with photo cards and countdowns, ending in a card to
+  add or plan the next trip.
+- **Travel / Then**: a scratch-off world map of every country stayed in
+  or flown to, a scrapbook of past trips by year, stays to rate and the
+  logbook.
 - **Trip detail**: the itinerary (flights and stays in one card shape),
   a sketched map, photos, points earned and savings; flags trips missing
   an outbound or return flight.
@@ -21,7 +23,7 @@ ready for an iOS build.
 - **Loyalty / Wallet**: loyalty programmes (nights from stays, cards,
   memberships and promotions, each shown), payment cards on a ring
   carousel, memberships such as ALL Accor+ Explorer, vouchers and
-  promotions, with points valued in £.
+  promotions (spent ones archived), with points valued in £.
 - **Logging**: add a hotel, flight, trip or loyalty programme by hand,
   or **scan a booking email / screenshot** (Claude extracts the
   bookings) and **scan a promotion**. Likely duplicates are flagged.

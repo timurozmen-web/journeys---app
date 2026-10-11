@@ -10,7 +10,7 @@ import { LoyaltyTab } from '../components/LoyaltyTab';
 import { PaymentTab } from '../components/PaymentTab';
 import { BankStatus } from '../components/BankStatus';
 import { PromotionsTab } from '../components/PromotionsTab';
-import { Segmented } from '../components/ui';
+import { Segmented, SectionLabel } from '../components/ui';
 
 type Seg = 'loyalty' | 'payment' | 'promotions';
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -58,22 +58,21 @@ export function Wallet() {
   return (
     <div>
       <div className="topspace" />
-      <div style={{ padding: '20px 20px 18px' }}>
+      <div className="homehead block">
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
           <div>
-            <div style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink2)' }}>Wallet value {!isLive && '· sample data'}</div>
+            <SectionLabel>Wallet value {!isLive && '· sample data'}</SectionLabel>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <div style={{ fontSize: 'var(--fs-hero)', fontWeight: 600, letterSpacing: '-1.5px', marginTop: 2, lineHeight: 1, color: 'var(--ink)' }}>£{Math.round(totalValue).toLocaleString()}</div>
+              <div className="figure" style={{ fontSize: 'var(--fs-hero)', marginTop: 2, lineHeight: 1, color: 'var(--ink)' }}>£{Math.round(totalValue).toLocaleString()}</div>
               {valueChange.hasData && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 3, color: valueChange.deltaValue >= 0 ? 'var(--green)' : 'var(--red)', fontSize: 'var(--fs-body)', fontWeight: 600 }}>
                   <span>{valueChange.deltaValue >= 0 ? '▲' : '▼'}</span>
-                  <span>£{Math.round(Math.abs(valueChange.deltaValue)).toLocaleString()}</span>
+                  <span>£{Math.round(Math.abs(valueChange.deltaValue)).toLocaleString()} on last month</span>
                 </div>
               )}
             </div>
             <div style={{ fontSize: 'var(--fs-small)', fontWeight: 600, color: 'var(--ink2)', marginTop: 6 }}>
               {loyaltyProgrammes.reduce((s, p) => s + p.points, 0).toLocaleString()} points across {loyaltyProgrammes.length} programmes
-              {valueChange.hasData && <span> · vs last 30 days from stays</span>}
             </div>
           </div>
           <button

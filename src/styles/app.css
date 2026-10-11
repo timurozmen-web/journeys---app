@@ -5,6 +5,13 @@
 
 .head{padding:calc(var(--safe-top) + var(--s4)) var(--s5) var(--s4)}
 .topspace{height:var(--safe-top)}
+/* Every screen's first row sits the same distance below the status bar:
+   --safe-top, then --s4. Home screens (Now, Then, Loyalty, Wallet) use
+   .topspace + .homehead; others .head; a trip's photo buttons .tdback. The
+   trip page's buttons sat 12px higher than the rest and were clipped by
+   iOS's blur under the status bar. */
+.homehead{padding:var(--s4) var(--s5) var(--s4);display:flex;align-items:center;justify-content:space-between;gap:var(--s3)}
+.homehead.block{display:block}
 .h1{font-family:var(--font-display);font-size:var(--fs-h1);font-weight:700;letter-spacing:-.04em;line-height:1.15}
 .h-sub{font-size:var(--fs-body-lg);color:var(--ink3);margin-top:var(--s1)}
 .sect{display:flex;align-items:baseline;justify-content:space-between;margin:var(--s7) var(--s5) var(--s3);
@@ -87,7 +94,7 @@
 .chartwrap .big{font-size:var(--fs-h1);font-weight:600;letter-spacing:-1px;color:var(--ink)}
 .chartwrap .lab{font-size:var(--fs-small);color:var(--ink3);font-weight:600}
 
-.tdback{position:absolute;top:calc(var(--safe-top) + 4px);left:16px;z-index:5;
+.tdback{position:absolute;top:calc(var(--safe-top) + var(--s4));left:16px;z-index:5;
   width:36px;height:36px;border-radius:50%;background:rgba(18,18,18,.4);backdrop-filter:blur(8px);
   border:1px solid rgba(255,255,255,.18);display:grid;place-items:center;cursor:pointer;color:var(--on-dark)}
 .tdpane{padding:18px 20px 0}

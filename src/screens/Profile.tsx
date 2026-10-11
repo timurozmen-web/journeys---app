@@ -11,7 +11,8 @@ import { destinationQuery } from '../lib/tripHotels';
 import { formatShortRange } from '../lib/format';
 import { pastTripsByYear } from '../lib/tripTimeline';
 import { Segmented } from '../components/ui';
-import { averageOverall, completedStays, nightsByCountry, nightsByYear, shareOfWorld, travellingSince, tripsTaken } from '../lib/logbook';
+import { averageOverall, completedStays, nightsByCountry, nightsByYear, shareOfWorld, tripsTaken, visitedCountries } from '../lib/logbook';
+import { useGlobalAirports } from '../lib/useGlobalAirports';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
 const WorldMap = lazyWithRetry(() => import('../components/WorldMap').then((m) => ({ default: m.WorldMap })));
 
@@ -93,14 +94,19 @@ export function Profile() {
   const loggedStays = useMemo(() => completedStays(filteredHotels), [filteredHotels]);
   const countryNights = useMemo(() => nightsByCountry(filteredHotels), [filteredHotels]);
   const yearNights = useMemo(() => nightsByYear(hotels), [hotels]);
-  const countryCount = countryNights.length;
+  const airports = useGlobalAirports();
+  const completedFlights = useMemo(() => filteredFlights.filter((f) => f.status === 'Completed'), [filteredFlights]);
+  // Countries reached by flight count as well as those stayed in.
+  const visited = useMemo(
+    () => visitedCountries(filteredHotels, completedFlights, (iata) => airports?.get(iata)?.country ?? null),
+    [filteredHotels, completedFlights, airports],
+  );
+  const countryCount = visited.size;
   const totalNights = countryNights.reduce((s, c) => s + c.nights, 0);
   const totalStays = countryNights.reduce((s, c) => s + c.stays, 0);
   const tripCount = tripsTaken(year === 'all' ? trips : trips.filter((t) => yearOf(t.start) === year), today).length;
   const rating = averageOverall(filteredReviews);
-  const since = travellingSince(hotels);
   const scrapbook = useMemo(() => pastTripsByYear(trips, today), [trips, today]);
-  const completedFlights = useMemo(() => filteredFlights.filter((f) => f.status === 'Completed'), [filteredFlights]);
 
   const { totalDistanceKm, totalHours } = useMemo(() => {
     let km = 0, hrs = 0;
@@ -155,11 +161,8 @@ export function Profile() {
   return (
     <div>
       <div className="topspace" />
-      <div style={{ padding: '20px 20px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div>
-          <h1 className="h1" style={{ margin: 0 }}>Then</h1>
-          {since && <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', marginTop: 2 }}>Since {since}</div>}
-        </div>
+      <div className="homehead">
+        <h1 className="h1" style={{ margin: 0 }}>Then</h1>
         <div className="headtools">
           <SectionSwitch />
           <button className="lb-iconbtn" onClick={() => navigate('/settings')} aria-label="Settings">
@@ -179,7 +182,7 @@ export function Profile() {
       <div className="lb-map scratchmap">
         <Suspense fallback={<div style={{ height: 200, background: 'var(--map-bg)' }} />}>
           <WorldMap
-            hotels={loggedStays} flights={completedFlights} reviews={filteredReviews} focusCountries={focusCountries} scratch
+            hotels={loggedStays} flights={completedFlights} reviews={filteredReviews} focusCountries={focusCountries} scratch visited={visited}
             caption={<>
               <span className="scratch-count">{countryCount}</span>
               <span className="scratch-cap">{countryCount === 1 ? 'country' : 'countries'} scratched off · {shareOfWorld(countryCount)}% of the world</span>

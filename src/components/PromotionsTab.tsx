@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { usePromotions, useLoyaltyProgrammes } from '../lib/useLiveData';
 import { addPromotion, deletePromotion, setPromotionDiscountUsed, setPromotionStatusNightsApplied } from '../lib/queries';
 import type { Promotion, PromoType } from '../types';
+import { promoArchiveReason } from '../lib/promoArchive';
+import { formatDate } from '../lib/format';
+import { SwipeToDelete } from './SwipeToDelete';
+import { SectionLabel } from './ui';
 
 const TYPE_LABELS: Record<PromoType, string> = {
   multiplier: 'Earning multiplier',
@@ -35,6 +39,7 @@ export function PromotionsTab() {
   const { data: promotions, refetch } = usePromotions();
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
   const [adding, setAdding] = useState(false);
+  const [openArchived, setOpenArchived] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     title: '', description: '', brand: '', startDate: '', endDate: '',
@@ -66,68 +71,79 @@ export function PromotionsTab() {
     }
   }
 
+  // Promotions that have served their purpose (ended, used or applied)
+  // move to Archived, like closed cards: compact rows, swipe to delete.
+  const current = promotions.filter((p) => !promoArchiveReason(p, today));
+  const archived = promotions
+    .filter((p) => promoArchiveReason(p, today))
+    .sort((a, b) => (b.endDate ?? '').localeCompare(a.endDate ?? ''));
+  const reasonLabel = (p: Promotion) => {
+    const r = promoArchiveReason(p, today);
+    if (r === 'applied') return 'Applied to status';
+    if (r === 'used') return 'Used';
+    return p.endDate ? `Ended ${formatDate(p.endDate)}` : 'Ended';
+  };
+
+  // A promotion's details: what it gives, when it runs, and the tick that
+  // records it being used.
+  function renderPromo(p: Promotion) {
+    const isActive = (!p.startDate || p.startDate <= today) && (!p.endDate || p.endDate >= today) && !promoArchiveReason(p, today);
+    const summary = summarize(p);
+    return (
+      <div
+        style={{
+          padding: '12px 14px', borderRadius: 'var(--r-sm)', background: 'var(--card)',
+          border: `1px solid ${isActive ? 'var(--brand)' : 'var(--line)'}`, position: 'relative',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+          <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700 }}>{p.title}</div>
+          {isActive && (
+            <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--brand)', background: 'var(--brand-soft)', padding: '2px 8px', borderRadius: 'var(--r-pill)', flexShrink: 0 }}>
+              ACTIVE
+            </span>
+          )}
+        </div>
+        <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 3, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {p.brand && <span>{p.brand}</span>}
+          {p.promoType && <span>· {TYPE_LABELS[p.promoType]}</span>}
+        </div>
+        {summary && <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700, color: 'var(--brand)', marginTop: 6 }}>{summary}</div>}
+        {p.description && <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 6 }}>{p.description}</div>}
+        {(p.startDate || p.endDate) && (
+          <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink3)', marginTop: 6 }}>
+            {p.startDate ? formatDate(p.startDate) : '…'} – {p.endDate ? formatDate(p.endDate) : '…'}
+          </div>
+        )}
+
+        {p.promoType === 'fixed_discount' && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 'var(--fs-small)', fontWeight: 600, color: p.discountUsed ? 'var(--ink3)' : 'var(--ink2)' }}>
+            <input type="checkbox" checked={p.discountUsed} onChange={(e) => setPromotionDiscountUsed(p.id, e.target.checked).then(refetch)} />
+            {p.discountUsed ? 'Used' : 'Mark as used'}
+          </label>
+        )}
+        {p.promoType === 'status_boost' && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 'var(--fs-small)', fontWeight: 600, color: p.statusNightsApplied ? 'var(--ink3)' : 'var(--ink2)' }}>
+            <input type="checkbox" checked={p.statusNightsApplied} onChange={(e) => setPromotionStatusNightsApplied(p.id, e.target.checked).then(refetch)} />
+            {p.statusNightsApplied ? 'Applied to status' : 'Mark qualifying stay complete'}
+          </label>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="stack" style={{ display: 'grid', gap: 10 }}>
 
       {promotions.length === 0 && !adding && (
-        <div style={{ padding: '20px 4px', textAlign: 'center', color: 'var(--ink3)', fontSize: 'var(--fs-body)' }}>
-          No promotions logged yet. Scan one from Capture, or add manually below.
-        </div>
+        <div style={{ padding: '20px 4px', textAlign: 'center', color: 'var(--ink3)', fontSize: 'var(--fs-body)' }}>No promotions yet.</div>
       )}
 
-      {promotions.map((p) => {
-        const isActive = (!p.startDate || p.startDate <= today) && (!p.endDate || p.endDate >= today);
-        const summary = summarize(p);
-        return (
-          <div
-            key={p.id}
-            style={{
-              padding: '12px 14px', borderRadius: 'var(--r-sm)', background: 'var(--card)',
-              border: `1px solid ${isActive ? 'var(--brand)' : 'var(--line)'}`, position: 'relative',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, paddingRight: 20 }}>
-              <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700 }}>{p.title}</div>
-              {isActive && (
-                <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--brand)', background: 'var(--brand-soft)', padding: '2px 8px', borderRadius: 'var(--r-pill)', flexShrink: 0 }}>
-                  ACTIVE
-                </span>
-              )}
-            </div>
-            <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 3, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {p.brand && <span>{p.brand}</span>}
-              {p.promoType && <span>· {TYPE_LABELS[p.promoType]}</span>}
-            </div>
-            {summary && <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700, color: 'var(--brand)', marginTop: 6 }}>{summary}</div>}
-            {p.description && <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 6 }}>{p.description}</div>}
-            {(p.startDate || p.endDate) && (
-              <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink3)', marginTop: 6 }}>
-                {p.startDate ?? '…'} – {p.endDate ?? '…'}
-              </div>
-            )}
-
-            {p.promoType === 'fixed_discount' && (
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 'var(--fs-small)', fontWeight: 600, color: p.discountUsed ? 'var(--ink3)' : 'var(--ink2)' }}>
-                <input type="checkbox" checked={p.discountUsed} onChange={(e) => setPromotionDiscountUsed(p.id, e.target.checked).then(refetch)} />
-                {p.discountUsed ? 'Used' : 'Mark as used'}
-              </label>
-            )}
-            {p.promoType === 'status_boost' && (
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 'var(--fs-small)', fontWeight: 600, color: p.statusNightsApplied ? 'var(--ink3)' : 'var(--ink2)' }}>
-                <input type="checkbox" checked={p.statusNightsApplied} onChange={(e) => setPromotionStatusNightsApplied(p.id, e.target.checked).then(refetch)} />
-                {p.statusNightsApplied ? 'Applied to status' : 'Mark qualifying stay complete'}
-              </label>
-            )}
-
-            <button
-              onClick={() => deletePromotion(p.id).then(refetch)}
-              style={{ position: 'absolute', top: 10, right: 10, background: 'none', border: 'none', color: 'var(--ink3)', fontSize: 'var(--fs-small)', cursor: 'pointer' }}
-            >
-              ✕
-            </button>
-          </div>
-        );
-      })}
+      {current.map((p) => (
+        <SwipeToDelete key={p.id} itemLabel={p.title} surface="var(--bg)" wrapperStyle={{ borderRadius: 'var(--r-sm)' }} onDelete={() => deletePromotion(p.id).then(refetch)}>
+          {renderPromo(p)}
+        </SwipeToDelete>
+      ))}
 
       {!adding ? (
         <button
@@ -235,6 +251,31 @@ export function PromotionsTab() {
             </button>
           </div>
         </div>
+      )}
+      {archived.length > 0 && (
+        <>
+          <SectionLabel style={{ marginTop: 10 }}>Archived</SectionLabel>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {archived.map((p) => {
+              const isOpen = openArchived === p.id;
+              return (
+                <div key={p.id} className="archslot">
+                  <SwipeToDelete itemLabel={p.title} wrapperStyle={{ borderRadius: 'var(--r-md)' }} onClick={() => setOpenArchived(isOpen ? null : p.id)} onDelete={() => deletePromotion(p.id).then(refetch)}>
+                    <div role="button" tabIndex={0} className="archrow" aria-expanded={isOpen} aria-label={p.title}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenArchived(isOpen ? null : p.id); } }}>
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ display: 'block', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</span>
+                        <span style={{ display: 'block', fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 2 }}>{[p.brand, reasonLabel(p)].filter(Boolean).join(' · ')}</span>
+                      </span>
+                      <span aria-hidden="true" style={{ color: 'var(--ink3)' }}>{isOpen ? '⌃' : '⌄'}</span>
+                    </div>
+                  </SwipeToDelete>
+                  {isOpen && <div style={{ marginTop: 8 }}>{renderPromo(p)}</div>}
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
