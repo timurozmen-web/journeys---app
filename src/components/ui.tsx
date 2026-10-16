@@ -6,15 +6,19 @@ import { useNavigate } from 'react-router-dom';
 import { BackIcon } from './Icons';
 import { dayMonth } from '../lib/format';
 
-// Back arrow + title at the top of every pushed screen.
-export function ScreenHeader({ title, right, onBack }: { title: ReactNode; right?: ReactNode; onBack?: () => void }) {
+// Back arrow + title at the top of every pushed screen, with an optional
+// line under the title for what it belongs to (a form's trip).
+export function ScreenHeader({ title, sub, right, onBack }: { title: ReactNode; sub?: ReactNode; right?: ReactNode; onBack?: () => void }) {
   const navigate = useNavigate();
   return (
     <div className="head screenhead">
       <button className="back" aria-label="Back" onClick={onBack ?? (() => navigate(-1))}>
         <BackIcon size={20} color="currentColor" />
       </button>
-      <div className="title">{title}</div>
+      <div className="titlewrap">
+        <h1 className="title">{title}</h1>
+        {sub && <div className="sub">{sub}</div>}
+      </div>
       {right && <div className="right">{right}</div>}
     </div>
   );
@@ -27,12 +31,45 @@ export function ScreenIntro({ children }: { children: ReactNode }) {
 
 // Label + control (+ optional hint) for a form field. The control itself
 // takes className="input" (or "input compact").
+// The label wraps the control, so tapping the label focuses it and screen
+// readers announce it with the control (the bare labels before named
+// nothing).
 export function Field({ label, hint, children, style }: { label: ReactNode; hint?: ReactNode; children: ReactNode; style?: CSSProperties }) {
   return (
-    <div style={style}>
-      <label className="field-label">{label}</label>
+    <label className="field" style={style}>
+      <span className="field-label">{label}</span>
       {children}
-      {hint && <div className="field-hint">{hint}</div>}
+      {hint && <span className="field-hint">{hint}</span>}
+    </label>
+  );
+}
+
+// "Delete this? [Yes] [Cancel]" and "Save anyway?" in one look everywhere.
+export function Confirm({ children, confirmLabel, cancelLabel = 'Cancel', onConfirm, onCancel, busy, danger }: {
+  children: ReactNode; confirmLabel: string; cancelLabel?: string; onConfirm: () => void; onCancel: () => void; busy?: boolean; danger?: boolean;
+}) {
+  return (
+    <div className="confirmbox" role="alert">
+      <div className="confirmbox-msg">{children}</div>
+      <div className="confirmbox-actions">
+        <button type="button" className={danger ? 'btn small dangerfill' : 'btn small primary'} disabled={busy} onClick={onConfirm}>{confirmLabel}</button>
+        <button type="button" className="btn small secondary" onClick={onCancel}>{cancelLabel}</button>
+      </div>
+    </div>
+  );
+}
+
+// Something about a screen's content worth acting on (a trip missing a
+// flight, nights not booked): the same row shape as Today's to-dos.
+export function Notice({ icon, title, children, action }: { icon: ReactNode; title: ReactNode; children?: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="notice">
+      <span className="todo-icon" aria-hidden="true">{icon}</span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span className="rowtitle">{title}</span>
+        {children && <span className="rowsub">{children}</span>}
+      </span>
+      {action}
     </div>
   );
 }

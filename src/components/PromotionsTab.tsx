@@ -5,7 +5,7 @@ import type { Promotion, PromoType } from '../types';
 import { promoArchiveReason } from '../lib/promoArchive';
 import { formatDate } from '../lib/format';
 import { SwipeToDelete } from './SwipeToDelete';
-import { SectionLabel } from './ui';
+import { Button, EmptyState, SectionLabel } from './ui';
 
 const TYPE_LABELS: Record<PromoType, string> = {
   multiplier: 'Earning multiplier',
@@ -135,7 +135,7 @@ export function PromotionsTab({ brand = null }: { brand?: string | null }) {
     <div className="stack" style={{ display: 'grid', gap: 10 }}>
 
       {promotions.length === 0 && !adding && (
-        <div style={{ padding: '20px 4px', textAlign: 'center', color: 'var(--ink3)', fontSize: 'var(--fs-body)' }}>No promotions yet.</div>
+        <EmptyState>No promotions yet</EmptyState>
       )}
 
       {current.map((p) => (
@@ -145,27 +145,19 @@ export function PromotionsTab({ brand = null }: { brand?: string | null }) {
       ))}
 
       {!adding ? (
-        <button
-          onClick={() => setAdding(true)}
-          style={{
-            padding: '10px 0', borderRadius: 'var(--r-control)', border: '1px dashed var(--line)', background: 'var(--card2)',
-            color: 'var(--ink2)', fontSize: 'var(--fs-body)', fontWeight: 700, cursor: 'pointer',
-          }}
-        >
-          + Add promotion manually
-        </button>
+        <Button variant="secondary" block onClick={() => setAdding(true)}>Add a promotion</Button>
       ) : (
-        <div style={{ display: 'grid', gap: 8, padding: '12px 14px', borderRadius: 'var(--r-sm)', border: '1px solid var(--line)', background: 'var(--card)' }}>
+        <div className="listcard pad" style={{ gap: 8 }}>
           <input
             placeholder="Title"
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            style={{ padding: '9px 11px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', fontSize: 'var(--fs-body)' }}
+            className="input"
           />
           <select
             value={form.promoType}
             onChange={(e) => setForm((f) => ({ ...f, promoType: e.target.value as PromoType }))}
-            style={{ padding: '9px 11px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', fontSize: 'var(--fs-body)' }}
+            className="input"
           >
             {(Object.keys(TYPE_LABELS) as PromoType[]).filter((t) => t !== 'other').map((t) => (
               <option key={t} value={t}>{TYPE_LABELS[t]}</option>
@@ -174,7 +166,7 @@ export function PromotionsTab({ brand = null }: { brand?: string | null }) {
           <select
             value={form.brand}
             onChange={(e) => setForm((f) => ({ ...f, brand: e.target.value }))}
-            style={{ padding: '9px 11px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', fontSize: 'var(--fs-body)' }}
+            className="input"
           >
             <option value="">No specific brand</option>
             {loyaltyProgrammes.map((p) => (
@@ -185,32 +177,32 @@ export function PromotionsTab({ brand = null }: { brand?: string | null }) {
           {form.promoType === 'multiplier' && (
             <input placeholder="Multiplier (e.g. 2 for 2x)" type="number" step="0.1" value={form.multiplier}
               onChange={(e) => setForm((f) => ({ ...f, multiplier: e.target.value }))}
-              style={{ padding: '9px 11px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', fontSize: 'var(--fs-body)' }} />
+              className="input" />
           )}
           {form.promoType === 'threshold_bonus' && (
             <>
               <input placeholder="Spend required (£)" type="number" step="0.01" value={form.thresholdSpend}
                 onChange={(e) => setForm((f) => ({ ...f, thresholdSpend: e.target.value }))}
-                style={{ padding: '9px 11px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', fontSize: 'var(--fs-body)' }} />
+                className="input" />
               <input placeholder="Bonus points" type="number" value={form.bonusPoints}
                 onChange={(e) => setForm((f) => ({ ...f, bonusPoints: e.target.value }))}
-                style={{ padding: '9px 11px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', fontSize: 'var(--fs-body)' }} />
+                className="input" />
             </>
           )}
           {form.promoType === 'fixed_discount' && (
             <input placeholder="Discount amount (£)" type="number" step="0.01" value={form.discountValue}
               onChange={(e) => setForm((f) => ({ ...f, discountValue: e.target.value }))}
-              style={{ padding: '9px 11px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', fontSize: 'var(--fs-body)' }} />
+              className="input" />
           )}
           {form.promoType === 'status_boost' && (
             <input placeholder="Bonus status nights" type="number" value={form.statusNightsBonus}
               onChange={(e) => setForm((f) => ({ ...f, statusNightsBonus: e.target.value }))}
-              style={{ padding: '9px 11px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', fontSize: 'var(--fs-body)' }} />
+              className="input" />
           )}
           {form.promoType === 'airline_partner' && (
             <input placeholder="Airline programme (e.g. Virgin Points)" value={form.partnerAirline}
               onChange={(e) => setForm((f) => ({ ...f, partnerAirline: e.target.value }))}
-              style={{ padding: '9px 11px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', fontSize: 'var(--fs-body)' }} />
+              className="input" />
           )}
 
           <textarea
@@ -218,36 +210,25 @@ export function PromotionsTab({ brand = null }: { brand?: string | null }) {
             value={form.description}
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             rows={2}
-            style={{ padding: '9px 11px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', fontSize: 'var(--fs-body)', fontFamily: 'inherit', resize: 'vertical' }}
+            className="input" style={{fontFamily: 'inherit', resize: 'vertical' }}
           />
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 8 }}>
             <input
               type="date"
               value={form.startDate}
               onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
-              style={{ padding: '9px 11px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', fontSize: 'var(--fs-body)', minWidth: 0, boxSizing: 'border-box' }}
+              className="input" style={{minWidth: 0, boxSizing: 'border-box' }}
             />
             <input
               type="date"
               value={form.endDate}
               onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
-              style={{ padding: '9px 11px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', fontSize: 'var(--fs-body)', minWidth: 0, boxSizing: 'border-box' }}
+              className="input" style={{minWidth: 0, boxSizing: 'border-box' }}
             />
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={handleAdd}
-              disabled={saving || !form.title}
-              style={{ flex: 1, padding: '9px 0', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 'var(--fs-body)', fontWeight: 700, cursor: 'pointer' }}
-            >
-              {saving ? 'Saving…' : 'Save'}
-            </button>
-            <button
-              onClick={() => setAdding(false)}
-              style={{ flex: 1, padding: '9px 0', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card2)', color: 'var(--ink2)', fontSize: 'var(--fs-body)', fontWeight: 700, cursor: 'pointer' }}
-            >
-              Cancel
-            </button>
+            <Button small style={{ flex: 1 }} onClick={handleAdd} disabled={saving || !form.title}>{saving ? 'Saving…' : 'Save'}</Button>
+            <Button small variant="secondary" style={{ flex: 1 }} onClick={() => setAdding(false)}>Cancel</Button>
           </div>
         </div>
       )}

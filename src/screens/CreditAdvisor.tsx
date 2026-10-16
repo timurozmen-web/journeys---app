@@ -28,7 +28,13 @@ const UK_AIRPORTS = new Set([
 export function CreditAdvisor() {
   const { data: programmes } = useLoyaltyProgrammes();
   // Opened from a flight's "Credit" on its trip: that flight, filled in.
-  const flight = (useLocation().state as { flight?: Flight } | null)?.flight ?? null;
+  const opened = (useLocation().state ?? null) as { flight?: Flight; miles?: number | null } | null;
+  const flight = opened?.flight ?? null;
+  // A connecting flight earns on each leg: its own route's miles (through
+  // the stops) are passed in, where looking up from-to alone gave the
+  // straight line (925 for BUD-LHR, where the legs via Warsaw add up to more) and a lower
+  // figure than the chip on the trip page.
+  const routeMiles = flight && opened?.miles ? opened.miles : null;
   const flightCarrier = flight ? airlineBadge(flight.flightNo, flight.airline).code : null;
 
   const [from, setFrom] = useState(flight?.from ?? '');
@@ -61,13 +67,15 @@ export function CreditAdvisor() {
   }, [programmes.length]);
 
   useEffect(() => {
-    if (from.length === 3 && to.length === 3) {
+    if (routeMiles && flight && from === flight.from && to === flight.to) {
+      setDistanceMiles(routeMiles);
+    } else if (from.length === 3 && to.length === 3) {
       setDistanceLoading(true);
       distanceMilesBetween(from, to).then((mi) => { setDistanceMiles(mi); setDistanceLoading(false); });
     } else {
       setDistanceMiles(null);
     }
-  }, [from, to]);
+  }, [from, to, routeMiles, flight]);
 
   function onBookingClassChange(v: string) {
     setBookingClass(v);
@@ -98,27 +106,29 @@ export function CreditAdvisor() {
 
       <div style={{ padding: '10px 20px', display: 'grid', gap: 14 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-          <div>
-            <label className="field-label">From *</label>
+          <label className="field">
+            <span className="field-label">From *</span>
             <input className="input" value={from} onChange={(e) => setFrom(e.target.value.toUpperCase())} placeholder="LHR" maxLength={3} />
-          </div>
-          <div>
-            <label className="field-label">To *</label>
+          </label>
+          <label className="field">
+            <span className="field-label">To *</span>
             <input className="input" value={to} onChange={(e) => setTo(e.target.value.toUpperCase())} placeholder="SYD" maxLength={3} />
-          </div>
+          </label>
         </div>
         {from.length === 3 && to.length === 3 && !distanceLoading && distanceMiles == null && (
-          <div>
-            <label className="field-label">Couldn't find one of those airports — distance (miles) *</label>
+          <label className="field">
+            <span className="field-label">Couldn't find one of those airports — distance (miles) *</span>
             <input className="input" type="number" value={manualDistance} onChange={(e) => setManualDistance(e.target.value)} placeholder="e.g. 6890" />
-          </div>
+          </label>
         )}
         {distanceMiles != null && (
-          <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)' }}>{distanceMiles.toLocaleString()} miles, great-circle</div>
+          <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)' }}>
+            {distanceMiles.toLocaleString()} miles{routeMiles && flight?.via.length && from === flight.from && to === flight.to ? ` via ${flight.via.join(', ')}` : ', great-circle'}
+          </div>
         )}
 
-        <div>
-          <label className="field-label">Operating carrier *</label>
+        <label className="field">
+          <span className="field-label">Operating carrier *</span>
           <select className="input" value={carrier} onChange={(e) => setCarrier(e.target.value)}>
             <optgroup label="Oneworld">
               {CARRIERS.filter((c) => c.alliance === 'oneworld').map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
@@ -128,38 +138,34 @@ export function CreditAdvisor() {
             </optgroup>
             <option value="OTHER">Other / not listed</option>
           </select>
-        </div>
+        </label>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-          <div>
-            <label className="field-label">Cabin</label>
+          <label className="field">
+            <span className="field-label">Cabin</span>
             <select className="input" value={cabin} onChange={(e) => { setCabin(e.target.value as Cabin); setFareLevelTouched(false); }}>
               {CABINS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
-          </div>
-          <div>
-            <label className="field-label">Booking class</label>
+          </label>
+          <label className="field">
+            <span className="field-label">Booking class</span>
             <input className="input" value={bookingClass} onChange={(e) => onBookingClassChange(e.target.value.toUpperCase())} placeholder="e.g. K" maxLength={1} />
-          </div>
+          </label>
         </div>
 
-        <div>
-          <label className="field-label">Fare level {bookingClass && <span style={{ textTransform: 'none', fontWeight: 400 }}>(suggested from booking class, adjust if it's off)</span>}</label>
+        <label className="field">
+          <span className="field-label">Fare level {bookingClass && <span style={{ textTransform: 'none', fontWeight: 400 }}>(suggested from booking class, adjust if it's off)</span>}</span>
           <select className="input" value={fareLevel} onChange={(e) => { setFareLevel(e.target.value as FareLevel); setFareLevelTouched(true); }}>
             <option value="lowest">Lowest / deep discount</option>
             <option value="standard">Standard</option>
             <option value="flex">Flexible / full fare</option>
           </select>
-        </div>
+        </label>
 
-        <div>
-          <label className="field-label">Price paid (£, optional)</label>
+        <label className="field">
+          <span className="field-label">Price paid (£, optional)</span>
           <input className="input" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Only needed for BA's spend-based earning" />
-        </div>
-
-        <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', lineHeight: 1.5, margin: 0 }}>
-          Elite tiers come from your programmes in the wallet. Keep those current and this stays accurate on its own.
-        </p>
+        </label>
       </div>
 
       {/* A seat bought with points earns nothing, wherever it's credited. */}
@@ -189,9 +195,8 @@ function Results({ advisor }: { advisor: ReturnType<typeof runAdvisor> }) {
         </div>
       )}
       {results.map((r) => <ProgramCard key={r.program} r={r} isBest={r.program === bestValue?.program} />)}
-      <p style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink2)', lineHeight: 1.5 }}>
-        Value estimates use rough per-point rates ({(['BA', 'QR', 'QF', 'KF'] as ProgramId[]).map((p) => `${p} ${REDEEMABLE_VALUE_PENCE[p]}p`).join(' · ')}),
-        useful for comparing options here, not a guarantee of redemption value.
+      <p style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', lineHeight: 1.5 }}>
+        Valued at {(['BA', 'QR', 'QF', 'KF'] as ProgramId[]).map((p) => `${p} ${REDEEMABLE_VALUE_PENCE[p]}p`).join(' · ')} a point (estimates)
       </p>
     </div>
   );

@@ -1,5 +1,6 @@
 import { Fragment, useState, useEffect, useRef, Suspense } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Navigate, useParams, useNavigate } from 'react-router-dom';
+import { wasDeleted } from '../lib/deleted';
 import { useTrips, useLoyaltyProgrammes, usePromotions, useAllHotels } from '../lib/useLiveData';
 import { uploadTripPhoto, fetchTripPhotos, splitTrip, deleteHotel, deleteFlight } from '../lib/queries';
 import { SwipeToDelete } from '../components/SwipeToDelete';
@@ -20,9 +21,9 @@ import { countdownLabel, daysUntil } from '../lib/tripTimeline';
 import { useGlobalAirports } from '../lib/useGlobalAirports';
 import { AIRPORTS } from '../data/airports';
 import { tripDayInfo, addDays } from '../lib/tripDay';
-import { checkTripCompleteness, flightSearchUrl, returnFlightSearchUrl, tripGapDescription } from '../lib/tripCompleteness';
-import { useFlightExemptTripIds } from '../lib/homeLocation';
-import { Button, ErrorText, Eyebrow, PhotoHero, SectionLabel } from '../components/ui';
+import { checkTripCompleteness, flightSearchUrl, returnFlightSearchUrl } from '../lib/tripCompleteness';
+import { useTripFlightGaps } from '../lib/useTripFlightGaps';
+import { Button, EmptyState, ErrorText, Eyebrow, Notice, PhotoHero, ScreenHeader, SectionLabel } from '../components/ui';
 
 export function TripDetail() {
   const { id } = useParams();
@@ -60,9 +61,11 @@ export function TripDetail() {
       setLegError(err instanceof Error ? err.message : 'Could not delete it.');
     }
   }
-  const flightExemptTripIds = useFlightExemptTripIds(trips);
+  const flightGaps = useTripFlightGaps(trips, new Date().toISOString().slice(0, 10));
 
-  if (!trip) return <div className="head">Trip not found</div>;
+  // A trip deleted this session moves on to the list; one not loaded yet
+  // (just created) waits on the same page.
+  if (!trip) return wasDeleted('trip', id ?? '') ? <Navigate to="/trips" replace /> : <div><ScreenHeader title="Trip" /><EmptyState>Not found</EmptyState></div>;
 
   const heroImage = photoUrl ?? trip.heroImageUrl;
 
@@ -150,14 +153,19 @@ export function TripDetail() {
     return 0;
   });
 
+  // The same check Today and Trips use, so all three agree.
+  const flightGap = flightGaps.get(trip.id) ?? null;
   const tripGap = checkTripCompleteness(trip);
-  const showTripGap = tripGap && !flightExemptTripIds.has(trip.id);
   const gapDestination = trip.title.split(/[·+]/)[0].trim();
   const gapDateOut = sortedHotels[0]?.date;
   const gapDateBack = sortedHotels.length ? (() => {
     const last = sortedHotels[sortedHotels.length - 1];
     return addDays(last.date, last.nights);
   })() : undefined;
+  const searchUrl = !tripGap ? null
+    : tripGap.missingOutbound && gapDateOut ? flightSearchUrl(gapDestination, gapDateOut, tripGap.missingReturn ? gapDateBack : undefined)
+    : tripGap.missingReturn && gapDateBack ? returnFlightSearchUrl(gapDestination, gapDateBack)
+    : null;
 
   return (
     <div>
@@ -166,19 +174,21 @@ export function TripDetail() {
         src={heroImage}
         fallback={<DestinationPhoto query={destinationQuery(trip)} seed={trip.id} height={380} />}
       >
-        <button className="tdback" aria-label="Back" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/trips'))}>
+        <button className="tdback" aria-label="Back" onClick={() => (((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0 ? navigate(-1) : navigate('/trips', { replace: true }))}>
           <BackIcon size={18} color="var(--on-dark)" />
         </button>
         <button
           className="tdback"
           style={{ left: 'auto', right: 64 }}
-          onClick={() => navigate('/log-trip', { state: { trip } })}
+          aria-label="Edit trip"
+          onClick={() => navigate('/log-trip', { state: { trip, back: true } })}
         >
           <EditIcon size={17} color="var(--on-dark)" />
         </button>
         <button
           className="tdback"
           style={{ left: 'auto', right: 16 }}
+          aria-label="Add a cover photo"
           onClick={() => fileInput.current?.click()}
           disabled={uploading}
         >
@@ -200,35 +210,15 @@ export function TripDetail() {
 
       {uploadError && <div style={{ padding: '8px 20px', color: 'var(--red)', fontSize: 'var(--fs-small)' }}>{uploadError}</div>}
 
-      {showTripGap && tripGap && (
+      {flightGap && (
         <div style={{ padding: '18px 20px 0' }}>
-          <div style={{ border: '1px solid rgba(217,183,124,.3)', background: 'rgba(217,183,124,.1)', borderRadius: 'var(--r-md)', padding: '14px 16px' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-              <span style={{ flexShrink: 0, marginTop: 1 }}><AlertIcon size={18} color="var(--brand)" /></span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 'var(--fs-body)', fontWeight: 600, color: 'var(--ink)' }}>Trip incomplete</div>
-                {tripGapDescription(trip, tripGap).map((note) => (
-                  <div key={note} style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 3 }}>{note}</div>
-                ))}
-                <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-                  {tripGap.missingOutbound && gapDateOut && (
-                    <a
-                      href={flightSearchUrl(gapDestination, gapDateOut, tripGap.missingReturn ? gapDateBack : undefined)} style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--on-brand)', background: 'var(--brand)', borderRadius: 'var(--r-pill)', padding: '7px 13px', textDecoration: 'none' }}
-                    >
-                      Find flights
-                    </a>
-                  )}
-                  {!tripGap.missingOutbound && tripGap.missingReturn && gapDateBack && (
-                    <a
-                      href={returnFlightSearchUrl(gapDestination, gapDateBack)} style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--on-brand)', background: 'var(--brand)', borderRadius: 'var(--r-pill)', padding: '7px 13px', textDecoration: 'none' }}
-                    >
-                      Find return flight
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          <Notice
+            icon={<AlertIcon size={18} />} title={flightGap}
+            action={<>
+              {searchUrl && <a className="tagbtn" href={searchUrl} target="_blank" rel="noreferrer">Search</a>}
+              <button className="tagbtn on" onClick={() => navigate('/log-flight', { state: { tripId: trip.id, back: true } })}>Add</button>
+            </>}
+          />
         </div>
       )}
 
@@ -271,7 +261,7 @@ export function TripDetail() {
                     {leg.kind === 'hotel' ? (
                       <SwipeToDelete
                         itemLabel={leg.data.name} surface="var(--bg)" wrapperStyle={{ borderRadius: 'var(--r-md)' }}
-                        onClick={() => navigate('/log-hotel', { state: { hotel: leg.data, tripId: trip.id } })}
+                        onClick={() => navigate('/log-hotel', { state: { hotel: leg.data, tripId: trip.id, back: true } })}
                         onDelete={() => removeLeg('hotel', leg.data.id)}
                       >
                         <BookingCard
@@ -282,14 +272,14 @@ export function TripDetail() {
                             <span className="moons" aria-hidden="true">
                               {Array.from({ length: Math.min(leg.data.nights, 7) }, (_, k) => <MoonIcon key={k} size={13} />)}
                             </span>
-                            {leg.data.nights} night{leg.data.nights === 1 ? '' : 's'}{leg.data.brand && leg.data.brand !== 'Independent' ? ` · ${leg.data.brand}` : ''}
+                            {leg.data.nights} night{leg.data.nights === 1 ? '' : 's'}{leg.data.brand && !['Independent', 'Other'].includes(leg.data.brand) ? ` · ${leg.data.brand}` : ''}
                           </>}
                         />
                       </SwipeToDelete>
                     ) : (
                       <SwipeToDelete
                         itemLabel={`${leg.data.from} → ${leg.data.to}`} surface="var(--bg)" wrapperStyle={{ borderRadius: 'var(--r-md)' }}
-                        onClick={() => navigate('/log-flight', { state: { flight: leg.data, tripId: trip.id } })}
+                        onClick={() => navigate('/log-flight', { state: { flight: leg.data, tripId: trip.id, back: true } })}
                         onDelete={() => removeLeg('flight', leg.data.id)}
                       >
                         <BookingCard
@@ -305,7 +295,7 @@ export function TripDetail() {
                             if (!pick) return null;
                             const flight = leg.data;
                             return (
-                              <button className="creditchip" onClick={(e) => { e.stopPropagation(); navigate('/credit', { state: { flight } }); }}>
+                              <button className="creditchip" onClick={(e) => { e.stopPropagation(); navigate('/credit', { state: { flight, miles: flightMiles(flight, locate) } }); }}>
                                 Credit to {pick.label}<span>~{pick.amount.toLocaleString()} {pick.unit}</span>
                               </button>
                             );
@@ -319,8 +309,8 @@ export function TripDetail() {
               })}
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-              <Button variant="secondary" small style={{ flex: 1 }} onClick={() => navigate('/add/stay', { state: { tripId: trip.id } })}>Add stay</Button>
-              <Button variant="secondary" small style={{ flex: 1 }} onClick={() => navigate('/add/flight', { state: { tripId: trip.id } })}>Add flight</Button>
+              <Button variant="secondary" small style={{ flex: 1 }} onClick={() => navigate('/log-hotel', { state: { tripId: trip.id, back: true } })}>Add stay</Button>
+              <Button variant="secondary" small style={{ flex: 1 }} onClick={() => navigate('/log-flight', { state: { tripId: trip.id, back: true } })}>Add flight</Button>
             </div>
           </>
         )}
@@ -330,26 +320,28 @@ export function TripDetail() {
         const suggestion = suggestTripSplit(trip);
         if (!suggestion) return null;
         return (
-          <div style={{ margin: '14px 20px 0', padding: '12px 14px', borderRadius: 'var(--r-md)', background: 'var(--amber-soft)', border: '1px solid rgba(232,176,75,.3)' }}>
-            <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700, color: 'var(--amber)' }}>This looks like two trips</div>
-            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', marginTop: 3 }}>
-              There's a long gap and a country change between {suggestion.beforeCountry} and {suggestion.afterCountry}. Want to split this into two separate trips?
-            </div>
-            <button
-              disabled={splitting}
-              onClick={async () => {
-                setSplitting(true);
-                try {
-                  const newId = await splitTrip(trip.id, suggestion.splitDate, suggestion.afterCountry, trip.end, trip.tripType);
-                  navigate(`/trips/${newId}`);
-                } catch {
-                  setSplitting(false);
-                }
-              }}
-              style={{ marginTop: 8, padding: '7px 14px', borderRadius: 'var(--r-pill)', border: 'none', background: 'var(--amber)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
+          <div style={{ padding: '14px 20px 0' }}>
+            <Notice
+              icon={<AlertIcon size={18} />} title="Looks like two trips"
+              action={(
+                <button
+                  className="tagbtn" disabled={splitting}
+                  onClick={async () => {
+                    setSplitting(true);
+                    try {
+                      const newId = await splitTrip(trip.id, suggestion.splitDate, suggestion.afterCountry, trip.end, trip.tripType);
+                      navigate(`/trips/${newId}`, { replace: true });
+                    } catch {
+                      setSplitting(false);
+                    }
+                  }}
+                >
+                  {splitting ? 'Splitting…' : 'Split'}
+                </button>
+              )}
             >
-              {splitting ? 'Splitting…' : `Split at ${suggestion.splitDate}`}
-            </button>
+              {suggestion.beforeCountry} and {suggestion.afterCountry}, split at {dayMonthShort(suggestion.splitDate)}
+            </Notice>
           </div>
         );
       })()}
@@ -393,7 +385,7 @@ export function TripDetail() {
               {unpricedFlights.map((f) => (
                 <div key={f.id} className="line">
                   <span>{f.flightNo ?? `${f.from} → ${f.to}`}</span>
-                  <button className="linkbtn" onClick={() => navigate('/log-flight', { state: { flight: f, tripId: trip.id } })}>Add price</button>
+                  <button className="linkbtn" onClick={() => navigate('/log-flight', { state: { flight: f, tripId: trip.id, back: true } })}>Add price</button>
                 </div>
               ))}
             </div>
@@ -410,48 +402,25 @@ export function TripDetail() {
       </div>
 
       {trip.tripType === 'leisure' && gaps.length > 0 && (
-        <>
-          <div className="sect">
-            <h2>Missing nights</h2>
-          </div>
-          <div style={{ display: 'grid', gap: 8, padding: '0 20px 20px' }}>
-            {gaps.map((g, i) => {
-              const before = [...destinations].reverse().find((d) => d.end <= g.start);
-              const guessedCountry = (before ?? destinations[0])?.hotels[0]?.country ?? '';
-              return (
-              <div
-                key={i}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-                  padding: '12px 14px', borderRadius: 'var(--r-sm)', background: 'var(--amber-soft)', border: '1px solid rgba(232,176,75,.3)',
-                }}
+        <section style={{ display: 'grid', gap: 10, padding: '0 20px 20px' }}>
+          <SectionLabel>Nights not booked</SectionLabel>
+          {gaps.map((g, i) => {
+            const before = [...destinations].reverse().find((d) => d.end <= g.start);
+            const guessedCountry = (before ?? destinations[0])?.hotels[0]?.country ?? '';
+            return (
+              <Notice
+                key={i} icon={<MoonIcon size={16} />} title={formatDateRange(g.start, g.end)}
+                action={(
+                  <button className="tagbtn on" onClick={() => navigate('/log-hotel', { state: { tripId: trip.id, back: true, prefill: { date: g.start, nights: g.nights, country: guessedCountry } } })}>
+                    Add
+                  </button>
+                )}
               >
-                <div>
-                  <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700, color: 'var(--amber)' }}>
-                    {formatDateRange(g.start, g.end)}
-                  </div>
-                  <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 2 }}>
-                    {g.nights} night{g.nights === 1 ? '' : 's'} not accounted for
-                  </div>
-                </div>
-                <button
-                  onClick={() =>
-                    navigate('/log-hotel', {
-                      state: { tripId: trip.id, prefill: { date: g.start, nights: g.nights, country: guessedCountry } },
-                    })
-                  }
-                  style={{
-                    flexShrink: 0, padding: '8px 14px', borderRadius: 'var(--r-control)', border: 'none',
-                    background: 'var(--amber)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer',
-                  }}
-                >
-                  + Add hotel
-                </button>
-              </div>
-              );
-            })}
-          </div>
-        </>
+                {g.nights} night{g.nights === 1 ? '' : 's'}
+              </Notice>
+            );
+          })}
+        </section>
       )}
 
     </div>

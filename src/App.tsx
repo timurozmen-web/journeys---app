@@ -20,7 +20,6 @@ import { LogTrip } from './screens/LogTrip';
 import { ScanEmail } from './screens/ScanEmail';
 import { ScanPromotion } from './screens/ScanPromotion';
 import { BankSync } from './screens/BankSync';
-import { AddMethod } from './screens/AddMethod';
 import { AddCard } from './screens/AddCard';
 import { ImportCalendar } from './screens/ImportCalendar';
 import { ReviewTrip } from './screens/ReviewTrip';
@@ -59,7 +58,6 @@ export default function App() {
             <Route path="/promotions" element={<Promotions />} />
             <Route path="/cards" element={<Cards />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/add/:kind" element={<AddMethod />} />
             <Route path="/add-card" element={<AddCard />} />
             <Route path="/import-calendar" element={<ImportCalendar />} />
             <Route path="/log-hotel" element={<LogHotel />} />
@@ -79,6 +77,8 @@ export default function App() {
             <Route path="/loyalty" element={<Navigate to="/status" replace />} />
             <Route path="/wallet" element={<Navigate to="/cards" replace />} />
             <Route path="/action/plan" element={<Navigate to="/plan" replace />} />
+            <Route path="/add/stay" element={<Navigate to="/log-hotel" replace />} />
+            <Route path="/add/flight" element={<Navigate to="/log-flight" replace />} />
             <Route path="/action/credit" element={<Navigate to="/credit" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

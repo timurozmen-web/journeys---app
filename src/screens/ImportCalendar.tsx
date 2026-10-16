@@ -64,10 +64,11 @@ export function ImportCalendar() {
       if (found.length === 0) {
         setError('That event doesn’t look like a booking. Pick another, or enter it manually.');
       } else if (found.length === 1) {
-        const r = bookingRoute(found[0], { tripId, returnTo: { pathname: '/import-calendar', state: { tripId } } });
-        navigate(r.to, { state: r.state });
+        // Saved, it comes back here for the next event.
+        const r = bookingRoute(found[0], { tripId });
+        navigate(r.to, { state: { ...r.state, back: true } });
       } else {
-        navigate('/scan-email', { state: { tripId, resumeBookings: found, resumeSaved: [] } });
+        navigate('/scan-email', { state: { tripId, scanId: crypto.randomUUID(), resumeBookings: found } });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');

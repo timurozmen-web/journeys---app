@@ -3,10 +3,12 @@
    every screen that uses it. Values come from tokens.css only. */
 
 /* Screen header: back arrow + title, used by every pushed screen. */
-.screenhead{display:flex;align-items:center;gap:var(--s3)}
+.screenhead{display:flex;align-items:center;gap:var(--s3);min-height:calc(44px + var(--safe-top) + var(--s4) * 2)}
 .screenhead .back{background:none;border:none;padding:0;cursor:pointer;display:grid;place-items:center;color:var(--ink)}
-.screenhead .title{font-family:var(--font-display);font-size:var(--fs-heading);font-weight:700;letter-spacing:-.04em;line-height:1.2}
-.screenhead .right{margin-left:auto}
+.screenhead .titlewrap{min-width:0;flex:1}
+.screenhead .title{margin:0;font-family:var(--font-display);font-size:var(--fs-heading);font-weight:700;letter-spacing:-.04em;line-height:1.2}
+.screenhead .sub{margin-top:2px;font-family:var(--font-display);font-size:var(--fs-caption);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--brand)}
+.screenhead .right{margin-left:auto;flex-shrink:0}
 .screenintro{padding:0 var(--s5);font-size:var(--fs-body);color:var(--ink2);line-height:1.5;margin:calc(var(--s1) * -1) 0 0}
 
 /* Forms */
@@ -24,21 +26,23 @@ input[type=date].input::-webkit-date-and-time-value{text-align:left;min-height:1
 input[type=date].input::-webkit-calendar-picker-indicator{opacity:.6;margin:0;padding:0}
 textarea.input{resize:vertical;line-height:1.45}
 .input.compact{font-size:var(--fs-body);padding:9px 11px;border-radius:var(--r-xs)}
-.field-hint{font-size:var(--fs-caption);color:var(--ink3);margin-top:5px;line-height:1.45}
+.field{display:block;min-width:0}
+.field-hint{display:block;font-size:var(--fs-caption);color:var(--ink3);margin-top:5px;line-height:1.45}
 .field-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
 
 /* Buttons */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);border:1px solid transparent;
-  border-radius:var(--r-sm);padding:13px 16px;font:inherit;font-size:var(--fs-input);font-weight:700;cursor:pointer;
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);border:1.5px solid transparent;
+  border-radius:var(--r-control);padding:13px 16px;font:inherit;font-family:var(--font-display);font-size:var(--fs-body-lg);font-weight:700;cursor:pointer;
   text-decoration:none;transition:opacity .15s,background .15s}
 .btn:disabled{opacity:.55;cursor:default}
 .btn.block{width:100%}
-.btn.small{padding:8px 14px;font-size:var(--fs-small);border-radius:var(--r-xs)}
+.btn.small{padding:8px 14px;font-size:var(--fs-small);border-radius:var(--r-control);min-height:40px}
 .btn.primary{background:var(--brand);color:var(--on-brand)}
 .btn.secondary{background:var(--card);color:var(--ink);border-color:var(--line)}
 .btn.soft{background:var(--brand-soft);color:var(--brand)}
 .btn.ghost{background:none;color:var(--brand);padding-left:0;padding-right:0}
 .btn.danger{background:var(--card);color:var(--red);border-color:var(--red-soft)}
+.btn.dangerfill{background:var(--red);color:var(--on-dark)}
 .btn.onphoto{background:var(--on-dark-fill);color:var(--on-dark);border-color:var(--on-dark-line);backdrop-filter:blur(8px)}
 
 /* Section label: the small uppercase heading above a group. */
@@ -122,13 +126,13 @@ textarea.input{resize:vertical;line-height:1.45}
   font-size:var(--fs-title);font-weight:300;color:var(--brand);flex-shrink:0}
 .lb-iconbtn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--ink);
   display:grid;place-items:center;cursor:pointer;flex-shrink:0}
-.lb-notice{display:flex;align-items:center;gap:8px;margin:14px 16px 0;padding:10px 14px;border-radius:var(--r-sm);
+.lb-notice{display:flex;align-items:center;gap:8px;margin:14px var(--s5) 0;padding:10px 14px;border-radius:var(--r-sm);
   background:var(--amber-soft);font-size:var(--fs-small);color:var(--ink2);line-height:1.4}
 .lb-dot{width:6px;height:6px;border-radius:50%;background:var(--amber);flex-shrink:0}
-.lb-map{position:relative;margin:16px 16px 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--line);background:var(--map-bg)}
+.lb-map{position:relative;margin:16px var(--s5) 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--line);background:var(--map-bg)}
 .lb-map-count{position:absolute;left:16px;bottom:12px;z-index:2;display:flex;flex-direction:column;gap:2px;pointer-events:none;
   text-shadow:0 0 6px var(--map-bg),0 0 3px var(--map-bg)}
-.lb-label{padding:26px 24px 10px;color:var(--ink2)}
+.lb-label{padding:26px var(--s5) 10px;color:var(--ink2)}
 .lb-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0 16px}
 .lb-tile{padding:14px 16px;display:flex;flex-direction:column;gap:2px}
 .lb-num{font-size:var(--fs-display);font-weight:300;line-height:1.1}
@@ -168,7 +172,7 @@ textarea.input{resize:vertical;line-height:1.45}
    edge. Margin percentages are of the stack's width, which is also the
    card's width, so the overlap scales with the card (card height is 63.05%
    of its width; 78px of each card stays visible). */
-.walletstack{padding:0 16px}
+.walletstack{padding:0 var(--s5)}
 .walletslot{position:relative;margin-top:14px}
 .walletslot:first-child{margin-top:0}
 .walletslot.stacked{margin-top:calc(-63.05% + 78px)}
@@ -203,8 +207,8 @@ input[type=date].input.inline-date:focus{border-color:var(--brand2)}
 .minicard{width:46px;aspect-ratio:85.6/54;border-radius:5px;flex-shrink:0;border:1px solid rgba(0,0,0,.08)}
 
 /* A value shown as plain text that can be edited in place. */
-.input.inline-value{width:auto;max-width:55%;height:30px;line-height:1;padding:0 0 0 8px;background:transparent;border-color:transparent;text-align:right;font-weight:700;font-size:var(--fs-small)}
-.input.inline-value:focus{border-color:var(--brand2);background:var(--card2);padding-right:8px}
+.input.inline-value{width:auto;max-width:55%;height:34px;line-height:1;padding:0 10px;background:transparent;border-color:transparent;text-align:right;font-weight:700;font-size:var(--fs-small)}
+.input.inline-value:focus{background:var(--card2)}
 
 .archslot{position:relative}
 .archrow{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--card);border:1px solid var(--line);
@@ -329,7 +333,9 @@ input[type=date].input.inline-date:focus{border-color:var(--brand2)}
 :root .lb-iconbtn{border:1.5px solid var(--ink)}
 :root .modeswitch{border:1.5px solid var(--ink);background:var(--card)}
 :root .btn.secondary{border:1.5px solid var(--ink);font-family:var(--font-display)}
-:root .input{border:1.5px solid var(--ink);border-radius:6px}
+:root .input{border:1.5px solid var(--ink);border-radius:var(--r-control)}
+:root .input.inline-value,:root input[type=date].input.inline-date{border-color:var(--line)}
+:root .input.inline-value:focus,:root input[type=date].input.inline-date:focus{border-color:var(--ink)}
 :root .field-label,:root .sectionlabel{font-family:var(--font-display)}
 
 /* ---- Cards carousel ----
@@ -496,8 +502,9 @@ input[type=date].input.inline-date:focus{border-color:var(--brand2)}
 /* ---- One app: Today, Trips, Status, Cards ----
    Shared pieces for the four tabs: list cards with rows, a date column,
    square brand badges, outlined Space Mono tags, thin progress bars. */
-.page-body,.today-body{display:grid;gap:24px;padding:0 16px 24px}
+.page-body,.today-body{display:grid;gap:24px;padding:0 var(--s5) 24px}
 .page-body > section,.today-body > section{display:grid;gap:10px}
+.page-body.form{gap:14px;padding:0 20px 24px}
 .eyebrowline{font-family:var(--font-display);font-size:var(--fs-caption);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
 .iconbtn{width:44px;height:44px;flex-shrink:0;display:grid;place-items:center;border:1.5px solid var(--ink);border-radius:6px;background:none;color:var(--ink);cursor:pointer}
 .iconbtn.small{width:36px;height:36px}
@@ -624,3 +631,21 @@ input[type=date].input.inline-date:focus{border-color:var(--brand2)}
   font-weight:600;color:var(--ink);text-align:left;cursor:pointer}
 .addlist button + button{border-top:1px solid var(--line)}
 .addlist button span{flex:1}
+
+/* Confirm a delete or a save that looks wrong, and notices on a screen. */
+.confirmbox{display:grid;gap:10px;padding:14px;background:var(--card);border:1.5px solid var(--ink);border-radius:var(--r-md)}
+.confirmbox-msg{font-size:var(--fs-body);font-weight:600;color:var(--ink);line-height:1.4}
+.confirmbox-actions{display:flex;gap:8px;flex-wrap:wrap}
+.notice{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md)}
+.notice .rowtitle{font-weight:700}
+.formnote{padding:10px 14px;background:var(--amber-soft);border-radius:var(--r-control);font-size:var(--fs-small);font-weight:600;color:var(--amber)}
+.shotgrid{display:flex;gap:8px;flex-wrap:wrap}
+.shot{position:relative;width:72px;height:72px;padding:0;border:1px solid var(--line);border-radius:var(--r-control);background:var(--card);overflow:visible}
+.shot img{width:100%;height:100%;object-fit:cover;border-radius:var(--r-control);display:block}
+.shot-add{display:grid;place-items:center;border:1.5px dashed var(--ink3);cursor:pointer}
+.shot-remove{position:absolute;top:-8px;right:-8px;width:24px;height:24px;display:grid;place-items:center;border-radius:50%;border:2px solid var(--bg);
+  background:var(--ink);color:var(--on-dark);cursor:pointer;padding:0}
+.tagbtn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.notice .tagbtn,.todo .tagbtn{min-height:40px;font-family:var(--font-display);font-weight:700;font-size:var(--fs-small)}
+.notice > .tagbtn + .tagbtn,.notice .tagbtn + .tagbtn{margin-left:6px}
+.carouselclip{margin:0 calc(-1 * var(--s5));overflow-x:hidden;overflow-x:clip}

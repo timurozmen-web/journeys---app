@@ -115,7 +115,7 @@ export function Status() {
           <div className="eyebrowline">{today.slice(0, 4)}</div>
           <h1 className="h1" style={{ margin: 0 }}>Status</h1>
         </div>
-        <button className="iconbtn" aria-label="Add a programme" onClick={() => navigate('/log-loyalty-programme')}><PlusIcon size={20} /></button>
+        <button className="iconbtn" aria-label="Add a programme" onClick={() => navigate('/log-loyalty-programme', { state: { back: true } })}><PlusIcon size={20} /></button>
       </div>
 
       <div className="page-body">

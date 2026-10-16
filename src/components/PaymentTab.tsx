@@ -148,13 +148,8 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
                   {[{ v: true, l: 'UK spend' }, { v: false, l: 'Overseas spend' }].map((opt) => (
                     <button
                       key={String(opt.v)}
+                      className={spendIsUK === opt.v ? 'tagbtn on' : 'tagbtn'} aria-pressed={spendIsUK === opt.v}
                       onClick={() => setSpendIsUK(opt.v)}
-                      style={{
-                        padding: '4px 10px', borderRadius: 'var(--r-pill)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer',
-                        border: spendIsUK === opt.v ? '1px solid var(--brand)' : '1px solid var(--line)',
-                        background: spendIsUK === opt.v ? 'var(--brand-soft)' : 'var(--card)',
-                        color: spendIsUK === opt.v ? 'var(--brand)' : 'var(--ink3)',
-                      }}
                     >
                       {opt.l}
                     </button>
@@ -396,7 +391,9 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
       {cardError && <ErrorText style={{ marginBottom: 10 }}>{cardError}</ErrorText>}
       {active.length > 0 && (
         <>
-          <div style={{ margin: '0 -16px' }}>
+          {/* The cards behind the lead one reach past the screen edge: clipped
+              there, as they made the whole Cards page scroll sideways. */}
+          <div className="carouselclip">
             <CardCarousel
               count={active.length}
               focus={initialOpen}

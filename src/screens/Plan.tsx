@@ -469,7 +469,8 @@ export function Plan() {
         });
       }
 
-      navigate(`/trips/${tripId}`);
+      // The saved trip takes the planner's place, so Back goes to Trips.
+      navigate(`/trips/${tripId}`, { replace: true });
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Failed to save this plan');
     } finally {

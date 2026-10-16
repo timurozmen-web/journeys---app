@@ -75,14 +75,14 @@ export function Today() {
     const sub = flightGaps.get(t.id)!;
     todos.push({
       key: `flights-${t.id}`, icon: <PlaneIcon size={18} />, title: t.title, sub,
-      action: { label: 'Add', onClick: () => navigate('/log-flight', { state: { tripId: t.id } }) },
+      action: { label: 'Add', onClick: () => navigate('/log-flight', { state: { tripId: t.id, back: true } }) },
       onOpen: () => navigate(`/trips/${t.id}`),
     });
   }
   for (const h of findHotelsNeedingReview(trips, reviews, today).slice(0, 3)) {
     todos.push({
       key: `rate-${h.hotelId}`, icon: <StarIcon size={18} />, title: h.hotelName, sub: `Stayed ${dayMonthShort(h.date)}`,
-      action: { label: 'Rate', onClick: () => navigate('/review-trip', { state: { hotel: h } }) },
+      action: { label: 'Rate', onClick: () => navigate('/review-trip', { state: { hotel: h, back: true } }) },
     });
   }
   const shownTodos = todos.filter((t) => !done.has(t.key));
@@ -236,7 +236,7 @@ export function Today() {
           {date}
           <span className="badge-sq empty" aria-hidden="true" />
           <span className="nextrow-main"><span className="rowtitle quiet">No stay booked</span></span>
-          <button className="linkbtn" onClick={() => navigate('/log-hotel', { state: { tripId: item.trip.id, prefill: { date: item.date, nights: item.nights } } })}>Add</button>
+          <button className="linkbtn" onClick={() => navigate('/log-hotel', { state: { tripId: item.trip.id, back: true, prefill: { date: item.date, nights: item.nights } } })}>Add</button>
         </div>
       );
     }

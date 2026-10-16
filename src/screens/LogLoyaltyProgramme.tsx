@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useFinish } from '../lib/useFinish';
 import { addLoyaltyProgramme } from '../lib/queries';
-import { Button, ErrorText, ScreenHeader } from '../components/ui';
+import { Button, ErrorText, ScreenHeader, Segmented } from '../components/ui';
 
 
 export function LogLoyaltyProgramme() {
-  const navigate = useNavigate();
+  const finish = useFinish();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
@@ -35,7 +35,7 @@ export function LogLoyaltyProgramme() {
         nightsNeeded: form.nightsNeeded ? parseInt(form.nightsNeeded, 10) : null,
         category: form.category,
       });
-      navigate('/status');
+      finish.done('/status');
     } catch (err) {
       const message =
         err instanceof Error
@@ -51,66 +51,51 @@ export function LogLoyaltyProgramme() {
 
   return (
     <div>
-      <ScreenHeader title="Add a loyalty scheme" />
+      <ScreenHeader title="New programme" />
 
-      <form onSubmit={handleSubmit} style={{ padding: '10px 20px 40px', display: 'grid', gap: 16 }}>
-        <div>
-          <label className="field-label">Programme name</label>
+      <form onSubmit={handleSubmit} style={{ padding: '0 20px 40px', display: 'grid', gap: 14 }}>
+        <label className="field">
+          <span className="field-label">Programme name</span>
           <input className="input" value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. World of Hyatt" autoFocus />
-        </div>
+        </label>
 
-        <div>
-          <label className="field-label">Type</label>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {(['hotel', 'airline'] as const).map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => set('category', c)}
-                style={{
-                  flex: 1, padding: '10px 0', borderRadius: 'var(--r-control)', fontSize: 'var(--fs-body)', fontWeight: 700, cursor: 'pointer',
-                  border: form.category === c ? '2px solid var(--brand)' : '1px solid var(--line)',
-                  background: form.category === c ? 'var(--brand-soft)' : 'var(--card)',
-                  color: form.category === c ? 'var(--brand)' : 'var(--ink)',
-                }}
-              >
-                {c === 'hotel' ? 'Hotel' : 'Airline'}
-              </button>
-            ))}
-          </div>
-        </div>
+        <Segmented
+          variant="pills" tone="brand"
+          options={[{ value: 'hotel', label: 'Hotel' }, { value: 'airline', label: 'Airline' }]}
+          value={form.category} onChange={(v) => set('category', v)}
+        />
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <div>
-            <label className="field-label">Current points</label>
+          <label className="field">
+            <span className="field-label">Current points</span>
             <input type="number" className="input" value={form.points} onChange={(e) => set('points', e.target.value)} placeholder="0" />
-          </div>
-          <div>
-            <label className="field-label">Value per point (£)</label>
+          </label>
+          <label className="field">
+            <span className="field-label">Value per point (£)</span>
             <input type="number" step="0.01" className="input" value={form.ptValue} onChange={(e) => set('ptValue', e.target.value)} placeholder="0.50" />
-          </div>
+          </label>
         </div>
 
-        <div>
-          <label className="field-label">Current tier (optional)</label>
+        <label className="field">
+          <span className="field-label">Current tier (optional)</span>
           <input className="input" value={form.tier} onChange={(e) => set('tier', e.target.value)} placeholder="e.g. Gold" />
-        </div>
+        </label>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <div>
-            <label className="field-label">Next tier (optional)</label>
+          <label className="field">
+            <span className="field-label">Next tier (optional)</span>
             <input className="input" value={form.nextTier} onChange={(e) => set('nextTier', e.target.value)} placeholder="e.g. Platinum" />
-          </div>
-          <div>
-            <label className="field-label">Nights needed</label>
+          </label>
+          <label className="field">
+            <span className="field-label">Nights needed</span>
             <input type="number" className="input" value={form.nightsNeeded} onChange={(e) => set('nightsNeeded', e.target.value)} placeholder="e.g. 50" disabled={!form.nextTier} />
-          </div>
+          </label>
         </div>
 
         {error && <ErrorText>{error}</ErrorText>}
 
         <Button type="submit" block disabled={saving} style={{ marginTop: 4 }}>
-          {saving ? 'Saving…' : 'Add programme'}
+          {saving ? 'Saving…' : 'Save programme'}
         </Button>
       </form>
     </div>

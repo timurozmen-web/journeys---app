@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { useFinish } from '../lib/useFinish';
 import { addTrip, updateTrip, deleteTrip } from '../lib/queries';
 import { withOfflineFallback } from '../lib/offlineQueue';
 import type { Trip } from '../types';
-import { Button, ErrorText, ScreenHeader, Segmented } from '../components/ui';
+import { Button, Confirm, ErrorText, ScreenHeader, Segmented } from '../components/ui';
 
 
 export function LogTrip() {
-  const navigate = useNavigate();
   const location = useLocation();
+  const finish = useFinish();
   const editing = (location.state as { trip?: Trip } | null)?.trip;
   // Started from the Trips screen's Work tab: default to a work trip.
   const presetType = (location.state as { tripType?: 'work' | 'leisure' } | null)?.tripType;
@@ -39,7 +40,7 @@ export function LogTrip() {
     try {
       if (editing) {
         await withOfflineFallback('updateTrip', form.title, updateTrip, editing.id, form);
-        navigate(`/trips/${editing.id}`);
+        finish.done(`/trips/${editing.id}`);
       } else {
         // Same pre-generated-id pattern as the hotel/flight queue: the
         // id is created client-side so navigation can go straight to
@@ -51,7 +52,8 @@ export function LogTrip() {
           async (input: typeof form, tripId: string) => { await addTrip(input, tripId); },
           form, id
         );
-        navigate(`/trips/${id}`);
+        // The new trip's page takes the form's place.
+        finish.done(`/trips/${id}`);
       }
     } catch (err) {
       const message =
@@ -70,23 +72,23 @@ export function LogTrip() {
       <ScreenHeader title={editing ? 'Edit trip' : 'New trip'} />
 
       <form onSubmit={handleSubmit} style={{ padding: '0 20px', display: 'grid', gap: 14 }}>
-        <div>
-          <label className="field-label">Trip name *</label>
+        <label className="field">
+          <span className="field-label">Trip name *</span>
           <input className="input" value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. Japan 2027" />
-        </div>
+        </label>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-          <div>
-            <label className="field-label">Start *</label>
+          <label className="field">
+            <span className="field-label">Start *</span>
             <input
               className="input" type="date" value={form.start}
               // An end date before the new start is cleared rather than kept invalid.
               onChange={(e) => setForm((f) => ({ ...f, start: e.target.value, end: f.end && f.end < e.target.value ? '' : f.end }))}
             />
-          </div>
-          <div>
-            <label className="field-label">End *</label>
+          </label>
+          <label className="field">
+            <span className="field-label">End *</span>
             <input className="input" type="date" min={form.start || undefined} value={form.end} onChange={(e) => set('end', e.target.value)} />
-          </div>
+          </label>
         </div>
 
         <Segmented
@@ -94,8 +96,8 @@ export function LogTrip() {
           options={[{ value: 'leisure', label: 'Leisure' }, { value: 'work', label: 'Work' }]}
           value={form.tripType} onChange={(v) => set('tripType', v)}
         />
-        <div>
-          <label className="field-label">Notes</label>
+        <label className="field">
+          <span className="field-label">Notes</span>
           <textarea
             className="input" style={{ resize: 'vertical', fontFamily: 'inherit' }}
             rows={3}
@@ -103,7 +105,7 @@ export function LogTrip() {
             onChange={(e) => set('notes', e.target.value)}
             placeholder="Optional"
           />
-        </div>
+        </label>
 
         {error && <ErrorText>{error}</ErrorText>}
 
@@ -115,49 +117,29 @@ export function LogTrip() {
           <button
             type="button"
             onClick={() => setConfirmingDelete(true)}
-            className="btn ghost" style={{ color: 'var(--red)', fontSize: 'var(--fs-body)', fontWeight: 600, padding: '6px 0', justifyContent: 'flex-start' }}
+            className="removecard" style={{ justifySelf: 'start', padding: '10px 0' }}
           >
             Delete this trip
           </button>
         )}
         {editing && confirmingDelete && (
-          <div style={{ background: 'var(--red-soft)', border: '1px solid rgba(240,138,126,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
-            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--red)', fontWeight: 600, marginBottom: 8 }}>
-              Delete "{editing.title}" permanently? This also removes {editing.hotels.length} stay{editing.hotels.length === 1 ? '' : 's'} and {editing.flights.length} flight{editing.flights.length === 1 ? '' : 's'} logged under it. This can't be undone.
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={async () => {
-                  setDeleting(true);
-                  try {
-                    await deleteTrip(editing.id);
-                    navigate('/trips');
-                  } catch (err) {
-                    const message =
-                      err instanceof Error
-                        ? err.message
-                        : typeof err === 'object' && err !== null && 'message' in err
-                        ? String((err as { message: unknown }).message)
-                        : 'Failed to delete.';
-                    setError(message);
-                    setDeleting(false);
-                  }
-                }}
-                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--red)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
-              >
-                {deleting ? 'Deleting…' : 'Yes, delete it'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmingDelete(false)}
-                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+          <Confirm
+            danger busy={deleting} confirmLabel={deleting ? 'Deleting…' : 'Delete trip'}
+            onCancel={() => setConfirmingDelete(false)}
+            onConfirm={async () => {
+              setDeleting(true);
+              try {
+                await deleteTrip(editing.id);
+                // Back past the trip's own page too: it no longer exists.
+                finish.gone('/trips', 2);
+              } catch (err) {
+                setError(err instanceof Error ? err.message : 'Could not delete the trip.');
+                setDeleting(false);
+              }
+            }}
+          >
+            Delete {editing.title}{editing.hotels.length + editing.flights.length > 0 ? ` with its ${[editing.hotels.length ? `${editing.hotels.length} stay${editing.hotels.length === 1 ? '' : 's'}` : null, editing.flights.length ? `${editing.flights.length} flight${editing.flights.length === 1 ? '' : 's'}` : null].filter(Boolean).join(' and ')}` : ''}?
+          </Confirm>
         )}
       </form>
     </div>
