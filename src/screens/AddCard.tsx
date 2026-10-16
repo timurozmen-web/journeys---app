@@ -34,7 +34,7 @@ export function AddCard() {
         ? { id: name.trim(), programmeBrand: 'Other', annualFee: Number(fee), feeLabel: Number(fee) > 0 ? `£${Number(fee)}/yr` : 'Free' }
         : CARDS_STATIC.find((c) => c.id === picked)!;
       await savePaymentCard(def, openDate);
-      navigate('/wallet', { state: { seg: 'payment', tracked: [def.id] }, replace: true });
+      navigate('/cards', { state: { tracked: [def.id] }, replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not add the card.');
       setSaving(false);

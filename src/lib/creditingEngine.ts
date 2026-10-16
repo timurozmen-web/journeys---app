@@ -60,6 +60,10 @@ export const CARRIERS: CarrierDef[] = [
   { code: 'VA', name: 'Virgin Australia', alliance: 'star' },
   { code: 'OU', name: 'Croatia Airlines', alliance: 'star' },
   { code: 'CM', name: 'Copa Airlines', alliance: 'star' },
+  // Star Alliance members flown on logged trips (LOT via Warsaw to and from
+  // Budapest, Aegean to Athens), per staralliance.com's member list.
+  { code: 'LO', name: 'LOT Polish Airlines', alliance: 'star' },
+  { code: 'A3', name: 'Aegean Airlines', alliance: 'star' },
   { code: 'OTHER', name: 'Other / not listed', alliance: 'other' },
 ];
 

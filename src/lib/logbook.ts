@@ -93,3 +93,12 @@ export function averageOverall(reviews: Review[]): { avg: number | null; count: 
   if (overall.length === 0) return { avg: null, count: 0 };
   return { avg: overall.reduce((s, r) => s + r.score, 0) / overall.length, count: overall.length };
 }
+
+/** Countries reached in one calendar year (stays and flights, as visitedCountries). */
+export function visitedInYear(year: string, hotels: Hotel[], flights: Flight[], countryOfAirport: (iata: string) => string | null): Set<string> {
+  return visitedCountries(
+    hotels.filter((h) => h.date.startsWith(year)),
+    flights.filter((f) => f.date?.startsWith(year)),
+    countryOfAirport,
+  );
+}

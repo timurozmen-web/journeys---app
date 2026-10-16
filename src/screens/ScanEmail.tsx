@@ -45,6 +45,22 @@ export function ScanEmail() {
   }, [location.state]);
   const fileInput = useRef<HTMLInputElement>(null);
 
+  // Screenshots picked from the + sheet arrive with the navigation and are
+  // read straight away: choosing them was the tap.
+  const autoRead = useRef(false);
+  useEffect(() => {
+    const files = (location.state as { files?: File[] } | null)?.files;
+    if (!files?.length) return;
+    autoRead.current = true;
+    setImages(files.slice(0, MAX_IMAGES).map((file) => ({ file, previewUrl: URL.createObjectURL(file) })));
+  }, [location.state]);
+  useEffect(() => {
+    if (!autoRead.current || images.length === 0) return;
+    autoRead.current = false;
+    handleExtract();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [images]);
+
   function addFiles(files: FileList | null) {
     if (!files) return;
     const picked = Array.from(files)
@@ -143,7 +159,7 @@ export function ScanEmail() {
         {savedKeys.size === bookings.length && (
           <div style={{ padding: '16px 20px' }}>
             <button
-              onClick={() => navigate('/now')}
+              onClick={() => navigate('/trips')}
               style={{ width: '100%', padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 'var(--fs-input)', fontWeight: 700, cursor: 'pointer' }}
             >
               Done, go to trips

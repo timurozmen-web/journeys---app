@@ -80,7 +80,7 @@ export function ScanPromotion() {
     setSaving(true);
     try {
       await addPromotion(result);
-      navigate('/wallet');
+      navigate('/promotions');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save');
       setSaving(false);

@@ -13,23 +13,26 @@ const TripMap = lazyWithRetry(() => import('../components/TripMap').then((m) => 
 import { destinationQuery } from '../lib/tripHotels';
 import { TripMemories } from '../components/TripMemories';
 import { formatDateRange, formatMoney, weekdayDay } from '../lib/format';
-import { computeTripPoints, computeTripSavings, groupDestinations, findGaps, suggestTripSplit } from '../lib/tripStats';
+import { tripPointsLines, groupDestinations, findGaps, suggestTripSplit } from '../lib/tripStats';
+import { creditPick, flightMiles, tiersFrom } from '../lib/flightCredit';
+import { promosToRegister, dayMonthShort } from '../lib/today';
+import { countdownLabel, daysUntil } from '../lib/tripTimeline';
+import { useGlobalAirports } from '../lib/useGlobalAirports';
+import { AIRPORTS } from '../data/airports';
 import { tripDayInfo, addDays } from '../lib/tripDay';
 import { checkTripCompleteness, flightSearchUrl, returnFlightSearchUrl, tripGapDescription } from '../lib/tripCompleteness';
 import { useFlightExemptTripIds } from '../lib/homeLocation';
-import { Button, ErrorText, Eyebrow, PhotoHero, Segmented } from '../components/ui';
-
-type Seg = 'overview' | 'expenses' | 'notes';
+import { Button, ErrorText, Eyebrow, PhotoHero, SectionLabel } from '../components/ui';
 
 export function TripDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [seg, setSeg] = useState<Seg>('overview');
   const [view, setView] = useState<'itinerary' | 'map'>('itinerary');
   const { data: trips, refetch: refetchTrips } = useTrips();
   const { data: allHotels } = useAllHotels();
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
   const { data: promotions } = usePromotions();
+  const airports = useGlobalAirports();
   const trip = trips.find((t) => t.id === id);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -85,10 +88,24 @@ export function TripDetail() {
     }
   }
 
-  const spend = trip.hotels.reduce((s, h) => s + (h.total ?? 0), 0) + trip.flights.reduce((s, f) => s + (f.cost ?? 0), 0);
+  const stayCost = trip.hotels.reduce((s, h) => s + (h.total ?? 0), 0);
+  const flightCost = trip.flights.reduce((s, f) => s + (f.cost ?? 0), 0);
+  const unpricedFlights = trip.flights.filter((f) => f.cost == null && !f.award);
   const upcoming = trip.start > new Date().toISOString().slice(0, 10);
-  const points = computeTripPoints(trip, loyaltyProgrammes, promotions, allHotels, upcoming);
-  const savings = computeTripSavings(trip);
+  const pointLines = tripPointsLines(trip, loyaltyProgrammes, promotions, allHotels, upcoming);
+  const totalPoints = pointLines.reduce((s, l) => s + l.points, 0);
+  const toRegister = promosToRegister(promotions, allHotels, new Date().toISOString().slice(0, 10), trip.hotels);
+  // Status nights this trip adds, per programme working toward a tier.
+  const statusNights = loyaltyProgrammes
+    .filter((p) => p.category === 'hotel' && p.nextTier)
+    .map((p) => ({ name: p.name, nights: trip.hotels.filter((h) => h.brand === p.name && !h.award && (upcoming ? h.status !== 'needs-confirm' : h.status === 'Completed')).reduce((n, h) => n + h.nights, 0) }))
+    .filter((x) => x.nights > 0);
+
+  // Where each flight earns most (the crediting advisor, on the flight).
+  const locate = (iata: string) => airports?.get(iata) ?? AIRPORTS[iata] ?? null;
+  const tiers = tiersFrom(loyaltyProgrammes);
+  const creditFor = (f: (typeof trip.flights)[number]) =>
+    creditPick(f, flightMiles(f, locate), tiers, airports?.get(f.from.trim().toUpperCase())?.country === 'United Kingdom');
   const destinations = groupDestinations(trip);
   const gaps = findGaps(trip);
 
@@ -97,7 +114,9 @@ export function TripDetail() {
     trip.section === 'current'
       ? (() => { const d = tripDayInfo(trip, TODAY); return `Current trip · Day ${d.dayIndex} of ${d.totalDays}`; })()
       : trip.section === 'upcoming'
-      ? `Upcoming · ${Math.max(0, Math.round((new Date(trip.start).getTime() - Date.now()) / 86400000))} days to go`
+      // Whole calendar days, as Today and Trips count them: rounding the
+      // milliseconds to the start said "6 days" on the afternoon Today said 7.
+      ? `Upcoming · ${countdownLabel(TODAY, trip.start).toLowerCase()}${daysUntil(TODAY, trip.start) > 1 ? ' to go' : ''}`
       : 'Completed';
 
   // The hotel actually being stayed at right now, for a trip under way.
@@ -147,7 +166,7 @@ export function TripDetail() {
         src={heroImage}
         fallback={<DestinationPhoto query={destinationQuery(trip)} seed={trip.id} height={380} />}
       >
-        <button className="tdback" aria-label="Back" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/now'))}>
+        <button className="tdback" aria-label="Back" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/trips'))}>
           <BackIcon size={18} color="var(--on-dark)" />
         </button>
         <button
@@ -279,8 +298,18 @@ export function TripDetail() {
                           price={leg.data.cost}
                           sub={<>
                             <PlaneIcon size={13} />
-                            {[leg.data.flightNo, leg.data.airline, leg.data.cabin].filter(Boolean).join(' · ')}
+                            {[leg.data.flightNo, leg.data.via.length ? `via ${leg.data.via.join(', ')}` : null, leg.data.award ? `${leg.data.cabin} award` : leg.data.cabin !== 'Economy' ? leg.data.cabin : null].filter(Boolean).join(' · ')}
                           </>}
+                          extra={(() => {
+                            const pick = creditFor(leg.data);
+                            if (!pick) return null;
+                            const flight = leg.data;
+                            return (
+                              <button className="creditchip" onClick={(e) => { e.stopPropagation(); navigate('/credit', { state: { flight } }); }}>
+                                Credit to {pick.label}<span>~{pick.amount.toLocaleString()} {pick.unit}</span>
+                              </button>
+                            );
+                          })()}
                         />
                       </SwipeToDelete>
                     )}
@@ -325,45 +354,59 @@ export function TripDetail() {
         );
       })()}
 
-      <Segmented<Seg>
-        style={{ margin: '20px 20px 0' }}
-        options={(['overview', 'expenses', 'notes'] as Seg[]).map((k) => ({ value: k, label: k.charAt(0).toUpperCase() + k.slice(1) }))}
-        value={seg} onChange={setSeg}
-      />
-
-      <div className="tdpane">
-        {seg === 'overview' && (
-          <>
-            <div style={{ marginBottom: 14 }}>
-              <TripMemories tripId={trip.id} />
+      <div className="page-body" style={{ paddingTop: 20 }}>
+        {totalPoints > 0 && (
+          <section className="listcard pad">
+            <div className="sectionhead">
+              <SectionLabel>{upcoming ? 'Points to earn' : 'Points earned'}</SectionLabel>
+              <span className="figure big">{upcoming ? '~' : ''}{totalPoints.toLocaleString()}</span>
             </div>
-            <div className="card">
-            <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 600, marginBottom: 12 }}>Trip summary</div>
-            <div style={{ display: 'grid', gap: 9 }}>
-              <SummaryRow label="Total cash spent" value={formatMoney(spend)} />
-              <SummaryRow label={upcoming ? 'Points to earn' : 'Points earned'} value={`${upcoming ? '~' : ''}${Math.round(points.totalPoints).toLocaleString()} pts`} />
-              <SummaryRow label={upcoming ? 'Value of points to earn' : 'Value of points earned'} value={formatMoney(points.totalValue)} />
-              <SummaryRow label="Total savings" value={formatMoney(savings)} valueColor="var(--green)" />
-              <SummaryRow label="Pence per point (earned)" value={points.totalPoints > 0 ? `${points.centsPerPoint.toFixed(2)}p` : '—'} />
+            <div className="lines">
+              {pointLines.map((l) => {
+                const reg = l.key === 'promos' ? toRegister[0] : null;
+                return (
+                  <div key={l.key} className="line">
+                    <span>{l.label}{reg && <span className="line-note">Register by {dayMonthShort(reg.deadline)}</span>}</span>
+                    <span className="figure">{l.points.toLocaleString()}</span>
+                  </div>
+                );
+              })}
+              {statusNights.map((x) => (
+                <div key={x.name} className="line">
+                  <span>{x.name} nights</span>
+                  <span className="figure">+{x.nights}</span>
+                </div>
+              ))}
             </div>
-            {trip.flights.some((f) => f.award) && (
-              <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', marginTop: 10 }}>
-                This trip includes an award flight. Points redeemed aren't tracked as a value yet.
-              </div>
-            )}
-            </div>
-          </>
+          </section>
         )}
-        {seg === 'expenses' &&
-          trip.hotels.map((h) =>
-            h.total != null ? (
-              <div className="exprow" key={h.id}>
-                <span>{h.name}</span>
-                <span>£{h.total}</span>
-              </div>
-            ) : null
-          )}
-        {seg === 'notes' && <p style={{ fontSize: 'var(--fs-body)', color: 'var(--ink2)' }}>{trip.notes || 'No notes yet.'}</p>}
+
+        {(stayCost > 0 || flightCost > 0 || unpricedFlights.length > 0) && (
+          <section className="listcard pad">
+            <div className="sectionhead">
+              <SectionLabel>Cost</SectionLabel>
+              <span className="figure big">{formatMoney(stayCost + flightCost)}</span>
+            </div>
+            <div className="lines">
+              {stayCost > 0 && <div className="line"><span>Stays</span><span>{formatMoney(stayCost)}</span></div>}
+              {flightCost > 0 && <div className="line"><span>Flights</span><span>{formatMoney(flightCost)}</span></div>}
+              {unpricedFlights.map((f) => (
+                <div key={f.id} className="line">
+                  <span>{f.flightNo ?? `${f.from} → ${f.to}`}</span>
+                  <button className="linkbtn" onClick={() => navigate('/log-flight', { state: { flight: f, tripId: trip.id } })}>Add price</button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <TripMemories tripId={trip.id} />
+        {trip.notes && (
+          <section>
+            <SectionLabel>Notes</SectionLabel>
+            <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', margin: 0, lineHeight: 1.5 }}>{trip.notes}</p>
+          </section>
+        )}
       </div>
 
       {trip.tripType === 'leisure' && gaps.length > 0 && (
@@ -418,7 +461,7 @@ export function TripDetail() {
 // One card shape for every booking: a square badge in the airline's or
 // hotel programme's colour, the name, and a line that says what it is (a
 // plane and the flight number, or a moon for each night).
-function BookingCard({ badge, title, sub, price }: { badge: { code: string; colour: string | null }; title: string; sub: React.ReactNode; price: number | null }) {
+function BookingCard({ badge, title, sub, price, extra }: { badge: { code: string; colour: string | null }; title: string; sub: React.ReactNode; price: number | null; extra?: React.ReactNode }) {
   return (
     <div className="bookcard">
       <span className="bookcard-badge" style={{ background: badge.colour ?? 'var(--ink)' }}>{badge.code}</span>
@@ -427,15 +470,7 @@ function BookingCard({ badge, title, sub, price }: { badge: { code: string; colo
         <span className="bookcard-sub">{sub}</span>
       </span>
       {price != null && <span className="bookcard-price">{formatMoney(price)}</span>}
-    </div>
-  );
-}
-
-function SummaryRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-body)' }}>
-      <span style={{ color: 'var(--ink2)' }}>{label}</span>
-      <span style={{ fontWeight: 700, color: valueColor }}>{value}</span>
+      {extra && <span className="bookcard-extra">{extra}</span>}
     </div>
   );
 }

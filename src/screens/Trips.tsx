@@ -1,35 +1,20 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTrips } from '../lib/useLiveData';
+import { useAllFlights, useAllHotels, useTrips } from '../lib/useLiveData';
 import { deleteTrip } from '../lib/queries';
 import { SwipeToDelete } from '../components/SwipeToDelete';
 import type { Trip } from '../types';
 import { destinationQuery, relevantHotel } from '../lib/tripHotels';
 import { DestinationPhoto } from '../components/DestinationPhoto';
 import { formatShortRange } from '../lib/format';
-import { isTripIncomplete } from '../lib/tripCompleteness';
-import { useFlightExemptTripIds } from '../lib/homeLocation';
-import {
-  buildTripTimeline, countdownLabel, emptyMonthsBetween, monthKey, monthLabel, tonightStay,
-} from '../lib/tripTimeline';
-import { SectionSwitch } from '../components/SectionSwitch';
-import { PlaneIcon, SettingsIcon } from '../components/Icons';
-import { ErrorText } from '../components/ui';
-
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-function todayLabel(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number);
-  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
-  return `Today · ${DAY_NAMES[dow]} ${d} ${MONTH_NAMES[m - 1]}`;
-}
-
-// "Aug", or "Jan" over "2027" when it isn't this year.
-function MonthLabel({ month, today, quiet }: { month: string; today: string; quiet?: boolean }) {
-  const [name, year] = monthLabel(month, today).split(' ');
-  return <span className={quiet ? 'tl-month quiet' : 'tl-month'}>{name}{year && <small>{year}</small>}</span>;
-}
+import { buildTripTimeline, countdownLabel, pastTripsByYear } from '../lib/tripTimeline';
+import { tripDayInfo } from '../lib/tripDay';
+import { tripNights } from '../lib/today';
+import { visitedInYear } from '../lib/logbook';
+import { useGlobalAirports } from '../lib/useGlobalAirports';
+import { useTripFlightGaps } from '../lib/useTripFlightGaps';
+import { ChevronRightIcon, GlobeIcon, PlaneIcon } from '../components/Icons';
+import { ErrorText, SectionLabel } from '../components/ui';
 
 function TripPhoto({ trip, height }: { trip: Trip; height: number }) {
   return trip.heroImageUrl
@@ -37,8 +22,8 @@ function TripPhoto({ trip, height }: { trip: Trip; height: number }) {
     : <DestinationPhoto query={destinationQuery(trip)} seed={trip.id} height={height} />;
 }
 
-// The end of the line: an open invitation to the next trip, with the two
-// ways to start one right there rather than only behind the +.
+// The end of what's planned: an open invitation to the next trip, with the
+// two ways to start one right there.
 function NextTrip({ onAdd, onPlan }: { onAdd: () => void; onPlan: () => void }) {
   return (
     <div className="tl-next">
@@ -56,14 +41,24 @@ function NextTrip({ onAdd, onPlan }: { onAdd: () => void; onPlan: () => void }) 
   );
 }
 
+// Trips: the one under way, what's coming, where next, and everything
+// behind you by year (this year open as polaroids, earlier years folded).
+// The scratch map is a tap away.
 export function Trips() {
   const navigate = useNavigate();
   const { data: trips, refetch } = useTrips();
+  const { data: hotels } = useAllHotels();
+  const { data: flights } = useAllFlights();
+  const airports = useGlobalAirports();
   const [error, setError] = useState('');
-  const flightExemptTripIds = useFlightExemptTripIds(trips);
   const today = new Date().toISOString().slice(0, 10);
   const timeline = useMemo(() => buildTripTimeline(trips, today), [trips, today]);
-  const tonight = useMemo(() => tonightStay(trips, today), [trips, today]);
+  const underway = [...timeline.earlier, ...timeline.recent].filter((t) => t.end >= today);
+  const [lead, ...later] = timeline.upcoming;
+  const past = useMemo(() => pastTripsByYear(trips, today), [trips, today]);
+  const flightGaps = useTripFlightGaps(trips, today);
+  const [openYears, setOpenYears] = useState<Set<string>>(new Set());
+  const countryOf = (iata: string) => airports?.get(iata)?.country ?? null;
 
   // Swipe a trip left and tap Delete: its stays and flights go with it.
   async function removeTrip(id: string) {
@@ -71,121 +66,106 @@ export function Trips() {
     try { await deleteTrip(id); refetch(); } catch (err) { setError(err instanceof Error ? err.message : 'Could not delete the trip.'); }
   }
 
-  // The timeline opens at today, with a little of the recent past above.
-  const todayRef = useRef<HTMLDivElement>(null);
-  const anchored = useRef(false);
-  useLayoutEffect(() => {
-    if (anchored.current || !todayRef.current || trips.length === 0) return;
-    anchored.current = true;
-    const y = todayRef.current.getBoundingClientRect().top + window.scrollY - 200;
-    if (y > 0) window.scrollTo(0, y);
-  }, [trips.length]);
-
-  // Now is what's happening and what's next; the past lives in Then.
-  const above = timeline.recent.filter((t) => t.end >= today);
-  let lastMonth = '';
-  const monthCell = (date: string) => {
-    const m = monthKey(date);
-    if (m === lastMonth) return <span />;
-    lastMonth = m;
-    return <MonthLabel month={m} today={today} />;
-  };
+  const row = (t: Trip, sub: string, extra?: React.ReactNode) => (
+    <SwipeToDelete key={t.id} itemLabel={t.title} surface="var(--card)" wrapperStyle={{ borderRadius: 0 }} onClick={() => navigate(`/trips/${t.id}`)} onDelete={() => removeTrip(t.id)}>
+      <div className="triprow">
+        <span className="triprow-thumb"><TripPhoto trip={t} height={56} /></span>
+        <span className="triprow-main">
+          <span className="rowtitle display">{t.title}</span>
+          <span className="rowsub">{sub}</span>
+          {extra}
+        </span>
+        <ChevronRightIcon size={18} color="var(--ink3)" />
+      </div>
+    </SwipeToDelete>
+  );
 
   return (
     <div>
       <div className="topspace" />
       <div className="homehead">
-        <h1 className="h1" style={{ margin: 0 }}>Now</h1>
-        <div className="headtools">
-          <SectionSwitch />
-          <button className="lb-iconbtn" aria-label="Settings" onClick={() => navigate('/settings')}><SettingsIcon size={20} /></button>
-        </div>
+        <h1 className="h1" style={{ margin: 0 }}>Trips</h1>
+        <button className="iconbtn" aria-label="Map" onClick={() => navigate('/map')}><GlobeIcon size={20} /></button>
       </div>
       {error && <ErrorText style={{ padding: '0 20px 10px' }}>{error}</ErrorText>}
-      {trips.length === 0 && (
-        <div style={{ padding: '0 20px' }}><NextTrip onAdd={() => navigate('/log-trip')} onPlan={() => navigate('/action/plan')} /></div>
-      )}
 
-      {trips.length > 0 && (
-        <div className="tl">
-          {above.map((t) => {
-            const underway = t.end >= today;
-            return (
-              <div className="tl-row" key={t.id}>
-                {monthCell(t.start)}
-                <span className={underway ? 'tl-dot solid' : 'tl-dot'} />
-                <SwipeToDelete itemLabel={t.title} surface="var(--bg)" wrapperStyle={{ borderRadius: 'var(--r-sm)' }} onClick={() => navigate(`/trips/${t.id}`)} onDelete={() => removeTrip(t.id)}>
-                  <div className={underway ? 'tl-past now' : 'tl-past'}>
-                    <span className="tl-thumb"><TripPhoto trip={t} height={44} /></span>
-                    <span style={{ minWidth: 0 }}>
-                      <span className="tl-title">{t.title}</span>
-                      <span className="tl-sub">{formatShortRange(t.start, t.end, today)} · {t.tripType}</span>
-                    </span>
-                    {underway && <span className="tl-chip">Ends {t.end === today ? 'today' : countdownLabel(today, t.end).toLowerCase()}</span>}
-                  </div>
-                </SwipeToDelete>
-              </div>
-            );
-          })}
-
-          <div className="tl-row tl-today" ref={todayRef}>
-            <span />
-            <span className="tl-today-dot" />
-            <span className="tl-today-label">{todayLabel(today)}</span>
-          </div>
-          {tonight && (
-            <div className="tl-row">
-              <span />
-              <span />
-              <button className="tl-tonight" onClick={() => navigate(`/trips/${tonight.trip.id}`)}>
-                <span className="k">Tonight</span>
-                <span className="n">{tonight.hotel.name}</span>
-                <span className="s">{tonight.hotel.brand && tonight.hotel.brand !== 'Independent' ? `${tonight.hotel.brand} · ` : ''}{tonight.hotel.nights} night{tonight.hotel.nights === 1 ? '' : 's'}</span>
-              </button>
+      <div className="page-body">
+        {underway.length > 0 && (
+          <section>
+            <SectionLabel>Now</SectionLabel>
+            <div className="listcard">
+              {underway.map((t) => {
+                const d = tripDayInfo(t, today);
+                return row(t, `${formatShortRange(t.start, t.end, today)} · Day ${d.dayIndex} of ${d.totalDays}`,
+                  <span className="bar ink" aria-hidden="true"><i style={{ width: `${(d.dayIndex / d.totalDays) * 100}%` }} /></span>);
+              })}
             </div>
-          )}
+          </section>
+        )}
 
-          {timeline.upcoming.map((t, i) => {
-            const prevDate = i === 0 ? today : timeline.upcoming[i - 1].start;
-            const gaps = emptyMonthsBetween(prevDate, t.start, trips);
-            const hotel = relevantHotel(t);
-            const incomplete = isTripIncomplete(t) && !flightExemptTripIds.has(t.id);
-            return (
-              <div key={t.id} style={{ display: 'contents' }}>
-                {gaps.map((m) => (
-                  <div className="tl-row" key={m}>
-                    <MonthLabel month={m} today={today} quiet />
-                    <span />
-                    <span />
-                  </div>
-                ))}
-                <div className="tl-row top">
-                  {monthCell(t.start)}
-                  <span className="tl-dot solid" />
-                  <SwipeToDelete itemLabel={t.title} surface="var(--bg)" wrapperStyle={{ borderRadius: 'var(--r-md)' }} onClick={() => navigate(`/trips/${t.id}`)} onDelete={() => removeTrip(t.id)}>
-                    <div className="tl-card">
-                      <TripPhoto trip={t} height={176} />
-                      <div className="tl-card-scrim" />
-                      <span className="tl-card-chips">
-                        <span className={i === 0 ? 'chip' : 'chip light'}>{countdownLabel(today, t.start)}</span>
-                        {incomplete && <span className="chip light">Incomplete</span>}
-                      </span>
-                      <span className="tl-card-name">{t.title}</span>
-                      <span className="tl-card-meta">{formatShortRange(t.start, t.end, today)}{hotel ? ` · ${hotel.name}` : ''}</span>
-                    </div>
-                  </SwipeToDelete>
-                </div>
+        {lead && (
+          <section>
+            <SectionLabel>Coming up</SectionLabel>
+            <SwipeToDelete itemLabel={lead.title} surface="var(--bg)" wrapperStyle={{ borderRadius: 'var(--r-md)' }} onClick={() => navigate(`/trips/${lead.id}`)} onDelete={() => removeTrip(lead.id)}>
+              <div className="tl-card">
+                <TripPhoto trip={lead} height={190} />
+                <div className="tl-card-scrim" />
+                <span className="tl-card-chips">
+                  <span className="tag light">{countdownLabel(today, lead.start)}</span>
+                  {flightGaps.has(lead.id) && <span className="tag light">{flightGaps.get(lead.id)}</span>}
+                </span>
+                <span className="tl-card-name">{lead.title}</span>
+                <span className="tl-card-meta">{formatShortRange(lead.start, lead.end, today)}{(() => { const n = tripNights(lead); return n > 0 ? ` · ${n} night${n === 1 ? '' : 's'}` : ''; })()}{relevantHotel(lead) ? ` · ${relevantHotel(lead)!.name}` : ''}</span>
               </div>
-            );
-          })}
+            </SwipeToDelete>
+            {later.length > 0 && (
+              <div className="listcard" style={{ marginTop: 10 }}>
+                {later.map((t) => {
+                  const n = tripNights(t);
+                  return row(t, `${formatShortRange(t.start, t.end, today)}${n > 0 ? ` · ${n} night${n === 1 ? '' : 's'}` : ''}`,
+                    flightGaps.has(t.id) ? <span className="tag warn">{flightGaps.get(t.id)}</span> : null);
+                })}
+              </div>
+            )}
+          </section>
+        )}
 
-          <div className="tl-row top">
-            <span />
-            <span className="tl-dot open" />
-            <NextTrip onAdd={() => navigate('/log-trip')} onPlan={() => navigate('/action/plan')} />
-          </div>
-        </div>
-      )}
+        <NextTrip onAdd={() => navigate('/log-trip')} onPlan={() => navigate('/plan')} />
+
+        {past.map((g, gi) => {
+          const open = gi === 0 || openYears.has(g.year);
+          const countries = visitedInYear(g.year, hotels, flights, countryOf).size;
+          const summary = [countries > 0 ? `${countries} ${countries === 1 ? 'country' : 'countries'}` : null, `${g.trips.length} trip${g.trips.length === 1 ? '' : 's'}`].filter(Boolean).join(' · ');
+          if (!open) {
+            return (
+              <button key={g.year} className="yearrow" aria-expanded={false} onClick={() => setOpenYears((s) => new Set(s).add(g.year))}>
+                <span className="figure">{g.year}</span>
+                <span className="rowsub">{summary}</span>
+                <ChevronRightIcon size={18} color="var(--ink3)" />
+              </button>
+            );
+          }
+          return (
+            <section key={g.year}>
+              <div className="sectionhead">
+                <SectionLabel>{g.year}</SectionLabel>
+                <span className="sectionmeta">{summary}</span>
+              </div>
+              <div className="scrap-grid three">
+                {g.trips.map((t, i) => (
+                  <button key={t.id} className="polaroid" style={{ rotate: `${[-1.6, 1.2, -0.6, 1.8][i % 4]}deg` }} onClick={() => navigate(`/trips/${t.id}`)}>
+                    <span className="polaroid-photo">
+                      {t.heroImageUrl ? <img src={t.heroImageUrl} alt="" /> : <DestinationPhoto query={destinationQuery(t)} seed={t.id} height={96} />}
+                    </span>
+                    <span className="polaroid-title">{t.title}</span>
+                    <span className="polaroid-date">{formatShortRange(t.start, t.end, today)}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
     </div>
   );
 }

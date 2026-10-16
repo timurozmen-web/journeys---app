@@ -47,7 +47,7 @@ export function BankSync() {
   // Tracked cards are the ones to show on arrival at the Wallet.
   async function finish(cardIds: string[]) {
     await Promise.all([refetch(), refetchCards()]);
-    navigate('/wallet', { state: { seg: 'payment', tracked: cardIds } });
+    navigate('/cards', { state: { tracked: cardIds } });
   }
 
   const hasConnection = connections.length > 0;

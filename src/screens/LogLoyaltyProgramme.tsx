@@ -35,7 +35,7 @@ export function LogLoyaltyProgramme() {
         nightsNeeded: form.nightsNeeded ? parseInt(form.nightsNeeded, 10) : null,
         category: form.category,
       });
-      navigate('/wallet');
+      navigate('/status');
     } catch (err) {
       const message =
         err instanceof Error
