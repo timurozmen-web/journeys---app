@@ -1,52 +1,40 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { HomeIcon, WalletIcon, PlusIcon, PlanIcon, CaptureIcon, DiscoverIcon, CreditIcon } from './Icons';
-import { useAppMode } from '../lib/appMode';
+import { useEffect, useRef, useState } from 'react';
+import {
+  TodayIcon, SuitcaseIcon, StatusIcon, CardIcon, PlusIcon, ImageIcon, MailIcon, BedIcon, PlaneIcon, PinIcon, TagIcon, CalendarIcon, ChevronRightIcon, XIcon,
+} from './Icons';
 import { getQueuedWrites, onQueueChange, processQueue } from '../lib/offlineQueue';
-import { fanPositions } from '../lib/fanLayout';
-import { useDiscoverItems, useReviews, useTrips } from '../lib/useLiveData';
-import { badgeLabel, newDiscoverCount, profileActionCount } from '../lib/badges';
 
-// The + button's fan, left to right along the arc. Each section has its
-// own pair: planning and adding trips in Travel, offers and the
-// crediting advisor in Loyalty.
-const ACTIONS = {
-  travel: [
-    { key: 'capture', label: 'Add', desc: 'Stays, flights and trips', Icon: CaptureIcon },
-    { key: 'plan', label: 'Plan', desc: 'Weather, crowds and cost', Icon: PlanIcon },
-  ],
-  loyalty: [
-    { key: 'discover', label: 'Discover', desc: 'Card offers and loyalty news', Icon: DiscoverIcon },
-    { key: 'credit', label: 'Credit', desc: 'Best programme for a flight', Icon: CreditIcon },
-  ],
-} as const;
-const FAN_RADIUS = 120;
-const FAN = fanPositions(2, FAN_RADIUS, 140, 40);
-// Dotted guide arc through the item centres.
-const FAN_ARC = (() => {
-  const pt = (deg: number) => [Math.cos((deg * Math.PI) / 180) * FAN_RADIUS, -Math.sin((deg * Math.PI) / 180) * FAN_RADIUS];
-  const [x0, y0] = pt(140); const [x1, y1] = pt(40);
-  return `M${x0.toFixed(1)} ${y0.toFixed(1)} A ${FAN_RADIUS} ${FAN_RADIUS} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`;
-})();
+// One tab bar for the whole app: Today and Trips, the + (add anything),
+// Status and Cards. The + opens a sheet: screenshots or an email first,
+// since that's the quickest way in, then adding by hand.
+const TABS = [
+  { to: '/', label: 'Today', Icon: TodayIcon, match: (p: string) => p === '/' },
+  { to: '/trips', label: 'Trips', Icon: SuitcaseIcon, match: (p: string) => p === '/trips' || p.startsWith('/trips/') || p === '/map' },
+  { to: '/status', label: 'Status', Icon: StatusIcon, match: (p: string) => p === '/status' || p.startsWith('/status/') || p === '/promotions' },
+  { to: '/cards', label: 'Cards', Icon: CardIcon, match: (p: string) => p === '/cards' },
+] as const;
+
+const BY_HAND = [
+  { label: 'Stay', to: '/log-hotel', Icon: BedIcon },
+  { label: 'Flight', to: '/log-flight', Icon: PlaneIcon },
+  { label: 'Trip', to: '/log-trip', Icon: PinIcon },
+  { label: 'Promotion', to: '/scan-promotion', Icon: TagIcon },
+  { label: 'Card', to: '/add-card', Icon: CardIcon },
+  { label: 'Calendar file', to: '/import-calendar', Icon: CalendarIcon },
+] as const;
 
 export function TabBar() {
   const [open, setOpen] = useState(false);
   const [pendingOpen, setPendingOpen] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const navigate = useNavigate();
-  const mode = useAppMode();
   const { pathname } = useLocation();
-  const actions = ACTIONS[mode];
   const [pendingCount, setPendingCount] = useState(() => getQueuedWrites().length);
   const [pendingItems, setPendingItems] = useState(() => getQueuedWrites());
-  // Count badges: things waiting on Profile, and new Discover items behind +.
-  const { data: trips } = useTrips();
-  const { data: reviews } = useReviews();
-  const { data: discoverItems } = useDiscoverItems();
-  const profileBadge = badgeLabel(profileActionCount(trips, reviews, new Date().toISOString().slice(0, 10)));
-  const discoverBadge = badgeLabel(newDiscoverCount(discoverItems));
+  const fileInput = useRef<HTMLInputElement>(null);
 
-  // Escape closes the fan.
+  // Escape closes the sheet.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
@@ -59,6 +47,9 @@ export function TabBar() {
     setPendingItems(getQueuedWrites());
   }), []);
 
+  // A new screen closes the sheet.
+  useEffect(() => { setOpen(false); }, [pathname]);
+
   async function retryNow() {
     setRetrying(true);
     try {
@@ -68,7 +59,15 @@ export function TabBar() {
     }
   }
 
-  if (pathname === '/') return null;
+  // Screenshots go straight to the reader: picking them is the tap, so the
+  // booking is read as soon as they're chosen.
+  function pickedScreenshots(files: FileList | null) {
+    const images = Array.from(files ?? []).filter((f) => f.type.startsWith('image/'));
+    if (fileInput.current) fileInput.current.value = '';
+    if (images.length === 0) return;
+    setOpen(false);
+    navigate('/scan-email', { state: { files: images } });
+  }
 
   return (
     <>
@@ -114,54 +113,53 @@ export function TabBar() {
           {retrying ? 'Trying now…' : 'Try syncing now'}
         </button>
       </div>
-      <div className={`fanscrim ${open ? 'on' : ''}`} onClick={() => setOpen(false)} />
-      <div className={`fan ${open ? 'on' : ''}`} aria-hidden={!open}>
-        <svg className="fan-arc" width={FAN_RADIUS * 2 + 20} height={FAN_RADIUS + 20} viewBox={`${-FAN_RADIUS - 10} ${-FAN_RADIUS - 10} ${FAN_RADIUS * 2 + 20} ${FAN_RADIUS + 20}`} aria-hidden="true">
-          <path d={FAN_ARC} fill="none" stroke="var(--brand)" strokeWidth="1.2" strokeDasharray="2 6" strokeLinecap="round" />
-        </svg>
-        {actions.map((a, i) => (
-          <button
-            key={a.key}
-            className="fan-item"
-            tabIndex={open ? 0 : -1}
-            style={{ ['--x' as string]: `${FAN[i].x}px`, ['--y' as string]: `${FAN[i].y}px`, transitionDelay: open ? `${i * 45}ms` : '0ms' }}
-            onClick={() => { setOpen(false); navigate(`/action/${a.key}`); }}
-          >
-            <span className="fan-btn">
-              <a.Icon size={22} color="currentColor" />
-              {a.key === 'discover' && discoverBadge && <span className="badge">{discoverBadge}</span>}
-            </span>
-            <span className="fan-label">{a.label}</span>
-            <span className="fan-desc">{a.desc}</span>
+
+      <div className={`scrim ${open ? 'on' : ''}`} onClick={() => setOpen(false)} />
+      <div className={`addsheet ${open ? 'on' : ''}`} role="dialog" aria-modal="true" aria-label="Add" aria-hidden={!open}>
+        <div className="grip" />
+        <div className="addsheet-head">
+          <h2 className="addsheet-title">Add</h2>
+          <button className="iconbtn" aria-label="Close" tabIndex={open ? 0 : -1} onClick={() => setOpen(false)}><XIcon size={18} /></button>
+        </div>
+        <div className="addsheet-tiles">
+          <button className="addtile dark" tabIndex={open ? 0 : -1} onClick={() => fileInput.current?.click()}>
+            <ImageIcon size={28} color="var(--brand2)" />
+            <span>Screenshots</span>
           </button>
-        ))}
+          <button className="addtile" tabIndex={open ? 0 : -1} onClick={() => navigate('/scan-email')}>
+            <MailIcon size={28} color="var(--brand)" />
+            <span>Paste email</span>
+          </button>
+        </div>
+        <input ref={fileInput} type="file" accept="image/*" multiple hidden onChange={(e) => pickedScreenshots(e.target.files)} />
+        <div className="sectionlabel" style={{ margin: '20px 0 8px' }}>By hand</div>
+        <div className="addlist">
+          {BY_HAND.map((a) => (
+            <button key={a.to} tabIndex={open ? 0 : -1} onClick={() => navigate(a.to)}>
+              <a.Icon size={20} color="var(--brand)" />
+              <span>{a.label}</span>
+              <ChevronRightIcon size={18} color="var(--ink3)" />
+            </button>
+          ))}
+        </div>
       </div>
 
-      <nav className={`tabs ${mode} ${open ? 'open' : ''}`} role="tablist">
-        {mode === 'travel' ? (
-          <NavLink to="/now" className={({ isActive }) => `tab word${isActive || pathname === '/trips' ? ' active' : ''}`}>Now</NavLink>
-        ) : (
-          <NavLink to="/loyalty" aria-label="Home" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
-            {({ isActive }) => <HomeIcon size={22} strokeWidth={isActive ? 1.9 : 1.5} />}
-          </NavLink>
-        )}
-        <span className="fabwrap">
-          <button className={`fab ${open ? 'open' : ''}`} onClick={() => setOpen((v) => !v)} aria-label={open ? 'Close actions' : mode === 'loyalty' && discoverBadge ? `Actions, ${discoverBadge} new in Discover` : 'Actions'} aria-expanded={open}>
-            <PlusIcon size={20} strokeWidth={2.2} />
-          </button>
-          {!open && mode === 'loyalty' && discoverBadge && <span className="badge" aria-hidden="true">{discoverBadge}</span>}
-        </span>
-        {mode === 'travel' ? (
-          <NavLink to="/then" aria-label={profileBadge ? `Then, ${profileBadge} to do` : 'Then'} className={({ isActive }) => `tab word${isActive || pathname === '/profile' ? ' active' : ''}`}>
-            Then
-            {profileBadge && <span className="badge" aria-hidden="true">{profileBadge}</span>}
-          </NavLink>
-        ) : (
-          <NavLink to="/wallet" aria-label="Wallet" className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
-            {({ isActive }) => <WalletIcon size={22} strokeWidth={isActive ? 1.9 : 1.5} />}
-          </NavLink>
-        )}
+      <nav className="tabs" aria-label="Tabs">
+        {TABS.slice(0, 2).map((t) => <Tab key={t.to} tab={t} active={t.match(pathname)} />)}
+        <button className={`fab ${open ? 'open' : ''}`} onClick={() => setOpen((v) => !v)} aria-label={open ? 'Close' : 'Add'} aria-expanded={open}>
+          <PlusIcon size={22} strokeWidth={2.4} />
+        </button>
+        {TABS.slice(2).map((t) => <Tab key={t.to} tab={t} active={t.match(pathname)} />)}
       </nav>
     </>
+  );
+}
+
+function Tab({ tab, active }: { tab: (typeof TABS)[number]; active: boolean }) {
+  return (
+    <NavLink to={tab.to} className={active ? 'tab active' : 'tab'} aria-current={active ? 'page' : undefined}>
+      <tab.Icon size={22} strokeWidth={active ? 1.9 : 1.6} />
+      <span className="tab-label">{tab.label}</span>
+    </NavLink>
   );
 }

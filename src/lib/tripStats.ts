@@ -1,5 +1,6 @@
 import { CARDS_STATIC, defaultCardFor, isEuropeOrUK, isIHGPremiumCountry } from '../data/cardDefs';
-import { basePointsForHotel, stayPoints } from './loyaltyPoints';
+import { stayPoints } from './loyaltyPoints';
+import { promoBonusForStay } from './promoBonus';
 import type { Trip, Hotel, LoyaltyProgramme, Promotion } from '../types';
 // The shared UTC helper: a local copy here added days in local time and
 // read the date back in UTC, so a stay running over the clocks going
@@ -12,27 +13,38 @@ export interface TripPointsResult {
   centsPerPoint: number; // pence per point, blended
 }
 
+/** One line of a trip's points: a stay, its promotions, or a card's earning on it. */
+export interface TripPointsLine {
+  key: string;
+  label: string;
+  points: number;
+  value: number; // £
+}
+
 // `allStays` is every logged stay, so a bonus like "10,000 on your second
 // stay" counts stays outside this trip. `upcoming` estimates a trip not yet
 // taken: its booked stays count, where a past trip counts completed ones.
-export function computeTripPoints(trip: Trip, loyaltyProgrammes: LoyaltyProgramme[], promotions: Promotion[] = [], allStays: Hotel[] = trip.hotels, upcoming = false): TripPointsResult {
+// Lines are each stay's own points, then promotion bonuses together, then
+// each card's points on what it paid for, then Virgin Atlantic flights.
+export function tripPointsLines(trip: Trip, loyaltyProgrammes: LoyaltyProgramme[], promotions: Promotion[] = [], allStays: Hotel[] = trip.hotels, upcoming = false): TripPointsLine[] {
   const ptValueByBrand = new Map(loyaltyProgrammes.map((p) => [p.name, p.ptValue]));
-  let totalPoints = 0;
-  let totalValue = 0;
+  const valueOf = (pts: number, programme: string) => (pts * (ptValueByBrand.get(programme) ?? 1)) / 100;
+  const lines: TripPointsLine[] = [];
+  let promo = 0;
+  let promoValue = 0;
+  const cards = new Map<string, TripPointsLine>();
 
-  for (const h of trip.hotels) {
+  for (const h of [...trip.hotels].sort((a, b) => a.date.localeCompare(b.date))) {
     if (!h.total) continue;
 
-    // Base hotel-loyalty-program points (rate × elite tier bonus) --
+    // Hotel-programme points (rate x elite tier bonus, then promotions) --
     // earned by staying, independent of which card paid.
-    const basePts = upcoming
-      ? (h.status === 'needs-confirm' ? 0 : stayPoints(h, loyaltyProgrammes, promotions, allStays))
-      : basePointsForHotel(h, promotions, loyaltyProgrammes, allStays);
-    if (basePts > 0) {
-      const basePtVal = ptValueByBrand.get(h.brand) ?? 1;
-      totalPoints += basePts;
-      totalValue += (basePts * basePtVal) / 100;
-    }
+    const counts = upcoming ? h.status !== 'needs-confirm' : h.status === 'Completed';
+    const all = counts ? stayPoints(h, loyaltyProgrammes, promotions, allStays) : 0;
+    const bonus = counts ? promoBonusForStay(h, allStays, promotions) : 0;
+    if (all - bonus > 0) lines.push({ key: `stay-${h.id}`, label: h.name, points: all - bonus, value: valueOf(all - bonus, h.brand) });
+    promo += bonus;
+    promoValue += valueOf(bonus, h.brand);
 
     // Card-issued bonus points -- separate, additive earning stream.
     const cardId = h.card || defaultCardFor(h.brand);
@@ -46,29 +58,32 @@ export function computeTripPoints(trip: Trip, loyaltyProgrammes: LoyaltyProgramm
       date: h.date,
     });
     const pts = h.total * rate;
-    const ptVal = ptValueByBrand.get(card.programmeBrand) ?? 1;
-    totalPoints += pts;
-    totalValue += (pts * ptVal) / 100;
+    const line = cards.get(card.id) ?? { key: `card-${card.id}`, label: card.id, points: 0, value: 0 };
+    line.points += pts;
+    line.value += valueOf(pts, card.programmeBrand);
+    cards.set(card.id, line);
   }
+  if (promo > 0) lines.push({ key: 'promos', label: 'Promotions', points: promo, value: promoValue });
+  lines.push(...cards.values());
 
   // Virgin Atlantic flights, same special case as Wallet's card math.
   const virginCard = CARDS_STATIC.find((c) => c.programmeBrand === 'Virgin Points');
   if (virginCard) {
+    let pts = 0;
     for (const f of trip.flights) {
       if (f.airline !== 'Virgin Atlantic' || !f.cost) continue;
-      const rate = virginCard.rateFor({ ownBrand: true, isUK: false, isUKEurope: false, isPremiumCountry: false, date: f.date ?? '' });
-      const pts = f.cost * rate;
-      const ptVal = ptValueByBrand.get('Virgin Points') ?? 1;
-      totalPoints += pts;
-      totalValue += (pts * ptVal) / 100;
+      pts += f.cost * virginCard.rateFor({ ownBrand: true, isUK: false, isUKEurope: false, isPremiumCountry: false, date: f.date ?? '' });
     }
+    if (pts > 0) lines.push({ key: 'virgin', label: 'Virgin Atlantic flights', points: pts, value: valueOf(pts, 'Virgin Points') });
   }
+  return lines.map((l) => ({ ...l, points: Math.round(l.points) }));
+}
 
-  return {
-    totalPoints: Math.round(totalPoints),
-    totalValue,
-    centsPerPoint: totalPoints > 0 ? (totalValue / totalPoints) * 100 : 0,
-  };
+export function computeTripPoints(trip: Trip, loyaltyProgrammes: LoyaltyProgramme[], promotions: Promotion[] = [], allStays: Hotel[] = trip.hotels, upcoming = false): TripPointsResult {
+  const lines = tripPointsLines(trip, loyaltyProgrammes, promotions, allStays, upcoming);
+  const totalPoints = lines.reduce((s, l) => s + l.points, 0);
+  const totalValue = lines.reduce((s, l) => s + l.value, 0);
+  return { totalPoints, totalValue, centsPerPoint: totalPoints > 0 ? (totalValue / totalPoints) * 100 : 0 };
 }
 
 export function computeTripSavings(trip: Trip): number {

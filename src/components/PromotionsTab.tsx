@@ -35,14 +35,17 @@ function summarize(p: Promotion): string | null {
   }
 }
 
-export function PromotionsTab() {
-  const { data: promotions, refetch } = usePromotions();
+// Every promotion, or with `brand` just one programme's (on its page under
+// Status), with a form to add one by hand and the archive of spent ones.
+export function PromotionsTab({ brand = null }: { brand?: string | null }) {
+  const { data: allPromotions, refetch } = usePromotions();
+  const promotions = brand ? allPromotions.filter((p) => p.brand === brand) : allPromotions;
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
   const [adding, setAdding] = useState(false);
   const [openArchived, setOpenArchived] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    title: '', description: '', brand: '', startDate: '', endDate: '',
+    title: '', description: '', brand: brand ?? '', startDate: '', endDate: '',
     promoType: 'multiplier' as PromoType,
     multiplier: '', thresholdSpend: '', bonusPoints: '', discountValue: '', statusNightsBonus: '', partnerAirline: '',
   });
@@ -63,7 +66,7 @@ export function PromotionsTab() {
         statusNightsBonus: form.statusNightsBonus ? parseInt(form.statusNightsBonus, 10) : null,
         partnerAirline: form.partnerAirline || null,
       });
-      setForm({ title: '', description: '', brand: '', startDate: '', endDate: '', promoType: 'multiplier', multiplier: '', thresholdSpend: '', bonusPoints: '', discountValue: '', statusNightsBonus: '', partnerAirline: '' });
+      setForm({ title: '', description: '', brand: brand ?? '', startDate: '', endDate: '', promoType: 'multiplier', multiplier: '', thresholdSpend: '', bonusPoints: '', discountValue: '', statusNightsBonus: '', partnerAirline: '' });
       setAdding(false);
       refetch();
     } finally {
@@ -93,16 +96,12 @@ export function PromotionsTab() {
       <div
         style={{
           padding: '12px 14px', borderRadius: 'var(--r-sm)', background: 'var(--card)',
-          border: `1px solid ${isActive ? 'var(--brand)' : 'var(--line)'}`, position: 'relative',
+          border: '1px solid var(--line)', position: 'relative',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
           <div style={{ fontSize: 'var(--fs-body)', fontWeight: 700 }}>{p.title}</div>
-          {isActive && (
-            <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--brand)', background: 'var(--brand-soft)', padding: '2px 8px', borderRadius: 'var(--r-pill)', flexShrink: 0 }}>
-              ACTIVE
-            </span>
-          )}
+          {isActive && <span className="tag solid">Active</span>}
         </div>
         <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 3, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {p.brand && <span>{p.brand}</span>}

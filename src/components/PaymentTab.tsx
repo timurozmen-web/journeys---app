@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { BrandLogo } from './BrandLogo';
 import { updateManualSpendAdjustment, updateCardClosedDate, updateCardOpenDate, deletePaymentCard } from '../lib/queries';
 import { SwipeToDelete } from './SwipeToDelete';
-import { useNavigate } from 'react-router-dom';
-import { Button, ErrorText, SectionLabel } from './ui';
+import { ErrorText, SectionLabel } from './ui';
 import { CardCarousel } from './CardCarousel';
 import type { CardResult } from '../lib/cardMath';
 import type { LoyaltyProgramme } from '../types';
@@ -64,7 +63,6 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
   const [cardError, setCardError] = useState('');
   // Deleted this session: hidden straight away, before the refetch lands.
   const [removed, setRemoved] = useState<Set<string>>(new Set());
-  const navigate = useNavigate();
 
   async function removeCard(cardId: string) {
     setCardError('');
@@ -410,7 +408,6 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
           {active[leadAt] && <div key={active[leadAt].card.id} className="leaddetail">{renderDetail(active[leadAt])}</div>}
         </>
       )}
-      <Button variant="secondary" block onClick={() => navigate('/add-card')} style={{ marginTop: 14 }}>Add a card</Button>
 
       {memberships.length > 0 && (
         <>

@@ -37,47 +37,64 @@ Run all three; all must be clean:
   Use those first. Any remaining inline style should reference tokens
   (`fontSize: 'var(--fs-body)'`), never raw px sizes or hex colours.
   Form controls take `className="input"` inside a `Field`.
-- **Two sections, one set of data** (`src/lib/appMode.ts`). The start
-  page (`/`, `Start`) is split into Travel (top) and Loyalty (bottom);
-  `SectionSwitch` (two icons) switches, beside the gear on each home
-  screen and in Settings. Every route belongs to one
-  section (`modeForPath`); shared screens keep the current one. The
-  section is set on `<html data-mode>` (tab bar and + menu read it).
-  Both sections use the one Paper theme: off-white ground (`--bg`),
+- **One app, four tabs** (`TabBar`, routes in `src/App.tsx`): Today
+  (`/`) and Trips either side of the +, then Status and Cards. There
+  are no sections or modes; the old two-section addresses (`/now`,
+  `/then`, `/loyalty`, `/wallet`, `/action/*`) redirect. The + opens one
+  sheet: Screenshots (picked straight from the sheet and read at once by
+  `ScanEmail`), Paste email, then by hand (stay, flight, trip,
+  promotion, card, calendar file). Plan sits behind "Where next?" on
+  Trips; the crediting advisor behind each flight's "Credit to" chip.
+  One Paper theme: off-white ground (`--bg`),
   black text, orange as the single accent (`--brand` for text,
   `--brand2` for fills). Headings, trip names and map labels are Space
   Mono, a modern typewriter face; other text is Archivo. Every control
-  follows it: ink-outlined, square-cornered Space Mono tags (`.maptag`,
-  `.tagbtn`, `.mapbtn`, and the `:root` control overrides in
+  follows it: ink-outlined, square-cornered Space Mono tags (`.tag`,
+  `.maptag`, `.tagbtn`, `.iconbtn`, and the `:root` control overrides in
   components.css). Type is one system (the block at the end of
   components.css): Space Mono bold for titles, trip and programme
   names, section labels (`SectionLabel`, never a hand-styled uppercase
   div) and every headline figure (`.figure`); Archivo for the rest.
-  - **Travel** (`/now`, `/then`, trips, Plan). Tab bar:
-    "Now" and "Then" either side of +, which offers Add and Plan. Now (`Trips.tsx`, `src/lib/tripTimeline.ts`) is trips
-    under way, the today line with tonight's stay, and what's coming,
-    ending in a "Where next?" card (add or plan a trip).
-    Then (`Profile.tsx`) is the past: a scratch-off world map (every
-    country stayed in or flown to, connections excluded:
-    `visitedCountries` in `src/lib/logbook.ts`), a polaroid scrapbook
-    by year, ratings to do and the logbook.
-  - **Loyalty** (`/loyalty`, `/wallet`, Discover, Credit, bank sync).
-    Tab bar: Home and Wallet icons either side of +, which
-    offers Discover and Credit. Home (`LoyaltyHome`) shows wallet value
-    with its change on last month, a status ring per programme (no
-    logos; tapping one opens that programme in Wallet) and "worth
-    knowing" (`src/lib/loyaltyHighlights.ts`: card milestones, renewals,
-    vouchers; status isn't repeated there). Airline status is set in Settings,
-    not edited in the wallet.
+  Lists are `.listcard` rows (`.nextrow`, `.triprow`, `.progrow`) with a
+  `.datecol` and square `.badge-sq` brand badges.
+  - **Today** (`Today.tsx`, `src/lib/today.ts`): tonight's stay and the
+    trip's day count, then Next (the rest of the trip under way, nights
+    with nothing booked as "No stay booked", the next trip), To do and
+    a status ring per programme. To do is promotions to register for
+    (deadline read from the wording, `registrationDeadline`, shown only
+    when booked stays would earn the bonus; ticked off on the device,
+    `doneTodos.ts`), card spend goals (`loyaltyHighlights.ts`), flights a
+    trip still needs (`useTripFlightGaps`: a trip starting away from
+    home needs a flight there, one not landing back where it began
+    needs one home; airports within 150km are one place) and stays to
+    rate.
+  - **Trips** (`Trips.tsx`): under way, coming up (the next trip as a
+    photo card), "Where next?", then past trips by year as polaroids
+    (this year open, earlier years folded to a row with countries and
+    trip count). The map button opens `/map` (`Places.tsx`): the
+    scratch-off world map (every country stayed in or flown to,
+    connections excluded: `visitedCountries` in `src/lib/logbook.ts`)
+    and rated stays.
+  - **Status** (`Status.tsx`): wallet value with its change on last
+    month, then hotels (ring, tier, nights to go and to come, balance;
+    tiers being worked toward first) and airlines. Each opens
+    `/status/:name` (`Programme.tsx`, `ProgrammeDetail`): the ring pager,
+    balance, tier and nights edited in place, bonus nights, stays to
+    come, that programme's promotions (`PromotionsTab brand=`) and
+    vouchers. `/promotions` lists them all. Airline status is set in
+    Settings.
+  - **Cards** (`Cards.tsx`): bank sync, the ring carousel, memberships,
+    archived cards. `useCardResults` works out every held card once and
+    records newly earned vouchers.
   Anything on an orange fill uses `--on-brand` (white). Photos carry a
   dark scrim so white text on them stays readable; photos under 90px
   tall are drawn scenes instead, as the photographer credit would cover
   them. The status bar is translucent: every screen starts below
   `--safe-top` (the safe area plus 12px, as iOS blurs a little below
-  it; home screens use `.topspace`, others `.head`), and
+  it; tab screens use `.topspace`, others `.head`), and
   `StatusBarCover` fills it, fading at its foot, once the page scrolls.
   Every screen's first row is the same distance below it (`--safe-top`
-  then `--s4`: `.homehead` on home screens, `.head`, `.tdback`).
+  then `--s4`: `.homehead` on tab screens, `.head`, `.tdback`).
   Destination photos are the first Unsplash result with no people in
   it (`pickPlacePhoto`); none means the drawn scene.
   Wallet cards take
@@ -152,13 +169,19 @@ Run all three; all must be clean:
   are read from their own wording: "every 2 nights", "on your second
   stay", "stays of 2+ nights", "at Ruby Hotels". Wording it can't read
   earns nothing rather than a guess. Upcoming trips show "Points to earn"
-  from their booked stays.
+  from their booked stays, line by line (`tripPointsLines`: each stay's
+  own points, promotions together, then each card's).
 - Booking classes mean different things per airline: award classes live
   in `src/data/awardClasses.ts` (sourced; Qatar and BA so far) and
   `awardCabin` turns airline + letter into an award cabin or null. The
   email scanner extracts the letter, so a Qatar "U" arrives as a business
   award while LOT's "U" (a cash Saver fare) doesn't; the Credit advisor
   shows an award seat as earning nothing.
+- A flight's "Credit to" chip (`creditPick`, `src/lib/flightCredit.ts`)
+  is the advisor's best-value programme for it, assuming a standard
+  fare (the fare level isn't logged). None for an award seat, a carrier
+  no programme partners with, or an own-metal BA/Qatar/Qantas flight
+  with no price, where the answer would hang on the missing price.
 - Stays are read through `canonicalStay` (`src/lib/stayNormalise.ts`):
   sub-brands map to their programme and a Booked stay past check-out
   counts as completed. Hotel points come only from `src/lib/loyaltyPoints.ts`;

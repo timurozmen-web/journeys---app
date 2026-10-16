@@ -21,3 +21,19 @@ describe('loyaltyHighlights', () => {
     expect(loyaltyHighlights({ programmes: [marriott], hotels: [], promotions: [], cardResults: [], vouchers: [], today: TODAY })).toEqual([]);
   });
 });
+
+describe('loyaltyHighlights card milestones', () => {
+  it('says what is left to spend and the reward without its small print', () => {
+    const r = {
+      card: { id: 'IHG Revolut Elite', programmeBrand: 'IHG One Rewards' },
+      cardRow: { id: 'IHG Revolut Elite' },
+      nextMilestone: {
+        spend: 0, m: { spendRequired: 3000, rewardPoints: 30000, rewardLabel: '30,000pt welcome bonus (£3k spend within 3mo)' },
+        pace: { remaining: 3000, daysLeft: 8, perMonthNeeded: 11415, projected: 0, onTrack: false, status: 'open' },
+      },
+    } as unknown as Parameters<typeof loyaltyHighlights>[0]['cardResults'][number];
+    const [h] = loyaltyHighlights({ programmes: [], hotels: [], promotions: [], cardResults: [r], vouchers: [], today: '2026-10-16' });
+    expect(h.title).toBe('IHG Revolut Elite: £3,000 to spend');
+    expect(h.subtitle).toBe('30,000pt welcome bonus · 8 days left');
+  });
+});

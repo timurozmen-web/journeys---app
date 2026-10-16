@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useLoyaltyProgrammes } from '../lib/useLiveData';
+import { airlineBadge } from '../data/airlineBrand';
+import type { Flight } from '../types';
 import { awardCabin } from '../lib/fareClass';
 import { distanceMilesBetween } from '../lib/creditingDistance';
 import {
@@ -24,18 +27,21 @@ const UK_AIRPORTS = new Set([
 
 export function CreditAdvisor() {
   const { data: programmes } = useLoyaltyProgrammes();
+  // Opened from a flight's "Credit" on its trip: that flight, filled in.
+  const flight = (useLocation().state as { flight?: Flight } | null)?.flight ?? null;
+  const flightCarrier = flight ? airlineBadge(flight.flightNo, flight.airline).code : null;
 
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+  const [from, setFrom] = useState(flight?.from ?? '');
+  const [to, setTo] = useState(flight?.to ?? '');
   const [distanceMiles, setDistanceMiles] = useState<number | null>(null);
   const [distanceLoading, setDistanceLoading] = useState(false);
   const [manualDistance, setManualDistance] = useState('');
-  const [carrier, setCarrier] = useState('BA');
-  const [cabin, setCabin] = useState<Cabin>('Economy');
+  const [carrier, setCarrier] = useState(flightCarrier && CARRIERS.some((c) => c.code === flightCarrier) ? flightCarrier : flight ? 'OTHER' : 'BA');
+  const [cabin, setCabin] = useState<Cabin>(flight?.cabin ?? 'Economy');
   const [bookingClass, setBookingClass] = useState('');
   const [fareLevel, setFareLevel] = useState<FareLevel>('standard');
   const [fareLevelTouched, setFareLevelTouched] = useState(false);
-  const [price, setPrice] = useState('');
+  const [price, setPrice] = useState(flight?.cost != null ? String(flight.cost) : '');
   const [tiers, setTiers] = useState<Partial<Record<ProgramId, string>>>({});
 
   // Prefill elite tiers from the wallet, once, where the person already
@@ -89,9 +95,6 @@ export function CreditAdvisor() {
   return (
     <div>
       <ScreenHeader title="Where to credit" />
-      <p style={{ padding: '0 20px', fontSize: 'var(--fs-body)', color: 'var(--ink2)', lineHeight: 1.5, marginTop: -4 }}>
-        British Airways, Qatar, Qantas and KrisFlyer for now. More programmes are coming in groups.
-      </p>
 
       <div style={{ padding: '10px 20px', display: 'grid', gap: 14 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>

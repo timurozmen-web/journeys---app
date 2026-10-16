@@ -1,9 +1,8 @@
 import type { Hotel, LoyaltyProgramme, Promotion, Voucher } from '../types';
 import type { CardResult } from './cardMath';
-import { paceLine } from './spendPace';
 import { daysBetweenISO } from './tripDay';
 
-// "Worth knowing" on the Loyalty home: only what is true right now, from
+// Card to-dos on Today: only what is true right now, from
 // real figures. The cards nearest their next spend milestone, renewals
 // within 45 days (keep or cancel, from the card-year's real value against
 // its fee), and vouchers expiring within 90 days. Status isn't repeated
@@ -17,7 +16,7 @@ export interface Highlight {
   progressPct?: number;
 }
 
-export function loyaltyHighlights({ programmes, cardResults, vouchers, today }: {
+export function loyaltyHighlights({ cardResults, vouchers, today }: {
   programmes: LoyaltyProgramme[]; hotels: Hotel[]; promotions: Promotion[]; cardResults: CardResult[]; vouchers: Voucher[]; today: string;
 }): Highlight[] {
   const out: Highlight[] = [];
@@ -30,13 +29,14 @@ export function loyaltyHighlights({ programmes, cardResults, vouchers, today }: 
   for (const { r, pct } of milestones) {
     const next = r.nextMilestone!;
     const remaining = Math.max(0, next.m.spendRequired! - next.spend);
-    const programme = programmes.find((p) => p.name === r.card.programmeBrand);
-    const estValue = programme?.ptValue ? Math.round((next.m.rewardPoints * programme.ptValue) / 100) : null;
-    const pace = next.pace ? paceLine(next.pace) : null;
+    // The reward without its terms in brackets ("30,000pt welcome bonus"),
+    // and the days left when there's a deadline: Today has room for a line.
+    const reward = next.m.rewardLabel.replace(/\s*\([^)]*\)/g, '');
+    const days = next.pace && next.pace.status === 'open' ? `${next.pace.daysLeft} day${next.pace.daysLeft === 1 ? '' : 's'} left` : null;
     out.push({
       key: `card-milestone-${r.card.id}`, tone: 'brand',
-      title: `Spend £${Math.round(remaining).toLocaleString()} on the ${r.card.id}`,
-      subtitle: `Turns into ${next.m.rewardLabel}${estValue ? `, worth about £${estValue}` : ''}${pace ? ` · ${pace}` : ''}`,
+      title: `${r.card.id}: £${Math.round(remaining).toLocaleString()} to spend`,
+      subtitle: [reward, days].filter(Boolean).join(' · '),
       progressPct: pct,
     });
   }

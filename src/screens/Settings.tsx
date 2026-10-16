@@ -5,7 +5,6 @@ import { SUPPORTED_CURRENCIES, CURRENCY_SYMBOL } from '../lib/currency';
 import { BA_TIERS, QR_TIERS, QF_TIERS, KF_TIERS } from '../lib/creditingEngine';
 import { loadWorldCities, type WorldCity } from '../data/worldCitiesLoader';
 import { ScreenHeader, SectionLabel } from '../components/ui';
-import { SectionSwitch } from '../components/SectionSwitch';
 
 
 const AIRLINE_PROGRAMMES = [
@@ -68,10 +67,7 @@ export function Settings() {
 
   return (
     <div>
-      <ScreenHeader
-        title="Settings"
-        right={<SectionSwitch />}
-      />
+      <ScreenHeader title="Settings" />
 
       <div style={{ padding: '4px 20px 24px' }}>
         <SectionLabel style={{ marginBottom: 4 }}>Home location</SectionLabel>

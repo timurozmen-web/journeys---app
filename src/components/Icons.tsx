@@ -146,3 +146,12 @@ export const ExternalLinkIcon = wrap(
 
 // A filled crescent: one per night on a stay's itinerary card.
 export const MoonIcon = wrapFilled('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>');
+
+// One-app tab bar and capture sheet.
+export const TodayIcon = wrap('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>');
+export const SuitcaseIcon = wrap('<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/>');
+export const StatusIcon = wrap('<circle cx="12" cy="12" r="8" opacity=".45"/><path d="M12 4a8 8 0 1 1-7.6 5.5"/>');
+export const CardIcon = wrap('<rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19M6 15h4"/>');
+export const ImageIcon = wrap('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>');
+export const GlobeIcon = wrap('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>');
+export const ChevronRightIcon = wrap('<path d="M9 6l6 6-6 6"/>');

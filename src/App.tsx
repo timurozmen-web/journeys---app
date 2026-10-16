@@ -1,18 +1,17 @@
 import { useEffect, useState } from 'react';
-import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { modeForPath, readMode, useAppMode, writeMode } from './lib/appMode';
-import { Start } from './screens/Start';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { TabBar } from './components/TabBar';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AuthGate } from './components/AuthGate';
-import { LoyaltyHome } from './screens/LoyaltyHome';
+import { Today } from './screens/Today';
 import { Trips } from './screens/Trips';
-import { Wallet } from './screens/Wallet';
-import { Profile } from './screens/Profile';
+import { Places } from './screens/Places';
+import { Status } from './screens/Status';
+import { Programme } from './screens/Programme';
+import { Cards } from './screens/Cards';
+import { Promotions } from './screens/Promotions';
 import { Settings } from './screens/Settings';
 import { TripDetail } from './screens/TripDetail';
-import { Action } from './screens/Action';
-import { Discover } from './screens/Discover';
 import { Plan } from './screens/Plan';
 import { LogLoyaltyProgramme } from './screens/LogLoyaltyProgramme';
 import { LogHotel } from './screens/LogHotel';
@@ -26,15 +25,6 @@ import { AddCard } from './screens/AddCard';
 import { ImportCalendar } from './screens/ImportCalendar';
 import { ReviewTrip } from './screens/ReviewTrip';
 import { CreditAdvisor } from './screens/CreditAdvisor';
-
-// Keeps the section (and its theme) in step with the screen being shown.
-function ModeSync() {
-  const { pathname } = useLocation();
-  const mode = useAppMode();
-  useEffect(() => { writeMode(modeForPath(pathname, readMode())); }, [pathname]);
-  useEffect(() => { document.documentElement.dataset.mode = mode; }, [mode]);
-  return null;
-}
 
 // The status bar is translucent (so photos can run to the top edge), which
 // let page text scroll up underneath the clock and look as if it faded
@@ -54,20 +44,20 @@ function StatusBarCover() {
 export default function App() {
   return (
     <HashRouter>
-     <ModeSync />
      <StatusBarCover />
      <AuthGate>
       <div className="screen on">
         <ErrorBoundary>
           <Routes>
-            <Route path="/" element={<Start />} />
-            <Route path="/now" element={<Trips />} />
+            <Route path="/" element={<Today />} />
             <Route path="/trips" element={<Trips />} />
-            <Route path="/then" element={<Profile />} />
-            <Route path="/loyalty" element={<LoyaltyHome />} />
             <Route path="/trips/:id" element={<TripDetail />} />
-            <Route path="/wallet" element={<Wallet />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/map" element={<Places />} />
+            <Route path="/plan" element={<Plan />} />
+            <Route path="/status" element={<Status />} />
+            <Route path="/status/:name" element={<Programme />} />
+            <Route path="/promotions" element={<Promotions />} />
+            <Route path="/cards" element={<Cards />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/add/:kind" element={<AddMethod />} />
             <Route path="/add-card" element={<AddCard />} />
@@ -79,11 +69,18 @@ export default function App() {
             <Route path="/scan-promotion" element={<ScanPromotion />} />
             <Route path="/bank-sync" element={<BankSync />} />
             <Route path="/review-trip" element={<ReviewTrip />} />
-            <Route path="/action/:kind" element={<Action />} />
-            <Route path="/action/discover" element={<Discover />} />
-            <Route path="/action/plan" element={<Plan />} />
             <Route path="/log-loyalty-programme" element={<LogLoyaltyProgramme />} />
-            <Route path="/action/credit" element={<CreditAdvisor />} />
+            <Route path="/credit" element={<CreditAdvisor />} />
+            {/* Old addresses from the two-section app, kept so saved links and
+                the home-screen shortcut still land somewhere sensible. */}
+            <Route path="/now" element={<Navigate to="/" replace />} />
+            <Route path="/then" element={<Navigate to="/trips" replace />} />
+            <Route path="/profile" element={<Navigate to="/trips" replace />} />
+            <Route path="/loyalty" element={<Navigate to="/status" replace />} />
+            <Route path="/wallet" element={<Navigate to="/cards" replace />} />
+            <Route path="/action/plan" element={<Navigate to="/plan" replace />} />
+            <Route path="/action/credit" element={<Navigate to="/credit" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </ErrorBoundary>
       </div>

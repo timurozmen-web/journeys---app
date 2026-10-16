@@ -7,23 +7,29 @@ ready for an iOS build.
 
 ## What it does
 
-- **Two sections, one set of data**: the start page splits into Travel
-  and Loyalty; Settings switches between them.
-- **Travel / Now**: trips under way, tonight's stay and what's coming,
-  as a timeline with photo cards and countdowns, ending in a card to
-  add or plan the next trip.
-- **Travel / Then**: a scratch-off world map of every country stayed in
-  or flown to, a scrapbook of past trips by year, stays to rate and the
-  logbook.
+- **One app, four tabs**: Today and Trips either side of the +, then
+  Status and Cards. The + opens one sheet: screenshots or a pasted email
+  first, then adding a stay, flight, trip, promotion, card or calendar
+  file by hand.
+- **Today**: tonight's stay and how far into the trip you are, what's
+  next (stays, flights, nights with nothing booked, the next trip), a
+  to-do list (promotions to register for, card spend goals with their
+  deadlines, flights a trip still needs, stays to rate) and a status
+  ring per programme.
+- **Trips**: the trip under way, what's coming (with any missing flights
+  flagged), a card to add or plan the next one, and past trips as
+  polaroids by year. The scratch-off world map and rated stays are one
+  tap away.
 - **Trip detail**: the itinerary (flights and stays in one card shape),
-  a sketched map, photos, points earned and savings; flags trips missing
-  an outbound or return flight.
-- **Loyalty / Home**: wallet value, a status ring per programme and
-  what's worth acting on (card milestones, renewals, expiring vouchers).
-- **Loyalty / Wallet**: loyalty programmes (nights from stays, cards,
-  memberships and promotions, each shown), payment cards on a ring
-  carousel, memberships such as ALL Accor+ Explorer, vouchers and
-  promotions (spent ones archived), with points valued in £.
+  where each flight is best credited (BA, Qatar, Qantas or KrisFlyer),
+  a sketched map, points to earn or earned line by line, cost, photos.
+- **Status**: wallet value, then every programme with its ring toward
+  the next tier (nights from stays, cards, memberships and promotions,
+  each shown) and balance. Each programme has its own page: the ring,
+  balance, tier and nights edited in place, bonus nights, stays to come,
+  its promotions (spent ones archived) and vouchers.
+- **Cards**: payment cards on a ring carousel with each card's goals
+  and earning, memberships such as ALL Accor+ Explorer, archived cards.
 - **Logging**: add a hotel, flight, trip or loyalty programme by hand,
   or **scan a booking email / screenshot** (Claude extracts the
   bookings) and **scan a promotion**. Likely duplicates are flagged.
@@ -38,9 +44,8 @@ ready for an iOS build.
   go, annual leave needed (UK bank holidays), a route of stops with the
   hops between (rail where it's likely), the best-value hotel programme,
   costs and a live budget check, with points-vs-cash for the city.
-- **Credit advisor**: which programme (BA, Qatar, Qantas, KrisFlyer) a
-  flight should be credited to.
-- **Discover**: card offers and loyalty news.
+- **Credit advisor**: the full calculation behind a flight's "Credit
+  to", for any flight.
 
 ## Project layout
 
@@ -59,7 +64,7 @@ ready for an iOS build.
 Each screen reads through a hook in `src/lib/useLiveData.ts`. It shows
 the last cached copy instantly, then fetches from Supabase. If Supabase
 returns nothing or fails, it keeps whatever it already had, falling back
-to `src/data/mock.ts`. Then and Wallet show a "sample data" notice
+to `src/data/mock.ts`. The map screen shows a "sample data" notice
 when that fallback is in use. Sign-in is enforced by `AuthGate`.
 
 ## Running locally
