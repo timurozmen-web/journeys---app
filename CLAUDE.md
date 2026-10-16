@@ -152,6 +152,21 @@ Run all three; all must be clean:
   shown; forms show only essentials with the rest under "More details",
   and fill what they can (brand from hotel name, airline from flight
   number, country from the trip).
+- **Forms and flow.** A form leaves through `useFinish`
+  (`src/lib/useFinish.ts`): opened from a screen with `state.back`, it
+  returns there (`done`), otherwise its result replaces it (a new trip's
+  page replaces the trip form), so Back never lands on a saved form.
+  Deleting uses `gone` (from a trip's edit form, 2 steps, past the trip's
+  page too), and a page for something deleted this session moves on to its
+  list (`src/lib/deleted.ts`). Stays and flights are added straight from a
+  trip page (no "how would you like to add it" step); the mail icon in a
+  form's header imports instead. Fields use `Field` (the label wraps the
+  control), warnings and deletes use `Confirm`, and things to act on in a
+  screen (missing flights, unbooked nights) use `Notice`, the to-do row
+  shape. One 20px gutter (`--s5`) on every screen; controls share
+  `--r-control` (6px) and Space Mono. The QA journeys that exercise all of
+  this (add, edit and delete trips, stays, flights, programmes and cards,
+  then Back) were run in Chromium against a copy of the live data.
 - Routing uses `HashRouter`; routes are listed in `src/App.tsx`.
 
 ## Data layer

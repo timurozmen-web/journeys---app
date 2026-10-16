@@ -26,7 +26,8 @@ describe('bookingRoute', () => {
 
 describe('summarizeBooking', () => {
   test('one line per booking', () => {
-    expect(summarizeBooking({ type: 'hotel', name: 'Gellert', checkIn: '2026-11-10', nights: 2 })).toBe('Gellert · 2026-11-10 · 2n');
-    expect(summarizeBooking({ type: 'flight', airline: 'BA', from: 'LHR', to: 'BUD', date: '2026-11-10' })).toBe('BA LHR → BUD · 2026-11-10');
+    expect(summarizeBooking({ type: 'hotel', name: 'Gellert', checkIn: '2026-11-10', nights: 2 })).toEqual({ title: 'Gellert', sub: '10 Nov · 2 nights' });
+    expect(summarizeBooking({ type: 'flight', airline: 'British Airways', flightNo: 'BA866', from: 'LHR', to: 'BUD', date: '2026-11-10' })).toEqual({ title: 'BA866 · LHR → BUD', sub: '10 Nov · British Airways' });
+    expect(summarizeBooking({ type: 'flight', airline: 'BA', from: 'LHR', to: 'BUD' })).toEqual({ title: 'BA · LHR → BUD', sub: 'No date' });
   });
 });

@@ -71,9 +71,6 @@ export function Settings() {
 
       <div style={{ padding: '4px 20px 24px' }}>
         <SectionLabel style={{ marginBottom: 4 }}>Home location</SectionLabel>
-        <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
-          Trips within a short domestic hop of here won't be flagged for missing flights.
-        </p>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             className="input"
@@ -102,9 +99,6 @@ export function Settings() {
 
       <div style={{ padding: '4px 20px 24px', borderTop: '1px solid var(--line)' }}>
         <SectionLabel style={{ marginBottom: 4, marginTop: 20 }}>Display currency</SectionLabel>
-        <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
-          Prices researched in another currency (like Plan a trip's cash-vs-points figures) convert to this using live exchange rates.
-        </p>
         <select
           className="input"
           value={currency}
@@ -118,9 +112,6 @@ export function Settings() {
 
       <div style={{ padding: '4px 20px 32px', borderTop: '1px solid var(--line)' }}>
         <SectionLabel style={{ marginBottom: 4, marginTop: 20 }}>Airline elite status</SectionLabel>
-        <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink2)', lineHeight: 1.5, marginTop: 0, marginBottom: 14 }}>
-          Set once here and Where to Credit picks it up automatically. No need to enter it twice.
-        </p>
         <div style={{ display: 'grid', gap: 10 }}>
           {AIRLINE_PROGRAMMES.map((p) => {
             const match = programmes.find((pr) => pr.name === p.name);

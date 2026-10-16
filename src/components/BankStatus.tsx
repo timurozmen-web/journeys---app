@@ -9,7 +9,7 @@ export function BankStatus({ connections, accounts, onOpen }: {
   const unfinished = connections.find((c) => !accounts.some((a) => a.connectionId === c.id && a.paymentCardId));
   if (unfinished) {
     return (
-      <div className="card" style={{ margin: '0 16px 14px' }}>
+      <div className="card" style={{ margin: '0 var(--s5) 14px' }}>
         <div style={{ fontWeight: 600 }}>Finish setting up {unfinished.providerName ?? 'your bank'}</div>
         <Button small onClick={onOpen} style={{ marginTop: 10 }}>Choose cards</Button>
       </div>

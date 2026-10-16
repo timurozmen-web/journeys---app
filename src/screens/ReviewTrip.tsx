@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useFinish } from '../lib/useFinish';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { addReview } from '../lib/queries';
 import { withOfflineFallback } from '../lib/offlineQueue';
@@ -35,6 +36,7 @@ const SENTIMENT_CIRCLES: { key: Sentiment; label: string; color: string }[] = [
 
 export function ReviewTrip() {
   const navigate = useNavigate();
+  const finish = useFinish();
   const location = useLocation();
   const state = location.state as { hotel?: HotelNeedingReview; onlyCategories?: string[] } | null;
   const hotel = state?.hotel;
@@ -50,8 +52,8 @@ export function ReviewTrip() {
     return (
       <div style={{ padding: 20 }}>
         <p style={{ color: 'var(--ink3)', fontSize: 'var(--fs-body)' }}>No stay selected to review.</p>
-        <button onClick={() => navigate('/')} style={{ color: 'var(--brand)', background: 'none', border: 'none', fontWeight: 700 }}>
-          Back to Profile
+        <button onClick={() => navigate('/', { replace: true })} className="linkbtn">
+          Back to Today
         </button>
       </div>
     );
@@ -124,7 +126,7 @@ export function ReviewTrip() {
           date: hotel!.date, category: categories[i].key, score: s.score,
         });
       }
-      navigate('/');
+      finish.done('/');
     } catch (err) {
       const message =
         err instanceof Error
@@ -142,9 +144,9 @@ export function ReviewTrip() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
-      <ScreenHeader title={<>Rate {hotel.hotelName}</>} />
+      <ScreenHeader title="Rate a stay" sub={hotel.hotelName} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 20px 100px' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px 20px 100px' }}>
         <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, marginBottom: 16, textAlign: 'center' }}>
           {step + 1} of {categories.length}
         </div>
@@ -221,7 +223,7 @@ export function ReviewTrip() {
               <button onClick={undo} style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}>
                 ‹ Undo
               </button>
-              <button onClick={tooTough} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 'var(--r-pill)', padding: '7px 16px', color: 'var(--ink)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}>
+              <button onClick={tooTough} className="tagbtn">
                 Too tough
               </button>
               <button onClick={skipCategory} style={{ background: 'none', border: 'none', color: 'var(--ink3)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}>

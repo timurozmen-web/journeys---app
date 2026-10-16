@@ -75,14 +75,14 @@ export function CitySearchInput({
               key={c.name}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 5px 4px 10px',
-                borderRadius: 'var(--r-pill)', background: 'var(--brand-soft)', border: '1px solid var(--brand)',
-                fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--brand)',
+                borderRadius: 'var(--r-xs)', background: 'var(--ink)', border: '1.5px solid var(--ink)',
+                fontFamily: 'var(--font-display)', fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--bg)',
               }}
             >
               {c.name}
               <button
-                onClick={() => removeCity(c.name)}
-                style={{ background: 'none', border: 'none', color: 'var(--brand)', cursor: 'pointer', fontSize: 'var(--fs-body)', padding: '0 3px', lineHeight: 1 }}
+                onClick={() => removeCity(c.name)} aria-label={`Remove ${c.name}`}
+                style={{ background: 'none', border: 'none', color: 'var(--bg)', cursor: 'pointer', fontSize: 'var(--fs-body)', padding: '0 3px', lineHeight: 1 }}
               >
                 ✕
               </button>
@@ -132,12 +132,7 @@ export function CitySearchInput({
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 'var(--fs-body)', color: 'var(--ink)' }}>{l.name}</span>
-                <span style={{
-                  fontSize: 'var(--fs-micro)', fontWeight: 700, color: 'var(--brand)', background: 'var(--brand-soft)',
-                  padding: '1px 6px', borderRadius: 'var(--r-pill)', textTransform: 'uppercase', letterSpacing: '.04em',
-                }}>
-                  {l.category}
-                </span>
+                <span className="tag">{l.category}</span>
               </div>
               <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 2 }}>{l.description}</div>
             </button>

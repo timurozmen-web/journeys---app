@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useFinish } from '../lib/useFinish';
 import { Button, ErrorText, Field, ScreenHeader } from '../components/ui';
 import { CARDS_STATIC } from '../data/cardDefs';
 import { CARD_FACES, DEFAULT_FACE } from '../data/cardFaces';
@@ -11,7 +11,7 @@ const OTHER = '__other__';
 // Add a card to the wallet: pick it, say when you opened it, done. Cards
 // already in the wallet aren't offered again.
 export function AddCard() {
-  const navigate = useNavigate();
+  const finish = useFinish();
   const { data: paymentCards, isLive } = usePaymentCards();
   const held = new Set(isLive ? paymentCards.filter((c) => !c.closedDate).map((c) => c.id) : []);
   const choices = CARDS_STATIC.filter((c) => !held.has(c.id));
@@ -34,7 +34,7 @@ export function AddCard() {
         ? { id: name.trim(), programmeBrand: 'Other', annualFee: Number(fee), feeLabel: Number(fee) > 0 ? `£${Number(fee)}/yr` : 'Free' }
         : CARDS_STATIC.find((c) => c.id === picked)!;
       await savePaymentCard(def, openDate);
-      navigate('/cards', { state: { tracked: [def.id] }, replace: true });
+      finish.done('/cards', { tracked: [def.id] });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not add the card.');
       setSaving(false);

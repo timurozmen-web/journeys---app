@@ -105,11 +105,7 @@ export function TabBar() {
             </div>
           ))}
         </div>
-        <button
-          onClick={retryNow}
-          disabled={retrying}
-          style={{ width: '100%', marginTop: 14, padding: '12px 0', borderRadius: 'var(--r-sm)', border: 'none', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 'var(--fs-body-lg)', fontWeight: 700, cursor: 'pointer', opacity: retrying ? 0.6 : 1 }}
-        >
+        <button onClick={retryNow} disabled={retrying} className="btn primary block" style={{ marginTop: 14 }}>
           {retrying ? 'Trying now…' : 'Try syncing now'}
         </button>
       </div>

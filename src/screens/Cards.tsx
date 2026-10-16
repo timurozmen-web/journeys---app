@@ -25,7 +25,7 @@ export function Cards() {
       <div className="topspace" />
       <div className="homehead">
         <h1 className="h1" style={{ margin: 0 }}>Cards</h1>
-        <button className="iconbtn" aria-label="Add a card" onClick={() => navigate('/add-card')}><PlusIcon size={20} /></button>
+        <button className="iconbtn" aria-label="Add a card" onClick={() => navigate('/add-card', { state: { back: true } })}><PlusIcon size={20} /></button>
       </div>
       <div style={{ paddingTop: 4 }}>
         <BankStatus connections={connections} accounts={accounts} onOpen={() => navigate('/bank-sync')} />

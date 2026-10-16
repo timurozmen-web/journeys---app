@@ -9,7 +9,11 @@ import { useTrips, useAllHotels, useAllFlights, usePaymentCards } from '../lib/u
 import { needsPlaceFields, tripPlace } from '../lib/tripPlace';
 import { loadWorldCities } from '../data/worldCitiesLoader';
 import { findLikelyDuplicateHotel } from '../lib/duplicateDetection';
-import { Button, ErrorText, ScreenHeader } from '../components/ui';
+import { Button, Confirm, ErrorText, ScreenHeader } from '../components/ui';
+import { MailIcon } from '../components/Icons';
+import { useFinish } from '../lib/useFinish';
+import { overlappingStay } from '../lib/stayOverlap';
+import { addDays } from '../lib/tripDay';
 
 const CATEGORIES = ['Luxury', 'Premium', 'Midscale', 'Budget'] as const;
 const STATUSES = ['Completed', 'Booked', 'needs-confirm'] as const;
@@ -18,7 +22,8 @@ const RATE_TYPES = ['Standard', 'Member', 'Promotional', 'Non-refundable', 'Othe
 export function LogHotel() {
   const navigate = useNavigate();
   const location = useLocation();
-  const state = location.state as { hotel?: Hotel; tripId?: string; prefill?: Partial<Hotel>; extractNote?: string; returnTo?: { pathname: string; state?: unknown } } | null;
+  const state = location.state as { hotel?: Hotel; tripId?: string; prefill?: Partial<Hotel>; extractNote?: string } | null;
+  const finish = useFinish();
   const editing = state?.hotel;
   const presetTripId = state?.tripId;
   const prefill = state?.prefill;
@@ -46,9 +51,9 @@ export function LogHotel() {
   const [more, setMore] = useState(!!editing);
   const [error, setError] = useState('');
   const [overlapWarning, setOverlapWarning] = useState<string | null>(null);
-  const [confirmedOverlap, setConfirmedOverlap] = useState(false);
+  const [confirmedOverlapState, setConfirmedOverlap] = useState(false);
   const [dupWarning, setDupWarning] = useState<string | null>(null);
-  const [confirmedDup, setConfirmedDup] = useState(false);
+  const [confirmedDupState, setConfirmedDup] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [statusTouched, setStatusTouched] = useState(!!src?.status); // don't auto-override an explicit status from editing/extraction
@@ -83,26 +88,22 @@ export function LogHotel() {
   const autoSuggestion = suggestTripAssignment(form.date || TODAY, effectiveCity || null, effectiveCountry, trips, allFlights);
 
   function findOverlap(): string | null {
-    if (!form.tripId || !form.date) return null;
-    const trip = trips.find((t) => t.id === form.tripId);
-    if (!trip) return null;
-    const start = form.date;
-    const nights = parseInt(form.nights, 10) || 1;
-    const end = new Date(start);
-    end.setDate(end.getDate() + nights);
-    const endStr = end.toISOString().slice(0, 10);
-    for (const h of trip.hotels) {
-      if (editing && h.id === editing.id) continue;
-      const hEnd = new Date(h.date);
-      hEnd.setDate(hEnd.getDate() + h.nights);
-      const hEndStr = hEnd.toISOString().slice(0, 10);
-      if (start < hEndStr && h.date < endStr) return h.name;
-    }
-    return null;
+    const trip = form.tripId && form.date ? trips.find((t) => t.id === form.tripId) : null;
+    return trip ? overlappingStay(trip.hotels, form.date, parseInt(form.nights, 10) || 1, editing?.id)?.name ?? null : null;
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    await save({});
+  }
+
+  // "Save anyway" on a warning saves straight away, rather than leaving
+  // the Save button to be pressed again.
+  async function save(allow: { overlap?: boolean; dup?: boolean }) {
+    const confirmedOverlap = allow.overlap || confirmedOverlapState;
+    const confirmedDup = allow.dup || confirmedDupState;
+    if (allow.overlap) setConfirmedOverlap(true);
+    if (allow.dup) setConfirmedDup(true);
     if (!form.name || !effectiveCountry || !form.date) {
       setError(showPlace ? 'Name, country and date are required.' : 'Name and date are required.');
       return;
@@ -134,9 +135,7 @@ export function LogHotel() {
           resolvedTripId = autoSuggestion.tripId;
           const existingTrip = trips.find((t) => t.id === autoSuggestion.tripId);
           if (existingTrip) {
-            const newEnd = new Date(form.date);
-            newEnd.setDate(newEnd.getDate() + nights);
-            const newEndStr = newEnd.toISOString().slice(0, 10);
+            const newEndStr = addDays(form.date, nights);
             if (newEndStr > existingTrip.end) {
               await withOfflineFallback('updateTrip', `Extend ${existingTrip.title}`, updateTrip, existingTrip.id, {
                 title: existingTrip.title, start: existingTrip.start, end: newEndStr,
@@ -145,10 +144,8 @@ export function LogHotel() {
             }
           }
         } else {
-          const end = new Date(form.date);
-          end.setDate(end.getDate() + nights);
           const newTripInput = {
-            title: autoSuggestion.suggestedTitle, start: form.date, end: end.toISOString().slice(0, 10),
+            title: autoSuggestion.suggestedTitle, start: form.date, end: addDays(form.date, nights),
             tripType: autoSuggestion.tripType, notes: '',
           };
           // Pre-generate the id client-side so the hotel below can
@@ -191,8 +188,7 @@ export function LogHotel() {
         // a one-off message here that would vanish on navigation anyway.
         await withOfflineFallback('addHotel', `${payload.name} stay`, addHotel, payload);
       }
-      if (state?.returnTo) navigate(state.returnTo.pathname, { state: state.returnTo.state });
-      else navigate(resolvedTripId ? `/trips/${resolvedTripId}` : '/trips');
+      finish.done(resolvedTripId ? `/trips/${resolvedTripId}` : '/trips');
     } catch (err) {
       const message =
         err instanceof Error
@@ -208,11 +204,18 @@ export function LogHotel() {
 
   return (
     <div>
-      <ScreenHeader title={editing ? 'Edit stay' : presetTrip ? `Log a stay for ${presetTrip.title}` : 'Log a stay'} />
+      <ScreenHeader
+        title={editing ? 'Edit stay' : 'New stay'} sub={presetTrip?.title}
+        right={editing ? undefined : (
+          <button type="button" className="iconbtn" aria-label="Import from an email or screenshot" onClick={() => navigate('/scan-email', { replace: true, state: { tripId: presetTripId, back: (location.state as { back?: boolean } | null)?.back } })}>
+            <MailIcon size={20} />
+          </button>
+        )}
+      />
 
       <form onSubmit={handleSubmit} style={{ padding: '0 20px', display: 'grid', gap: 14 }}>
-        <div>
-          <label className="field-label">Hotel name *</label>
+        <label className="field">
+          <span className="field-label">Hotel name *</span>
           <input
             className="input"
             list="known-hotels"
@@ -242,22 +245,22 @@ export function LogHotel() {
               <option key={h.id} value={h.name} />
             ))}
           </datalist>
-        </div>
+        </label>
         {showPlace && (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-          <div>
-            <label className="field-label">Country *</label>
+          <label className="field">
+            <span className="field-label">Country *</span>
             <input className="input" value={form.country} onChange={(e) => set('country', e.target.value)} placeholder="United Kingdom" />
-          </div>
-          <div>
-            <label className="field-label">City</label>
+          </label>
+          <label className="field">
+            <span className="field-label">City</span>
             <input className="input" value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="London" />
-          </div>
+          </label>
         </div>
         )}
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.4fr) minmax(0,1fr)', gap: 10 }}>
-          <div>
-            <label className="field-label">Check-in date *</label>
+          <label className="field">
+            <span className="field-label">Check-in date *</span>
             <input
               className="input"
               type="date"
@@ -269,24 +272,24 @@ export function LogHotel() {
                 setOverlapWarning(null);
               }}
             />
-          </div>
-          <div>
-            <label className="field-label">Nights</label>
+          </label>
+          <label className="field">
+            <span className="field-label">Nights</span>
             <input className="input" type="number" min="1" value={form.nights} onChange={(e) => set('nights', e.target.value)} />
-          </div>
+          </label>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-          <div>
-            <label className="field-label">Total cost (£)</label>
+          <label className="field">
+            <span className="field-label">Total cost (£)</span>
             <input className="input" type="number" step="0.01" value={form.total} onChange={(e) => set('total', e.target.value)} placeholder="Optional" />
-          </div>
-          <div>
-            <label className="field-label">Card used</label>
+          </label>
+          <label className="field">
+            <span className="field-label">Card used</span>
             <select className="input" value={form.card} onChange={(e) => set('card', e.target.value)}>
               <option value="">None</option>
               {cardOptions.map((id) => <option key={id} value={id}>{id}</option>)}
             </select>
-          </div>
+          </label>
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--fs-body)', color: 'var(--ink)', cursor: 'pointer' }}>
           <input type="checkbox" checked={form.award} onChange={(e) => set('award', e.target.checked)} />
@@ -297,8 +300,8 @@ export function LogHotel() {
         </button>
         {more && (
           <>
-            <div>
-              <label className="field-label">Brand</label>
+            <label className="field">
+              <span className="field-label">Brand</span>
               <input
                 className="input"
                 value={form.brand}
@@ -306,28 +309,28 @@ export function LogHotel() {
                 onBlur={(e) => e.target.value && set('brand', normalizeBrand(e.target.value))}
                 placeholder="Marriott Bonvoy"
               />
-            </div>
+            </label>
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-              <div>
-                <label className="field-label">Status</label>
+              <label className="field">
+                <span className="field-label">Status</span>
                 <select className="input" value={form.status} onChange={(e) => { setStatusTouched(true); set('status', e.target.value as (typeof STATUSES)[number]); }}>
                   {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
-              </div>
-              <div>
-                <label className="field-label">Category</label>
+              </label>
+              <label className="field">
+                <span className="field-label">Category</span>
                 <select className="input" value={form.category} onChange={(e) => set('category', e.target.value as (typeof CATEGORIES)[number])}>
                   {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
-              </div>
+              </label>
             </div>
-            <div>
-              <label className="field-label">Room type</label>
+            <label className="field">
+              <span className="field-label">Room type</span>
               <input className="input" value={form.roomType} onChange={(e) => set('roomType', e.target.value)} placeholder="e.g. Deluxe King, City View" />
-            </div>
+            </label>
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-              <div>
-                <label className="field-label">Rate type</label>
+              <label className="field">
+                <span className="field-label">Rate type</span>
                 <select
                   className="input"
                   value={form.rateType}
@@ -341,9 +344,9 @@ export function LogHotel() {
                 >
                   {RATE_TYPES.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
-              </div>
-              <div>
-                <label className="field-label">Standard rate (£/night)</label>
+              </label>
+              <label className="field">
+                <span className="field-label">Standard rate (£/night)</span>
                 <input
                   className="input" style={{ opacity: form.rateType === 'Standard' ? 0.6 : 1 }}
                   type="number"
@@ -353,16 +356,16 @@ export function LogHotel() {
                   disabled={form.rateType === 'Standard'}
                   placeholder="What it would've cost at standard rate"
                 />
-              </div>
+              </label>
             </div>
             {editing && (
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-              <div>
-                <label className="field-label">Benefit value (£)</label>
+              <label className="field">
+                <span className="field-label">Benefit value (£)</span>
                 <input className="input" type="number" step="0.01" value={form.benefitValue} onChange={(e) => set('benefitValue', e.target.value)} placeholder="e.g. upgrade, breakfast" />
-              </div>
-              <div>
-                <label className="field-label">Benefit type</label>
+              </label>
+              <label className="field">
+                <span className="field-label">Benefit type</span>
                 <select className="input" value={form.benefitType} onChange={(e) => set('benefitType', e.target.value)}>
                   <option value="">Not set</option>
                   <option value="breakfast">Free breakfast</option>
@@ -371,35 +374,27 @@ export function LogHotel() {
                   <option value="late-checkout">Late checkout</option>
                   <option value="other">Other</option>
                 </select>
-              </div>
-              <div>
-                <label className="field-label">What was it</label>
+              </label>
+              <label className="field">
+                <span className="field-label">What was it</span>
                 <input className="input" value={form.benefitNote} onChange={(e) => set('benefitNote', e.target.value)} placeholder="Suite upgrade, breakfast…" />
-              </div>
+              </label>
             </div>
             )}
-            <div>
-              <label className="field-label">Booked via (leave blank if direct)</label>
+            <label className="field">
+              <span className="field-label">Booked via (leave blank if direct)</span>
               <input className="input" value={form.bookingChannel} onChange={(e) => set('bookingChannel', e.target.value)} placeholder="e.g. Expedia" />
-            </div>
+            </label>
           </>
         )}
         {!presetTripId && (
         <div>
-          <label className="field-label">Trip</label>
+          <div className="field-label">Trip</div>
           {!manualTripOverride ? (
             <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 'var(--r-control)', padding: '11px 12px' }}>
               <div style={{ fontSize: 'var(--fs-body-lg)', fontWeight: 700 }}>
                 {autoSuggestion.tripId ? autoSuggestion.suggestedTitle : `New trip: ${autoSuggestion.suggestedTitle}`}
-                <span
-                  style={{
-                    marginLeft: 8, fontSize: 'var(--fs-micro)', fontWeight: 700, padding: '2px 7px', borderRadius: 'var(--r-pill)',
-                    background: autoSuggestion.tripType === 'work' ? 'var(--brand-soft)' : 'var(--green-soft)',
-                    color: autoSuggestion.tripType === 'work' ? 'var(--brand)' : 'var(--green)',
-                  }}
-                >
-                  {autoSuggestion.tripType}
-                </span>
+                <span className="tag" style={{ marginLeft: 8, verticalAlign: 'middle' }}>{autoSuggestion.tripType}</span>
               </div>
               <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', marginTop: 3 }}>{autoSuggestion.reason}</div>
               <button
@@ -430,61 +425,16 @@ export function LogHotel() {
         </div>
         )}
 
-        {extractNote && (
-          <div style={{ background: 'var(--amber-soft)', color: 'var(--amber)', fontSize: 'var(--fs-small)', padding: '10px 14px', borderRadius: 'var(--r-control)', fontWeight: 600 }}>
-            {extractNote}
-          </div>
-        )}
+        {extractNote && <div className="formnote">{extractNote}</div>}
         {overlapWarning && (
-          <div style={{ background: 'var(--amber-soft)', border: '1px solid rgba(232,176,75,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
-            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--amber)', fontWeight: 600, marginBottom: 8 }}>
-              These dates overlap with "{overlapWarning}", already logged on this trip. Save anyway?
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setConfirmedOverlap(true);
-                  setOverlapWarning(null);
-                }}
-                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--amber)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
-              >
-                Save anyway
-              </button>
-              <button
-                type="button"
-                onClick={() => setOverlapWarning(null)}                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
-              >
-                Let me fix it
-              </button>
-            </div>
-          </div>
+          <Confirm confirmLabel="Save anyway" cancelLabel="Let me fix it" onConfirm={() => save({ overlap: true })} onCancel={() => setOverlapWarning(null)}>
+            Overlaps {overlapWarning} on this trip.
+          </Confirm>
         )}
         {dupWarning && (
-          <div style={{ background: 'var(--amber-soft)', border: '1px solid rgba(232,176,75,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
-            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--amber)', fontWeight: 600, marginBottom: 8 }}>
-              This looks like it might already be logged as "{dupWarning}": same brand, similar date. Save anyway?
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setConfirmedDup(true);
-                  setDupWarning(null);
-                }}
-                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--amber)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
-              >
-                Save anyway
-              </button>
-              <button
-                type="button"
-                onClick={() => setDupWarning(null)}
-                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
-              >
-                Let me check
-              </button>
-            </div>
-          </div>
+          <Confirm confirmLabel="Save anyway" cancelLabel="Let me check" onConfirm={() => save({ overlap: true, dup: true })} onCancel={() => setDupWarning(null)}>
+            Looks like {dupWarning}, already logged.
+          </Confirm>
         )}
         {error && <ErrorText>{error}</ErrorText>}
 
@@ -496,43 +446,28 @@ export function LogHotel() {
           <button
             type="button"
             onClick={() => setConfirmingDelete(true)}
-            className="btn ghost" style={{ color: 'var(--red)', fontSize: 'var(--fs-body)', fontWeight: 600, padding: '6px 0', justifyContent: 'flex-start' }}
+            className="removecard" style={{ justifySelf: 'start', padding: '10px 0' }}
           >
             Delete this stay
           </button>
         )}
         {editing && confirmingDelete && (
-          <div style={{ background: 'var(--red-soft)', border: '1px solid rgba(240,138,126,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
-            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--red)', fontWeight: 600, marginBottom: 8 }}>
-              Delete "{editing.name}" permanently? This can't be undone.
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={async () => {
-                  setDeleting(true);
-                  try {
-                    await deleteHotel(editing.id);
-                    navigate(form.tripId ? `/trips/${form.tripId}` : '/trips');
-                  } catch (err) {
-                    setError(err instanceof Error ? err.message : 'Failed to delete.');
-                    setDeleting(false);
-                  }
-                }}
-                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--red)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
-              >
-                {deleting ? 'Deleting…' : 'Yes, delete it'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmingDelete(false)}
-                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+          <Confirm
+            danger busy={deleting} confirmLabel={deleting ? 'Deleting…' : 'Delete stay'}
+            onCancel={() => setConfirmingDelete(false)}
+            onConfirm={async () => {
+              setDeleting(true);
+              try {
+                await deleteHotel(editing.id);
+                finish.gone(form.tripId ? `/trips/${form.tripId}` : '/trips');
+              } catch (err) {
+                setError(err instanceof Error ? err.message : 'Could not delete it.');
+                setDeleting(false);
+              }
+            }}
+          >
+            Delete {editing.name}?
+          </Confirm>
         )}
       </form>
       <div style={{ height: 30 }} />

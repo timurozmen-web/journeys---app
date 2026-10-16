@@ -139,14 +139,10 @@ export function ProgrammeDetail({ p, progress, paymentCards, onSave }: {
           )}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
             {progress.brandExplorer.brandsStayed.map((b) => (
-              <span key={b} style={{ fontSize: 'var(--fs-micro)', fontWeight: 700, padding: '2px 7px', borderRadius: 'var(--r-pill)', background: 'var(--brand-soft)', color: 'var(--brand)' }}>
-                {b}
-              </span>
+              <span key={b} className="tag solid">{b}</span>
             ))}
             {progress.brandExplorer.brandsPending.map((b) => (
-              <span key={b} style={{ fontSize: 'var(--fs-micro)', fontWeight: 700, padding: '2px 7px', borderRadius: 'var(--r-pill)', background: 'var(--amber-soft)', color: 'var(--amber)' }}>
-                {b} (booked)
-              </span>
+              <span key={b} className="tag">{b} · booked</span>
             ))}
           </div>
         </div>

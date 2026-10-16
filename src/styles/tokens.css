@@ -76,7 +76,7 @@
 
   /* Corner radii. */
   --r-xs: 8px;       /* icon squares, small chips */
-  --r-control: 10px; /* inputs, selects, buttons */
+  --r-control: 6px;  /* inputs, selects, buttons: square-cornered like the tags */
   --r-sm: 12px;      /* tiles, inner panels */
   --r-md: 16px;      /* cards */
   --r-lg: 20px;      /* heroes */

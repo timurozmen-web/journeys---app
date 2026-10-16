@@ -1,6 +1,7 @@
 // Real Supabase queries. Same shape as src/data/mock.ts, so components
 // don't need to change when they switch from mock data to this.
 import { supabase } from './supabase';
+import { markDeleted } from './deleted';
 import { addDays } from './tripDay';
 import { canonicalStay } from './stayNormalise';
 import { dedupeStays, foldEmptyTrips } from './tripFold';
@@ -102,6 +103,7 @@ export async function updateLoyaltyProgramme(name: string, patch: { points?: num
   const { data, error } = await supabase.from('loyalty_programmes').update(row).eq('name', name).select('name');
   if (error) throw error;
   if (!data || data.length === 0) throw new Error(`No loyalty programme called "${name}".`);
+  markDeleted('programme', name);
   notifyDataChanged();
 }
 
@@ -109,6 +111,7 @@ export async function deleteLoyaltyProgramme(name: string) {
   const { data, error } = await supabase.from('loyalty_programmes').delete().eq('name', name).select('name');
   if (error) throw error;
   if (!data || data.length === 0) throw new Error(`No loyalty programme called "${name}".`);
+  markDeleted('programme', name);
   notifyDataChanged();
 }
 
@@ -156,6 +159,7 @@ export async function deleteTrip(id: string) {
   if (flightsErr) throw flightsErr;
   const { error: tripErr } = await supabase.from('trips').delete().eq('id', id);
   if (tripErr) throw tripErr;
+  markDeleted('trip', id);
   notifyDataChanged();
 }
 

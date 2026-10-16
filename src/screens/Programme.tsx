@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { wasDeleted } from '../lib/deleted';
 import { useAllHotels, useLoyaltyProgrammes, usePaymentCards, usePromotions, useTrips } from '../lib/useLiveData';
 import { useCardResults } from '../lib/useCardResults';
 import { computeStatusProgress } from '../lib/statusProgress';
@@ -8,7 +9,7 @@ import { deleteLoyaltyProgramme, updateLoyaltyProgramme } from '../lib/queries';
 import { dayMonthShort } from '../lib/today';
 import { ProgrammeDetail } from '../components/ProgrammeDetail';
 import { PromotionsTab } from '../components/PromotionsTab';
-import { ErrorText, ScreenHeader, SectionLabel } from '../components/ui';
+import { EmptyState, ErrorText, ScreenHeader, SectionLabel } from '../components/ui';
 
 // One programme's page, opened from Status or Today: its ring and figures,
 // the stays still to come this year, and its promotions.
@@ -26,7 +27,7 @@ export function Programme() {
   const [confirmRemove, setConfirmRemove] = useState(false);
 
   const p = withLiveOverrides(rawProgrammes, hotels, promotions).find((x) => x.name === name);
-  if (!p) return <div><ScreenHeader title={name} /></div>;
+  if (!p) return wasDeleted('programme', name) ? <Navigate to="/status" replace /> : <div><ScreenHeader title={name} /><EmptyState>Not found</EmptyState></div>;
 
   const progress = p.category === 'hotel' && p.nextTier && p.nights != null ? computeStatusProgress(p, hotels, promotions, cardResults) : null;
   const tier = progress?.effectiveTier ?? p.tier;
@@ -50,7 +51,9 @@ export function Programme() {
     if (!confirmRemove) { setConfirmRemove(true); return; }
     try {
       await deleteLoyaltyProgramme(p!.name);
-      navigate('/status', { replace: true });
+      // Back to where it was opened from, never to the page of what's gone.
+      if (((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0) navigate(-1);
+      else navigate('/status', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not delete it.');
     }

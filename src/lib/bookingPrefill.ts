@@ -7,17 +7,25 @@ export interface ExtractedBooking {
   [key: string]: unknown;
 }
 
-export interface ReturnTo { pathname: string; state?: unknown }
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const shortDate = (d: unknown) => (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) ? `${Number(d.slice(8, 10))} ${MON[Number(d.slice(5, 7)) - 1]}` : null);
 
-export function summarizeBooking(b: ExtractedBooking): string {
-  if (b.type === 'hotel') return `${b.name ?? 'Hotel'} · ${b.checkIn ?? 'date unknown'}${b.nights ? ` · ${b.nights}n` : ''}`;
-  return `${b.airline ?? 'Flight'} ${b.from ?? '?'} → ${b.to ?? '?'} · ${b.date ?? 'date unknown'}`;
+/** A found booking as a list row: "W Budapest" over "23 Oct · 2 nights". */
+export function summarizeBooking(b: ExtractedBooking): { title: string; sub: string } {
+  if (b.type === 'hotel') {
+    const nights = typeof b.nights === 'number' ? `${b.nights} night${b.nights === 1 ? '' : 's'}` : null;
+    return { title: (b.name as string) ?? 'Hotel', sub: [shortDate(b.checkIn) ?? 'No date', nights].filter(Boolean).join(' · ') };
+  }
+  return {
+    title: `${(b.flightNo as string) ?? (b.airline as string) ?? 'Flight'} · ${(b.from as string) ?? '?'} → ${(b.to as string) ?? '?'}`,
+    sub: [shortDate(b.date) ?? 'No date', b.flightNo ? (b.airline as string) : null].filter(Boolean).join(' · '),
+  };
 }
 
 // Where an extracted booking goes to be reviewed: the matching form,
 // prefilled, attached to the trip it was imported for (if any). Shared by
 // email and calendar import so both land in the same place.
-export function bookingRoute(b: ExtractedBooking, ctx: { tripId?: string; returnTo?: ReturnTo } = {}): { to: string; state: Record<string, unknown> } {
+export function bookingRoute(b: ExtractedBooking, ctx: { tripId?: string } = {}): { to: string; state: Record<string, unknown> } {
   const extractNote = b.currency && b.currency !== 'GBP' ? `Detected amount was in ${b.currency}, worth double-checking the £ figure.` : undefined;
   if (b.type === 'hotel') {
     return {
@@ -28,7 +36,7 @@ export function bookingRoute(b: ExtractedBooking, ctx: { tripId?: string; return
           date: b.checkIn, nights: b.nights, total: b.total,
           roomType: b.roomType ?? null, rateType: b.rateType ?? 'Standard',
         },
-        extractNote, tripId: ctx.tripId, returnTo: ctx.returnTo,
+        extractNote, tripId: ctx.tripId,
       },
     };
   }
@@ -43,7 +51,7 @@ export function bookingRoute(b: ExtractedBooking, ctx: { tripId?: string; return
         date: b.date, from: b.from, to: b.to, airline: b.airline, flightNo: b.flightNo,
         cabin: award ?? b.cabin, cost: b.cost, award: award != null || b.award === true,
       },
-      extractNote, tripId: ctx.tripId, returnTo: ctx.returnTo,
+      extractNote, tripId: ctx.tripId,
     },
   };
 }

@@ -6,7 +6,9 @@ import type { Flight } from '../types';
 import { useTrips, useAllFlights } from '../lib/useLiveData';
 import { findLikelyDuplicateFlight } from '../lib/duplicateDetection';
 import { airlineFromFlightNo } from '../lib/flightNumber';
-import { Button, ErrorText, ScreenHeader } from '../components/ui';
+import { Button, Confirm, ErrorText, ScreenHeader } from '../components/ui';
+import { MailIcon } from '../components/Icons';
+import { useFinish } from '../lib/useFinish';
 
 const CABINS = ['Economy', 'Premium Economy', 'Business', 'First'] as const;
 const STATUSES = ['Completed', 'Booked'] as const;
@@ -14,7 +16,8 @@ const STATUSES = ['Completed', 'Booked'] as const;
 export function LogFlight() {
   const navigate = useNavigate();
   const location = useLocation();
-  const state = location.state as { flight?: Flight; tripId?: string; prefill?: Partial<Flight>; extractNote?: string; returnTo?: { pathname: string; state?: unknown } } | null;
+  const state = location.state as { flight?: Flight; tripId?: string; prefill?: Partial<Flight>; extractNote?: string } | null;
+  const finish = useFinish();
   const editing = state?.flight;
   const presetTripId = state?.tripId;
   const prefill = state?.prefill;
@@ -27,7 +30,7 @@ export function LogFlight() {
   const knownTo = Array.from(new Set(allFlights.map((f) => f.to))).sort();
   const knownAirlines = Array.from(new Set(allFlights.map((f) => f.airline))).sort();
   const [dupWarning, setDupWarning] = useState<string | null>(null);
-  const [confirmedDup, setConfirmedDup] = useState(false);
+  const [confirmedDupState, setConfirmedDup] = useState(false);
   const TODAY = new Date().toISOString().slice(0, 10);
   const [saving, setSaving] = useState(false);
   // Less-used fields stay folded away until asked for (open when editing).
@@ -54,6 +57,13 @@ export function LogFlight() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    await save(false);
+  }
+
+  // "Save anyway" saves straight away.
+  async function save(dupOk: boolean) {
+    if (dupOk) setConfirmedDup(true);
+    const confirmedDup = dupOk || confirmedDupState;
     if (!form.date || !form.from || !form.to || !form.airline) {
       setError('Date, airports, and airline are required.');
       return;
@@ -79,8 +89,7 @@ export function LogFlight() {
       } else {
         await withOfflineFallback('addFlight', `${payload.airline ?? 'Flight'} ${payload.flightNo ?? ''}`.trim(), addFlight, payload);
       }
-      if (state?.returnTo) navigate(state.returnTo.pathname, { state: state.returnTo.state });
-      else navigate(form.tripId ? `/trips/${form.tripId}` : '/trips');
+      finish.done(form.tripId ? `/trips/${form.tripId}` : '/trips');
     } catch (err) {
       const message =
         err instanceof Error
@@ -96,11 +105,18 @@ export function LogFlight() {
 
   return (
     <div>
-      <ScreenHeader title={editing ? 'Edit flight' : presetTrip ? `Log a flight for ${presetTrip.title}` : 'Log a flight'} />
+      <ScreenHeader
+        title={editing ? 'Edit flight' : 'New flight'} sub={presetTrip?.title}
+        right={editing ? undefined : (
+          <button type="button" className="iconbtn" aria-label="Import from an email or screenshot" onClick={() => navigate('/scan-email', { replace: true, state: { tripId: presetTripId, back: (location.state as { back?: boolean } | null)?.back } })}>
+            <MailIcon size={20} />
+          </button>
+        )}
+      />
 
       <form onSubmit={handleSubmit} style={{ padding: '0 20px', display: 'grid', gap: 14 }}>
-        <div>
-          <label className="field-label">Date *</label>
+        <label className="field">
+          <span className="field-label">Date *</span>
           <input
             className="input" type="date" value={form.date}
             onChange={(e) => {
@@ -108,22 +124,22 @@ export function LogFlight() {
               setForm((f) => ({ ...f, date, status: statusTouched ? f.status : date > TODAY ? 'Booked' : 'Completed' }));
             }}
           />
-        </div>
+        </label>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-          <div>
-            <label className="field-label">From *</label>
+          <label className="field">
+            <span className="field-label">From *</span>
             <input className="input" list="known-from" value={form.from} onChange={(e) => set('from', e.target.value.toUpperCase())} placeholder="LHR" maxLength={3} />
             <datalist id="known-from">{knownFrom.map((c) => <option key={c} value={c} />)}</datalist>
-          </div>
-          <div>
-            <label className="field-label">To *</label>
+          </label>
+          <label className="field">
+            <span className="field-label">To *</span>
             <input className="input" list="known-to" value={form.to} onChange={(e) => set('to', e.target.value.toUpperCase())} placeholder="JFK" maxLength={3} />
             <datalist id="known-to">{knownTo.map((c) => <option key={c} value={c} />)}</datalist>
-          </div>
+          </label>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-          <div>
-            <label className="field-label">Flight no.</label>
+          <label className="field">
+            <span className="field-label">Flight no.</span>
             <input
               className="input" value={form.flightNo} placeholder="e.g. BA866" autoCapitalize="characters"
               onChange={(e) => {
@@ -134,24 +150,24 @@ export function LogFlight() {
                 if (airline) setAutoAirline(airline);
               }}
             />
-          </div>
-          <div>
-            <label className="field-label">Airline *</label>
+          </label>
+          <label className="field">
+            <span className="field-label">Airline *</span>
             <input className="input" list="known-airlines" value={form.airline} onChange={(e) => set('airline', e.target.value)} placeholder="British Airways" />
             <datalist id="known-airlines">{knownAirlines.map((a) => <option key={a} value={a} />)}</datalist>
-          </div>
+          </label>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-          <div>
-            <label className="field-label">Cabin</label>
+          <label className="field">
+            <span className="field-label">Cabin</span>
             <select className="input" value={form.cabin} onChange={(e) => set('cabin', e.target.value as (typeof CABINS)[number])}>
               {CABINS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
-          </div>
-          <div>
-            <label className="field-label">Cost (£)</label>
+          </label>
+          <label className="field">
+            <span className="field-label">Cost (£)</span>
             <input className="input" type="number" step="0.01" value={form.cost} onChange={(e) => set('cost', e.target.value)} placeholder="Optional" />
-          </div>
+          </label>
         </div>
         <button type="button" className="btn ghost small" style={{ justifySelf: 'start', padding: '4px 0' }} onClick={() => setMore((m) => !m)} aria-expanded={more}>
           {more ? 'Fewer details' : 'More details'}
@@ -159,22 +175,22 @@ export function LogFlight() {
         {more && (
           <>
             <div style={{ display: 'grid', gap: 10 }}>
-              <div>
-                <label className="field-label">Departs (optional)</label>
+              <label className="field">
+                <span className="field-label">Departs (optional)</span>
                 <input className="input" type="time" value={form.departureTime} onChange={(e) => set('departureTime', e.target.value)} />
-              </div>
-              <div>
-                <label className="field-label">Arrives (optional)</label>
+              </label>
+              <label className="field">
+                <span className="field-label">Arrives (optional)</span>
                 <input className="input" type="time" value={form.arrivalTime} onChange={(e) => set('arrivalTime', e.target.value)} />
-              </div>
+              </label>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-              <div>
-                <label className="field-label">Status</label>
+              <label className="field">
+                <span className="field-label">Status</span>
                 <select className="input" value={form.status} onChange={(e) => set('status', e.target.value as (typeof STATUSES)[number])}>
                   {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
-              </div>
+              </label>
               <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 11 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--fs-body-lg)', color: 'var(--ink2)' }}>
                   <input type="checkbox" checked={form.award} onChange={(e) => set('award', e.target.checked)} />
@@ -191,45 +207,20 @@ export function LogFlight() {
           </>
         )}
         {!presetTripId && (
-        <div>
-          <label className="field-label">Attach to trip</label>
+        <label className="field">
+          <span className="field-label">Attach to trip</span>
           <select className="input" value={form.tripId} onChange={(e) => set('tripId', e.target.value)}>
             <option value="">No trip — standalone</option>
             {trips.map((t) => <option key={t.id} value={t.id}>{t.title} ({t.start})</option>)}
           </select>
-        </div>
+        </label>
         )}
 
-        {extractNote && (
-          <div style={{ background: 'var(--amber-soft)', color: 'var(--amber)', fontSize: 'var(--fs-small)', padding: '10px 14px', borderRadius: 'var(--r-control)', fontWeight: 600 }}>
-            {extractNote}
-          </div>
-        )}
+        {extractNote && <div className="formnote">{extractNote}</div>}
         {dupWarning && (
-          <div style={{ background: 'var(--amber-soft)', border: '1px solid rgba(232,176,75,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
-            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--amber)', fontWeight: 600, marginBottom: 8 }}>
-              This looks like it might already be logged as {dupWarning}: same route and date. Save anyway?
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setConfirmedDup(true);
-                  setDupWarning(null);
-                }}
-                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--amber)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
-              >
-                Save anyway
-              </button>
-              <button
-                type="button"
-                onClick={() => setDupWarning(null)}
-                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
-              >
-                Let me check
-              </button>
-            </div>
-          </div>
+          <Confirm confirmLabel="Save anyway" cancelLabel="Let me check" onConfirm={() => save(true)} onCancel={() => setDupWarning(null)}>
+            Looks like {dupWarning}, already logged.
+          </Confirm>
         )}
         {error && <ErrorText>{error}</ErrorText>}
 
@@ -241,43 +232,28 @@ export function LogFlight() {
           <button
             type="button"
             onClick={() => setConfirmingDelete(true)}
-            className="btn ghost" style={{ color: 'var(--red)', fontSize: 'var(--fs-body)', fontWeight: 600, padding: '6px 0', justifyContent: 'flex-start' }}
+            className="removecard" style={{ justifySelf: 'start', padding: '10px 0' }}
           >
             Delete this flight
           </button>
         )}
         {editing && confirmingDelete && (
-          <div style={{ background: 'var(--red-soft)', border: '1px solid rgba(240,138,126,.3)', borderRadius: 'var(--r-control)', padding: '12px 14px' }}>
-            <div style={{ fontSize: 'var(--fs-small)', color: 'var(--red)', fontWeight: 600, marginBottom: 8 }}>
-              Delete this {editing.from} → {editing.to} flight permanently? This can't be undone.
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={async () => {
-                  setDeleting(true);
-                  try {
-                    await deleteFlight(editing.id);
-                    navigate(form.tripId ? `/trips/${form.tripId}` : '/trips');
-                  } catch (err) {
-                    setError(err instanceof Error ? err.message : 'Failed to delete.');
-                    setDeleting(false);
-                  }
-                }}
-                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: 'none', background: 'var(--red)', color: 'var(--on-dark)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
-              >
-                {deleting ? 'Deleting…' : 'Yes, delete it'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmingDelete(false)}
-                style={{ padding: '6px 12px', borderRadius: 'var(--r-xs)', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink2)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+          <Confirm
+            danger busy={deleting} confirmLabel={deleting ? 'Deleting…' : 'Delete flight'}
+            onCancel={() => setConfirmingDelete(false)}
+            onConfirm={async () => {
+              setDeleting(true);
+              try {
+                await deleteFlight(editing.id);
+                finish.gone(form.tripId ? `/trips/${form.tripId}` : '/trips');
+              } catch (err) {
+                setError(err instanceof Error ? err.message : 'Could not delete it.');
+                setDeleting(false);
+              }
+            }}
+          >
+            Delete {editing.flightNo ?? `${editing.from} → ${editing.to}`}?
+          </Confirm>
         )}
       </form>
       <div style={{ height: 30 }} />

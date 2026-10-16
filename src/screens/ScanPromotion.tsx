@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { CameraIcon } from '../components/Icons';
+import { useFinish } from '../lib/useFinish';
+import { CameraIcon, XIcon } from '../components/Icons';
 import { addPromotion, type NewPromotionInput } from '../lib/queries';
 import { useLoyaltyProgrammes } from '../lib/useLiveData';
 import { normalizeBrand } from '../data/brandMap';
-import { ErrorText, ScreenHeader } from '../components/ui';
+import { Button, ErrorText, Field, ScreenHeader } from '../components/ui';
 
 
 const TYPE_LABELS: Record<string, string> = {
@@ -23,7 +23,7 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 export function ScanPromotion() {
-  const navigate = useNavigate();
+  const finish = useFinish();
   const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
   const [text, setText] = useState('');
   const [images, setImages] = useState<PickedImage[]>([]);
@@ -80,7 +80,7 @@ export function ScanPromotion() {
     setSaving(true);
     try {
       await addPromotion(result);
-      navigate('/promotions');
+      finish.done('/promotions');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save');
       setSaving(false);
@@ -93,133 +93,107 @@ export function ScanPromotion() {
 
   return (
     <div>
-      <ScreenHeader title="Scan a promotion" />
+      <ScreenHeader title="New promotion" />
 
       {!result ? (
         <>
-          <p style={{ padding: '0 20px 4px', fontSize: 'var(--fs-body)', color: 'var(--ink2)', lineHeight: 1.5 }}>
-            Screenshot a promotion (a rate boost, bonus offer, status boost, or airline partnership) and it'll be classified automatically.
-          </p>
-          <div style={{ padding: '14px 20px 0' }}>
-            <label className="field-label">Screenshots</label>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {images.map((img, i) => (
-                <div key={i} style={{ position: 'relative', width: 72, height: 72 }}>
-                  <img src={img.previewUrl} alt="" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 'var(--r-control)', border: '1px solid var(--line)' }} />
-                  <button
-                    onClick={() => setImages((prev) => prev.filter((_, idx) => idx !== i))}
-                    style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: 'var(--ink)', color: 'var(--on-dark)', border: '2px solid var(--bg)', fontSize: 'var(--fs-small)', fontWeight: 700, display: 'grid', placeItems: 'center', cursor: 'pointer' }}
-                  >
-                    ×
+          <div className="page-body form">
+            <div>
+              <div className="field-label">Screenshots</div>
+              <div className="shotgrid">
+                {images.map((img, i) => (
+                  <div key={i} className="shot">
+                    <img src={img.previewUrl} alt="" />
+                    <button type="button" className="shot-remove" aria-label="Remove screenshot" onClick={() => setImages((prev) => prev.filter((_, idx) => idx !== i))}>
+                      <XIcon size={12} strokeWidth={2.4} />
+                    </button>
+                  </div>
+                ))}
+                {images.length < 4 && (
+                  <button type="button" className="shot shot-add" aria-label="Add screenshots" onClick={() => fileInput.current?.click()}>
+                    <CameraIcon size={22} color="var(--ink3)" />
                   </button>
-                </div>
-              ))}
-              {images.length < 4 && (
-                <button
-                  onClick={() => fileInput.current?.click()}
-                  style={{ width: 72, height: 72, borderRadius: 'var(--r-control)', border: '1px dashed var(--line)', background: 'var(--card)', display: 'grid', placeItems: 'center', cursor: 'pointer' }}
-                >
-                  <CameraIcon size={22} color="var(--ink3)" />
-                </button>
-              )}
+                )}
+              </div>
+              <input ref={fileInput} type="file" accept="image/*" multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
             </div>
-            <input ref={fileInput} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
-          </div>
-          <div style={{ padding: '18px 20px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
-            <span style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700 }}>OR PASTE TEXT</span>
-            <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
-          </div>
-          <div style={{ padding: '10px 20px' }}>
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="Paste the promotion text here…"
-              rows={5}
-              className="input compact" style={{ resize: 'vertical', fontFamily: 'inherit' }}
-            />
-            {error && <div style={{ color: 'var(--red)', fontSize: 'var(--fs-small)', marginTop: 10 }}>{error}</div>}
-            <button
-              onClick={handleExtract}
-              disabled={loading || (!text.trim() && images.length === 0)}
-              style={{
-                width: '100%', marginTop: 14, padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none',
-                background: loading ? 'var(--card2)' : 'var(--brand)', color: loading ? 'var(--ink3)' : 'var(--on-brand)',
-                fontSize: 'var(--fs-input)', fontWeight: 700, cursor: 'pointer',
-              }}
-            >
-              {loading ? 'Reading…' : 'Extract & classify'}
-            </button>
+            <Field label="Promotion text">
+              <textarea className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste the offer" rows={5} />
+            </Field>
+            {error && <ErrorText>{error}</ErrorText>}
+            <Button block onClick={handleExtract} disabled={loading || (!text.trim() && images.length === 0)}>
+              {loading ? 'Reading…' : 'Read promotion'}
+            </Button>
           </div>
         </>
       ) : (
-        <div style={{ padding: '10px 20px', display: 'grid', gap: 14 }}>
-          <div>
-            <label className="field-label">Classified as</label>
-            <select className="input compact" value={result.promoType ?? 'other'} onChange={(e) => set('promoType', e.target.value as NewPromotionInput['promoType'])}>
+        <div className="page-body form">
+          <label className="field">
+            <span className="field-label">Classified as</span>
+            <select className="input" value={result.promoType ?? 'other'} onChange={(e) => set('promoType', e.target.value as NewPromotionInput['promoType'])}>
               {Object.entries(TYPE_LABELS).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
             </select>
-          </div>
-          <div>
-            <label className="field-label">Title</label>
-            <input className="input compact" value={result.title} onChange={(e) => set('title', e.target.value)} />
-          </div>
-          <div>
-            <label className="field-label">Brand</label>
-            <select className="input compact" value={result.brand ?? ''} onChange={(e) => set('brand', e.target.value || null)}>
+          </label>
+          <label className="field">
+            <span className="field-label">Title</span>
+            <input className="input" value={result.title} onChange={(e) => set('title', e.target.value)} />
+          </label>
+          <label className="field">
+            <span className="field-label">Brand</span>
+            <select className="input" value={result.brand ?? ''} onChange={(e) => set('brand', e.target.value || null)}>
               <option value="">No specific brand</option>
               {loyaltyProgrammes.map((p) => (
                 <option key={p.name} value={p.name}>{p.name}</option>
               ))}
             </select>
-          </div>
+          </label>
 
           {result.promoType === 'multiplier' && (
-            <div>
-              <label className="field-label">Multiplier (e.g. 2 for 2x points)</label>
-              <input className="input compact" type="number" step="0.1" value={result.multiplier ?? ''} onChange={(e) => set('multiplier', e.target.value ? parseFloat(e.target.value) : null)} />
-            </div>
+            <label className="field">
+              <span className="field-label">Multiplier (e.g. 2 for 2x points)</span>
+              <input className="input" type="number" step="0.1" value={result.multiplier ?? ''} onChange={(e) => set('multiplier', e.target.value ? parseFloat(e.target.value) : null)} />
+            </label>
           )}
           {result.promoType === 'threshold_bonus' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-              <div>
-                <label className="field-label">Spend threshold (£)</label>
-                <input className="input compact" type="number" value={result.thresholdSpend ?? ''} onChange={(e) => set('thresholdSpend', e.target.value ? parseFloat(e.target.value) : null)} />
-              </div>
-              <div>
-                <label className="field-label">Bonus points</label>
-                <input className="input compact" type="number" value={result.bonusPoints ?? ''} onChange={(e) => set('bonusPoints', e.target.value ? parseFloat(e.target.value) : null)} />
-              </div>
+              <label className="field">
+                <span className="field-label">Spend threshold (£)</span>
+                <input className="input" type="number" value={result.thresholdSpend ?? ''} onChange={(e) => set('thresholdSpend', e.target.value ? parseFloat(e.target.value) : null)} />
+              </label>
+              <label className="field">
+                <span className="field-label">Bonus points</span>
+                <input className="input" type="number" value={result.bonusPoints ?? ''} onChange={(e) => set('bonusPoints', e.target.value ? parseFloat(e.target.value) : null)} />
+              </label>
             </div>
           )}
           {result.promoType === 'fixed_discount' && (
-            <div>
-              <label className="field-label">Discount value (£)</label>
-              <input className="input compact" type="number" step="0.01" value={result.discountValue ?? ''} onChange={(e) => set('discountValue', e.target.value ? parseFloat(e.target.value) : null)} />
-            </div>
+            <label className="field">
+              <span className="field-label">Discount value (£)</span>
+              <input className="input" type="number" step="0.01" value={result.discountValue ?? ''} onChange={(e) => set('discountValue', e.target.value ? parseFloat(e.target.value) : null)} />
+            </label>
           )}
           {result.promoType === 'status_boost' && (
-            <div>
-              <label className="field-label">Bonus status nights</label>
-              <input className="input compact" type="number" value={result.statusNightsBonus ?? ''} onChange={(e) => set('statusNightsBonus', e.target.value ? parseInt(e.target.value, 10) : null)} />
-            </div>
+            <label className="field">
+              <span className="field-label">Bonus status nights</span>
+              <input className="input" type="number" value={result.statusNightsBonus ?? ''} onChange={(e) => set('statusNightsBonus', e.target.value ? parseInt(e.target.value, 10) : null)} />
+            </label>
           )}
           {result.promoType === 'airline_partner' && (
-            <div>
-              <label className="field-label">Partner airline programme</label>
-              <input className="input compact" value={result.partnerAirline ?? ''} onChange={(e) => set('partnerAirline', e.target.value || null)} />
-            </div>
+            <label className="field">
+              <span className="field-label">Partner airline programme</span>
+              <input className="input" value={result.partnerAirline ?? ''} onChange={(e) => set('partnerAirline', e.target.value || null)} />
+            </label>
           )}
 
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-            <div>
-              <label className="field-label">Start date</label>
-              <input className="input compact" type="date" value={result.startDate ?? ''} onChange={(e) => set('startDate', e.target.value || null)} />
-            </div>
-            <div>
-              <label className="field-label">End date</label>
-              <input className="input compact" type="date" value={result.endDate ?? ''} onChange={(e) => set('endDate', e.target.value || null)} />
-            </div>
+            <label className="field">
+              <span className="field-label">Start date</span>
+              <input className="input" type="date" value={result.startDate ?? ''} onChange={(e) => set('startDate', e.target.value || null)} />
+            </label>
+            <label className="field">
+              <span className="field-label">End date</span>
+              <input className="input" type="date" value={result.endDate ?? ''} onChange={(e) => set('endDate', e.target.value || null)} />
+            </label>
           </div>
 
           {result.promoType === 'multiplier' && (
@@ -228,19 +202,11 @@ export function ScanPromotion() {
             </div>
           )}
           {result.promoType !== 'multiplier' && result.promoType !== 'other' && (
-            <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', background: 'var(--amber-soft)', padding: '10px 12px', borderRadius: 'var(--r-control)' }}>
-              This is tracked and shown in Promotions, but isn't yet applied automatically to your points or status calculations.
-            </div>
+            <div className="formnote">Not counted in points or status yet</div>
           )}
 
           {error && <ErrorText>{error}</ErrorText>}
-          <button
-            onClick={handleSave}
-            disabled={saving || !result.title}
-            style={{ padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none', background: saving ? 'var(--card2)' : 'var(--brand)', color: saving ? 'var(--ink3)' : 'var(--on-brand)', fontSize: 'var(--fs-input)', fontWeight: 700, cursor: 'pointer' }}
-          >
-            {saving ? 'Saving…' : 'Save promotion'}
-          </button>
+          <Button block onClick={handleSave} disabled={saving || !result.title}>{saving ? 'Saving…' : 'Save promotion'}</Button>
         </div>
       )}
     </div>

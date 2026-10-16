@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { BackIcon, CameraIcon } from '../components/Icons';
+import { BedIcon, CameraIcon, ChevronRightIcon, PlaneIcon, XIcon } from '../components/Icons';
 import { bookingRoute, summarizeBooking } from '../lib/bookingPrefill';
 import type { ExtractedBooking } from '../lib/bookingPrefill';
-import { useAllHotels, useAllFlights } from '../lib/useLiveData';
+import { useAllHotels, useAllFlights, useTrips } from '../lib/useLiveData';
 import { findLikelyDuplicateHotel, findLikelyDuplicateFlight } from '../lib/duplicateDetection';
-import { ScreenHeader } from '../components/ui';
+import { Button, ErrorText, Field, ScreenHeader } from '../components/ui';
 
 const MAX_IMAGES = 4;
 
@@ -26,34 +26,34 @@ function fileToBase64(file: File): Promise<string> {
 export function ScanEmail() {
   const navigate = useNavigate();
   const location = useLocation();
-  const tripId = (location.state as { tripId?: string } | null)?.tripId;
+  const state = (location.state ?? null) as { tripId?: string; back?: boolean; files?: File[]; scanId?: string; resumeBookings?: ExtractedBooking[] } | null;
+  const tripId = state?.tripId;
   const { data: hotels } = useAllHotels();
   const { data: flights } = useAllFlights();
+  const { data: trips } = useTrips();
+  const trip = trips.find((t) => t.id === tripId);
   const [text, setText] = useState('');
   const [images, setImages] = useState<PickedImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [bookings, setBookings] = useState<ExtractedBooking[] | null>(null);
-  const [savedKeys, setSavedKeys] = useState<Set<number>>(new Set());
-
-  useEffect(() => {
-    const resume = location.state as { resumeBookings?: ExtractedBooking[]; resumeSaved?: number[] } | null;
-    if (resume?.resumeBookings) {
-      setBookings(resume.resumeBookings);
-      setSavedKeys(new Set(resume.resumeSaved ?? []));
-    }
-  }, [location.state]);
+  // Found bookings live in this screen's history entry, so coming back
+  // from saving one shows the list again (not a re-read of the images),
+  // with the saved ones ticked from their marks.
+  const bookings = state?.resumeBookings ?? null;
+  const scanId = state?.scanId ?? '';
+  const savedMark = (i: number) => `scan:${scanId}:${i}`;
+  const isSaved = (i: number) => { try { return sessionStorage.getItem(savedMark(i)) === '1'; } catch { return false; } };
   const fileInput = useRef<HTMLInputElement>(null);
 
   // Screenshots picked from the + sheet arrive with the navigation and are
   // read straight away: choosing them was the tap.
   const autoRead = useRef(false);
   useEffect(() => {
-    const files = (location.state as { files?: File[] } | null)?.files;
-    if (!files?.length) return;
+    if (!state?.files?.length || bookings) return;
     autoRead.current = true;
-    setImages(files.slice(0, MAX_IMAGES).map((file) => ({ file, previewUrl: URL.createObjectURL(file) })));
-  }, [location.state]);
+    setImages(state.files.slice(0, MAX_IMAGES).map((file) => ({ file, previewUrl: URL.createObjectURL(file) })));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.files]);
   useEffect(() => {
     if (!autoRead.current || images.length === 0) return;
     autoRead.current = false;
@@ -72,12 +72,6 @@ export function ScanEmail() {
 
   function removeImage(i: number) {
     setImages((prev) => prev.filter((_, idx) => idx !== i));
-  }
-
-  function openBooking(b: ExtractedBooking, index: number) {
-    const returnTo = { pathname: '/scan-email', state: { tripId, resumeBookings: bookings, resumeSaved: [...savedKeys, index] } };
-    const r = bookingRoute(b, { tripId, returnTo });
-    navigate(r.to, { state: r.state });
   }
 
   async function handleExtract() {
@@ -101,10 +95,11 @@ export function ScanEmail() {
       if (found.length === 0) {
         setError("Couldn't find a booking in this — try a clearer screenshot, more of the email text, or enter it manually.");
       } else if (found.length === 1) {
-        openBooking(found[0], 0);
+        // One booking: its form takes this screen's place.
+        const r = bookingRoute(found[0], { tripId });
+        navigate(r.to, { replace: true, state: { ...r.state, back: state?.back } });
       } else {
-        setBookings(found);
-        setSavedKeys(new Set());
+        navigate('/scan-email', { replace: true, state: { tripId, back: state?.back, scanId: crypto.randomUUID(), resumeBookings: found } });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -116,142 +111,68 @@ export function ScanEmail() {
   const canSubmit = (text.trim().length > 0 || images.length > 0) && !loading;
 
   if (bookings) {
+    const allSaved = bookings.every((_, i) => isSaved(i));
     return (
       <div>
-        <div className="head" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => setBookings(null)} style={{ background: 'none', border: 'none', padding: 0 }}>
-            <BackIcon size={20} color="var(--ink)" />
-          </button>
-          <div className="h1" style={{ fontSize: 'var(--fs-heading)' }}>Found {bookings.length} bookings</div>
-        </div>
-        <div className="stack" style={{ marginTop: 8 }}>
-          {bookings.map((b, i) => {
-            const saved = savedKeys.has(i);
-            const dup = b.type === 'hotel'
-              ? findLikelyDuplicateHotel({ name: (b.name as string) ?? '', brand: (b.brand as string) ?? null, checkIn: (b.checkIn as string) ?? null }, hotels)
-              : findLikelyDuplicateFlight({ date: (b.date as string) ?? null, from: (b.from as string) ?? null, to: (b.to as string) ?? null }, flights);
-            return (
-              <button
-                key={i}
-                onClick={() => openBooking(b, i)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10, padding: '13px 14px', borderRadius: 'var(--r-md)',
-                  background: saved ? 'var(--green-soft)' : 'var(--card)', border: `1px solid ${saved ? 'rgba(111,207,151,.3)' : 'var(--line)'}`,
-                  cursor: 'pointer', textAlign: 'left', font: 'inherit', color: 'var(--ink)',
-                }}
-              >
-                <span style={{ fontSize: 'var(--fs-title)', flexShrink: 0 }}>{b.type === 'hotel' ? '🏨' : '✈️'}</span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 'var(--fs-body)', fontWeight: 700 }}>{summarizeBooking(b)}</span>
-                  {dup && !saved && (
-                    <span style={{ display: 'block', fontSize: 'var(--fs-caption)', color: 'var(--amber)', fontWeight: 600, marginTop: 2 }}>
-                      ⚠ Might already be logged, worth checking before saving again
-                    </span>
-                  )}
-                </span>
-                <span style={{ fontSize: 'var(--fs-caption)', fontWeight: 700, color: saved ? 'var(--green)' : 'var(--brand)', flexShrink: 0 }}>
-                  {saved ? '✓ Saved' : 'Review →'}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        {savedKeys.size === bookings.length && (
-          <div style={{ padding: '16px 20px' }}>
-            <button
-              onClick={() => navigate('/trips')}
-              style={{ width: '100%', padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none', background: 'var(--brand)', color: 'var(--on-brand)', fontSize: 'var(--fs-input)', fontWeight: 700, cursor: 'pointer' }}
-            >
-              Done, go to trips
-            </button>
+        <ScreenHeader title={`Found ${bookings.length} bookings`} sub={trip?.title} />
+        <div className="page-body">
+          <div className="listcard">
+            {bookings.map((b, i) => {
+              const saved = isSaved(i);
+              const dup = b.type === 'hotel'
+                ? findLikelyDuplicateHotel({ name: (b.name as string) ?? '', brand: (b.brand as string) ?? null, checkIn: (b.checkIn as string) ?? null }, hotels)
+                : findLikelyDuplicateFlight({ date: (b.date as string) ?? null, from: (b.from as string) ?? null, to: (b.to as string) ?? null }, flights);
+              const line = summarizeBooking(b);
+              const r = bookingRoute(b, { tripId });
+              return (
+                <button key={i} className="nextrow" onClick={() => navigate(r.to, { state: { ...r.state, back: true, savedMark: savedMark(i) } })}>
+                  <span className="badge-sq" style={{ background: 'var(--ink)' }} aria-hidden="true">
+                    {b.type === 'hotel' ? <BedIcon size={16} color="var(--on-dark)" /> : <PlaneIcon size={16} color="var(--on-dark)" />}
+                  </span>
+                  <span className="nextrow-main">
+                    <span className="rowtitle">{line.title}</span>
+                    <span className="rowsub">{dup && !saved ? 'Might already be logged' : line.sub}</span>
+                  </span>
+                  {saved ? <span className="tag solid">Saved</span> : <ChevronRightIcon size={18} color="var(--ink3)" />}
+                </button>
+              );
+            })}
           </div>
-        )}
+          {allSaved && <Button block onClick={() => navigate(tripId ? `/trips/${tripId}` : '/trips', { replace: true })}>Done</Button>}
+        </div>
       </div>
     );
   }
 
   return (
     <div>
-      <ScreenHeader title="Import an email" />
-      <div style={{ padding: '14px 20px 0' }}>
-        <label className="field-label">Screenshots</label>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {images.map((img, i) => (
-            <div key={i} style={{ position: 'relative', width: 72, height: 72 }}>
-              <img src={img.previewUrl} alt="" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 'var(--r-control)', border: '1px solid var(--line)' }} />
-              <button
-                onClick={() => removeImage(i)}
-                style={{
-                  position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%',
-                  background: 'var(--ink)', color: 'var(--on-dark)', border: '2px solid var(--bg)', fontSize: 'var(--fs-small)', fontWeight: 700,
-                  display: 'grid', placeItems: 'center', cursor: 'pointer', lineHeight: 1,
-                }}
-              >
-                ×
+      <ScreenHeader title="Import a booking" sub={trip?.title} />
+      <div className="page-body form">
+        <div>
+          <div className="field-label">Screenshots</div>
+          <div className="shotgrid">
+            {images.map((img, i) => (
+              <div key={i} className="shot">
+                <img src={img.previewUrl} alt="" />
+                <button type="button" className="shot-remove" aria-label="Remove screenshot" onClick={() => removeImage(i)}><XIcon size={12} strokeWidth={2.4} /></button>
+              </div>
+            ))}
+            {images.length < MAX_IMAGES && (
+              <button type="button" className="shot shot-add" aria-label="Add screenshots" onClick={() => fileInput.current?.click()}>
+                <CameraIcon size={22} color="var(--ink3)" />
               </button>
-            </div>
-          ))}
-          {images.length < MAX_IMAGES && (
-            <button
-              onClick={() => fileInput.current?.click()}
-              style={{
-                width: 72, height: 72, borderRadius: 'var(--r-control)', border: '1px dashed var(--line)', background: 'var(--card)',
-                display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--ink3)',
-              }}
-            >
-              <CameraIcon size={22} color="var(--ink3)" />
-            </button>
-          )}
-        </div>
-        <input
-          ref={fileInput}
-          type="file"
-          accept="image/*"
-          multiple
-          style={{ display: 'none' }}
-          onChange={(e) => {
-            addFiles(e.target.files);
-            e.target.value = '';
-          }}
-        />
-        {images.length > 0 && (
-          <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink3)', marginTop: 6 }}>
-            Long email? Attach a few screenshots covering different parts of it, up to {MAX_IMAGES}.
+            )}
           </div>
-        )}
-      </div>
-
-      <div style={{ padding: '18px 20px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
-        <span style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700 }}>OR PASTE TEXT</span>
-        <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
-      </div>
-
-      <div style={{ padding: '10px 20px' }}>
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Paste the confirmation email here…"
-          rows={6}
-          style={{
-            width: '100%', background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 'var(--r-control)',
-            color: 'var(--ink)', fontSize: 'var(--fs-body)', padding: '11px 12px', outline: 'none', resize: 'vertical',
-            fontFamily: 'inherit', boxSizing: 'border-box',
-          }}
-        />
-        {error && <div style={{ color: 'var(--red)', fontSize: 'var(--fs-small)', marginTop: 10 }}>{error}</div>}
-        <button
-          onClick={handleExtract}
-          disabled={!canSubmit}
-          style={{
-            width: '100%', marginTop: 14, padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none',
-            background: canSubmit ? 'var(--brand)' : 'var(--card2)',
-            color: canSubmit ? 'var(--on-brand)' : 'var(--ink3)',
-            fontSize: 'var(--fs-input)', fontWeight: 700, cursor: canSubmit ? 'pointer' : 'default',
-          }}
-        >
-          {loading ? 'Reading…' : 'Extract details'}
-        </button>
+          <input
+            ref={fileInput} type="file" accept="image/*" multiple hidden
+            onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }}
+          />
+        </div>
+        <Field label="Email text">
+          <textarea className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste the confirmation email" rows={6} />
+        </Field>
+        {error && <ErrorText>{error}</ErrorText>}
+        <Button block onClick={handleExtract} disabled={!canSubmit}>{loading ? 'Reading…' : 'Read booking'}</Button>
       </div>
     </div>
   );
