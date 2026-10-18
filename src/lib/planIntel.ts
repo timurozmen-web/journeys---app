@@ -1,13 +1,15 @@
 import type { Flight, Hotel, LoyaltyProgramme, Promotion, Voucher } from '../types';
-import { APD_BAND_LISTED, APD_EDGE_MILES, APD_RATES, CAPITALS, type ApdBand } from '../data/airPassengerDuty';
+import { APD_BAND_A, APD_BAND_DEPENDS, APD_BAND_LISTED, APD_EDGE_MILES, APD_RATES, CAPITALS, type ApdBand } from '../data/airPassengerDuty';
 import { AWARD_AIRLINES, AWARD_ROUTES, CURRENCY_PROGRAMME, STATUS_PERKS, type AwardCurrency } from '../data/awardFlights';
 import { AWARD_CLASSES, type AwardCabin } from '../data/awardClasses';
+import { FREE_NIGHT_TOP_UP } from '../data/freeNights';
 import { promoBonusForStay } from './promoBonus';
 import { addDays } from './tripDay';
-import { blendedGuideForMonth, dominantMonth, MONTH_NAMES, type BlendedMonthGuide } from './destinationGuide';
+import { blendedGuideForMonth, dominantMonth, findCrowdPriceMonth, MONTH_NAMES, type BlendedMonthGuide } from './destinationGuide';
 import type { HotelPlanOption } from './hotelPlanner';
 import { nightsForTier, type StatusProgress } from './statusProgress';
 import { formatDate } from './format';
+import { countryKey, sameCountry } from './countryName';
 import type { CityCashRate, PointsValueProgramme, RealClimateMonth, RealCrowdPriceMonth } from './queries';
 
 // Everything the planner knows about a trip, in one place: the weather
@@ -33,18 +35,28 @@ function miles(a: [number, number], b: [number, number]): number {
 
 /**
  * The APD band for a flight from the UK to `country`, or null when it
- * can't be said for sure (capital not listed, or too near a band edge to
- * trust a worked-out distance).
+ * can't be said for sure (not in Band A's list, capital not known, or
+ * too near 5,500 miles to trust a worked-out distance).
  */
+const BAND_A = new Set([...APD_BAND_A].map(countryKey));
+const DEPENDS = new Set([...APD_BAND_DEPENDS].map(countryKey));
+const LISTED = new Map(Object.entries(APD_BAND_LISTED).map(([c, b]) => [countryKey(c), b]));
+const CAPITAL = new Map(Object.entries(CAPITALS).map(([c, ll]) => [countryKey(c), ll]));
+
 export function apdBand(country: string): ApdBand | null {
-  if (/^(united kingdom|uk|great britain)$/i.test(country.trim())) return 'domestic';
-  const listed = APD_BAND_LISTED[country];
+  const key = countryKey(country);
+  if (key === 'united kingdom') return 'domestic';
+  if (BAND_A.has(key)) return 'A';
+  if (DEPENDS.has(key)) return null;
+  const listed = LISTED.get(key);
   if (listed) return listed;
-  const capital = CAPITALS[country];
+  const capital = CAPITAL.get(key);
   if (!capital) return null;
   const d = miles(LONDON, capital);
-  if (Math.abs(d - 2000) < APD_EDGE_MILES || Math.abs(d - 5500) < APD_EDGE_MILES) return null;
-  return d <= 2000 ? 'A' : d <= 5500 ? 'B' : 'C';
+  if (Math.abs(d - 5500) < APD_EDGE_MILES) return null;
+  // Not in A's list, so at least B: Cairo is 2,190 miles away, but Egypt
+  // was never A; nor is anywhere else off the list, however close.
+  return d <= 5500 ? 'B' : 'C';
 }
 
 /** APD per passenger on a flight leaving the UK on `date`, by cabin. */
@@ -68,7 +80,7 @@ export interface AwardOption {
   /** Taxes and charges on the reward ticket, where sourced (APD included). */
   cash: number | null;
   cashEstimated: boolean;
-  /** UK APD alone: the least the cash can be when `cash` isn't known. */
+  /** UK APD: the least the cash can be when it isn't known, for airlines that pass taxes on (not BA). */
   apd: number | null;
   programme: string | null;
   balance: number;
@@ -107,21 +119,26 @@ const COMPANION = /companion|2-4-1|2 for 1/i;
  * by what each really costs them at their own point values.
  */
 export function awardOptions(
-  airport: string | null, country: string, date: string, cabins: AwardCabin[], account: Pick<PlanAccount, 'programmes' | 'vouchers'>,
+  airports: string | null | (string | null)[], country: string, date: string, cabins: AwardCabin[], account: Pick<PlanAccount, 'programmes' | 'vouchers'>,
 ): AwardOption[] {
-  if (!airport) return [];
-  const code = airport.trim().toUpperCase();
+  // The verified nearest airport and the agent's own pick: either can be
+  // the one a route is listed under (Paris resolved to Le Bourget once).
+  const codes = (Array.isArray(airports) ? airports : [airports]).filter((a): a is string => !!a).map((a) => a.trim().toUpperCase());
+  if (codes.length === 0) return [];
   const companion = account.vouchers.some((v) => !v.redeemed && (!v.expiryDate || v.expiryDate >= date) && COMPANION.test(`${v.name} ${v.source}`) && /british airways|\bba\b/i.test(`${v.name} ${v.source}`));
   const out: AwardOption[] = [];
   for (const route of AWARD_ROUTES) {
-    if (!route.airports.includes(code)) continue;
+    if (!codes.some((c) => route.airports.includes(c))) continue;
     for (const cabin of cabins) {
       const price = route.cabins[cabin];
       if (!price) continue;
       const holder = holdingOf(account.programmes, route.currency);
       const balance = holder?.points ?? 0;
-      const apd = airPassengerDuty(country, cabin, date)?.amount ?? null;
-      const cash = price.cash ?? apd ?? 0;
+      const ukApd = airPassengerDuty(country, cabin, date)?.amount ?? null;
+      const apd = route.taxesPassedOn ? ukApd : null;
+      // Unknown cash is ranked as APD, BA's too: a guess for ordering only,
+      // never shown for BA (see awardFlights.ts).
+      const cash = price.cash ?? ukApd ?? 0;
       const withCompanion = companion && route.airline === 'BA';
       const seats = Math.floor(balance / price.offPeak) * (withCompanion ? 2 : 1);
       const perk = STATUS_PERKS.find((s) => s.airlines.includes(route.airline) && account.programmes.some((p) => s.programme.test(p.name) && s.tier.test(p.tier ?? '')))?.perk ?? null;
@@ -158,7 +175,7 @@ export function usualAwardCabin(flights: Flight[]): AwardCabin {
  */
 export function cityCashRates(rates: CityCashRate[], country: string, city: string | null): CityCashRate[] {
   const cq = city?.trim().toLowerCase();
-  const candidates = rates.filter((r) => r.country.toLowerCase() === country.toLowerCase() && (!cq || r.city.toLowerCase().includes(cq) || cq.includes(r.city.toLowerCase())));
+  const candidates = rates.filter((r) => sameCountry(r.country, country) && (!cq || r.city.toLowerCase().includes(cq) || cq.includes(r.city.toLowerCase())));
   if (candidates.length === 0) return [];
   const byCity = new Map<string, CityCashRate[]>();
   for (const r of candidates) byCity.set(r.city, [...(byCity.get(r.city) ?? []), r]);
@@ -194,6 +211,98 @@ export function voucherCap(name: string): number | null {
   return Number(m[1]) * (m[2].toLowerCase() === 'k' ? 1000 : 1);
 }
 
+export type VoucherVerdict = 'use' | 'top-up' | 'use-soon' | 'keep' | 'too-dear';
+
+export interface VoucherAdvice {
+  id: string;
+  name: string;
+  programme: string;
+  cap: number;
+  expiry: string | null;
+  verdict: VoucherVerdict;
+  /** The night it does most for: where, which price level, its points (with any top-up) and what using it saves. */
+  best: { city: string; tier: CityCashRate['tier']; points: number; topUp: number; cashGBP: number; worthGBP: number } | null;
+  /** What the voucher is worth to the user: their own value for it, else its cap at their point value. */
+  parGBP: number;
+  /** What a night must save to be worth using it on this trip: less as expiry nears. */
+  neededGBP: number;
+  monthsLeft: number | null;
+}
+
+const TIER_WORD: Record<CityCashRate['tier'], string> = { budget: 'budget', mid: 'mid-range', luxury: 'luxury' };
+const MONTH_MS = 30.44 * 86400000;
+
+/**
+ * Whether to spend a free-night voucher on this trip, and where. A 40k
+ * voucher on a 20k night throws 20k away, so it weighs:
+ *  - what nights cost here, at each of the city's price levels (the
+ *    researched cash rates), and so roughly what they cost in points;
+ *  - stretching it with the programme's top-up (Marriott: 25,000), paid
+ *    for at the user's own point value;
+ *  - what the voucher is worth to the user (their own value for it, or
+ *    its cap at their point value);
+ *  - how close it is to expiring: a night has to save its full worth a
+ *    year or more out, and less in step with the months left, as a
+ *    voucher unused is worth nothing.
+ * Points prices are estimates (cash rate at the programme's average
+ * value per point), so a night near the cap is a "probably".
+ */
+export function voucherAdvice(
+  v: Voucher, programme: LoyaltyProgramme, stops: PlannedStop[], value: PointsValueProgramme | null, rates: CityCashRate[], usdToGbp: number,
+): VoucherAdvice | null {
+  const cap = voucherCap(v.name);
+  if (!cap || !value) return null;
+  const topUpMax = FREE_NIGHT_TOP_UP[programme.name] ?? 0;
+  const ptValue = programme.ptValue;
+  const usable = stops.filter((s) => s.checkIn && (!v.expiryDate || s.checkIn <= v.expiryDate));
+  let best: VoucherAdvice['best'] = null;
+  for (const s of usable) {
+    for (const r of cityCashRates(rates, s.country, s.city)) {
+      const cashUsd = (r.priceLowUsd + r.priceHighUsd) / 2;
+      const points = pointsPerNight(cashUsd, value);
+      if (points > cap + topUpMax) continue;
+      const topUp = Math.max(0, points - cap);
+      const cashGBP = Math.round(cashUsd * usdToGbp);
+      const worthGBP = Math.round(cashGBP - (topUp * ptValue) / 100);
+      if (!best || worthGBP > best.worthGBP) best = { city: s.city, tier: r.tier, points, topUp, cashGBP, worthGBP };
+    }
+  }
+  const parGBP = Math.round(v.value ?? (cap * ptValue) / 100);
+  const from = usable[0]?.checkIn ?? stops[0]?.checkIn ?? null;
+  const monthsLeft = v.expiryDate && from ? Math.max(0, (Date.parse(v.expiryDate) - Date.parse(from)) / MONTH_MS) : null;
+  const neededGBP = Math.round(monthsLeft == null ? parGBP : parGBP * Math.min(1, monthsLeft / 12));
+  const verdict: VoucherVerdict = !best ? 'too-dear'
+    : best.worthGBP >= parGBP ? (best.topUp > 0 ? 'top-up' : 'use')
+    : best.worthGBP >= neededGBP ? 'use-soon'
+    : 'keep';
+  return { id: v.id, name: v.name, programme: programme.name, cap, expiry: v.expiryDate, verdict, best, parGBP, neededGBP, monthsLeft };
+}
+
+// Which voucher to talk about first: one to use now (the most it saves
+// over its worth), then one to use before it goes, then one to keep.
+const VERDICT_RANK: Record<VoucherVerdict, number> = { 'top-up': 0, use: 0, 'use-soon': 1, keep: 2, 'too-dear': 3 };
+export function firstVoucher(advice: VoucherAdvice[]): VoucherAdvice | null {
+  return [...advice].sort((a, b) => VERDICT_RANK[a.verdict] - VERDICT_RANK[b.verdict]
+    || ((b.best?.worthGBP ?? 0) - b.parGBP) - ((a.best?.worthGBP ?? 0) - a.parGBP)
+    || (a.expiry ?? '9999').localeCompare(b.expiry ?? '9999'))[0] ?? null;
+}
+
+const short = (cap: number) => `${cap % 1000 === 0 ? cap / 1000 : (cap / 1000).toFixed(1)}k`;
+
+/** The voucher's line: what to do with it and why, in figures. */
+export function voucherLine(a: VoucherAdvice): { title: string; sub: string } {
+  const name = `${short(a.cap)} free night`;
+  const where = a.best ? `${TIER_WORD[a.best.tier]} in ${a.best.city}, ~£${pts(a.best.cashGBP)}` : null;
+  const expires = a.expiry ? `expires ${formatDate(a.expiry)}` : null;
+  if (a.verdict === 'keep') return { title: `Keep the ${name}`, sub: [where ? `best here ${where}` : null, `£${pts(a.parGBP)} to you`, expires].filter(Boolean).join(' · ') };
+  if (a.verdict === 'too-dear') return { title: `${name[0].toUpperCase()}${name.slice(1)} won’t stretch here`, sub: [expires].filter(Boolean).join(' · ') };
+  const title = a.verdict === 'top-up' ? `Top up the ${name}` : a.verdict === 'use-soon' ? `Use the ${name} before it goes` : `Use the ${name}`;
+  return {
+    title,
+    sub: [where, `~${pts(a.best!.points)} pts`, a.best!.topUp > 0 ? `+${pts(a.best!.topUp)} top-up` : null, `£${pts(a.parGBP)} to you`, expires].filter(Boolean).join(' · '),
+  };
+}
+
 export interface StayInsight {
   programme: string;
   tier: string | null;
@@ -205,7 +314,8 @@ export interface StayInsight {
   perNight: number | null;
   perNightLuxury: number | null;
   nightsCovered: number | null;
-  voucher: { name: string; cap: number; fits: boolean; expiry: string | null } | null;
+  /** The programme's free-night voucher to talk about, with what to do with it. */
+  voucher: VoucherAdvice | null;
   promoPoints: number;
 }
 
@@ -219,7 +329,7 @@ export interface PlannedStop { city: string; country: string; nights: number; ch
  */
 export function stayInsights(
   options: HotelPlanOption[], stops: PlannedStop[], account: PlanAccount, progressOf: (name: string) => StatusProgress | null,
-  pointsValue: PointsValueProgramme[], rates: CityCashRate[], today: string,
+  pointsValue: PointsValueProgramme[], rates: CityCashRate[], today: string, usdToGbp: number,
 ): StayInsight[] {
   const nights = stops.reduce((s, c) => s + c.nights, 0);
   const firstIn = stops[0]?.checkIn ?? null;
@@ -254,13 +364,11 @@ export function stayInsights(
     const fifthFree = !!value?.fifthNightFree && (o.programme !== 'Hilton Honors' || !!p?.tier && !/^member$/i.test(p.tier));
     const nightsCovered = perNight && p && p.points > 0 ? nightsFromBalance(p.points, perNight, fifthFree) : null;
 
-    // The voucher to use first: the one expiring soonest, then the biggest.
     const word = PROGRAMME_WORD[o.programme];
-    const v = word && account.vouchers
-      .filter((x) => !x.redeemed && word.test(`${x.name} ${x.source}`) && voucherCap(x.name) != null && (!x.expiryDate || !firstIn || x.expiryDate >= firstIn))
-      .sort((a, b) => (a.expiryDate ?? '9999').localeCompare(b.expiryDate ?? '9999') || voucherCap(b.name)! - voucherCap(a.name)!)[0];
-    const cap = v ? voucherCap(v.name)! : null;
-    const voucher = v && cap ? { name: v.name, cap, fits: perNight != null && perNight <= cap, expiry: v.expiryDate } : null;
+    const voucher = word && p ? firstVoucher(account.vouchers
+      .filter((x) => !x.redeemed && word.test(`${x.name} ${x.source}`) && (!x.expiryDate || !firstIn || x.expiryDate >= firstIn))
+      .map((x) => voucherAdvice(x, p, stops, value, rates, usdToGbp))
+      .filter((x): x is VoucherAdvice => x != null)) : null;
 
     // Promotions on stays this trip would book, as if booked today.
     const planned: Hotel[] = stops.filter((s) => s.checkIn).map((s, i) => ({
@@ -289,6 +397,7 @@ export function stayLines(s: StayInsight | undefined): string[] {
   return [
     s.status ? statusLabel(s.status) : null,
     s.perNight ? `~${pts(s.perNight)} pts a night${s.nightsCovered ? ` · ${s.nightsCovered} nights on points` : ''}` : null,
+    s.voucher && s.voucher.verdict !== 'too-dear' ? voucherLine(s.voucher).title : null,
   ].filter((x): x is string => !!x);
 }
 
@@ -300,6 +409,8 @@ export interface StopOutlook {
   month: number;
   /** A neighbouring month that's quieter without worse weather, when this one is busy. */
   quieter: number | null;
+  /** What makes the month busy or quiet, dated or not ("Dubai Shopping Festival"). */
+  driver: string | null;
 }
 
 const CROWD_RANK = { low: 0, medium: 1, high: 2 } as const;
@@ -320,7 +431,13 @@ export function stopOutlook(climate: RealClimateMonth[], crowd: RealCrowdPriceMo
       if (g?.crowd && CROWD_RANK[g.crowd] < CROWD_RANK.high && WEATHER_RANK[g.weather] <= WEATHER_RANK[guide.weather]) { quieter = m; break; }
     }
   }
-  return { city: stop.city, guide, month, quieter };
+  const driver = findCrowdPriceMonth(crowd, stop.city, stop.country, MONTH_NAMES[month].slice(0, 3))?.driver || null;
+  return { city: stop.city, guide, month, quieter, driver };
+}
+
+/** A crowd driver short enough for a title: up to its first ";" or "(". */
+export function shortDriver(text: string): string {
+  return text.split(/;|\s\(/)[0].trim();
 }
 
 // ---------- for you ----------
@@ -384,23 +501,22 @@ export function forYou(input: {
   const reach = input.stays.slice(1).find((s) => s.status?.reaches && !s.status.nextYear && !s.status.keep);
   if (reach?.status) out.push({ kind: 'status', title: `Reach ${reach.status.target} with ${reach.programme}`, sub: `${reach.status.after} of ${reach.status.total} nights` });
 
-  // A free-night voucher that covers a night here, with what a night
-  // costs mid-range and at the top end, as a cap spent on a cheaper night
-  // is value lost.
-  const v = input.stays.find((s) => s.voucher?.fits);
-  if (v?.voucher) {
-    out.push({
-      kind: 'voucher', title: `${pts(v.voucher.cap)}-pt free night`,
-      sub: [`~${pts(v.perNight!)} mid-range`, v.perNightLuxury ? `~${pts(v.perNightLuxury)} luxury` : null, v.voucher.expiry ? `expires ${formatDate(v.voucher.expiry)}` : null].filter(Boolean).join(' · '),
-    });
-  }
+  // A free-night voucher: where to use it, whether to top it up, or to
+  // keep it. It once said to spend a 40k voucher on a 20k night.
+  const voucher = firstVoucher(input.stays.map((s) => s.voucher).filter((x): x is VoucherAdvice => x != null && x.verdict !== 'too-dear'));
+  if (voucher) out.push({ kind: 'voucher', ...voucherLine(voucher) });
 
   const busy = input.outlooks.find((o) => o.guide.crowd === 'high');
   if (busy) {
     out.push({
       kind: 'crowds',
-      title: busy.guide.crowdDriver ? `${busy.guide.crowdDriver}${busy.guide.crowdDriverDates ? `, ${busy.guide.crowdDriverDates}` : ''}` : `Busy in ${busy.city}`,
-      sub: [`Crowds and prices high in ${busy.city}`, busy.quieter != null ? `quieter in ${MONTH_NAMES[busy.quieter]}` : null].filter(Boolean).join(' · '),
+      // A dated event names itself; an undated one ("Dubai Shopping
+      // Festival") says why it's busy, where "Busy in Dubai" said nothing.
+      title: busy.guide.crowdDriver ? `${shortDriver(busy.guide.crowdDriver)}${busy.guide.crowdDriverDates ? `, ${busy.guide.crowdDriverDates}` : ''}` : `Busy in ${busy.city}`,
+      sub: [
+        busy.guide.crowdDriver || !busy.driver ? `Crowds and prices high in ${busy.city}` : shortDriver(busy.driver),
+        busy.quieter != null ? `quieter in ${MONTH_NAMES[busy.quieter]}` : null,
+      ].filter(Boolean).join(' · '),
     });
   }
 
@@ -428,12 +544,12 @@ export function agentContext(country: string, startDate: string | null, nights: 
   const month = startDate ? dominantMonth(startDate, addDays(startDate, nights)) : null;
   const abbr = month != null ? MONTH_NAMES[month].slice(0, 3) : null;
   const regions = abbr
-    ? climate.filter((c) => c.country.toLowerCase() === country.toLowerCase() && c.month === abbr).map((c) => {
-        const cp = crowd.find((r) => r.country.toLowerCase() === country.toLowerCase() && r.month === abbr && r.region && (r.region.toLowerCase().includes(c.hubStation.toLowerCase()) || c.region.toLowerCase().includes(r.region.toLowerCase())))
-          ?? crowd.find((r) => r.country.toLowerCase() === country.toLowerCase() && r.month === abbr && r.region === null) ?? null;
+    ? climate.filter((c) => sameCountry(c.country, country) && c.month === abbr).map((c) => {
+        const cp = crowd.find((r) => sameCountry(r.country, country) && r.month === abbr && r.region && (r.region.toLowerCase().includes(c.hubStation.toLowerCase()) || c.region.toLowerCase().includes(r.region.toLowerCase())))
+          ?? crowd.find((r) => sameCountry(r.country, country) && r.month === abbr && r.region === null) ?? null;
         return { region: c.region, highC: c.tempHighC, rainMm: c.rainMm, crowd: cp?.crowdLevel ?? null, price: cp?.priceLevel ?? null, event: cp?.driver ?? null };
       })
     : [];
-  const visited = [...new Set(hotels.filter((h) => h.country.toLowerCase() === country.toLowerCase() && h.city).map((h) => h.city!))].sort();
+  const visited = [...new Set(hotels.filter((h) => sameCountry(h.country, country) && h.city).map((h) => h.city!))].sort();
   return { month: month != null ? MONTH_NAMES[month] : null, regions, visited, home };
 }
