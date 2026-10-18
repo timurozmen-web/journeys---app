@@ -43,7 +43,12 @@ ready for an iOS build.
 - **Plan a trip**: weather, season and crowd levels for the month you'd
   go, annual leave needed (UK bank holidays), a route of stops with the
   hops between (rail where it's likely), the best-value hotel programme,
-  costs and a live budget check, with points-vs-cash for the city.
+  costs and a live budget check, with points-vs-cash for the city. Picks
+  for you from your own account: the flight on your points (Avios, Virgin
+  Points, KrisFlyer) with taxes and the award class, nights toward or to
+  keep your tier, a free-night voucher that fits, and the crowds or wet
+  season to avoid. UK Air Passenger Duty from gov.uk's bands. The city
+  suggestions are given the season and the places you've already been.
 - **Credit advisor**: the full calculation behind a flight's "Credit
   to", for any flight.
 

@@ -62,8 +62,9 @@ Run all three; all must be clean:
     with nothing booked as "No stay booked", the next trip), To do and
     a status ring per programme. To do is promotions to register for
     (deadline read from the wording, `registrationDeadline`, shown only
-    when booked stays would earn the bonus; ticked off on the device,
-    `doneTodos.ts`), card spend goals (`loyaltyHighlights.ts`), flights a
+    when booked stays would earn the bonus; the tick sets
+    `promotions.registered`, so every device stops asking, and the
+    promotion shows a Registered box), card spend goals (`loyaltyHighlights.ts`), flights a
     trip still needs (`useTripFlightGaps`: a trip starting away from
     home needs a flight there, one not landing back where it began
     needs one home; airports within 150km are one place) and stays to
@@ -143,10 +144,37 @@ Run all three; all must be clean:
 - **Plan a trip** (`Plan.tsx`, helpers in `src/lib/planFormat.ts`): one
   form card (destination, nights stepper, cities, from, leave date),
   then each destination at a glance (weather icons, season and crowd
-  flags, year strip). After planning: a summary card with Save, the
-  map, the route as numbered stop cards with the hops between, the
-  best-value programme with its logo, and cost. Anything else folds
+  flags, year strip). After planning: a summary card with Save, For you,
+  the map, the route as numbered stop cards with the hops between (and
+  the holiday a stop lands on), flights on points, the best-value
+  programme with its logo, and cost with UK APD. Anything else folds
   away under "Search options", "Other programmes" and "Cash or points".
+- **Trip planning knowledge is in one place**, `src/lib/planIntel.ts`;
+  the screen and the agent both use it, so neither works from its own
+  idea of the facts:
+  - Weather and crowds: `stopOutlook` (the climate and crowd tables via
+    `blendedGuideForMonth`, plus a quieter month either side when a stop
+    is busy, never one with worse weather).
+  - Flights on points: `awardOptions` prices a seat from London against
+    the user's balances and their own point values, with the award
+    class to look for (`awardClasses.ts`) and status perks. Prices and
+    cash charges are in `src/data/awardFlights.ts` (BA and Qatar Avios,
+    Virgin Saver caps, KrisFlyer Saver), sourced and dated; a route
+    with no sourced price shows nothing.
+  - Taxes: `airPassengerDuty` (gov.uk rates and bands,
+    `src/data/airPassengerDuty.ts`). Where a reward's cash isn't sourced,
+    APD is shown as the floor ("£106 APD + fees").
+  - The account: `stayInsights` gives each programme's nights toward the
+    tier being worked on (or, for a trip next year, toward keeping the
+    tier held), points a night and nights the balance covers (free fifth
+    night where given), the free-night voucher to use first and promotion
+    bonus points. `forYou` picks the few worth acting on.
+  - The agent (`netlify/functions/suggest-cities.js`, prompt and checks
+    in `netlify/lib/planPrompt.js`) is sent `agentContext`: each region's
+    weather and crowds in the month of travel and the cities already
+    stayed in. It's told to rely on those facts, not its memory; its
+    answer is checked (real coordinates, airport codes, nights that add
+    up to the trip) before the app sees it.
 - **Fewest taps.** Lists delete by swipe-left then tapping Delete
   (`SwipeToDelete`, with `itemLabel`); values edit in place where they're
   shown; forms show only essentials with the rest under "More details",

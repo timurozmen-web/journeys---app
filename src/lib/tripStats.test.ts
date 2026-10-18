@@ -25,7 +25,7 @@ describe('tripPointsLines', () => {
     id: 'fall', title: 'Fall 2026: 1,500 bonus points on stays of 2+ nights', brand: 'Marriott Bonvoy',
     description: 'Register by 13 Nov 2026.', startDate: '2026-09-22', endDate: '2026-11-22', promoType: 'threshold_bonus' as const,
     bonusPoints: 1500, multiplier: null, thresholdSpend: null, discountValue: null, discountUsed: false,
-    statusNightsBonus: null, statusNightsApplied: false, partnerAirline: null,
+    statusNightsBonus: null, statusNightsApplied: false, partnerAirline: null, registered: false,
   };
   const programmes = [{ name: 'Marriott Bonvoy', abbr: 'MB', points: 0, ptValue: 0.5, color: '#000', accent: '#000', font: '', shape: '', tier: 'Titanium Elite', category: 'hotel' as const }];
   const trip = makeTrip({ hotels: [

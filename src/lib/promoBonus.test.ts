@@ -6,7 +6,7 @@ import type { Promotion } from '../types';
 const promo = (o: Partial<Promotion>): Promotion => ({
   id: 'p', title: '', description: null, brand: null, startDate: null, endDate: null, promoType: 'threshold_bonus',
   multiplier: null, thresholdSpend: null, bonusPoints: null, discountValue: null, discountUsed: false,
-  statusNightsBonus: null, statusNightsApplied: false, partnerAirline: null, ...o,
+  statusNightsBonus: null, statusNightsApplied: false, partnerAirline: null, registered: false, ...o,
 });
 
 describe('promoTerms', () => {

@@ -162,4 +162,5 @@ export interface Promotion {
   statusNightsBonus: number | null;
   statusNightsApplied: boolean; // has the qualifying stay happened
   partnerAirline: string | null; // for airline_partner type -- which airline programme also earns
+  registered: boolean; // registered on the programme's site, for promotions that need it
 }

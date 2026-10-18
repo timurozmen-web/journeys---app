@@ -3,7 +3,7 @@
 // src/styles/components.css and every value in src/styles/tokens.css.
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BackIcon } from './Icons';
+import { BackIcon, PlaneIcon } from './Icons';
 import { dayMonth } from '../lib/format';
 
 // Back arrow + title at the top of every pushed screen, with an optional
@@ -183,5 +183,15 @@ export function OptionRow({ icon, label, onClick }: { icon: ReactNode; label: Re
       <span className="optionrow-icon">{icon}</span>
       <span className="optionrow-label">{label}</span>
     </button>
+  );
+}
+
+// A booking's square badge in its airline's or programme's colour: the
+// code, or a plane for a flight.
+export function Badge({ code, colour, plane, size = 34 }: { code: string; colour: string | null; plane?: boolean; size?: number }) {
+  return (
+    <span className="badge-sq" style={{ background: colour ?? 'var(--ink)', width: size, height: size }} aria-hidden="true">
+      {plane ? <PlaneIcon size={size * 0.48} color="var(--on-dark)" /> : code}
+    </span>
   );
 }
