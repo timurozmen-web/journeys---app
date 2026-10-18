@@ -91,12 +91,14 @@ export interface PromoToRegister {
 /**
  * Promotions that need registering before a deadline still to come, and
  * would pay out on stays already booked. A promotion nothing booked would
- * earn from isn't worth a reminder. `only` limits the stays it pays out on
- * (one trip's) while `stays` is every stay, for bonuses counted across them.
+ * earn from isn't worth a reminder, nor is one already registered. `only`
+ * limits the stays it pays out on (one trip's) while `stays` is every stay,
+ * for bonuses counted across them.
  */
 export function promosToRegister(promotions: Promotion[], stays: Hotel[], today: string, only: Hotel[] = stays): PromoToRegister[] {
   const out: PromoToRegister[] = [];
   for (const p of promotions) {
+    if (p.registered) continue;
     const deadline = registrationDeadline(p);
     if (!deadline || deadline < today) continue;
     const points = only

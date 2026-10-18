@@ -4,14 +4,23 @@ import { addDays } from '../lib/tripDay';
 import { calculateLeaveNeeded } from '../lib/annualLeave';
 import { blendedGuideForMonth, dominantMonth, PRICE_COLOR, PRICE_TINT, CROWD_COLOR, CROWD_TINT, MONTH_NAMES, type BlendedMonthGuide } from '../lib/destinationGuide';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
-import { PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon, ThermometerIcon, DropletIcon, CloudRainIcon, TagIcon, UsersIcon, MoonIcon } from '../components/Icons';
+import { PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon, ThermometerIcon, DropletIcon, CloudRainIcon, TagIcon, UsersIcon, MoonIcon, BedIcon, StatusIcon } from '../components/Icons';
 import { googleFlightsSearchUrl, googleHotelsSearchUrl, brandHotelSearchUrl, ALLIANCE_LABELS, type StopsFilter, type CabinFilter, type AllianceFilter } from '../lib/externalSearchLinks';
 import { planningCountries, PLANNING_AIRPORTS_BY_IATA } from '../data/planningAirports';
 import { allPlanningCountries } from '../data/globalAirportsLoader';
 import { planLeg, STRONG_RAIL_COUNTRIES, estimateTravelHours, type LegPlan } from '../lib/tripPlanner';
 import { nearestAirportToCity, type NearestAirportResult } from '../data/worldCitiesLoader';
 import { planHotelOptions } from '../lib/hotelPlanner';
-import { useLoyaltyProgrammes, useAllHotels, useHomeLocation, useClimateData, useCrowdPriceData, usePointsValueData, useCityCashRates } from '../lib/useLiveData';
+import { useLoyaltyProgrammes, useAllHotels, useAllFlights, usePromotions, useVouchers, useHomeLocation, useClimateData, useCrowdPriceData, usePointsValueData, useCityCashRates } from '../lib/useLiveData';
+import { useCardResults } from '../lib/useCardResults';
+import { computeStatusProgress } from '../lib/statusProgress';
+import { withLiveOverrides } from '../lib/walletValue';
+import {
+  agentContext, airPassengerDuty, awardCashLabel, awardOptions, cityCashRates as ratesForCity, forYou, stayInsights, stayLines, stopOutlook, usualAwardCabin,
+  type ForYouItem, type PlannedStop, type StopOutlook,
+} from '../lib/planIntel';
+import type { AwardCabin } from '../data/awardClasses';
+import { AIRLINE_COLORS } from '../data/airlineBrand';
 import { haversineKm } from '../lib/travelStats';
 import { addTrip, addHotel, addFlight, type PointsValueProgramme, type CityCashRate, type RealClimateMonth, type RealCrowdPriceMonth } from '../lib/queries';
 import { useCurrency } from '../lib/currency';
@@ -21,7 +30,7 @@ import { formatShortRange } from '../lib/format';
 import { CitySearchInput } from '../components/CitySearchInput';
 import { BrandLogo } from '../components/BrandLogo';
 import type { WorldCity } from '../data/worldCitiesLoader';
-import { Button, ErrorText, ScreenHeader, SectionLabel } from '../components/ui';
+import { Badge, Button, ErrorText, ScreenHeader, SectionLabel } from '../components/ui';
 
 const PlanMap = lazyWithRetry(() => import('../components/PlanMap').then((m) => ({ default: m.PlanMap })));
 
@@ -106,17 +115,9 @@ function SeasonStrip({ country, city, climateData, crowdPriceData, highlightMont
 // redemption against what the cash price would have been.
 function CashVsPoints({ country, city, rates, programmes }: { country: string; city: string | null; rates: CityCashRate[]; programmes: PointsValueProgramme[] }) {
   const { format, fromUsd } = useCurrency();
-  const cq = city?.trim().toLowerCase();
-  const candidates = rates.filter((r) => r.country.toLowerCase() === country.toLowerCase() && (!cq || r.city.toLowerCase().includes(cq) || cq.includes(r.city.toLowerCase())));
-  if (candidates.length === 0) return null;
-  // Tiers must all come from ONE city -- each tier was once taken from
-  // whichever row came first, so a card headed "Amalfi" could show Rome's
-  // mid-range and Venice's luxury price. Pick the city with the most
-  // complete tier set (then alphabetical, for a stable choice).
-  const byCity = new Map<string, CityCashRate[]>();
-  for (const r of candidates) byCity.set(r.city, [...(byCity.get(r.city) ?? []), r]);
-  const bestCity = [...byCity.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))[0][0];
-  const matched = byCity.get(bestCity)!;
+  // Every tier from one city (see cityCashRates).
+  const matched = ratesForCity(rates, country, city);
+  if (matched.length === 0) return null;
   const tierLabel = { budget: 'Budget', mid: 'Mid-range', luxury: 'Luxury' } as const;
   const priorityOrder = ['Marriott Bonvoy', 'Hilton Honors', 'World of Hyatt', 'IHG One Rewards', 'Accor ALL'];
   const mainProgrammes = programmes
@@ -156,6 +157,18 @@ function ModeIcon({ mode, size = 15 }: { mode: LegPlan['recommendedMode']; size?
   return <CarIcon size={size} color="currentColor" />;
 }
 
+function PickIcon({ kind }: { kind: ForYouItem['kind'] }) {
+  if (kind === 'flight') return <PlaneIcon size={18} />;
+  if (kind === 'stay') return <BedIcon size={18} />;
+  if (kind === 'status') return <StatusIcon size={18} />;
+  if (kind === 'voucher') return <TagIcon size={18} />;
+  if (kind === 'crowds') return <UsersIcon size={18} />;
+  return <CloudRainIcon size={18} />;
+}
+
+// Search options' cabin as a cabin, or null for any.
+const CABIN_OF: Record<CabinFilter, AwardCabin | null> = { any: null, economy: 'Economy', 'premium-economy': 'Premium Economy', business: 'Business', first: 'First' };
+
 function SearchLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <a className="plan-link" href={href} target="_blank" rel="noreferrer">
@@ -166,8 +179,13 @@ function SearchLink({ href, children }: { href: string; children: ReactNode }) {
 
 export function Plan() {
   const navigate = useNavigate();
-  const { data: loyaltyProgrammes } = useLoyaltyProgrammes();
+  const { data: rawProgrammes } = useLoyaltyProgrammes();
   const { data: allHotels } = useAllHotels();
+  const { data: allFlights } = useAllFlights();
+  const { data: promotions } = usePromotions();
+  const { data: vouchers } = useVouchers();
+  // Balances as they stand, stays since each was entered included.
+  const loyaltyProgrammes = withLiveOverrides(rawProgrammes, allHotels, promotions);
   const [destinations, setDestinations] = useState<Destination[]>([{ id: 'd0', country: 'Japan', nights: '12', cities: [] }]);
   const [homeAirport, setHomeAirport] = useState('LHR');
   const [cities, setCities] = useState<SuggestedCity[]>([]);
@@ -198,6 +216,7 @@ export function Plan() {
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const resultsRef = useRef<HTMLDivElement>(null);
   const today = new Date().toISOString().slice(0, 10);
+  const cardResults = useCardResults(today);
 
   function smartFlightUrl(fromCity: string, toCity: string, departDate: string | null, returnDate: string | null | undefined): string {
     return googleFlightsSearchUrl(fromCity, toCity, departDate, returnDate, {
@@ -324,8 +343,13 @@ export function Plan() {
       // Destinations where the user picked their own cities skip the
       // suggestion entirely: their explicit choice takes priority.
       const results: SuggestedCity[] = [];
+      // When each country's part of the trip starts, so the agent hears
+      // about the right month for the second country too.
+      let arrive = startDate || null;
       for (const dest of destinations) {
         const totalNights = dest.nights ? parseInt(dest.nights, 10) : 10;
+        const destStart = arrive;
+        if (arrive) arrive = addDays(arrive, totalNights);
 
         if (dest.cities.length > 0) {
           const perCity = Math.max(1, Math.round(totalNights / dest.cities.length));
@@ -335,10 +359,13 @@ export function Plan() {
           continue;
         }
 
+        // The agent is given the season and crowds in the month of travel
+        // and the cities already stayed in (planIntel's agentContext).
+        const context = agentContext(dest.country, destStart, totalNights, climateData, crowdPriceData, allHotels, homeLocation.city);
         const res = await fetch('/.netlify/functions/suggest-cities', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ country: dest.country, nights: totalNights }),
+          body: JSON.stringify({ country: dest.country, nights: totalNights, context }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(`${dest.country}: ${data.error || 'Could not get suggestions'}`);
@@ -481,6 +508,28 @@ export function Plan() {
   const programmeFor = (name: string) => loyaltyProgrammes.find((p) => p.name === name);
   const airportOf = (c: SuggestedCity) => cityAirports[c.city]?.airport ?? null;
 
+  // What the account makes of this plan (src/lib/planIntel.ts): the
+  // flight on points, status and points for each programme's stays, the
+  // weather and crowds at each stop, and the few picks worth acting on.
+  const stops: PlannedStop[] = cityDates.map(({ city, checkIn }) => ({ city: city.city, country: city.country, nights: city.nights, checkIn }));
+  const usualCabin = usualAwardCabin(allFlights);
+  const chosenCabin = CABIN_OF[cabinFilter];
+  const cabins: AwardCabin[] = chosenCabin ? [chosenCabin] : [...new Set<AwardCabin>([usualCabin, 'Economy'])];
+  const travelDate = startDate || today;
+  const pointsFlights = cities.length > 0
+    ? awardOptions(airportOf(cities[0])?.iata ?? cities[0].nearestAirport, cities[0].country, travelDate, cabins, { programmes: loyaltyProgrammes, vouchers })
+    : [];
+  const progressOf = (name: string) => {
+    const p = loyaltyProgrammes.find((x) => x.name === name);
+    return p && p.category === 'hotel' && p.nextTier && p.nights != null ? computeStatusProgress(p, allHotels, promotions, cardResults, today) : null;
+  };
+  const stays = cities.length > 0
+    ? stayInsights(hotelOptions, stops, { programmes: loyaltyProgrammes, vouchers, flights: allFlights, hotels: allHotels, promotions }, progressOf, pointsValueData, cityCashRates, today)
+    : [];
+  const outlooks = stops.map((st) => stopOutlook(climateData, crowdPriceData, st)).filter((o): o is StopOutlook => o != null);
+  const picks = cities.length > 0 ? forYou({ flights: pointsFlights, stays, outlooks, cabin: chosenCabin ?? usualCabin }) : [];
+  const apd = cities.length > 0 && home ? airPassengerDuty(cities[0].country, chosenCabin ?? 'Economy', travelDate) : null;
+
   // A flight to or from home: where from and to, the flying time, and a
   // search for it.
   const homeLeg = (from: string, to: string, km: number, href: string) => (
@@ -589,6 +638,20 @@ export function Plan() {
               {saveError && <ErrorText>{saveError}</ErrorText>}
             </div>
 
+            {picks.length > 0 && (
+              <>
+                <SectionLabel style={{ marginTop: 8 }}>For you</SectionLabel>
+                <div className="listcard">
+                  {picks.map((p) => (
+                    <div key={p.kind} className="pickrow">
+                      <span className="todo-icon" aria-hidden="true"><PickIcon kind={p.kind} /></span>
+                      <span className="pickrow-main"><span className="rowtitle">{p.title}</span><span className="rowsub">{p.sub}</span></span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
             {uniqueCountries.length > 1 && (
               <div className="plan-tags">
                 <button className={mapFocus === null ? 'tagbtn on' : 'tagbtn'} onClick={() => setMapFocus(null)}>All</button>
@@ -650,6 +713,7 @@ export function Plan() {
                         {c.why && <div className="stopcard-why">{c.why}</div>}
                         {blended && <WeatherLine blended={blended} />}
                         {blended && <SeasonFlags blended={blended} />}
+                        {blended?.crowdDriver && <div className="glance-note">{blended.crowdDriver}{blended.crowdDriverDates ? `, ${blended.crowdDriverDates}` : ''}</div>}
                         <SearchLink href={smartHotelUrl(c.city, c.country, checkIn, c.nights)}>{hotelBrandFilter !== 'any' ? shortProgramme(hotelBrandFilter) : 'Hotels'}</SearchLink>
                       </div>
                     </div>
@@ -672,6 +736,32 @@ export function Plan() {
               {home && uniqueCountries.length > 1 && homeLeg(airportOf(cities[cities.length - 1])?.iata ?? cities[cities.length - 1].city, homeAirport, returnKm,
                 smartFlightUrl(cities[cities.length - 1].city, home.city, tripEndDate, null))}
             </div>
+
+            {pointsFlights.length > 0 && (
+              <>
+                <SectionLabel style={{ marginTop: 8 }}>On points, one way</SectionLabel>
+                <div className="listcard">
+                  {pointsFlights.map((o) => {
+                    const cash = awardCashLabel(o);
+                    return (
+                      <div key={`${o.airline}-${o.cabin}-${o.place}`} className="pickrow">
+                        <Badge code={o.airline} colour={AIRLINE_COLORS[o.airline] ?? null} />
+                        <span className="pickrow-main">
+                          <span className="rowtitle">{o.airlineName} · {o.cabin}</span>
+                          <span className="rowsub">
+                            {o.points.toLocaleString()}{o.peakPoints && o.peakPoints !== o.points ? `–${o.peakPoints.toLocaleString()}` : ''} {o.currency}{cash ? ` + ${cash}` : ''}
+                            {o.awardClass ? ` · class ${o.awardClass}` : ''}{o.perk ? ` · ${o.perk}` : ''}
+                          </span>
+                        </span>
+                        {o.covers
+                          ? <span className="tag solid">{o.seats} seat{o.seats === 1 ? '' : 's'}</span>
+                          : <span className="tag">−{(o.points - o.balance).toLocaleString()}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
 
             <details className="plan-more">
               <summary>Search options</summary>
@@ -727,6 +817,7 @@ export function Plan() {
                         <div className="staybest-rate"><b>~£{Math.round(bestHotel.estimatedNightlyGBP)}</b><span>a night</span></div>
                       </div>
                       <div className="staybest-back">~{Math.round(bestHotel.pointsEarned).toLocaleString()} pts back · ~£{Math.round(bestHotel.effectiveNightlyGBP)} a night after points</div>
+                      {stayLines(stays[0]).map((l) => <div key={l} className="staybest-back">{l}</div>)}
                       {bestHotel.benefits.length > 0 && (
                         <div className="flags">{bestHotel.benefits.slice(0, 3).map((b) => <span key={b} className="flag plain">{b.replace(/ \(.*\)$/, '')}</span>)}</div>
                       )}
@@ -737,14 +828,16 @@ export function Plan() {
                   <details className="plan-more">
                     <summary>Other programmes</summary>
                     <div className="stayothers">
-                      {hotelOptions.slice(1).map((o) => {
+                      {hotelOptions.slice(1).map((o, i) => {
                         const prog = programmeFor(o.programme);
+                        const lines = stayLines(stays[i + 1]);
                         return (
                           <div key={o.programme} className="stayother">
                             <BrandLogo name={o.programme} shape={prog?.shape} color={prog?.color} accent={prog?.accent} size={28} />
                             <span style={{ flex: 1, minWidth: 0 }}>
                               <b>{o.programme}</b>
                               <small>~{Math.round(o.pointsEarned).toLocaleString()} pts back</small>
+                              {lines.map((l) => <small key={l}>{l}</small>)}
                             </span>
                             <span className="stayother-rate">~£{Math.round(o.estimatedNightlyGBP)}</span>
                           </div>
@@ -762,6 +855,7 @@ export function Plan() {
             <div className="plan-card plan-costs">
               {bestHotel && <Row label={`Stays, ${shortProgramme(bestHotel.programme)}`} value={`~£${Math.round(bestHotel.estimatedNightlyGBP * totalNights).toLocaleString()}`} />}
               <Row label="Getting around" value={`~£${Math.round(domesticCost).toLocaleString()}`} />
+              {apd && <Row label="Air passenger duty" value={`£${apd.amount % 1 === 0 ? apd.amount : apd.amount.toFixed(2)}`} />}
               {budgetEstimate && (
                 <>
                   <Row label="Flights" value={`£${budgetEstimate.flightEstimateGBP[0]}–${budgetEstimate.flightEstimateGBP[1]}`} />

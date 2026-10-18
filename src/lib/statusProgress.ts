@@ -61,6 +61,20 @@ const TIER_NIGHT_REQUIREMENTS: Record<string, Record<string, number>> = {
 };
 
 /**
+ * Nights a programme asks for to earn (or keep) a tier in a year, from the
+ * published requirements above, or null where it has none (points-only
+ * tiers, programmes not listed). Matches on the tier's first word, as
+ * names vary ("Titanium Elite", "Silver Elite").
+ */
+export function nightsForTier(programme: string, tier: string | null | undefined): number | null {
+  if (!tier) return null;
+  const word = tier.toLowerCase().split(' ')[0];
+  const reqs = TIER_NIGHT_REQUIREMENTS[programme] ?? {};
+  const key = Object.keys(reqs).find((k) => k.toLowerCase().split(' ')[0] === word);
+  return key ? reqs[key] : null;
+}
+
+/**
  * Works out the tier a member is genuinely working toward, accounting for
  * status granted outright by a card. Without this, holding a card that
  * grants Platinum would still show progress toward Silver, which is

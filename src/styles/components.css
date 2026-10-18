@@ -381,7 +381,7 @@ input[type=date].input.inline-date:focus{border-color:var(--brand2)}
    (after) a summary card with Save, the map, the route as stop cards with
    the hops between, the best place to stay and the cost. Extras fold away
    under "Search options", "Other programmes" and "Cash or points". */
-.plan{padding:0 16px 28px;display:grid;gap:12px}
+.plan{padding:0 var(--s5) 28px;display:grid;gap:12px}
 .plan-results{display:grid;gap:12px}
 .plan-card{background:var(--card);border:1.5px solid var(--ink);border-radius:8px;padding:14px;display:grid;gap:12px}
 .plan-dest{display:grid;gap:8px}
@@ -465,6 +465,10 @@ input[type=date].input.inline-date:focus{border-color:var(--brand2)}
 .staybest-rate b{display:block;font-family:var(--font-display);font-size:var(--fs-title)}
 .staybest-rate span{font-size:var(--fs-caption);color:var(--ink3)}
 .staybest-back{font-size:var(--fs-small);color:var(--ink2)}
+/* For you and points rows: a badge, a title and its figures, a tag. */
+.pickrow{display:flex;align-items:center;gap:12px;padding:12px 16px}
+.pickrow-main{flex:1;min-width:0}
+.pickrow .tag{flex-shrink:0}
 .stayothers{display:grid;gap:10px}
 .stayother{display:flex;align-items:center;gap:10px;font-size:var(--fs-small)}
 .stayother b{display:block;font-weight:700}

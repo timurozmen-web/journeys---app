@@ -52,7 +52,7 @@ describe('bonus nights from cards, memberships and promotions', () => {
   const goldBonus: Promotion = {
     id: 'p', title: 'Gold Status Bonus: +15 Status nights', description: null, brand: 'Accor ALL', startDate: null, endDate: '2026-09-30',
     promoType: 'status_boost', multiplier: null, thresholdSpend: null, bonusPoints: null, discountValue: null, discountUsed: false,
-    statusNightsBonus: 15, statusNightsApplied: true, partnerAirline: null,
+    statusNightsBonus: 15, statusNightsApplied: true, partnerAirline: null, registered: false,
   };
   const explorer = (openDate: string, closedDate: string | null = null) => ({
     card: { id: 'Accor Explorer', programmeBrand: 'Accor ALL', kind: 'subscription' as const, perks: [], eliteNights: { auto: 30, perSpendAmount: null, perSpendCap: null } },

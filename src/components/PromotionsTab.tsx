@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { usePromotions, useLoyaltyProgrammes } from '../lib/useLiveData';
-import { addPromotion, deletePromotion, setPromotionDiscountUsed, setPromotionStatusNightsApplied } from '../lib/queries';
+import { addPromotion, deletePromotion, setPromotionDiscountUsed, setPromotionRegistered, setPromotionStatusNightsApplied } from '../lib/queries';
+import { registrationDeadline } from '../lib/today';
 import type { Promotion, PromoType } from '../types';
 import { promoArchiveReason } from '../lib/promoArchive';
 import { formatDate } from '../lib/format';
@@ -115,6 +116,12 @@ export function PromotionsTab({ brand = null }: { brand?: string | null }) {
           </div>
         )}
 
+        {registrationDeadline(p) && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 'var(--fs-small)', fontWeight: 600, color: p.registered ? 'var(--ink3)' : 'var(--ink2)' }}>
+            <input type="checkbox" checked={p.registered} onChange={(e) => setPromotionRegistered(p.id, e.target.checked).then(refetch)} />
+            {p.registered ? 'Registered' : `Register by ${formatDate(registrationDeadline(p)!)}`}
+          </label>
+        )}
         {p.promoType === 'fixed_discount' && (
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 'var(--fs-small)', fontWeight: 600, color: p.discountUsed ? 'var(--ink3)' : 'var(--ink2)' }}>
             <input type="checkbox" checked={p.discountUsed} onChange={(e) => setPromotionDiscountUsed(p.id, e.target.checked).then(refetch)} />

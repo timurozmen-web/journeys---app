@@ -147,6 +147,9 @@ alter table promotions add column if not exists discount_used boolean not null d
 alter table promotions add column if not exists status_nights_bonus int;
 alter table promotions add column if not exists status_nights_applied boolean not null default false;
 alter table promotions add column if not exists partner_airline text;
+-- Registered on the programme's own site (most bonus promotions need it).
+-- Ticked on Today or the promotion; replaces a device-only tick.
+alter table promotions add column if not exists registered boolean not null default false;
 
 alter table payment_cards add column if not exists manual_spend_adjustment numeric not null default 0;
 

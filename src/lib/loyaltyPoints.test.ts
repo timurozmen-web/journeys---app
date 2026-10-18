@@ -9,7 +9,7 @@ function multiplierPromo(overrides: Partial<Promotion> = {}): Promotion {
     id: 'p1', title: 'Double points', description: null, brand: 'Hilton Honors',
     startDate: '2026-09-01', endDate: '2026-09-30', promoType: 'multiplier', multiplier: 2,
     thresholdSpend: null, bonusPoints: null, discountValue: null, discountUsed: false,
-    statusNightsBonus: null, statusNightsApplied: false, partnerAirline: null,
+    statusNightsBonus: null, statusNightsApplied: false, partnerAirline: null, registered: false,
     ...overrides,
   };
 }

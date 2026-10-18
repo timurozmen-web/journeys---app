@@ -57,7 +57,7 @@ const fall: Promotion = {
   description: 'Paid stays of two or more nights between 22 Sep and 22 Nov 2026. Register by 13 Nov 2026.',
   startDate: '2026-09-22', endDate: '2026-11-22', promoType: 'threshold_bonus', bonusPoints: 1500,
   multiplier: null, thresholdSpend: null, discountValue: null, statusNightsBonus: null, partnerAirline: null,
-  discountUsed: false, statusNightsApplied: false,
+  discountUsed: false, statusNightsApplied: false, registered: false,
 } as Promotion;
 
 describe('registrationDeadline', () => {
@@ -83,6 +83,11 @@ describe('promosToRegister', () => {
   });
   it('drops a promotion once its deadline has passed', () => {
     expect(promosToRegister([fall], stays, '2026-11-14')).toEqual([]);
+  });
+  // The tick used to live on one device only, so a promotion registered on
+  // the phone was still nagged about on the laptop.
+  it('drops a promotion once it is registered', () => {
+    expect(promosToRegister([{ ...fall, registered: true }], stays, '2026-10-16')).toEqual([]);
   });
 });
 

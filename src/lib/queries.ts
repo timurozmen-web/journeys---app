@@ -488,6 +488,7 @@ function mapPromotion(p: any): Promotion {
     promoType: p.promo_type ?? null, multiplier: p.multiplier, thresholdSpend: p.threshold_spend,
     bonusPoints: p.bonus_points, discountValue: p.discount_value, discountUsed: p.discount_used ?? false,
     statusNightsBonus: p.status_nights_bonus, statusNightsApplied: p.status_nights_applied ?? false, partnerAirline: p.partner_airline,
+    registered: p.registered ?? false,
   };
 }
 
@@ -535,6 +536,14 @@ export async function setPromotionDiscountUsed(id: string, used: boolean) {
 export async function setPromotionStatusNightsApplied(id: string, applied: boolean) {
   const { error } = await supabase.from('promotions').update({ status_nights_applied: applied }).eq('id', id);
   if (error) throw error;
+}
+
+// Ticked once registered on the programme's own site, so Today stops
+// asking. Stored, not kept on the device, so it holds on every device.
+export async function setPromotionRegistered(id: string, registered: boolean) {
+  const { error } = await supabase.from('promotions').update({ registered }).eq('id', id);
+  if (error) throw error;
+  notifyDataChanged();
 }
 
 export async function deletePromotion(id: string) {

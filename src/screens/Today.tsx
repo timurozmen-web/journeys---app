@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Trip } from '../types';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -10,7 +10,8 @@ import { tonightStay, countdownLabel } from '../lib/tripTimeline';
 import {
   nextUp, promosToRegister, promoShortName, dayMonthShort, weekdayShort, tripNights, type NextItem,
 } from '../lib/today';
-import { readDoneTodos, markTodoDone } from '../lib/doneTodos';
+import { readDoneTodos, markTodoDone, registeredHere } from '../lib/doneTodos';
+import { setPromotionRegistered } from '../lib/queries';
 import { loyaltyHighlights } from '../lib/loyaltyHighlights';
 import { findHotelsNeedingReview } from '../lib/reviewScoring';
 import { computeStatusProgress } from '../lib/statusProgress';
@@ -23,7 +24,7 @@ import { formatMoney } from '../lib/format';
 import { shortProgramme } from '../lib/planFormat';
 import { DestinationPhoto } from '../components/DestinationPhoto';
 import { StatusRing } from '../components/StatusRing';
-import { SectionLabel } from '../components/ui';
+import { Badge, SectionLabel } from '../components/ui';
 import { SettingsIcon, MoonIcon, PlaneIcon, TagIcon, CardIcon, StarIcon, CheckIcon, AlertIcon } from '../components/Icons';
 
 interface Todo {
@@ -35,7 +36,8 @@ interface Todo {
   action?: { label: string; onClick: () => void };
   tag?: string;
   onOpen?: () => void;
-  dismissable?: boolean;
+  /** Ticks the to-do off by hand, for what the data can't see happen. */
+  onDone?: () => void;
 }
 
 // Today: where you're sleeping tonight, what's next, what needs doing,
@@ -45,12 +47,21 @@ export function Today() {
   const today = new Date().toISOString().slice(0, 10);
   const { data: trips } = useTrips();
   const { data: hotels } = useAllHotels();
-  const { data: promotions } = usePromotions();
+  const { data: promotions, isLive: promotionsLive } = usePromotions();
   const { data: rawProgrammes } = useLoyaltyProgrammes();
   const { data: reviews } = useReviews();
   const { data: vouchers } = useVouchers();
   const cardResults = useCardResults(today);
   const [done, setDone] = useState(readDoneTodos);
+
+  // A registration ticked on this device before it was stored (or while
+  // offline) is copied up, so other devices stop asking too.
+  useEffect(() => {
+    if (!promotionsLive) return;
+    for (const id of registeredHere(done)) {
+      if (promotions.some((p) => p.id === id && !p.registered)) setPromotionRegistered(id, true).catch(() => { /* tried again next visit */ });
+    }
+  }, [done, promotions, promotionsLive]);
 
   const tonight = tonightStay(trips, today);
   const underway = tonight?.trip ?? trips.find((t) => t.start <= today && today <= t.end) ?? null;
@@ -62,7 +73,8 @@ export function Today() {
   const todos: Todo[] = [];
   for (const r of promosToRegister(promotions, hotels, today)) {
     todos.push({
-      key: `register-${r.promotion.id}`, icon: <TagIcon size={18} />, dismissable: true,
+      key: `register-${r.promotion.id}`, icon: <TagIcon size={18} />,
+      onDone: () => setDone(markTodoDone(`register-${r.promotion.id}`)),
       title: `Register for ${promoShortName(r.promotion)}`,
       sub: `+${r.points.toLocaleString()} pts · by ${dayMonthShort(r.deadline)}`,
       onOpen: r.promotion.brand ? () => navigate(`/status/${encodeURIComponent(r.promotion.brand!)}`) : undefined,
@@ -160,8 +172,8 @@ export function Today() {
                     </span>
                   </button>
                   {t.action && <button className="tagbtn" onClick={t.action.onClick}>{t.action.label}</button>}
-                  {t.dismissable && (
-                    <button className="iconbtn small" aria-label={`Done: ${t.title}`} onClick={() => setDone(markTodoDone(t.key))}>
+                  {t.onDone && (
+                    <button className="iconbtn small" aria-label={`Done: ${t.title}`} onClick={t.onDone}>
                       <CheckIcon size={16} />
                     </button>
                   )}
@@ -267,14 +279,6 @@ function DateCol({ date, last }: { date: string; last: string | null }) {
     <span className="datecol">
       <span className="datecol-wd">{weekdayShort(date)}</span>
       <span className={last ? 'datecol-d range' : 'datecol-d'}>{Number(date.slice(8, 10))}{last ? `–${Number(last.slice(8, 10))}` : ''}</span>
-    </span>
-  );
-}
-
-function Badge({ code, colour, plane, size = 34 }: { code: string; colour: string | null; plane?: boolean; size?: number }) {
-  return (
-    <span className="badge-sq" style={{ background: colour ?? 'var(--ink)', width: size, height: size }} aria-hidden="true">
-      {plane ? <PlaneIcon size={size * 0.48} color="var(--on-dark)" /> : code}
     </span>
   );
 }
