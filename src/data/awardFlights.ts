@@ -17,6 +17,7 @@
 // none, not APD.
 
 import type { AwardCabin } from './awardClasses';
+import type { SeasonCalendar } from './awardSeasons';
 
 export type AwardCurrency = 'Avios' | 'Virgin Points' | 'KrisFlyer miles';
 
@@ -37,6 +38,8 @@ export interface AwardRoute {
   cabins: Partial<Record<AwardCabin, AwardPrice>>;
   /** Taxes and charges passed on to the passenger, so APD is a floor (not BA). */
   taxesPassedOn: boolean;
+  /** Whose peak calendar prices it (src/data/awardSeasons.ts); null where none is published. */
+  calendar: SeasonCalendar | null;
   source: string;
 }
 
@@ -57,7 +60,7 @@ export interface AwardRoute {
 // (Head for Points, Jan 2026), from before the May rise, so estimated. No
 // sourced cash for economy there.
 const BA_SOURCE = 'Head for Points route prices, 1 Aug 2026; cash after BA’s 27 May 2026 rise: Points Well Made, AwardWallet; Asia business: HFP Jan 2026';
-const ba = (place: string, airports: string[], cabins: AwardRoute['cabins']): AwardRoute => ({ airline: 'BA', currency: 'Avios', place, airports, cabins, taxesPassedOn: false, source: BA_SOURCE });
+const ba = (place: string, airports: string[], cabins: AwardRoute['cabins']): AwardRoute => ({ airline: 'BA', currency: 'Avios', place, airports, cabins, taxesPassedOn: false, calendar: 'BA', source: BA_SOURCE });
 
 // Qatar Airways doesn't publish a chart for its own flights; these are its
 // off-peak prices from the UK. Doha: AwardFares' Privilege Club guide
@@ -66,7 +69,7 @@ const ba = (place: string, airports: string[], cabins: AwardRoute['cabins']): Aw
 // ba.com books Qatar flights at the same prices. No sourced cash figure.
 const QR_SOURCE = 'Head for Points, 2 Jan 2026; AwardFares Privilege Club guide, 2026';
 const qr = (place: string, airports: string[], economy: number, business: number): AwardRoute => ({
-  airline: 'QR', currency: 'Avios', place, airports, taxesPassedOn: true, source: QR_SOURCE,
+  airline: 'QR', currency: 'Avios', place, airports, taxesPassedOn: true, calendar: null, source: QR_SOURCE,
   cabins: { Economy: { offPeak: economy, peak: null, cash: null }, Business: { offPeak: business, peak: null, cash: null } },
 });
 
@@ -87,6 +90,7 @@ const vs = (place: string, airports: string[], [e, p, u]: [number, number, numbe
   });
   return {
     airline: 'VS', currency: 'Virgin Points', place, airports, taxesPassedOn: true, source: VS_SOURCE,
+    calendar: place === 'Caribbean' || place === 'Maldives' ? 'VS-Caribbean' : 'VS',
     // Upper Class is Virgin's business cabin.
     cabins: { Economy: price('Economy', e, opts.peak?.[0]), 'Premium Economy': price('Premium Economy', p, opts.peak?.[1]), Business: price('Business', u, opts.peak?.[2]) },
   };
@@ -141,7 +145,7 @@ export const AWARD_ROUTES: AwardRoute[] = [
   vs('Dubai and the Middle East', ['DXB', 'RUH'], [10000, 17500, 37500]),
 
   {
-    airline: 'SQ', currency: 'KrisFlyer miles', place: 'Singapore', airports: ['SIN'], taxesPassedOn: true, source: SQ_SOURCE,
+    airline: 'SQ', currency: 'KrisFlyer miles', place: 'Singapore', airports: ['SIN'], taxesPassedOn: true, calendar: null, source: SQ_SOURCE,
     cabins: {
       Economy: { offPeak: 44000, peak: null, cash: null },
       'Premium Economy': { offPeak: 74500, peak: null, cash: null },

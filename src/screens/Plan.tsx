@@ -16,16 +16,16 @@ import { useCardResults } from '../lib/useCardResults';
 import { computeStatusProgress } from '../lib/statusProgress';
 import { withLiveOverrides } from '../lib/walletValue';
 import {
-  agentContext, airPassengerDuty, awardCashLabel, awardOptions, cityCashRates as ratesForCity, forYou, stayInsights, stayLines, stopOutlook, usualAwardCabin,
-  type ForYouItem, type PlannedStop, type StopOutlook,
+  agentContext, airPassengerDuty, awardCashLabel, awardOptions, awardPointsLabel, cityCashRates as ratesForCity, forYou, nightPoints, nightPointsShort, stayInsights, stayLines,
+  stopOutlook, usualAwardCabin, type ForYouItem, type Market, type PlannedStop, type StopOutlook,
 } from '../lib/planIntel';
 import type { AwardCabin } from '../data/awardClasses';
 import { AIRLINE_COLORS } from '../data/airlineBrand';
 import { haversineKm } from '../lib/travelStats';
-import { addTrip, addHotel, addFlight, type PointsValueProgramme, type CityCashRate, type RealClimateMonth, type RealCrowdPriceMonth } from '../lib/queries';
+import { addTrip, addHotel, addFlight, type RealClimateMonth, type RealCrowdPriceMonth } from '../lib/queries';
 import { useCurrency } from '../lib/currency';
 import { getBudgetEstimate, type BudgetEstimate } from '../lib/budgetEstimate';
-import { civilianAirportName, formatHours, roundPointsEstimate, shortProgramme, stayRange } from '../lib/planFormat';
+import { civilianAirportName, formatHours, shortProgramme, stayRange } from '../lib/planFormat';
 import { formatShortRange } from '../lib/format';
 import { CitySearchInput } from '../components/CitySearchInput';
 import { BrandLogo } from '../components/BrandLogo';
@@ -113,14 +113,14 @@ function SeasonStrip({ country, city, climateData, crowdPriceData, highlightMont
 // Real cash rates for a city, tier by tier, next to what that same money
 // is worth in points at each programme researched -- to check a
 // redemption against what the cash price would have been.
-function CashVsPoints({ country, city, rates, programmes }: { country: string; city: string | null; rates: CityCashRate[]; programmes: PointsValueProgramme[] }) {
+function CashVsPoints({ country, city, market }: { country: string; city: string | null; market: Market }) {
   const { format, fromUsd } = useCurrency();
   // Every tier from one city (see cityCashRates).
-  const matched = ratesForCity(rates, country, city);
+  const matched = ratesForCity(market.rates, country, city);
   if (matched.length === 0) return null;
   const tierLabel = { budget: 'Budget', mid: 'Mid-range', luxury: 'Luxury' } as const;
   const priorityOrder = ['Marriott Bonvoy', 'Hilton Honors', 'World of Hyatt', 'IHG One Rewards', 'Accor ALL'];
-  const mainProgrammes = programmes
+  const mainProgrammes = market.pointsValue
     .filter((p) => priorityOrder.includes(p.programme))
     .sort((a, b) => priorityOrder.indexOf(a.programme) - priorityOrder.indexOf(b.programme));
 
@@ -139,9 +139,11 @@ function CashVsPoints({ country, city, rates, programmes }: { country: string; c
                 <b>{rate.priceLowUsd === rate.priceHighUsd ? `~${format(fromUsd(rate.priceLowUsd))}` : `${format(fromUsd(rate.priceLowUsd))}–${format(fromUsd(rate.priceHighUsd))}`}</b>
               </div>
               <div className="cashpts-pts">
-                {mainProgrammes.map((p) => (
-                  <span key={p.programme}>{shortProgramme(p.programme)} {roundPointsEstimate(Math.round((midCashUsd * 100) / p.avgCentsPerPoint)).toLocaleString()}</span>
-                ))}
+                {mainProgrammes.map((p) => {
+                  // Each programme priced its own way (planIntel's nightPoints).
+                  const n = nightPoints(p.programme, midCashUsd, null, market);
+                  return n && <span key={p.programme}>{shortProgramme(p.programme)} {nightPointsShort(n)}</span>;
+                })}
               </div>
             </div>
           );
@@ -526,8 +528,9 @@ export function Plan() {
     const p = loyaltyProgrammes.find((x) => x.name === name);
     return p && p.category === 'hotel' && p.nextTier && p.nights != null ? computeStatusProgress(p, allHotels, promotions, cardResults, today) : null;
   };
+  const market: Market = { rates: cityCashRates, crowd: crowdPriceData, pointsValue: pointsValueData, usdToGbp, usdToEur: (fx.EUR || 1.17) / (fx.USD || 1.27) };
   const stays = cities.length > 0
-    ? stayInsights(hotelOptions, stops, { programmes: loyaltyProgrammes, vouchers, flights: allFlights, hotels: allHotels, promotions }, progressOf, pointsValueData, cityCashRates, today, usdToGbp)
+    ? stayInsights(hotelOptions, stops, { programmes: loyaltyProgrammes, vouchers, flights: allFlights, hotels: allHotels, promotions }, progressOf, market, today)
     : [];
   const outlooks = stops.map((st) => stopOutlook(climateData, crowdPriceData, st)).filter((o): o is StopOutlook => o != null);
   const picks = cities.length > 0 ? forYou({ flights: pointsFlights, stays, outlooks, cabin: chosenCabin ?? usualCabin }) : [];
@@ -752,7 +755,7 @@ export function Plan() {
                         <span className="pickrow-main">
                           <span className="rowtitle">{o.airlineName} · {o.cabin}</span>
                           <span className="rowsub">
-                            {o.points.toLocaleString()}{o.peakPoints && o.peakPoints !== o.points ? `–${o.peakPoints.toLocaleString()}` : ''} {o.currency}{cash ? ` + ${cash}` : ''}
+                            {awardPointsLabel(o)} {o.currency}{cash ? ` + ${cash}` : ''}
                             {o.awardClass ? ` · class ${o.awardClass}` : ''}{o.perk ? ` · ${o.perk}` : ''}
                           </span>
                         </span>
@@ -849,7 +852,7 @@ export function Plan() {
                     </div>
                   </details>
                 )}
-                <CashVsPoints country={cities[0].country} city={cities[0].city} rates={cityCashRates} programmes={pointsValueData} />
+                <CashVsPoints country={cities[0].country} city={cities[0].city} market={market} />
               </>
             )}
 

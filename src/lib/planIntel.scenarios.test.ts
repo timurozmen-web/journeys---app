@@ -55,7 +55,7 @@ const usdToGbp = 1 / 1.27;
 function plan(stops: PlannedStop[], airport: string) {
   const cabin = usualAwardCabin(flights);
   const options = awardOptions(airport, stops[0].country, stops[0].checkIn!, [cabin, 'Economy'], account);
-  const stays = stayInsights([marriottOption], stops, account, (n) => progress[n] ?? null, pointsValue, rates, today, usdToGbp);
+  const stays = stayInsights([marriottOption], stops, account, (n) => progress[n] ?? null, { rates, crowd: [], pointsValue, usdToGbp, usdToEur: 1.17 / 1.27 }, today);
   return { options, stays, picks: forYou({ flights: options, stays, outlooks: [], cabin }) };
 }
 
@@ -75,12 +75,20 @@ describe('planning trips for this account', () => {
     ]);
   });
 
-  it('New York at Christmas: Virgin economy is cheapest at their values, with the Elite Gold lounge', () => {
+  // 18 December is peak on both calendars: BA 33,000 + £75 (£405 at
+  // their values) beats Virgin's 20,000 peak cap + £244 (£444). Priced
+  // off-peak, as it used to be, Virgin looked £6 cheaper.
+  it('New York at Christmas: priced as peak, BA economy beats Virgin', () => {
     const { options, picks } = plan([{ city: 'New York', country: 'United States', nights: 4, checkIn: '2026-12-18' }], 'JFK');
-    expect(options.filter((o) => o.covers).map((o) => `${o.airline} ${o.cabin} £${o.costGBP}`)).toEqual(['VS Economy £344', 'BA Economy £350']);
-    expect(picks[0]).toEqual({ kind: 'flight', title: 'Virgin Atlantic economy on Virgin Points', sub: '10,000–20,000 + £244 · you have 24,005 · Lounge with Elite Gold' });
+    expect(options.filter((o) => o.covers).map((o) => `${o.airline} ${o.cabin} ${o.season} £${o.costGBP}`)).toEqual(['BA Economy peak £405', 'VS Economy peak £444']);
+    expect(picks[0]).toEqual({ kind: 'flight', title: 'British Airways economy on Avios', sub: '33,000 peak + £75 · you have 67,309' });
     // This year's nights: 53 so far and booked, these 4 more.
     expect(picks[1].sub).toMatch(/^57 of 100 nights to Ambassador/);
+  });
+
+  it('New York in early December is off-peak for BA, standard for Virgin', () => {
+    const { options } = plan([{ city: 'New York', country: 'United States', nights: 3, checkIn: '2026-12-02' }], 'JFK');
+    expect(options.filter((o) => o.cabin === 'Economy').map((o) => `${o.airline} ${o.points} ${o.season}`)).toEqual(['VS 10000 off-peak', 'BA 27500 off-peak']);
   });
 
   it('A Paris weekend: BA’s own £2.50, never APD on top', () => {

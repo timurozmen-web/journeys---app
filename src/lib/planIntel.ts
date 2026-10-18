@@ -3,12 +3,15 @@ import { APD_BAND_A, APD_BAND_DEPENDS, APD_BAND_LISTED, APD_EDGE_MILES, APD_RATE
 import { AWARD_AIRLINES, AWARD_ROUTES, CURRENCY_PROGRAMME, STATUS_PERKS, type AwardCurrency } from '../data/awardFlights';
 import { AWARD_CLASSES, type AwardCabin } from '../data/awardClasses';
 import { FREE_NIGHT_TOP_UP } from '../data/freeNights';
+import { BA_DISPUTED_2026, BA_KNOWN, BA_PEAK_2026, VS_PEAK, type SeasonCalendar } from '../data/awardSeasons';
+import { HOTEL_PRICING, HYATT_LEVELS } from '../data/hotelAwardPricing';
 import { promoBonusForStay } from './promoBonus';
 import { addDays } from './tripDay';
 import { blendedGuideForMonth, dominantMonth, findCrowdPriceMonth, MONTH_NAMES, type BlendedMonthGuide } from './destinationGuide';
 import type { HotelPlanOption } from './hotelPlanner';
 import { nightsForTier, type StatusProgress } from './statusProgress';
 import { formatDate } from './format';
+import { roundPointsEstimate } from './planFormat';
 import { countryKey, sameCountry } from './countryName';
 import type { CityCashRate, PointsValueProgramme, RealClimateMonth, RealCrowdPriceMonth } from './queries';
 
@@ -75,8 +78,14 @@ export interface AwardOption {
   place: string;
   currency: AwardCurrency;
   cabin: AwardCabin;
-  points: number; // off-peak (or the Saver cap)
+  /** The price on the day where its season is known, else off-peak (or the Saver cap). */
+  points: number;
+  offPeakPoints: number;
   peakPoints: number | null;
+  /** Peak or off-peak on the day, from the airline's calendar; null when unknown. */
+  season: 'peak' | 'off-peak' | null;
+  /** A peak day with no sourced peak price: at least the off-peak figure. */
+  atLeast: boolean;
   /** Taxes and charges on the reward ticket, where sourced (APD included). */
   cash: number | null;
   cashEstimated: boolean;
@@ -113,6 +122,22 @@ function holdingOf(programmes: LoyaltyProgramme[], currency: AwardCurrency): Loy
 
 const COMPANION = /companion|2-4-1|2 for 1/i;
 
+const within = (d: string, [a, b]: [string, string]) => d >= a && d <= b;
+
+/** Peak or off-peak on a date, by the airline's calendar, or null where it isn't known. */
+export function seasonOn(calendar: SeasonCalendar | null, date: string): 'peak' | 'off-peak' | null {
+  if (calendar === 'BA') {
+    if (!within(date, BA_KNOWN) || BA_DISPUTED_2026.has(date)) return null;
+    return BA_PEAK_2026.some((w) => within(date, w)) ? 'peak' : 'off-peak';
+  }
+  if (calendar === 'VS' || calendar === 'VS-Caribbean') {
+    const c = VS_PEAK[calendar];
+    if (!within(date, c.known)) return null;
+    return c.peak.some((w) => within(date, w)) ? 'peak' : 'off-peak';
+  }
+  return null;
+}
+
 /**
  * Every sourced reward seat from London to `airport` in the given cabins,
  * priced against the user's balances: ones they can pay for first, then
@@ -134,20 +159,24 @@ export function awardOptions(
       if (!price) continue;
       const holder = holdingOf(account.programmes, route.currency);
       const balance = holder?.points ?? 0;
+      // Priced on the day where the calendar says which season it is.
+      const season = seasonOn(route.calendar, date);
+      const atLeast = season === 'peak' && price.peak == null;
+      const points = season === 'peak' ? price.peak ?? price.offPeak : price.offPeak;
       const ukApd = airPassengerDuty(country, cabin, date)?.amount ?? null;
       const apd = route.taxesPassedOn ? ukApd : null;
       // Unknown cash is ranked as APD, BA's too: a guess for ordering only,
       // never shown for BA (see awardFlights.ts).
       const cash = price.cash ?? ukApd ?? 0;
       const withCompanion = companion && route.airline === 'BA';
-      const seats = Math.floor(balance / price.offPeak) * (withCompanion ? 2 : 1);
+      const seats = Math.floor(balance / points) * (withCompanion ? 2 : 1);
       const perk = STATUS_PERKS.find((s) => s.airlines.includes(route.airline) && account.programmes.some((p) => s.programme.test(p.name) && s.tier.test(p.tier ?? '')))?.perk ?? null;
       const letter = Object.entries(AWARD_CLASSES[route.airline] ?? {}).find(([, c]) => c === cabin)?.[0] ?? null;
       out.push({
         airline: route.airline, airlineName: AWARD_AIRLINES[route.airline], place: route.place, currency: route.currency, cabin,
-        points: price.offPeak, peakPoints: price.peak, cash: price.cash, cashEstimated: !!price.cashEstimated, apd,
-        programme: holder?.name ?? null, balance, covers: balance >= price.offPeak, seats, companion: withCompanion,
-        costGBP: Math.round((price.offPeak * (holder?.ptValue ?? 1)) / 100 + cash),
+        points, offPeakPoints: price.offPeak, peakPoints: price.peak, season, atLeast, cash: price.cash, cashEstimated: !!price.cashEstimated, apd,
+        programme: holder?.name ?? null, balance, covers: balance >= points, seats, companion: withCompanion,
+        costGBP: Math.round((points * (holder?.ptValue ?? 1)) / 100 + cash),
         awardClass: letter, perk, source: route.source,
       });
     }
@@ -184,7 +213,85 @@ export function cityCashRates(rates: CityCashRate[], country: string, city: stri
 
 /** Points a night costs at a programme's average redemption value: an estimate. */
 export function pointsPerNight(cashUsd: number, value: PointsValueProgramme): number {
-  return Math.round((cashUsd * 100) / value.avgCentsPerPoint / 500) * 500;
+  return roundPointsEstimate((cashUsd * 100) / value.avgCentsPerPoint);
+}
+
+/** What the planner prices hotels from: city cash rates, the season, each programme's value per point, and FX. */
+export interface Market {
+  rates: CityCashRate[];
+  crowd: RealCrowdPriceMonth[];
+  pointsValue: PointsValueProgramme[];
+  usdToGbp: number;
+  usdToEur: number;
+}
+
+type PriceLevel = 'low' | 'medium' | 'high';
+
+/** How dear the month of a stay is, from the crowd and price table. */
+export function stopPriceLevel(crowd: RealCrowdPriceMonth[], stop: PlannedStop): PriceLevel | null {
+  if (!stop.checkIn) return null;
+  const month = dominantMonth(stop.checkIn, addDays(stop.checkIn, stop.nights));
+  return findCrowdPriceMonth(crowd, stop.city, stop.country, MONTH_NAMES[month].slice(0, 3))?.priceLevel ?? null;
+}
+
+/**
+ * A night's cash at one of a city's price levels, placed by season: the
+ * researched range runs from its low season to its high (Tokyo's mid-range
+ * note: "rises to ~$213 in high season", the top of its range), so a low
+ * month takes the bottom, a high one the top, anything else the middle.
+ * It used the middle in every month, so a Golden Week night cost the
+ * same as one in January.
+ */
+export function seasonalCashUsd(rate: CityCashRate, level: PriceLevel | null): number {
+  if (level === 'low') return rate.priceLowUsd;
+  if (level === 'high') return rate.priceHighUsd;
+  return (rate.priceLowUsd + rate.priceHighUsd) / 2;
+}
+
+export interface NightPoints {
+  /** The likely price. */
+  points: number;
+  /** Hyatt's range for the category, Lowest to Top. */
+  low: number | null;
+  high: number | null;
+  model: 'fixed-value' | 'chart' | 'dynamic';
+  /** Hyatt: the category whose prices fit the cash rate (an estimate), and the level taken for the season. */
+  category: number | null;
+  level: string | null;
+  capped: boolean;
+}
+
+/**
+ * What a night costs in points, the way the programme prices it
+ * (src/data/hotelAwardPricing.ts), where one figure per point used to
+ * stand in for all of them:
+ *  - Accor: money off, 2,000 points per €40, in whole blocks.
+ *  - Hyatt: the chart. The category is the one whose Moderate price is
+ *    nearest the cash rate at Hyatt's average value per point; the level
+ *    follows the season (Low in a quiet month, Moderate, Upper in a
+ *    busy one), as Hyatt doesn't publish its calendar.
+ *  - Marriott, IHG, Hilton: dynamic, tracking cash, so the cash rate at
+ *    the programme's average value per point; Hilton capped at 250,000.
+ */
+export function nightPoints(programme: string, cashUsd: number, level: PriceLevel | null, market: Pick<Market, 'pointsValue' | 'usdToEur'>): NightPoints | null {
+  const pricing = HOTEL_PRICING[programme];
+  if (pricing?.kind === 'fixed-value') {
+    const blocks = Math.ceil((cashUsd * market.usdToEur) / pricing.eurPerBlock);
+    return { points: blocks * pricing.pointsPerBlock, low: null, high: null, model: 'fixed-value', category: null, level: null, capped: false };
+  }
+  const value = market.pointsValue.find((v) => v.programme === programme);
+  if (!value) return null;
+  const est = pointsPerNight(cashUsd, value);
+  if (pricing?.kind === 'chart') {
+    const [category, row] = Object.entries(pricing.categories)
+      .map(([c, r]) => [Number(c), r] as const)
+      .sort((a, b) => Math.abs(a[1][2] - est) - Math.abs(b[1][2] - est) || a[0] - b[0])[0];
+    const i = level === 'low' ? 1 : level === 'high' ? 3 : 2;
+    return { points: row[i], low: row[0], high: row[4], model: 'chart', category, level: HYATT_LEVELS[i], capped: false };
+  }
+  const cap = pricing?.kind === 'dynamic' ? pricing.cap : null;
+  const capped = cap != null && est > cap;
+  return { points: capped ? cap : est, low: null, high: null, model: 'dynamic', category: null, level: null, capped };
 }
 
 /**
@@ -231,6 +338,7 @@ export interface VoucherAdvice {
 
 const TIER_WORD: Record<CityCashRate['tier'], string> = { budget: 'budget', mid: 'mid-range', luxury: 'luxury' };
 const MONTH_MS = 30.44 * 86400000;
+const URGENT_MONTHS = 6;
 
 /**
  * Whether to spend a free-night voucher on this trip, and where. A 40k
@@ -241,28 +349,27 @@ const MONTH_MS = 30.44 * 86400000;
  *    for at the user's own point value;
  *  - what the voucher is worth to the user (their own value for it, or
  *    its cap at their point value);
- *  - how close it is to expiring: a night has to save its full worth a
- *    year or more out, and less in step with the months left, as a
- *    voucher unused is worth nothing.
+ *  - how close it is to expiring: a night has to save its full worth
+ *    until the last six months, then less in step with the months left,
+ *    as a voucher unused is worth nothing.
  * Points prices are estimates (cash rate at the programme's average
  * value per point), so a night near the cap is a "probably".
  */
-export function voucherAdvice(
-  v: Voucher, programme: LoyaltyProgramme, stops: PlannedStop[], value: PointsValueProgramme | null, rates: CityCashRate[], usdToGbp: number,
-): VoucherAdvice | null {
+export function voucherAdvice(v: Voucher, programme: LoyaltyProgramme, stops: PlannedStop[], market: Market): VoucherAdvice | null {
   const cap = voucherCap(v.name);
-  if (!cap || !value) return null;
+  if (!cap || !market.pointsValue.some((x) => x.programme === programme.name)) return null;
   const topUpMax = FREE_NIGHT_TOP_UP[programme.name] ?? 0;
   const ptValue = programme.ptValue;
   const usable = stops.filter((s) => s.checkIn && (!v.expiryDate || s.checkIn <= v.expiryDate));
   let best: VoucherAdvice['best'] = null;
   for (const s of usable) {
-    for (const r of cityCashRates(rates, s.country, s.city)) {
-      const cashUsd = (r.priceLowUsd + r.priceHighUsd) / 2;
-      const points = pointsPerNight(cashUsd, value);
-      if (points > cap + topUpMax) continue;
+    const level = stopPriceLevel(market.crowd, s);
+    for (const r of cityCashRates(market.rates, s.country, s.city)) {
+      const cashUsd = seasonalCashUsd(r, level);
+      const points = nightPoints(programme.name, cashUsd, level, market)?.points;
+      if (points == null || points > cap + topUpMax) continue;
       const topUp = Math.max(0, points - cap);
-      const cashGBP = Math.round(cashUsd * usdToGbp);
+      const cashGBP = Math.round(cashUsd * market.usdToGbp);
       const worthGBP = Math.round(cashGBP - (topUp * ptValue) / 100);
       if (!best || worthGBP > best.worthGBP) best = { city: s.city, tier: r.tier, points, topUp, cashGBP, worthGBP };
     }
@@ -270,7 +377,10 @@ export function voucherAdvice(
   const parGBP = Math.round(v.value ?? (cap * ptValue) / 100);
   const from = usable[0]?.checkIn ?? stops[0]?.checkIn ?? null;
   const monthsLeft = v.expiryDate && from ? Math.max(0, (Date.parse(v.expiryDate) - Date.parse(from)) / MONTH_MS) : null;
-  const neededGBP = Math.round(monthsLeft == null ? parGBP : parGBP * Math.min(1, monthsLeft / 12));
+  // Full worth until the last six months, then less as they run out: a
+  // 50k voucher was spent on a 27,500-point night seven months before it
+  // expired, when it was asking only 7/12 of its worth.
+  const neededGBP = Math.round(monthsLeft == null ? parGBP : parGBP * Math.min(1, monthsLeft / URGENT_MONTHS));
   const verdict: VoucherVerdict = !best ? 'too-dear'
     : best.worthGBP >= parGBP ? (best.topUp > 0 ? 'top-up' : 'use')
     : best.worthGBP >= neededGBP ? 'use-soon'
@@ -310,9 +420,11 @@ export interface StayInsight {
   benefits: string[];
   /** Nights toward a tier. For a trip next year, toward keeping the tier held, where it has a night requirement. */
   status: { target: string; before: number; after: number; total: number; reaches: boolean; nextYear: boolean; keep: boolean } | null;
-  /** Points a night at the stop's mid-range and luxury cash rates (estimates). */
+  /** Points a night at the stop's mid-range and luxury cash rates, in season (estimates). */
   perNight: number | null;
   perNightLuxury: number | null;
+  /** How the mid-range night is priced: Hyatt's category and range, or a dynamic estimate. */
+  pricing: NightPoints | null;
   nightsCovered: number | null;
   /** The programme's free-night voucher to talk about, with what to do with it. */
   voucher: VoucherAdvice | null;
@@ -329,17 +441,21 @@ export interface PlannedStop { city: string; country: string; nights: number; ch
  */
 export function stayInsights(
   options: HotelPlanOption[], stops: PlannedStop[], account: PlanAccount, progressOf: (name: string) => StatusProgress | null,
-  pointsValue: PointsValueProgramme[], rates: CityCashRate[], today: string, usdToGbp: number,
+  market: Market, today: string,
 ): StayInsight[] {
   const nights = stops.reduce((s, c) => s + c.nights, 0);
   const firstIn = stops[0]?.checkIn ?? null;
   const tripYear = firstIn?.slice(0, 4) ?? today.slice(0, 4);
-  const rateUsd = (tier: CityCashRate['tier']) => {
-    const r = stops.map((s) => cityCashRates(rates, s.country, s.city).find((x) => x.tier === tier)).find(Boolean);
-    return r ? (r.priceLowUsd + r.priceHighUsd) / 2 : null;
+  // The first stop with a researched rate at that level, in its season.
+  const night = (tier: CityCashRate['tier']) => {
+    for (const s of stops) {
+      const r = cityCashRates(market.rates, s.country, s.city).find((x) => x.tier === tier);
+      if (r) { const level = stopPriceLevel(market.crowd, s); return { cashUsd: seasonalCashUsd(r, level), level }; }
+    }
+    return null;
   };
-  const midUsd = rateUsd('mid');
-  const luxuryUsd = rateUsd('luxury');
+  const mid = night('mid');
+  const luxury = night('luxury');
 
   return options.map((o) => {
     const p = account.programmes.find((x) => x.name === o.programme);
@@ -347,27 +463,34 @@ export function stayInsights(
     let status: StayInsight['status'] = null;
     const nextYear = tripYear > today.slice(0, 4);
     // Nights only count toward this year's tier in this year. A trip next
-    // year counts from nothing, toward keeping the tier held: a Titanium
-    // member's 12 nights next year are 12 of the 75 that keep Titanium.
+    // year counts toward keeping the tier held: a Titanium member's 12
+    // nights next year are 12 of the 75 that keep Titanium. Not when a
+    // card grants the tier (IHG Platinum with the card showed "12 of 40
+    // nights to keep Platinum"), nor when a membership's yearly nights
+    // keep it on their own (Accor+ Explorer's 30 keep Gold): then it's
+    // the tier above, counting those membership nights, taken to renew.
     const held = progress?.effectiveTier ?? p?.tier ?? null;
-    const keepNights = nextYear ? nightsForTier(o.programme, held) : null;
-    if (keepNights && held) {
-      status = { target: held, before: 0, after: nights, total: keepNights, reaches: nights >= keepNights, nextYear, keep: true };
+    const byCard = !!held && progress?.cardGrantedTier === held;
+    const membership = nextYear ? progress?.breakdown?.membership ?? 0 : 0;
+    const keepNights = nextYear && !byCard ? nightsForTier(o.programme, held) : null;
+    if (keepNights && held && membership < keepNights) {
+      status = { target: held, before: membership, after: membership + nights, total: keepNights, reaches: membership + nights >= keepNights, nextYear, keep: true };
     } else if (progress?.targetTier && progress.total > 0) {
-      const before = nextYear ? 0 : progress.currentNights + progress.bookedNights;
+      const before = nextYear ? membership : progress.currentNights + progress.bookedNights;
       status = { target: progress.targetTier, before, after: before + nights, total: progress.total, reaches: before < progress.total && before + nights >= progress.total, nextYear, keep: false };
     }
 
-    const value = pointsValue.find((v) => v.programme === o.programme) ?? null;
-    const perNight = value && midUsd ? pointsPerNight(midUsd, value) : null;
-    const perNightLuxury = value && luxuryUsd ? pointsPerNight(luxuryUsd, value) : null;
+    const value = market.pointsValue.find((v) => v.programme === o.programme) ?? null;
+    const pricing = mid ? nightPoints(o.programme, mid.cashUsd, mid.level, market) : null;
+    const perNight = pricing?.points ?? null;
+    const perNightLuxury = luxury ? nightPoints(o.programme, luxury.cashUsd, luxury.level, market)?.points ?? null : null;
     const fifthFree = !!value?.fifthNightFree && (o.programme !== 'Hilton Honors' || !!p?.tier && !/^member$/i.test(p.tier));
     const nightsCovered = perNight && p && p.points > 0 ? nightsFromBalance(p.points, perNight, fifthFree) : null;
 
     const word = PROGRAMME_WORD[o.programme];
     const voucher = word && p ? firstVoucher(account.vouchers
       .filter((x) => !x.redeemed && word.test(`${x.name} ${x.source}`) && (!x.expiryDate || !firstIn || x.expiryDate >= firstIn))
-      .map((x) => voucherAdvice(x, p, stops, value, rates, usdToGbp))
+      .map((x) => voucherAdvice(x, p, stops, market))
       .filter((x): x is VoucherAdvice => x != null)) : null;
 
     // Promotions on stays this trip would book, as if booked today.
@@ -380,7 +503,7 @@ export function stayInsights(
     const pool = [...account.hotels, ...planned];
     const promoPoints = planned.reduce((s, h) => s + promoBonusForStay(h, pool, account.promotions.filter((x) => !x.endDate || x.endDate >= today)), 0);
 
-    return { programme: o.programme, tier: o.tier, nightly: o.estimatedNightlyGBP, benefits: o.benefits, status, perNight, perNightLuxury, nightsCovered, voucher, promoPoints };
+    return { programme: o.programme, tier: o.tier, nightly: o.estimatedNightlyGBP, benefits: o.benefits, status, perNight, perNightLuxury, pricing, nightsCovered, voucher, promoPoints };
   });
 }
 
@@ -391,12 +514,24 @@ export function statusLabel(s: NonNullable<StayInsight['status']>): string {
   return `${s.after} of ${s.total} nights to ${s.keep ? 'keep ' : ''}${s.target}${when}`;
 }
 
+/** A night's points in a few characters: "Cat 3 · 15,000" for Hyatt, else "32,000". */
+export function nightPointsShort(n: NightPoints): string {
+  return n.model === 'chart' ? `Cat ${n.category} · ${pts(n.points)}` : pts(n.points);
+}
+
+/** A night's points as the programme prices it: Hyatt's category and range, else the estimate. */
+function pointsLabel(s: Pick<StayInsight, 'perNight' | 'pricing'>): string {
+  const p = s.pricing;
+  if (p?.model === 'chart') return `~Cat ${p.category} · ${pts(p.points)} pts (${pts(p.low!)}–${pts(p.high!)})`;
+  return `~${pts(s.perNight!)} pts${p?.capped ? ' (cap)' : ''}`;
+}
+
 /** The status and points lines under a programme in Where to stay. */
 export function stayLines(s: StayInsight | undefined): string[] {
   if (!s) return [];
   return [
     s.status ? statusLabel(s.status) : null,
-    s.perNight ? `~${pts(s.perNight)} pts a night${s.nightsCovered ? ` · ${s.nightsCovered} nights on points` : ''}` : null,
+    s.perNight ? `${pointsLabel(s)} a night${s.nightsCovered ? ` · ${s.nightsCovered} night${s.nightsCovered === 1 ? '' : 's'} on points` : ''}` : null,
     s.voucher && s.voucher.verdict !== 'too-dear' ? voucherLine(s.voucher).title : null,
   ].filter((x): x is string => !!x);
 }
@@ -451,6 +586,16 @@ export interface ForYouItem {
 const pts = (n: number) => n.toLocaleString('en-GB');
 const money = (n: number) => `£${n % 1 === 0 ? pts(n) : n.toFixed(2)}`;
 
+/**
+ * A seat's points: the price on the day with its season ("33,000 peak"),
+ * at least the off-peak price on a peak day with no sourced peak price,
+ * or the range where the season isn't known.
+ */
+export function awardPointsLabel(o: Pick<AwardOption, 'points' | 'offPeakPoints' | 'peakPoints' | 'season' | 'atLeast'>): string {
+  if (o.season) return `${pts(o.points)}${o.atLeast ? '+' : ''} ${o.season}`;
+  return o.peakPoints && o.peakPoints !== o.offPeakPoints ? `${pts(o.offPeakPoints)}–${pts(o.peakPoints)}` : pts(o.offPeakPoints);
+}
+
 /** The cash line on a reward seat: sourced charges, or APD as the floor. */
 export function awardCashLabel(o: Pick<AwardOption, 'cash' | 'cashEstimated' | 'apd'>): string | null {
   if (o.cash != null) return `${o.cashEstimated ? '~' : ''}${money(o.cash)}`;
@@ -478,7 +623,7 @@ export function forYou(input: {
     out.push({
       kind: 'flight',
       title: `${f.airlineName} ${f.cabin.toLowerCase()} on ${f.currency}`,
-      sub: [`${pts(f.points)}${f.peakPoints && f.peakPoints !== f.points ? `–${pts(f.peakPoints)}` : ''}${cash ? ` + ${cash}` : ''}`,
+      sub: [`${awardPointsLabel(f)}${cash ? ` + ${cash}` : ''}`,
         f.covers ? (f.companion ? `${f.seats} seats with the companion voucher` : `you have ${pts(f.balance)}`) : `${pts(f.points - f.balance)} short`,
         f.perk].filter(Boolean).join(' · '),
     });

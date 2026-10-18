@@ -160,7 +160,10 @@ Run all three; all must be clean:
     class to look for (`awardClasses.ts`) and status perks. Prices and
     cash charges are in `src/data/awardFlights.ts` (BA and Qatar Avios,
     Virgin Saver caps, KrisFlyer Saver), sourced and dated; a route
-    with no sourced price shows nothing. BA's cash part is its own fixed
+    with no sourced price shows nothing. Seats are priced on the day where
+    the airline's peak calendar is known (`src/data/awardSeasons.ts`: BA
+    2026, Virgin's windows to early 2027; disputed dates and 2027 BA stay
+    unknown and show both prices). BA's cash part is its own fixed
     amount per band (it can be under APD: £2.50 to Amsterdam), so a BA
     seat never gets APD added; airlines that pass taxes on (`taxesPassedOn`)
     show APD as the floor ("£106 APD + fees") when their cash isn't known.
@@ -168,19 +171,27 @@ Run all three; all must be clean:
     Bands since April 2023: domestic, A (a list: the EU, the EEA and named
     places, whatever the distance), B (2,001-5,500 miles to the capital)
     and C. Near 5,500 miles only a band gov.uk states is used.
+  - Hotel points: `nightPoints` prices a night the way each programme
+    does (`src/data/hotelAwardPricing.ts`): Accor is money off (2,000 per
+    €40), Hyatt is its chart (the category whose Moderate price fits the
+    cash rate, at the season's level), Marriott and IHG are dynamic with no
+    cap, Hilton dynamic up to 250,000. Cash is placed in the city's range
+    by the month's price level (`seasonalCashUsd`): bottom in a cheap
+    month, top in a dear one.
   - Free-night vouchers: `voucherAdvice` weighs each stop's price levels
-    (city cash rates, so roughly their points), the programme's top-up
-    (`src/data/freeNights.ts`: Marriott 25,000), the voucher's worth to the
-    user (its stored value, else cap x their point value) and expiry (a
-    night must save less of that worth as fewer months remain). Verdicts:
-    use, top up, use before it goes, keep.
+    in season, the programme's top-up (`src/data/freeNights.ts`: Marriott
+    25,000), the voucher's worth to the user (its stored value, else cap x
+    their point value) and expiry (its full worth until the last six
+    months, then less). Verdicts: use, top up, use before it goes, keep.
   - Country names differ between data sets ("United Arab Emirates" /
     "UAE", "Turkey" / "Türkiye"): match them with `sameCountry`
     (`src/lib/countryName.ts`), never `===`.
   - The account: `stayInsights` gives each programme's nights toward the
     tier being worked on (or, for a trip next year, toward keeping the
-    tier held), points a night and nights the balance covers (free fifth
-    night where given), voucher advice and promotion bonus points.
+    tier held; a card-granted tier, or one a membership's yearly nights
+    keep, aims at the tier above instead), points a night and nights the
+    balance covers (free fifth night where given), voucher advice and
+    promotion bonus points.
     `forYou` picks the few worth acting on. `planIntel.scenarios.test.ts`
     plans whole trips against the user's account and checks the tables
     hold together.
