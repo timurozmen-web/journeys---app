@@ -47,6 +47,16 @@ export async function nearestAirportToCity(cityLat: number, cityLng: number): Pr
 
   const distTo = (a: GlobalAirport) => haversineKm(cityLat, cityLng, a.lat, a.lng);
 
+  // The hand-picked airports, all with scheduled flights, come first when
+  // one serves the city. Paris's nearest "large" airport in the global
+  // set is Le Bourget, business jets only: the plan routed LHR to LBG and
+  // found no flights or reward prices.
+  const curated = PLANNING_AIRPORTS
+    .map((a) => ({ a, d: distTo(a) }))
+    .filter((x) => x.d <= LARGE_AIRPORT_SEARCH_RADIUS_KM)
+    .sort((x, y) => x.d - y.d)[0];
+  if (curated) return { airport: { ...curated.a, large: true }, distanceKm: curated.d };
+
   const largeOnes = combined.filter((a) => a.large !== false);
   let best: GlobalAirport | null = null;
   let bestDist = Infinity;

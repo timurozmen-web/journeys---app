@@ -14,6 +14,7 @@
 // rather than time-sensitive facts.
 
 import type { RealClimateMonth, RealCrowdPriceMonth } from './queries';
+import { countryKey, sameCountry } from './countryName';
 
 export type PriceLevel = 'high' | 'shoulder' | 'low';
 export type WeatherLevel = 'good' | 'okay' | 'poor';
@@ -257,7 +258,7 @@ export function findDestinationGuide(city: string | null, country: string): Dest
     const byCity = findGuideByAlias(city);
     if (byCity) return byCity;
   }
-  return findGuideByAlias(country);
+  return findGuideByAlias(country) ?? findGuideByAlias(countryKey(country));
 }
 
 export function dominantMonth(startDate: string, endDate: string): number {
@@ -320,9 +321,8 @@ export interface BlendedMonthGuide {
   crowdDriverDates: string | null;
 }
 
-function findCrowdPriceMonth(data: RealCrowdPriceMonth[], city: string | null, country: string, monthAbbr: string): RealCrowdPriceMonth | null {
-  const countryq = country.trim().toLowerCase();
-  const rows = data.filter((r) => r.country.toLowerCase() === countryq && r.month === monthAbbr);
+export function findCrowdPriceMonth(data: RealCrowdPriceMonth[], city: string | null, country: string, monthAbbr: string): RealCrowdPriceMonth | null {
+  const rows = data.filter((r) => sameCountry(r.country, country) && r.month === monthAbbr);
   if (rows.length === 0) return null;
   const cq = city?.trim().toLowerCase();
   if (cq) {
@@ -472,8 +472,7 @@ const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep
 // both exist for the same destination.
 export function findRealClimateMonths(realData: RealClimateMonth[], city: string | null, country: string, defaultHint?: string | null) {
   const cq = city?.trim().toLowerCase();
-  const countryq = country.trim().toLowerCase();
-  let rows = realData.filter((r) => r.country.toLowerCase() === countryq);
+  let rows = realData.filter((r) => sameCountry(r.country, country));
   if (rows.length === 0) return null;
   if (cq) {
     const byCity = rows.filter((r) => r.hubStation.toLowerCase().includes(cq) || r.region.toLowerCase().includes(cq) || cq.includes(r.hubStation.toLowerCase()));

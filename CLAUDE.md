@@ -160,15 +160,30 @@ Run all three; all must be clean:
     class to look for (`awardClasses.ts`) and status perks. Prices and
     cash charges are in `src/data/awardFlights.ts` (BA and Qatar Avios,
     Virgin Saver caps, KrisFlyer Saver), sourced and dated; a route
-    with no sourced price shows nothing.
-  - Taxes: `airPassengerDuty` (gov.uk rates and bands,
-    `src/data/airPassengerDuty.ts`). Where a reward's cash isn't sourced,
-    APD is shown as the floor ("£106 APD + fees").
+    with no sourced price shows nothing. BA's cash part is its own fixed
+    amount per band (it can be under APD: £2.50 to Amsterdam), so a BA
+    seat never gets APD added; airlines that pass taxes on (`taxesPassedOn`)
+    show APD as the floor ("£106 APD + fees") when their cash isn't known.
+  - Taxes: `airPassengerDuty` (gov.uk rates, `src/data/airPassengerDuty.ts`).
+    Bands since April 2023: domestic, A (a list: the EU, the EEA and named
+    places, whatever the distance), B (2,001-5,500 miles to the capital)
+    and C. Near 5,500 miles only a band gov.uk states is used.
+  - Free-night vouchers: `voucherAdvice` weighs each stop's price levels
+    (city cash rates, so roughly their points), the programme's top-up
+    (`src/data/freeNights.ts`: Marriott 25,000), the voucher's worth to the
+    user (its stored value, else cap x their point value) and expiry (a
+    night must save less of that worth as fewer months remain). Verdicts:
+    use, top up, use before it goes, keep.
+  - Country names differ between data sets ("United Arab Emirates" /
+    "UAE", "Turkey" / "Türkiye"): match them with `sameCountry`
+    (`src/lib/countryName.ts`), never `===`.
   - The account: `stayInsights` gives each programme's nights toward the
     tier being worked on (or, for a trip next year, toward keeping the
     tier held), points a night and nights the balance covers (free fifth
-    night where given), the free-night voucher to use first and promotion
-    bonus points. `forYou` picks the few worth acting on.
+    night where given), voucher advice and promotion bonus points.
+    `forYou` picks the few worth acting on. `planIntel.scenarios.test.ts`
+    plans whole trips against the user's account and checks the tables
+    hold together.
   - The agent (`netlify/functions/suggest-cities.js`, prompt and checks
     in `netlify/lib/planPrompt.js`) is sent `agentContext`: each region's
     weather and crowds in the month of travel and the cities already

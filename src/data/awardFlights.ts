@@ -4,10 +4,17 @@
 // One way, per person. Only routes with a sourced price are listed;
 // anywhere else gets no points figure rather than an extrapolated one.
 //
-// `cash` is the taxes, fees and carrier charges on the reward ticket,
-// where a source gives it. It already includes UK Air Passenger Duty.
-// Null means no sourced figure (the screen then shows APD alone, as a
-// floor). `estimated` marks a figure taken before a later rise.
+// `cash` is all the money paid on top of the points, one way, where a
+// source gives it. Null means no sourced figure. `cashEstimated` marks a
+// figure from before a later rise.
+//
+// Two kinds of airline here. Qatar, Virgin and Singapore pass the taxes
+// and their own charges on, so UK Air Passenger Duty is the least the cash
+// can be and stands in for it when it isn't known. British Airways
+// doesn't: it sets one cash amount per cabin and destination band and
+// pays the taxes out of it, which can come to less than APD alone (£2.50
+// to Amsterdam, where APD is £15). So a BA seat with no sourced cash shows
+// none, not APD.
 
 import type { AwardCabin } from './awardClasses';
 
@@ -28,23 +35,29 @@ export interface AwardRoute {
   place: string; // where it flies to, as shown
   airports: string[]; // IATA codes that count as this place
   cabins: Partial<Record<AwardCabin, AwardPrice>>;
+  /** Taxes and charges passed on to the passenger, so APD is a floor (not BA). */
+  taxesPassedOn: boolean;
   source: string;
 }
 
 // British Airways prices each route from London separately, off-peak and
 // peak. Points: Head for Points' route prices of 1 Aug 2026, as reproduced
 // by Award Travel Finder ("British Airways Avios Prices (2026)"), checked
-// 18 Oct 2026. Cash:
-//  - Europe: £2.50 Reward Flight Saver in economy, same source.
-//  - New York business: £499 return (so £249.50 one way) from 27 May 2026,
-//    AwardWallet and The Points Guy on BA's May 2026 rise.
-//  - Economy to New York and the Gulf: £75, Points Well Made's band table
-//    after the 27 May 2026 rise.
-//  - Business to Tokyo, Bangkok, Singapore and Dubai: Head for Points, Jan
-//    2026 (£299.50, £299.50, £335, £199.50). That was before BA put cash
-//    charges up 10-33% on 27 May 2026, so they're marked estimated.
-const BA_SOURCE = 'Head for Points route prices, 1 Aug 2026; cash: BA rise of 27 May 2026 (AwardWallet, Points Well Made), HFP Jan 2026';
-const ba = (place: string, airports: string[], cabins: AwardRoute['cabins']): AwardRoute => ({ airline: 'BA', currency: 'Avios', place, airports, cabins, source: BA_SOURCE });
+// 18 Oct 2026. BA put the cash part up by 10-33% on 27 May 2026 (Avios
+// unchanged); cash after that date:
+//  - Euro Traveller: £5 return, so £2.50 each way (Points Well Made).
+//  - Club Europe to Rome: 44,000 Avios + £40 return off-peak (AwardWallet,
+//    Points Well Made), so 22,000 + £20 each way.
+//  - Gulf, North-East US and Eastern Canada band: £75 economy and £249.50
+//    business each way (Points Well Made's band table); New York Club
+//    World 176,000 Avios + £499 return agrees (AwardWallet).
+//  - Cape Town World Traveller: 66,000 Avios + £190 return off-peak
+//    (AwardWallet), so 33,000 + £95 each way.
+// Business to Tokyo, Bangkok and Singapore: £299.50, £299.50 and £335
+// (Head for Points, Jan 2026), from before the May rise, so estimated. No
+// sourced cash for economy there.
+const BA_SOURCE = 'Head for Points route prices, 1 Aug 2026; cash after BA’s 27 May 2026 rise: Points Well Made, AwardWallet; Asia business: HFP Jan 2026';
+const ba = (place: string, airports: string[], cabins: AwardRoute['cabins']): AwardRoute => ({ airline: 'BA', currency: 'Avios', place, airports, cabins, taxesPassedOn: false, source: BA_SOURCE });
 
 // Qatar Airways doesn't publish a chart for its own flights; these are its
 // off-peak prices from the UK. Doha: AwardFares' Privilege Club guide
@@ -53,7 +66,7 @@ const ba = (place: string, airports: string[], cabins: AwardRoute['cabins']): Aw
 // ba.com books Qatar flights at the same prices. No sourced cash figure.
 const QR_SOURCE = 'Head for Points, 2 Jan 2026; AwardFares Privilege Club guide, 2026';
 const qr = (place: string, airports: string[], economy: number, business: number): AwardRoute => ({
-  airline: 'QR', currency: 'Avios', place, airports, source: QR_SOURCE,
+  airline: 'QR', currency: 'Avios', place, airports, taxesPassedOn: true, source: QR_SOURCE,
   cabins: { Economy: { offPeak: economy, peak: null, cash: null }, Business: { offPeak: business, peak: null, cash: null } },
 });
 
@@ -73,7 +86,7 @@ const vs = (place: string, airports: string[], [e, p, u]: [number, number, numbe
     offPeak: off, peak: peak ?? null, cash: opts.usCash ? VS_US_CASH[cabin] : null,
   });
   return {
-    airline: 'VS', currency: 'Virgin Points', place, airports, source: VS_SOURCE,
+    airline: 'VS', currency: 'Virgin Points', place, airports, taxesPassedOn: true, source: VS_SOURCE,
     // Upper Class is Virgin's business cabin.
     cabins: { Economy: price('Economy', e, opts.peak?.[0]), 'Premium Economy': price('Premium Economy', p, opts.peak?.[1]), Business: price('Business', u, opts.peak?.[2]) },
   };
@@ -88,6 +101,8 @@ const SQ_SOURCE = 'KrisFlyer Saver chart from 1 Nov 2025 (Mainly Miles Apr 2026,
 
 export const AWARD_ROUTES: AwardRoute[] = [
   ba('Paris, Amsterdam or Dublin', ['CDG', 'ORY', 'AMS', 'DUB'], { Economy: { offPeak: 10000, peak: 10750, cash: 2.5 } }),
+  ba('Rome', ['FCO'], { Business: { offPeak: 22000, peak: null, cash: 20 } }),
+  ba('Cape Town', ['CPT'], { Economy: { offPeak: 33000, peak: null, cash: 95 } }),
   // BA's price is for JFK; Newark and LaGuardia are the same city.
   ba('New York', ['JFK', 'EWR', 'LGA'], {
     Economy: { offPeak: 27500, peak: 33000, cash: 75 },
@@ -95,7 +110,7 @@ export const AWARD_ROUTES: AwardRoute[] = [
   }),
   ba('Dubai', ['DXB', 'DWC'], {
     Economy: { offPeak: 27500, peak: 33000, cash: 75 },
-    Business: { offPeak: 88000, peak: 99000, cash: 199.5, cashEstimated: true },
+    Business: { offPeak: 88000, peak: 99000, cash: 249.5 },
   }),
   ba('Tokyo', ['HND', 'NRT'], {
     Economy: { offPeak: 38500, peak: 44000, cash: null },
@@ -126,7 +141,7 @@ export const AWARD_ROUTES: AwardRoute[] = [
   vs('Dubai and the Middle East', ['DXB', 'RUH'], [10000, 17500, 37500]),
 
   {
-    airline: 'SQ', currency: 'KrisFlyer miles', place: 'Singapore', airports: ['SIN'], source: SQ_SOURCE,
+    airline: 'SQ', currency: 'KrisFlyer miles', place: 'Singapore', airports: ['SIN'], taxesPassedOn: true, source: SQ_SOURCE,
     cabins: {
       Economy: { offPeak: 44000, peak: null, cash: null },
       'Premium Economy': { offPeak: 74500, peak: null, cash: null },

@@ -217,6 +217,9 @@ export function Plan() {
   const resultsRef = useRef<HTMLDivElement>(null);
   const today = new Date().toISOString().slice(0, 10);
   const cardResults = useCardResults(today);
+  // City cash rates are researched in USD.
+  const { rates: fx } = useCurrency();
+  const usdToGbp = 1 / (fx.USD || 1.27);
 
   function smartFlightUrl(fromCity: string, toCity: string, departDate: string | null, returnDate: string | null | undefined): string {
     return googleFlightsSearchUrl(fromCity, toCity, departDate, returnDate, {
@@ -517,14 +520,14 @@ export function Plan() {
   const cabins: AwardCabin[] = chosenCabin ? [chosenCabin] : [...new Set<AwardCabin>([usualCabin, 'Economy'])];
   const travelDate = startDate || today;
   const pointsFlights = cities.length > 0
-    ? awardOptions(airportOf(cities[0])?.iata ?? cities[0].nearestAirport, cities[0].country, travelDate, cabins, { programmes: loyaltyProgrammes, vouchers })
+    ? awardOptions([airportOf(cities[0])?.iata ?? null, cities[0].nearestAirport], cities[0].country, travelDate, cabins, { programmes: loyaltyProgrammes, vouchers })
     : [];
   const progressOf = (name: string) => {
     const p = loyaltyProgrammes.find((x) => x.name === name);
     return p && p.category === 'hotel' && p.nextTier && p.nights != null ? computeStatusProgress(p, allHotels, promotions, cardResults, today) : null;
   };
   const stays = cities.length > 0
-    ? stayInsights(hotelOptions, stops, { programmes: loyaltyProgrammes, vouchers, flights: allFlights, hotels: allHotels, promotions }, progressOf, pointsValueData, cityCashRates, today)
+    ? stayInsights(hotelOptions, stops, { programmes: loyaltyProgrammes, vouchers, flights: allFlights, hotels: allHotels, promotions }, progressOf, pointsValueData, cityCashRates, today, usdToGbp)
     : [];
   const outlooks = stops.map((st) => stopOutlook(climateData, crowdPriceData, st)).filter((o): o is StopOutlook => o != null);
   const picks = cities.length > 0 ? forYou({ flights: pointsFlights, stays, outlooks, cabin: chosenCabin ?? usualCabin }) : [];
@@ -854,7 +857,7 @@ export function Plan() {
             <SectionLabel style={{ marginTop: 8 }}>Cost</SectionLabel>
             <div className="plan-card plan-costs">
               {bestHotel && <Row label={`Stays, ${shortProgramme(bestHotel.programme)}`} value={`~£${Math.round(bestHotel.estimatedNightlyGBP * totalNights).toLocaleString()}`} />}
-              <Row label="Getting around" value={`~£${Math.round(domesticCost).toLocaleString()}`} />
+              {legs.length > 0 && <Row label="Getting around" value={`~£${Math.round(domesticCost).toLocaleString()}`} />}
               {apd && <Row label="Air passenger duty" value={`£${apd.amount % 1 === 0 ? apd.amount : apd.amount.toFixed(2)}`} />}
               {budgetEstimate && (
                 <>

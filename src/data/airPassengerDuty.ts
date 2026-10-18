@@ -8,8 +8,12 @@
 // (economy). Standard rate: any other class (premium economy, business,
 // first). The higher rate is for private jets and isn't used here.
 //
-// Bands go by the distance from London to the capital of the destination
-// country (gov.uk): A up to 2,000 miles, B 2,001-5,500, C beyond.
+// Bands (gov.uk, "Rates for Air Passenger Duty"): until 31 March 2023
+// there were two, A up to 2,000 miles and B for everything else. Since
+// 1 April 2023 there are four: domestic, then A, B and C. A is a list,
+// not a distance: every EU and EEA country plus the places gov.uk names
+// below. B is the places 2,001-5,500 miles from London (capital to
+// capital), C everything further.
 
 export type ApdBand = 'domestic' | 'A' | 'B' | 'C';
 
@@ -20,20 +24,39 @@ export const APD_RATES: ApdRates[] = [
   { from: '2027-04-01', reduced: { domestic: 8.26, A: 15.49, B: 105.33, C: 109.46 }, standard: { domestic: 16.52, A: 33.04, B: 251.95, C: 261.25 } },
 ];
 
-// Bands gov.uk states outright for countries whose capital sits close to
-// a band edge, where a distance worked out here could land either side.
-// Cyprus came out at 1,999 miles (A) and South Korea at 5,504 (C) by
-// distance, but gov.uk lists both in band B. Checked 18 Oct 2026 against
-// gov.uk's band tables as returned by search; South Africa from a
-// secondary source placing it with Japan and Singapore over 5,500 miles.
+// Band A: the EU and EEA, and the extra places gov.uk lists (checked 18
+// Oct 2026 via search results quoting its Band A table). Russia is only
+// in A west of the Urals, so it's left out rather than guessed.
+export const APD_BAND_A = new Set([
+  // EU
+  'Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czech Republic', 'Czechia', 'Denmark', 'Estonia', 'Finland', 'France',
+  'Germany', 'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia', 'Lithuania', 'Luxembourg', 'Malta', 'Netherlands', 'Poland',
+  'Portugal', 'Romania', 'Slovakia', 'Slovenia', 'Spain', 'Sweden',
+  // EEA
+  'Iceland', 'Liechtenstein', 'Norway',
+  // Named by gov.uk
+  'Albania', 'Algeria', 'Andorra', 'Belarus', 'Bosnia and Herzegovina', 'Faroe Islands', 'Gibraltar', 'Greenland', 'Kosovo',
+  'Libya', 'Moldova', 'Monaco', 'Montenegro', 'Morocco', 'North Macedonia', 'San Marino', 'Serbia', 'Switzerland', 'Tunisia',
+  'Turkey', 'Türkiye', 'Ukraine', 'Guernsey', 'Jersey', 'Isle of Man',
+]);
+
+// B or C where gov.uk states it outright, for capitals close to the
+// 5,500-mile edge: worked out here, Seoul came to 5,504 miles (C) but
+// gov.uk lists South Korea in B. Brazil, Costa Rica and Sri Lanka are in
+// its Band B table; South Africa is beyond 5,500 miles (secondary source
+// placing it with Japan and Singapore). Checked 18 Oct 2026.
 export const APD_BAND_LISTED: Record<string, ApdBand> = {
-  Cyprus: 'B', Greenland: 'A', 'South Korea': 'B', Brazil: 'B', 'Costa Rica': 'B', 'Sri Lanka': 'B', 'South Africa': 'C',
+  'South Korea': 'B', Brazil: 'B', 'Costa Rica': 'B', 'Sri Lanka': 'B', 'South Africa': 'C',
 };
 
-// Within this many miles of a band edge, a worked-out distance isn't
-// trusted (see Cyprus and South Korea above): no band rather than a
-// possibly wrong one.
-export const APD_EDGE_MILES = 120;
+// Places whose band depends on where in them you land: Russia is A west
+// of the Urals only. No band rather than a guess.
+export const APD_BAND_DEPENDS = new Set(['Russia']);
+
+// Within this many miles of 5,500, a distance worked out here (on a
+// sphere, from central London) isn't trusted to land on the same side
+// as gov.uk's: no band rather than a possibly wrong one.
+export const APD_EDGE_MILES = 40;
 
 // Capitals as [lat, lng], to two decimals, for working out the band.
 // Countries not listed get no band (and no APD figure) rather than a
