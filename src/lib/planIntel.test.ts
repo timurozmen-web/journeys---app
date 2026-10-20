@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   agentContext, airPassengerDuty, apdBand, awardCashLabel, awardOptions, awardPointsLabel, seasonOn, cityCashRates, forYou, nightsFromBalance,
-  eventPrices, holidayLine, memberCash, schoolLine, schoolNote, nightPoints, nightsRange, pointsPerNight, seasonalCashUsd, shortDriver, stopPriceLevel, statusLabel, stayInsights, stayLines, stopOutlook, usualAwardCabin, voucherAdvice, voucherCap, voucherLine, type StayInsight,
+  eventPrices, holidayLine, measuredCash, memberCash, schoolLine, schoolNote, nightPoints, nightsRange, pointsPerNight, seasonalCashUsd, shortDriver, stopPriceLevel, statusLabel, stayInsights, stayLines, stopOutlook, usualAwardCabin, voucherAdvice, voucherCap, voucherLine, type StayInsight,
   type VoucherAdvice,
 } from './planIntel';
 import { nightsForTier } from './statusProgress';
@@ -10,6 +10,7 @@ import type { LoyaltyProgramme, Promotion, Voucher } from '../types';
 import type { CityCashRate, PointsValueProgramme, RealClimateMonth, RealCrowdPriceMonth } from './queries';
 import type { HotelPlanOption } from './hotelPlanner';
 import type { StatusProgress } from './statusProgress';
+import type { PriceSearch } from './hotelPrices';
 
 const prog = (o: Partial<LoyaltyProgramme>): LoyaltyProgramme => ({
   name: 'x', abbr: 'X', points: 0, ptValue: 1, color: '#000', accent: '#000', font: '', shape: '', category: 'airline', ...o,
@@ -385,8 +386,14 @@ describe('measured event prices', () => {
     // Milan's one Hyatt isn't the brand's pricing in Milan.
     expect(eventPrices(stop('Milan', 'Italy', '2027-04-13', 2), 'World of Hyatt')).toMatchObject({ programme: null, ratio: 3.05, hotels: 7 });
     expect(eventPrices(stop('Tokyo', 'Japan', '2027-05-02', 3), 'World of Hyatt')).toMatchObject({ programme: null, ratio: 0.91, hotels: 9 });
-    // Barcelona had no Marriott priced for both windows.
-    expect(eventPrices(stop('Barcelona', 'Spain', '2027-03-01', 2), 'Marriott Bonvoy')).toMatchObject({ programme: null, ratio: 2.53, hotels: 2 });
+    expect(eventPrices(stop('Barcelona', 'Spain', '2027-03-01', 2), 'World of Hyatt')).toMatchObject({ programme: null, ratio: 2.82, hotels: 11 });
+  });
+  it('finds Barcelona’s Marriotts once every sub-brand is searched by name', () => {
+    // "Marriott Barcelona" found nothing, so MWC was priced from two
+    // independents. Searched as W, EDITION, Autograph Collection, Moxy,
+    // Tribute Portfolio and Sheraton (a Four Points), six Marriotts were
+    // priced for both windows, at 3.85x the plain nights.
+    expect(eventPrices(stop('Barcelona', 'Spain', '2027-03-01', 2), 'Marriott Bonvoy')).toMatchObject({ programme: 'Marriott Bonvoy', ratio: 3.85, hotels: 6 });
   });
   it('counts a hotel found by two searches once', () => {
     // Singapore's St. Regis and Four Points came back in both the Marriott and the 4-5★ search.
@@ -564,7 +571,7 @@ describe('status lines', () => {
 });
 
 const stay = (o: Partial<StayInsight>): StayInsight => ({
-  programme: 'x', tier: null, nightly: 150, benefits: [], status: null, perNight: null, perNightLuxury: null, pricing: null, nightsCovered: null, voucher: null, promoPoints: 0, ...o,
+  programme: 'x', tier: null, nightly: 150, benefits: [], status: null, perNight: null, perNightLuxury: null, pricing: null, measured: null, nightsCovered: null, voucher: null, promoPoints: 0, ...o,
 });
 
 describe('forYou', () => {
@@ -637,5 +644,52 @@ describe('agentContext', () => {
       { date: '2027-05-03', name: 'Constitution Memorial Day', localName: '', global: true, types: [] },
     ];
     expect(agentContext('Japan', '2027-05-01', 6, [], [], [], 'London', hols).holidays).toEqual([{ date: '2027-05-03', name: 'Constitution Memorial Day' }]);
+  });
+});
+
+describe('measuredCash (the price database)', () => {
+  // Barcelona, mid-March (a plain fortnight) and the congress nights: the
+  // real prices searched on 20 Oct 2026.
+  const plain: PriceSearch = { city: 'Barcelona', country: 'Spain', in: '2027-03-14', out: '2027-03-18', q: 'by name', hotels: [
+    ['Renaissance Barcelona Hotel', 363, 5], ['Cotton House Hotel, Autograph Collection', 427, 5], ['Le Méridien Barcelona', 450, 5],
+    ['Labtwentytwo Barcelona, a Tribute Portfolio Hotel', 360, 4], ['Moxy Barcelona', 245, 4], ['W Barcelona', 400, 5], ['Hotel del Mar', 129, 3],
+  ] };
+  const congress: PriceSearch = { city: 'Barcelona', country: 'Spain', in: '2027-02-28', out: '2027-03-04', q: 'by name', hotels: [
+    ['Cotton House Hotel, Autograph Collection', 2488, 5], ['Labtwentytwo Barcelona, a Tribute Portfolio Hotel', 779, 4], ['Renaissance Barcelona Hotel', null, 5],
+    ['Moxy Barcelona', 999, 4], ['W Barcelona', 1448, 5],
+  ] };
+  const crowd = (month: string, priceLevel: 'low' | 'medium' | 'high') => ({ country: 'Spain', region: null, month, crowdLevel: priceLevel, priceLevel, driver: '' }) as unknown as RealCrowdPriceMonth;
+  const rates = [{ country: 'Spain', city: 'Barcelona', tier: 'mid', priceLowUsd: 150, priceHighUsd: 300 }] as CityCashRate[];
+  const market = (prices: PriceSearch[], c: RealCrowdPriceMonth[] = []) => ({ rates, crowd: c, pointsValue: [], usdToGbp: 0.8, usdToEur: 0.92, prices });
+  const stop = (checkIn: string, nights = 3) => ({ city: 'Barcelona', country: 'Spain', checkIn, nights });
+
+  it('takes hotels priced for the very nights as they are', () => {
+    // Marriott's Premium hotels with a rate for the congress: Cotton House and Labtwentytwo.
+    expect(measuredCash(stop('2027-03-01'), 'Marriott Bonvoy', 'mid', market([plain, congress]))).toEqual({ usd: 1634, low: 1206, high: 2061, hotels: 2, basis: 'dates' });
+  });
+  it('moves plain-night prices to the stay’s season, by the city’s researched range', () => {
+    // Four Premium Marriotts in mid-March (medium, the range's middle,
+    // $225) moved to August (high, its top, $300): x4/3.
+    const m = market([plain], [crowd('Mar', 'medium'), crowd('Aug', 'high')]);
+    expect(measuredCash(stop('2027-08-10'), 'Marriott Bonvoy', 'mid', m)).toEqual({ usd: 527, low: 483, high: 577, hotels: 4, basis: 'season' });
+    // Same month: as measured.
+    expect(measuredCash(stop('2027-03-20'), 'Marriott Bonvoy', 'mid', m)?.usd).toBe(395);
+  });
+  it('leaves event nights out of a plain price, and needs two hotels', () => {
+    // Only the congress was searched for Luxury: no plain price to move.
+    expect(measuredCash(stop('2027-03-20'), 'Marriott Bonvoy', 'luxury', market([congress]))).toBeNull();
+    // One Luxury hotel (the W) isn't the brand's pricing.
+    expect(measuredCash(stop('2027-03-20'), 'Marriott Bonvoy', 'luxury', market([plain]))).toBeNull();
+    // Without the database, nothing measured: the researched rates stand.
+    expect(measuredCash(stop('2027-03-20'), 'Marriott Bonvoy', 'mid', { ...market([]), prices: undefined })).toBeNull();
+  });
+  it('prices a programme’s points and its Where to stay line from its own hotels', () => {
+    const options = [{ programme: 'Marriott Bonvoy', tier: 'Titanium Elite', estimatedNightlyGBP: 180, rateSource: 'history', historyCount: 9, pointsEarned: 0, pointsValueGBP: 0, benefits: [], effectiveNightlyGBP: 150 }] as HotelPlanOption[];
+    const account = { programmes: [], vouchers: [], flights: [], hotels: [], promotions: [] };
+    const pv = [{ programme: 'Marriott Bonvoy', avgCentsPerPoint: 0.78, fifthNightFree: true }] as PointsValueProgramme[];
+    const [marriott] = stayInsights(options, [stop('2027-03-20')], account, () => null, { ...market([plain]), pointsValue: pv }, '2026-10-20');
+    // $395 a night at Marriott's Premium hotels, not the researched $225.
+    expect(marriott.perNight).toBe(50500);
+    expect(stayLines(marriott)).toContain('~£308 a night in Barcelona · 4 Marriott hotels priced');
   });
 });

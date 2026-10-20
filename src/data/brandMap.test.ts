@@ -1,8 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { matchProgrammeStrict, normalizeBrand, programmeOfHotel } from './brandMap';
-import { PRICE_SAMPLES } from './priceSamples';
 
-describe('programmeOfHotel (hotel names in the price samples)', () => {
+describe('programmeOfHotel (hotel names in the price database)', () => {
   test('puts sub-brands with no parent name in them to their programme', () => {
     for (const name of ['Sheraton Miyako Hotel Tokyo', 'The Westin Singapore', 'Moxy NYC Chelsea', 'W Edinburgh', 'Le Royal Méridien Beach Resort & Spa',
       'Renaissance Paris Republique', 'Four Points by Sheraton Flushing', 'The St. Regis Singapore', 'Element Las Vegas Symphony Park']) {
@@ -21,15 +20,6 @@ describe('programmeOfHotel (hotel names in the price samples)', () => {
       expect(programmeOfHotel(name), name).toBeNull();
     }
     expect(programmeOfHotel('Sheraton Grand Sydney Hyde Park')).toBe('Marriott Bonvoy');
-  });
-
-  test('every sampled hotel either belongs to a programme or is independent, as counted on 20 Oct 2026', () => {
-    const counts: Record<string, number> = {};
-    for (const hotel of new Set(PRICE_SAMPLES.flatMap((s) => s.pairs.map((q) => q.hotel)))) {
-      const pr = programmeOfHotel(hotel) ?? 'independent';
-      counts[pr] = (counts[pr] ?? 0) + 1;
-    }
-    expect(counts).toEqual({ 'Marriott Bonvoy': 96, independent: 32, 'IHG One Rewards': 3, 'Accor ALL': 6, 'Hilton Honors': 1, 'World of Hyatt': 1 });
   });
 });
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { TabBar } from './components/TabBar';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -12,7 +12,6 @@ import { Cards } from './screens/Cards';
 import { Promotions } from './screens/Promotions';
 import { Settings } from './screens/Settings';
 import { TripDetail } from './screens/TripDetail';
-import { Plan } from './screens/Plan';
 import { LogLoyaltyProgramme } from './screens/LogLoyaltyProgramme';
 import { LogHotel } from './screens/LogHotel';
 import { LogFlight } from './screens/LogFlight';
@@ -23,6 +22,9 @@ import { BankSync } from './screens/BankSync';
 import { AddCard } from './screens/AddCard';
 import { ImportCalendar } from './screens/ImportCalendar';
 import { ReviewTrip } from './screens/ReviewTrip';
+
+// Plan carries the hotel price database, so it loads when it's opened.
+const Plan = lazy(() => import('./screens/Plan').then((m) => ({ default: m.Plan })));
 import { CreditAdvisor } from './screens/CreditAdvisor';
 
 // The status bar is translucent (so photos can run to the top edge), which
@@ -52,7 +54,7 @@ export default function App() {
             <Route path="/trips" element={<Trips />} />
             <Route path="/trips/:id" element={<TripDetail />} />
             <Route path="/map" element={<Places />} />
-            <Route path="/plan" element={<Plan />} />
+            <Route path="/plan" element={<Suspense fallback={null}><Plan /></Suspense>} />
             <Route path="/status" element={<Status />} />
             <Route path="/status/:name" element={<Programme />} />
             <Route path="/promotions" element={<Promotions />} />

@@ -5,8 +5,8 @@ import { AWARD_CLASSES, type AwardCabin } from '../data/awardClasses';
 import { FREE_NIGHT_TOP_UP } from '../data/freeNights';
 import { BA_DISPUTED_2026, BA_KNOWN, BA_PEAK_2026, VS_PEAK, type SeasonCalendar } from '../data/awardSeasons';
 import { HOTEL_PRICING, HYATT_LEVELS } from '../data/hotelAwardPricing';
-import { MEMBER_RATE_DISCOUNT, PRICE_SAMPLES, type PricePair, type PriceSample } from '../data/priceSamples';
-import { programmeOfHotel } from '../data/brandMap';
+import { MEMBER_RATE_DISCOUNT, PRICE_EVENTS } from '../data/priceEvents';
+import { citySearches, eventPairs, rowProgramme, rowTier, type PriceSearch } from './hotelPrices';
 import { holidaysDuring, longWeekend, schoolBreakDuring, shortDate, type Holiday, type SchoolBreak, type SchoolHoliday } from './holidays';
 import { promoBonusForStay } from './promoBonus';
 import { addDays } from './tripDay';
@@ -222,6 +222,8 @@ export function pointsPerNight(cashUsd: number, value: PointsValueProgramme): nu
 /** What the planner prices hotels from: city cash rates, the season, each programme's value per point, and FX. */
 export interface Market {
   rates: CityCashRate[];
+  /** The hotel price database (src/data/hotelPrices.json), where measured prices should replace the researched rates. */
+  prices?: PriceSearch[];
   crowd: RealCrowdPriceMonth[];
   pointsValue: PointsValueProgramme[];
   usdToGbp: number;
@@ -270,36 +272,97 @@ const median = (xs: number[]) => {
   return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
 };
 
+const quantile = (xs: number[], q: number) => {
+  const s = [...xs].sort((a, b) => a - b);
+  const i = (s.length - 1) * q;
+  return s[Math.floor(i)] + (s[Math.ceil(i)] - s[Math.floor(i)]) * (i - Math.floor(i));
+};
+
+const sameCity = (a: string, b: string) => {
+  const x = a.trim().toLowerCase();
+  const y = b.trim().toLowerCase();
+  return x.includes(y) || y.includes(x);
+};
+
 /**
- * What a measured event does to prices on a stay's nights
- * (src/data/priceSamples.ts). Every sample of that city's event the stay
- * overlaps is pooled, each hotel once (a St. Regis found by both a brand
- * and a 4-5★ search is one hotel), and each hotel is put to its programme
- * by name. The stay's programme's own hotels are used where at least two
- * were sampled, else every hotel. It used to take one sample by the word
- * in its search ("Marriott"), so the Sheratons, Westins and Moxys a
- * Marriott member can book were never counted. Null where nothing was
- * measured: a holiday alone isn't taken to raise prices, as the samples
- * show it often lowers them.
+ * What a measured event (src/data/priceEvents.ts) does to prices on a
+ * stay's nights: the hotels priced in the price database for both its
+ * nights and its plain nights, whichever search found them, each put to
+ * its programme by name. The stay's programme's own hotels are used where
+ * at least two were priced, else every hotel. It used to take one sample
+ * by the word in its search ("Marriott"), so the Sheratons, Westins and
+ * Moxys a Marriott member can book were never counted. Null where nothing
+ * was measured: a holiday alone isn't taken to raise prices, as the
+ * measurements show it often lowers them.
  */
-export function eventPrices(stop: PlannedStop, programme: string | null = null): EventPrices | null {
+export function eventPrices(stop: PlannedStop, programme: string | null = null, db?: PriceSearch[]): EventPrices | null {
   if (!stop.checkIn) return null;
   const checkOut = addDays(stop.checkIn, stop.nights);
-  const city = stop.city.trim().toLowerCase();
-  const matches = PRICE_SAMPLES.filter((x: PriceSample) => sameCountry(x.country, stop.country)
-    && (city.includes(x.city.toLowerCase()) || x.city.toLowerCase().includes(city))
-    && stop.checkIn! < x.window[1] && checkOut > x.window[0] && x.pairs.length > 0);
-  if (matches.length === 0) return null;
-  const first = matches[0];
-  const byHotel = new Map<string, PricePair>();
-  for (const x of matches.filter((m) => m.event === first.event && m.window[0] === first.window[0])) {
-    for (const q of x.pairs) if (!byHotel.has(q.hotel.toLowerCase())) byHotel.set(q.hotel.toLowerCase(), q);
+  for (const e of PRICE_EVENTS) {
+    if (!sameCountry(e.country, stop.country) || !sameCity(e.city, stop.city) || !(stop.checkIn < e.window[1] && checkOut > e.window[0])) continue;
+    const all = eventPairs(e, db);
+    if (all.length === 0) continue;
+    const own = programme ? all.filter((q) => q.programme === programme) : [];
+    const use = own.length >= MIN_OWN_HOTELS ? own : all;
+    const ratio = Math.round(median(use.map((q) => q.event / q.base)) * 100) / 100;
+    return { event: e.event, programme: use === own ? programme : null, ratio, hotels: use.length, baseline: e.baseline };
   }
-  const all = [...byHotel.values()];
-  const own = programme ? all.filter((q) => programmeOfHotel(q.hotel) === programme) : [];
-  const use = own.length >= MIN_OWN_HOTELS ? own : all;
-  const ratio = Math.round(median(use.map((q) => q.event / q.base)) * 100) / 100;
-  return { event: first.event, programme: use === own ? programme : null, ratio, hotels: use.length, baseline: first.baseline };
+  return null;
+}
+
+/** A night's cash measured at a programme's hotels of one price level in a city. */
+export interface MeasuredCash {
+  usd: number;
+  /** The middle half of the hotels' prices. */
+  low: number;
+  high: number;
+  hotels: number;
+  /** "dates": hotels priced for these very nights; "season": priced on other nights, moved to this stay's season (and any event on it). */
+  basis: 'dates' | 'season';
+}
+
+/**
+ * What a night at a programme's hotels of one price level (Marriott by
+ * its own tiers, anything else by stars: src/lib/hotelPrices.ts) costs in
+ * a city, from the price database, where at least two such hotels were
+ * priced. Hotels priced for nights overlapping the stay are taken as they
+ * are. Otherwise plain-night prices (not an event's) are moved to the
+ * stay's month by the city's researched price range: a night measured in
+ * a low month and wanted in a high one takes the range's top over its
+ * bottom. Then any measured event on the stay's nights. Each hotel counts
+ * once, at the average of its prices. Null where too few were priced:
+ * the researched city rates stand in.
+ */
+export function measuredCash(stop: PlannedStop, programme: string | null, tier: CityCashRate['tier'], market: Market): MeasuredCash | null {
+  if (!stop.checkIn || !market.prices?.length) return null;
+  const checkOut = addDays(stop.checkIn, stop.nights);
+  const searches = citySearches(stop.city, stop.country, market.prices);
+  const events = PRICE_EVENTS.filter((e) => sameCountry(e.country, stop.country) && sameCity(e.city, stop.city));
+  const rows = searches.flatMap((s) => s.hotels.filter((r) => r[1] != null && rowTier(r) === tier && (!programme || rowProgramme(r) === programme)).map((r) => ({ s, r })));
+  const summarise = (byHotel: Map<string, number[]>, basis: MeasuredCash['basis']): MeasuredCash | null => {
+    const each = [...byHotel.values()].map((xs) => xs.reduce((a, b) => a + b, 0) / xs.length);
+    if (each.length < MIN_OWN_HOTELS) return null;
+    return { usd: Math.round(median(each)), low: Math.round(quantile(each, 0.25)), high: Math.round(quantile(each, 0.75)), hotels: each.length, basis };
+  };
+  const collect = (list: typeof rows, price: (x: (typeof rows)[number]) => number) => {
+    const byHotel = new Map<string, number[]>();
+    for (const x of list) byHotel.set(x.r[0].toLowerCase(), [...(byHotel.get(x.r[0].toLowerCase()) ?? []), price(x)]);
+    return byHotel;
+  };
+  const direct = summarise(collect(rows.filter(({ s }) => s.in < checkOut && s.out > stop.checkIn!), ({ r }) => r[1]!), 'dates');
+  if (direct) return direct;
+  const plain = rows.filter(({ s }) => !events.some((e) => s.in < e.window[1] && s.out > e.window[0]));
+  const rate = cityCashRates(market.rates, stop.country, stop.city).find((r) => r.tier === tier) ?? null;
+  const want = stopPriceLevel(market.crowd, stop);
+  const toSeason = (s: PriceSearch) => {
+    const had = stopPriceLevel(market.crowd, { city: stop.city, country: stop.country, checkIn: s.in, nights: Math.max(1, (Date.parse(s.out) - Date.parse(s.in)) / 86400000) });
+    if (!rate || !want || !had || want === had) return 1;
+    return seasonalCashUsd(rate, want) / seasonalCashUsd(rate, had);
+  };
+  const season = summarise(collect(plain, ({ s, r }) => r[1]! * toSeason(s)), 'season');
+  if (!season) return null;
+  const surge = eventPrices(stop, programme, market.prices)?.ratio ?? 1;
+  return surge === 1 ? season : { ...season, usd: Math.round(season.usd * surge), low: Math.round(season.low * surge), high: Math.round(season.high * surge) };
 }
 
 /** Cash for a night at the member rate, where the programme has one cheaper than the booking sites. */
@@ -396,6 +459,7 @@ export interface VoucherAdvice {
 }
 
 const TIER_WORD: Record<CityCashRate['tier'], string> = { budget: 'budget', mid: 'mid-range', luxury: 'luxury' };
+const TIERS: CityCashRate['tier'][] = ['budget', 'mid', 'luxury'];
 const MONTH_MS = 30.44 * 86400000;
 const URGENT_MONTHS = 6;
 
@@ -423,16 +487,21 @@ export function voucherAdvice(v: Voucher, programme: LoyaltyProgramme, stops: Pl
   let best: VoucherAdvice['best'] = null;
   for (const s of usable) {
     const level = stopPriceLevel(market.crowd, s);
-    const surge = eventPrices(s, programme.name)?.ratio ?? 1;
-    for (const r of cityCashRates(market.rates, s.country, s.city)) {
-      const cashUsd = seasonalCashUsd(r, level) * surge;
+    const surge = eventPrices(s, programme.name, market.prices)?.ratio ?? 1;
+    const rates = cityCashRates(market.rates, s.country, s.city);
+    for (const tier of TIERS) {
+      // The programme's own hotels where they were priced, else the city's researched rate.
+      const m = measuredCash(s, programme.name, tier, market);
+      const r = rates.find((x) => x.tier === tier);
+      if (!m && !r) continue;
+      const cashUsd = m ? m.usd : seasonalCashUsd(r!, level) * surge;
       const points = nightPoints(programme.name, cashUsd, level, market)?.points;
       if (points == null || points > cap + topUpMax) continue;
       const topUp = Math.max(0, points - cap);
       // What the night would cost paid in cash, at the member rate.
       const cashGBP = Math.round(memberCash(programme.name, cashUsd) * market.usdToGbp);
       const worthGBP = Math.round(cashGBP - (topUp * ptValue) / 100);
-      if (!best || worthGBP > best.worthGBP) best = { city: s.city, tier: r.tier, points, topUp, cashGBP, worthGBP };
+      if (!best || worthGBP > best.worthGBP) best = { city: s.city, tier, points, topUp, cashGBP, worthGBP };
     }
   }
   const parGBP = Math.round(v.value ?? (cap * ptValue) / 100);
@@ -486,6 +555,8 @@ export interface StayInsight {
   perNightLuxury: number | null;
   /** How the mid-range night is priced: Hyatt's category and range, or a dynamic estimate. */
   pricing: NightPoints | null;
+  /** The mid-range night's cash measured at the programme's own hotels, where enough were priced; gbp at the member rate. */
+  measured: (MeasuredCash & { city: string; gbp: number }) | null;
   nightsCovered: number | null;
   /** The programme's free-night voucher to talk about, with what to do with it. */
   voucher: VoucherAdvice | null;
@@ -507,16 +578,20 @@ export function stayInsights(
   const nights = stops.reduce((s, c) => s + c.nights, 0);
   const firstIn = stops[0]?.checkIn ?? null;
   const tripYear = firstIn?.slice(0, 4) ?? today.slice(0, 4);
-  // The first stop with a researched rate at that level, in its season.
-  const night = (tier: CityCashRate['tier']) => {
+  // A night at one price level for a programme, at the first stop with a
+  // price: its own hotels' measured prices where at least two were priced
+  // (Marriott's Premium hotels for mid-range), else the city's researched
+  // rate in its season, moved by any measured event on those nights.
+  const night = (programme: string, tier: CityCashRate['tier']) => {
     for (const s of stops) {
+      const level = stopPriceLevel(market.crowd, s);
+      const measured = measuredCash(s, programme, tier, market);
+      if (measured) return { cashUsd: measured.usd, level, stop: s, measured };
       const r = cityCashRates(market.rates, s.country, s.city).find((x) => x.tier === tier);
-      if (r) { const level = stopPriceLevel(market.crowd, s); return { cashUsd: seasonalCashUsd(r, level), level, stop: s }; }
+      if (r) return { cashUsd: seasonalCashUsd(r, level) * (eventPrices(s, programme, market.prices)?.ratio ?? 1), level, stop: s, measured: null };
     }
     return null;
   };
-  const mid = night('mid');
-  const luxury = night('luxury');
 
   return options.map((o) => {
     const p = account.programmes.find((x) => x.name === o.programme);
@@ -542,12 +617,12 @@ export function stayInsights(
     }
 
     const value = market.pointsValue.find((v) => v.programme === o.programme) ?? null;
-    // Cash moves with a measured event on those nights (Dubai's New Year),
-    // and points with it where they follow cash.
-    const surged = (n: NonNullable<typeof mid>) => n.cashUsd * (eventPrices(n.stop, o.programme)?.ratio ?? 1);
-    const pricing = mid ? nightPoints(o.programme, surged(mid), mid.level, market) : null;
+    // Points follow the night's cash where the programme prices that way.
+    const mid = night(o.programme, 'mid');
+    const luxury = night(o.programme, 'luxury');
+    const pricing = mid ? nightPoints(o.programme, mid.cashUsd, mid.level, market) : null;
     const perNight = pricing?.points ?? null;
-    const perNightLuxury = luxury ? nightPoints(o.programme, surged(luxury), luxury.level, market)?.points ?? null : null;
+    const perNightLuxury = luxury ? nightPoints(o.programme, luxury.cashUsd, luxury.level, market)?.points ?? null : null;
     const fifthFree = !!value?.fifthNightFree && (o.programme !== 'Hilton Honors' || !!p?.tier && !/^member$/i.test(p.tier));
     const nightsCovered = perNight && p && p.points > 0 ? nightsFromBalance(p.points, perNight, fifthFree) : null;
 
@@ -567,7 +642,11 @@ export function stayInsights(
     const pool = [...account.hotels, ...planned];
     const promoPoints = planned.reduce((s, h) => s + promoBonusForStay(h, pool, account.promotions.filter((x) => !x.endDate || x.endDate >= today)), 0);
 
-    return { programme: o.programme, tier: o.tier, nightly: o.estimatedNightlyGBP, benefits: o.benefits, status, perNight, perNightLuxury, pricing, nightsCovered, voucher, promoPoints };
+    return {
+      programme: o.programme, tier: o.tier, nightly: o.estimatedNightlyGBP, benefits: o.benefits, status, perNight, perNightLuxury, pricing,
+      nightsCovered, voucher, promoPoints,
+      measured: mid?.measured ? { ...mid.measured, city: mid.stop.city, gbp: Math.round(memberCash(o.programme, mid.measured.usd) * market.usdToGbp) } : null,
+    };
   });
 }
 
@@ -596,6 +675,7 @@ export function stayLines(s: StayInsight | undefined): string[] {
   return [
     s.status ? statusLabel(s.status) : null,
     s.perNight ? `${pointsLabel(s)} a night${s.nightsCovered ? ` · ${s.nightsCovered} night${s.nightsCovered === 1 ? '' : 's'} on points` : ''}` : null,
+    s.measured ? `~£${pts(s.measured.gbp)} a night in ${s.measured.city} · ${s.measured.hotels} ${shortProgramme(s.programme)} hotels priced` : null,
     s.voucher && s.voucher.verdict !== 'too-dear' ? voucherLine(s.voucher).title : null,
   ].filter((x): x is string => !!x);
 }
