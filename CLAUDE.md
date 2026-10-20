@@ -197,9 +197,9 @@ Run all three; all must be clean:
     (log price = hotel + month), from one 4-5★ search a month (Wednesday to
     Saturday in the second week; rates more than about eleven months out
     aren't published). Held out one hotel-month at a time it predicts a
-    hotel's price in another month to 8-12% (Dubai, Tokyo, New York); the
-    researched ranges it replaced were 19-30% out, worse than no change in
-    Tokyo. Cities without one fall back to the researched range. It
+    hotel's price in another month to 7-12% (Dubai, Tokyo, New York,
+    London, Paris); the researched ranges it replaced were 19-30% out,
+    worse than no change in Tokyo. Cities without one fall back to the researched range. It
     replaces the researched rate for that programme in Where to stay, the
     voucher advice and Cash or points. Searching: the brand filter matches
     the name and the search is "<brand> <city>", so "Marriott Barcelona"
