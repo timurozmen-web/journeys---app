@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PRICE_EVENTS } from '../data/priceEvents';
-import { eventPairs, heldOutEventError, HOTEL_PRICES, marriottSegment, rowProgramme, rowTier, type PriceRow } from './hotelPrices';
+import { addDays } from './tripDay';
+import { eventPairs, heldOutEventError, heldOutSeasonError, HOTEL_PRICES, marriottSegment, rowProgramme, rowTier, seasonIndex, type PriceRow, type PriceSearch } from './hotelPrices';
 
 // A brand search only returns that brand, so every hotel one priced must
 // be put to Marriott: a name the classifier can't place shows up here.
@@ -72,6 +73,41 @@ describe('event ratios held out one hotel at a time', () => {
     expect(level.error).toBeLessThan(0.2);
     expect(level.error).toBeLessThan(level.ignoring / 2);
     expect(level.error).toBeLessThanOrEqual(city.error + 0.01);
+  });
+});
+
+describe('the month-by-month index', () => {
+  const search = (when: string, hotels: PriceRow[]): PriceSearch => ({ city: 'Lisbon', country: 'Portugal', in: when, out: addDays(when, 3), q: '4-5★', hotels });
+  it('reads the months from the same hotels, not each month’s mix', () => {
+    // July came back with a dearer hotel (D) as well; A, B and C are each
+    // 1.25x their January price, so July is 1.25x January, not 1.5x.
+    const db = [
+      search('2027-01-13', [['A', 100, 4], ['B', 200, 4], ['C', 300, 5]]),
+      search('2027-07-14', [['A', 125, 4], ['B', 250, 4], ['C', 375, 5], ['D', 900, 5]]),
+    ];
+    const index = seasonIndex('Lisbon', 'Portugal', [], db)!;
+    expect(index.months.get(7)! / index.months.get(1)!).toBeCloseTo(1.25, 5);
+    expect(index.hotels).toBe(3);
+  });
+  it('leaves out a month too few hotels link, and an event’s nights', () => {
+    const db = [
+      search('2027-01-13', [['A', 100, 4], ['B', 200, 4], ['C', 300, 5]]),
+      search('2027-07-14', [['A', 125, 4], ['B', 250, 4], ['C', 375, 5]]),
+      search('2027-03-10', [['A', 500, 4], ['B', 900, 4]]),
+    ];
+    expect([...seasonIndex('Lisbon', 'Portugal', [], db)!.months.keys()].sort()).toEqual([1, 7]);
+    const fair = { city: 'Lisbon', country: 'Portugal', event: 'Fair', window: ['2027-07-14', '2027-07-17'] as [string, string], baseline: ['2027-07-28', '2027-07-31'] as [string, string] };
+    expect(seasonIndex('Lisbon', 'Portugal', [fair], db)).toBeNull();
+  });
+  it('predicts a hotel’s price in another month far better than leaving it as it was', () => {
+    // 20 Oct 2026, held out one hotel-month at a time: Dubai 12%, Tokyo 9%,
+    // New York 10%, against 24%, 15% and 26% unchanged.
+    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States']]) {
+      const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
+      expect(r.held).toBeGreaterThanOrEqual(80);
+      expect(r.error).toBeLessThan(0.15);
+      expect(r.error).toBeLessThan(r.unshifted * 0.75);
+    }
   });
 });
 
