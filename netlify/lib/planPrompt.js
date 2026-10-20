@@ -4,9 +4,10 @@
 //
 // The app sends facts with each request (src/lib/planIntel.ts,
 // agentContext): every region's weather, crowds and prices in the month
-// of travel, from the app's sourced climate and crowd tables, and the
-// cities the traveller has already stayed in. The agent is told to use
-// those rather than its own memory for weather and crowds.
+// of travel, from the app's sourced climate and crowd tables, the public
+// holidays during the trip (Nager.Date) and the cities the traveller has
+// already stayed in. The agent is told to use those rather than its own
+// memory for weather and crowds.
 
 export const MODEL = 'claude-haiku-4-5-20251001';
 
@@ -27,6 +28,8 @@ You may be given FACTS for the month of travel: each region's average high, rain
 - Give fewer nights to a region with heavy rain (over 250mm in the month) or highs over 35C, or leave it out, unless the trip can't make sense without it.
 - A region busy because of an event can stay in, and its "why" may name the event.
 
+You may be given HOLIDAYS: national public holidays during the trip. Domestic travel peaks around them, so popular places get busy; a stop on one may say so in "why". Don't assume they make hotels dearer: business cities often get cheaper.
+
 You may be given VISITED: cities the traveller has already stayed in. Prefer places they haven't been. Keep a visited city only when the route needs it or it is unmissable, and give it fewer nights.`;
 
 const clip = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
@@ -43,7 +46,10 @@ export function cleanContext(context) {
     crowd: clip(r?.crowd, 10) || null, price: clip(r?.price, 10) || null, event: clip(r?.event, 80) || null,
   })).filter((r) => r.region) : [];
   const visited = Array.isArray(context.visited) ? context.visited.slice(0, 30).map((c) => clip(c, 60)).filter(Boolean) : [];
-  return { month: clip(context.month, 20) || null, regions, visited, home: clip(context.home, 60) || null };
+  const holidays = Array.isArray(context.holidays) ? context.holidays.slice(0, 20)
+    .filter((h) => typeof h?.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(h.date))
+    .map((h) => ({ date: h.date, name: clip(h.name, 60) })) : [];
+  return { month: clip(context.month, 20) || null, regions, visited, holidays, home: clip(context.home, 60) || null };
 }
 
 /** The user message: the trip, then the facts and the places already visited. */
@@ -62,6 +68,7 @@ export function buildMessage({ country, nights, context }) {
       lines.push(`- ${r.region}: ${bits.join(', ')}${r.event ? ` (${r.event})` : ''}`);
     }
   }
+  if (c?.holidays.length) lines.push('', `HOLIDAYS: ${c.holidays.map((h) => `${h.date} ${h.name}`).join('; ')}`);
   if (c?.visited.length) lines.push('', `VISITED: ${c.visited.join(', ')}`);
   return lines.join('\n');
 }

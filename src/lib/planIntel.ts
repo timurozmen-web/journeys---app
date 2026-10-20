@@ -5,6 +5,8 @@ import { AWARD_CLASSES, type AwardCabin } from '../data/awardClasses';
 import { FREE_NIGHT_TOP_UP } from '../data/freeNights';
 import { BA_DISPUTED_2026, BA_KNOWN, BA_PEAK_2026, VS_PEAK, type SeasonCalendar } from '../data/awardSeasons';
 import { HOTEL_PRICING, HYATT_LEVELS } from '../data/hotelAwardPricing';
+import { MEMBER_RATE_DISCOUNT, PRICE_SAMPLES, type PriceSample } from '../data/priceSamples';
+import { holidaysDuring, longWeekend, shortDate, type Holiday } from './holidays';
 import { promoBonusForStay } from './promoBonus';
 import { addDays } from './tripDay';
 import { blendedGuideForMonth, dominantMonth, findCrowdPriceMonth, MONTH_NAMES, type BlendedMonthGuide } from './destinationGuide';
@@ -248,6 +250,46 @@ export function seasonalCashUsd(rate: CityCashRate, level: PriceLevel | null): n
   return (rate.priceLowUsd + rate.priceHighUsd) / 2;
 }
 
+export interface EventPrices {
+  event: string;
+  set: string;
+  /** The middle hotel's event price over its plain-week price. */
+  ratio: number;
+  hotels: number;
+  baseline: [string, string];
+}
+
+const median = (xs: number[]) => {
+  const s = [...xs].sort((a, b) => a - b);
+  return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
+};
+
+/**
+ * What a measured event does to prices on a stay's nights
+ * (src/data/priceSamples.ts): the sample for that city whose event nights
+ * the stay overlaps, the programme's own hotels where sampled, else the
+ * one with most hotels. Null where nothing was measured: a holiday alone
+ * isn't taken to raise prices, as the samples show it often lowers them.
+ */
+export function eventPrices(stop: PlannedStop, programme: string | null = null): EventPrices | null {
+  if (!stop.checkIn) return null;
+  const checkOut = addDays(stop.checkIn, stop.nights);
+  const city = stop.city.trim().toLowerCase();
+  const word = programme ? PROGRAMME_WORD[programme] : null;
+  const matches = PRICE_SAMPLES.filter((x: PriceSample) => sameCountry(x.country, stop.country)
+    && (city.includes(x.city.toLowerCase()) || x.city.toLowerCase().includes(city))
+    && stop.checkIn! < x.window[1] && checkOut > x.window[0] && x.pairs.length > 0);
+  const pick = matches.find((x) => word?.test(x.set)) ?? [...matches].sort((a, b) => b.pairs.length - a.pairs.length)[0];
+  if (!pick) return null;
+  const ratio = Math.round(median(pick.pairs.map((q) => q.event / q.base)) * 100) / 100;
+  return { event: pick.event, set: pick.set, ratio, hotels: pick.pairs.length, baseline: pick.baseline };
+}
+
+/** Cash for a night at the member rate, where the programme has one cheaper than the booking sites. */
+export function memberCash(programme: string, cash: number): number {
+  return cash * (1 - (MEMBER_RATE_DISCOUNT[programme] ?? 0));
+}
+
 export interface NightPoints {
   /** The likely price. */
   points: number;
@@ -364,12 +406,14 @@ export function voucherAdvice(v: Voucher, programme: LoyaltyProgramme, stops: Pl
   let best: VoucherAdvice['best'] = null;
   for (const s of usable) {
     const level = stopPriceLevel(market.crowd, s);
+    const surge = eventPrices(s, programme.name)?.ratio ?? 1;
     for (const r of cityCashRates(market.rates, s.country, s.city)) {
-      const cashUsd = seasonalCashUsd(r, level);
+      const cashUsd = seasonalCashUsd(r, level) * surge;
       const points = nightPoints(programme.name, cashUsd, level, market)?.points;
       if (points == null || points > cap + topUpMax) continue;
       const topUp = Math.max(0, points - cap);
-      const cashGBP = Math.round(cashUsd * market.usdToGbp);
+      // What the night would cost paid in cash, at the member rate.
+      const cashGBP = Math.round(memberCash(programme.name, cashUsd) * market.usdToGbp);
       const worthGBP = Math.round(cashGBP - (topUp * ptValue) / 100);
       if (!best || worthGBP > best.worthGBP) best = { city: s.city, tier: r.tier, points, topUp, cashGBP, worthGBP };
     }
@@ -450,7 +494,7 @@ export function stayInsights(
   const night = (tier: CityCashRate['tier']) => {
     for (const s of stops) {
       const r = cityCashRates(market.rates, s.country, s.city).find((x) => x.tier === tier);
-      if (r) { const level = stopPriceLevel(market.crowd, s); return { cashUsd: seasonalCashUsd(r, level), level }; }
+      if (r) { const level = stopPriceLevel(market.crowd, s); return { cashUsd: seasonalCashUsd(r, level), level, stop: s }; }
     }
     return null;
   };
@@ -481,9 +525,12 @@ export function stayInsights(
     }
 
     const value = market.pointsValue.find((v) => v.programme === o.programme) ?? null;
-    const pricing = mid ? nightPoints(o.programme, mid.cashUsd, mid.level, market) : null;
+    // Cash moves with a measured event on those nights (Dubai's New Year),
+    // and points with it where they follow cash.
+    const surged = (n: NonNullable<typeof mid>) => n.cashUsd * (eventPrices(n.stop, o.programme)?.ratio ?? 1);
+    const pricing = mid ? nightPoints(o.programme, surged(mid), mid.level, market) : null;
     const perNight = pricing?.points ?? null;
-    const perNightLuxury = luxury ? nightPoints(o.programme, luxury.cashUsd, luxury.level, market)?.points ?? null : null;
+    const perNightLuxury = luxury ? nightPoints(o.programme, surged(luxury), luxury.level, market)?.points ?? null : null;
     const fifthFree = !!value?.fifthNightFree && (o.programme !== 'Hilton Honors' || !!p?.tier && !/^member$/i.test(p.tier));
     const nightsCovered = perNight && p && p.points > 0 ? nightsFromBalance(p.points, perNight, fifthFree) : null;
 
@@ -546,13 +593,15 @@ export interface StopOutlook {
   quieter: number | null;
   /** What makes the month busy or quiet, dated or not ("Dubai Shopping Festival"). */
   driver: string | null;
+  /** National public holidays on the stay's nights. */
+  holidays: Holiday[];
 }
 
 const CROWD_RANK = { low: 0, medium: 1, high: 2 } as const;
 const WEATHER_RANK = { good: 0, okay: 1, poor: 2 } as const;
 
 /** The weather and crowds for a stay, and a quieter month either side when it's busy. */
-export function stopOutlook(climate: RealClimateMonth[], crowd: RealCrowdPriceMonth[], stop: PlannedStop): StopOutlook | null {
+export function stopOutlook(climate: RealClimateMonth[], crowd: RealCrowdPriceMonth[], stop: PlannedStop, holidays: Holiday[] = []): StopOutlook | null {
   if (!stop.checkIn) return null;
   const checkOut = addDays(stop.checkIn, stop.nights);
   const month = dominantMonth(stop.checkIn, checkOut);
@@ -567,7 +616,22 @@ export function stopOutlook(climate: RealClimateMonth[], crowd: RealCrowdPriceMo
     }
   }
   const driver = findCrowdPriceMonth(crowd, stop.city, stop.country, MONTH_NAMES[month].slice(0, 3))?.driver || null;
-  return { city: stop.city, guide, month, quieter, driver };
+  return { city: stop.city, guide, month, quieter, driver, holidays: holidaysDuring(holidays, stop.checkIn, stop.nights) };
+}
+
+/** The nights of a check-in/check-out pair: "13–15 Jan", or "30 Dec–1 Jan" across months. */
+export function nightsRange([checkIn, checkOut]: [string, string]): string {
+  const last = addDays(checkOut, -1);
+  if (checkIn.slice(0, 7) === last.slice(0, 7)) return `${Number(checkIn.slice(8))}–${shortDate(last)}`;
+  return `${shortDate(checkIn)}–${shortDate(last)}`;
+}
+
+/** A stay's holidays on one line: "Constitution Memorial Day, 3 May (long weekend)". */
+export function holidayLine(holidays: Holiday[]): string | null {
+  if (holidays.length === 0) return null;
+  const first = holidays[0];
+  const lw = longWeekend(first.date);
+  return [`${first.name}, ${shortDate(first.date)}${lw ? ` (${lw})` : ''}`, holidays.length > 1 ? `+${holidays.length - 1} more` : null].filter(Boolean).join(' · ');
 }
 
 /** A crowd driver short enough for a title: up to its first ";" or "(". */
@@ -578,7 +642,7 @@ export function shortDriver(text: string): string {
 // ---------- for you ----------
 
 export interface ForYouItem {
-  kind: 'flight' | 'stay' | 'status' | 'voucher' | 'crowds' | 'weather';
+  kind: 'flight' | 'stay' | 'status' | 'voucher' | 'prices' | 'crowds' | 'holiday' | 'weather';
   title: string;
   sub: string;
 }
@@ -610,7 +674,7 @@ export function awardCashLabel(o: Pick<AwardOption, 'cash' | 'cashEstimated' | '
  * crowds or the wet season.
  */
 export function forYou(input: {
-  flights: AwardOption[]; stays: StayInsight[]; outlooks: StopOutlook[]; cabin?: AwardCabin;
+  flights: AwardOption[]; stays: StayInsight[]; outlooks: StopOutlook[]; cabin?: AwardCabin; stops?: PlannedStop[];
 }): ForYouItem[] {
   const out: ForYouItem[] = [];
 
@@ -651,6 +715,17 @@ export function forYou(input: {
   const voucher = firstVoucher(input.stays.map((s) => s.voucher).filter((x): x is VoucherAdvice => x != null && x.verdict !== 'too-dear'));
   if (voucher) out.push({ kind: 'voucher', ...voucherLine(voucher) });
 
+  // A measured event on the stay's nights, for the programme recommended:
+  // "+148%" is worth knowing, and so is "-17%".
+  const programme = input.stays[0]?.programme ?? null;
+  for (const st of input.stops ?? []) {
+    const e = eventPrices(st, programme);
+    if (!e) continue;
+    const pct = Math.round((e.ratio - 1) * 100);
+    out.push({ kind: 'prices', title: `${e.event} in ${st.city}`, sub: `${e.set} ${pct >= 0 ? '+' : '−'}${Math.abs(pct)}% on ${nightsRange(e.baseline)} · ${e.hotels} hotel${e.hotels === 1 ? '' : 's'}` });
+    break;
+  }
+
   const busy = input.outlooks.find((o) => o.guide.crowd === 'high');
   if (busy) {
     out.push({
@@ -665,6 +740,12 @@ export function forYou(input: {
     });
   }
 
+  // A public holiday on the trip, unless the crowd line already names one.
+  const hol = input.outlooks.find((o) => o.holidays.length > 0);
+  if (hol && !(busy?.guide.crowdDriver && busy.city === hol.city)) {
+    out.push({ kind: 'holiday', title: `Public holiday in ${hol.city}`, sub: holidayLine(hol.holidays)! });
+  }
+
   const wet = input.outlooks.find((o) => o.guide.weather === 'poor');
   if (wet) out.push({ kind: 'weather', title: `Poor weather in ${wet.city}`, sub: `${Math.round(wet.guide.tempHigh)}° · ${wet.guide.rainLabel} rain in ${MONTH_NAMES[wet.month]}` });
 
@@ -675,6 +756,7 @@ export function forYou(input: {
 
 export interface AgentContext {
   month: string | null;
+  holidays: { date: string; name: string }[];
   regions: { region: string; highC: number | null; rainMm: number | null; crowd: string | null; price: string | null; event: string | null }[];
   visited: string[];
   home: string;
@@ -685,7 +767,7 @@ export interface AgentContext {
  * weather and crowds in the month of travel, and the cities already
  * stayed in there. The agent is told to rely on these, not its memory.
  */
-export function agentContext(country: string, startDate: string | null, nights: number, climate: RealClimateMonth[], crowd: RealCrowdPriceMonth[], hotels: Hotel[], home: string): AgentContext {
+export function agentContext(country: string, startDate: string | null, nights: number, climate: RealClimateMonth[], crowd: RealCrowdPriceMonth[], hotels: Hotel[], home: string, holidays: Holiday[] = []): AgentContext {
   const month = startDate ? dominantMonth(startDate, addDays(startDate, nights)) : null;
   const abbr = month != null ? MONTH_NAMES[month].slice(0, 3) : null;
   const regions = abbr
@@ -696,5 +778,6 @@ export function agentContext(country: string, startDate: string | null, nights: 
       })
     : [];
   const visited = [...new Set(hotels.filter((h) => sameCountry(h.country, country) && h.city).map((h) => h.city!))].sort();
-  return { month: month != null ? MONTH_NAMES[month] : null, regions, visited, home };
+  const during = startDate ? holidaysDuring(holidays, startDate, nights).map((x) => ({ date: x.date, name: x.name })) : [];
+  return { month: month != null ? MONTH_NAMES[month] : null, holidays: during, regions, visited, home };
 }

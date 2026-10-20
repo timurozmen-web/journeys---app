@@ -177,7 +177,20 @@ Run all three; all must be clean:
     cash rate, at the season's level), Marriott and IHG are dynamic with no
     cap, Hilton dynamic up to 250,000. Cash is placed in the city's range
     by the month's price level (`seasonalCashUsd`): bottom in a cheap
-    month, top in a dear one.
+    month, top in a dear one. Marriott cash is the booking sites' price
+    less its member rate (2.5%, the user's own figure: `MEMBER_RATE_DISCOUNT`).
+  - Events: what an event does to hotel prices is measured, never assumed
+    (`eventPrices`, samples in `src/data/priceSamples.ts`): the same
+    hotels priced for the event's nights and for plain nights a fortnight
+    away, the median ratio applied to the stay's cash. Holidays don't all
+    raise prices: Dubai's Marriotts were x2.48 over New Year, Tokyo's
+    x0.83 in Golden Week, Paris's x0.83 at Christmas. A city with no sample
+    gets no uplift. To add one, follow the note at the top of that file.
+  - Public holidays: Nager.Date (free, no key) through
+    `netlify/functions/holidays.js`, as the browser can't reach it;
+    `useHolidays` keeps each country and year on the device for 30 days.
+    `holidaysDuring` lists the national ones on a stay's nights, and a
+    Monday or Friday one is flagged as a long weekend.
   - Free-night vouchers: `voucherAdvice` weighs each stop's price levels
     in season, the programme's top-up (`src/data/freeNights.ts`: Marriott
     25,000), the voucher's worth to the user (its stored value, else cap x
@@ -197,8 +210,10 @@ Run all three; all must be clean:
     hold together.
   - The agent (`netlify/functions/suggest-cities.js`, prompt and checks
     in `netlify/lib/planPrompt.js`) is sent `agentContext`: each region's
-    weather and crowds in the month of travel and the cities already
-    stayed in. It's told to rely on those facts, not its memory; its
+    weather and crowds in the month of travel, the public holidays during
+    the trip and the cities already stayed in. It's told to rely on those
+    facts, not its memory, and not to assume a holiday makes hotels
+    dearer; its
     answer is checked (real coordinates, airport codes, nights that add
     up to the trip) before the app sees it.
 - **Fewest taps.** Lists delete by swipe-left then tapping Delete
