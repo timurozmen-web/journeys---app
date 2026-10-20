@@ -368,28 +368,43 @@ describe('voucherAdvice', () => {
 
 describe('measured event prices', () => {
   const stop = (city: string, country: string, checkIn: string, nights: number) => ({ city, country, checkIn, nights });
-  it('takes the programme’s own hotels where they were sampled', () => {
-    // Dubai's Marriotts over New Year: the middle hotel at 2.48x mid-January.
-    expect(eventPrices(stop('Dubai', 'United Arab Emirates', '2026-12-31', 2), 'Marriott Bonvoy')).toEqual({ event: 'New Year', set: 'Marriott', ratio: 2.48, hotels: 5, baseline: ['2027-01-13', '2027-01-16'] });
-    // Tokyo's Marriotts were cheaper in Golden Week.
-    expect(eventPrices(stop('Tokyo', 'Japan', '2027-05-02', 3), 'Marriott Bonvoy')?.ratio).toBe(0.83);
+  it('takes the programme’s own hotels, its sub-brands included', () => {
+    // Dubai over New Year: 5 hotels with "Marriott" in the name, then 7
+    // Sheratons and Four Points and 3 Le Méridiens, all Marriott.
+    expect(eventPrices(stop('Dubai', 'United Arab Emirates', '2026-12-31', 2), 'Marriott Bonvoy')).toEqual({ event: 'New Year', programme: 'Marriott Bonvoy', ratio: 2.4, hotels: 15, baseline: ['2027-01-13', '2027-01-16'] });
+    // New York's Manhattan Marriotts had no rates; its Moxys and Sheratons did.
+    expect(eventPrices(stop('New York', 'United States', '2026-12-31', 1), 'Marriott Bonvoy')).toMatchObject({ programme: 'Marriott Bonvoy', ratio: 2.35, hotels: 15 });
+    // Tokyo's Marriott, JW, Courtyard and Sheraton were all cheaper in Golden Week.
+    expect(eventPrices(stop('Tokyo', 'Japan', '2027-05-02', 3), 'Marriott Bonvoy')).toMatchObject({ ratio: 0.83, hotels: 4 });
   });
-  it('else the sample with most hotels', () => {
-    expect(eventPrices(stop('Tokyo', 'Japan', '2027-05-02', 3), 'World of Hyatt')).toMatchObject({ set: '4-5★', ratio: 1.07, hotels: 5 });
+  it('finds other programmes’ hotels in the 4-5★ searches', () => {
+    // Sydney's Mercure and Novotel at New Year.
+    expect(eventPrices(stop('Sydney', 'Australia', '2026-12-31', 1), 'Accor ALL')).toMatchObject({ programme: 'Accor ALL', ratio: 3.9, hotels: 2 });
+  });
+  it('takes every hotel when the programme has fewer than two', () => {
+    // Milan's one Hyatt isn't the brand's pricing in Milan.
+    expect(eventPrices(stop('Milan', 'Italy', '2027-04-13', 2), 'World of Hyatt')).toMatchObject({ programme: null, ratio: 3.05, hotels: 7 });
+    expect(eventPrices(stop('Tokyo', 'Japan', '2027-05-02', 3), 'World of Hyatt')).toMatchObject({ programme: null, ratio: 0.91, hotels: 9 });
+    // Barcelona had no Marriott priced for both windows.
+    expect(eventPrices(stop('Barcelona', 'Spain', '2027-03-01', 2), 'Marriott Bonvoy')).toMatchObject({ programme: null, ratio: 2.53, hotels: 2 });
+  });
+  it('counts a hotel found by two searches once', () => {
+    // Singapore's St. Regis and Four Points came back in both the Marriott and the 4-5★ search.
+    expect(eventPrices(stop('Singapore', 'Singapore', '2027-02-06', 2))?.hotels).toBe(9);
   });
   it('knows the big events from the wider sampling', () => {
-    // Abu Dhabi's Marriotts for the Grand Prix: 4.6x and 5.2x in the middle.
-    expect(eventPrices(stop('Abu Dhabi', 'United Arab Emirates', '2026-12-04', 2), 'Marriott Bonvoy')).toMatchObject({ event: 'Grand Prix', ratio: 4.93, hotels: 4 });
-    expect(eventPrices(stop('Edinburgh', 'United Kingdom', '2026-12-31', 1), 'Marriott Bonvoy')?.ratio).toBe(4.1);
-    expect(eventPrices(stop('Milan', 'Italy', '2027-04-13', 2), 'Marriott Bonvoy')?.ratio).toBe(3.08);
-    expect(eventPrices(stop('Rio de Janeiro', 'Brazil', '2027-02-06', 3))).toMatchObject({ event: 'Carnival', set: '4-5★', ratio: 3.22, hotels: 6 });
+    expect(eventPrices(stop('Abu Dhabi', 'United Arab Emirates', '2026-12-04', 2), 'Marriott Bonvoy')).toMatchObject({ event: 'Grand Prix', ratio: 4.22, hotels: 6 });
+    expect(eventPrices(stop('Edinburgh', 'United Kingdom', '2026-12-31', 1), 'Marriott Bonvoy')).toMatchObject({ ratio: 4.1, hotels: 6 });
+    expect(eventPrices(stop('Milan', 'Italy', '2027-04-13', 2), 'Marriott Bonvoy')?.ratio).toBe(2.88);
+    expect(eventPrices(stop('Rio de Janeiro', 'Brazil', '2027-02-06', 3))).toMatchObject({ event: 'Carnival', programme: null, ratio: 3.05, hotels: 8 });
     // And the ones that barely move, or go the other way.
     expect(eventPrices(stop('Las Vegas', 'United States', '2026-11-20', 2), 'Marriott Bonvoy')?.ratio).toBe(0.97);
-    expect(eventPrices(stop('Bangkok', 'Thailand', '2027-04-13', 2), 'Marriott Bonvoy')?.ratio).toBe(1.07);
-    expect(eventPrices(stop('Rome', 'Italy', '2027-03-26', 2))?.ratio).toBe(0.76);
+    expect(eventPrices(stop('Bangkok', 'Thailand', '2027-04-13', 2), 'Marriott Bonvoy')).toMatchObject({ ratio: 1.01, hotels: 10 });
+    expect(eventPrices(stop('Rome', 'Italy', '2027-03-26', 2), 'Marriott Bonvoy')?.ratio).toBe(0.82);
+    expect(eventPrices(stop('Paris', 'France', '2026-12-20', 2), 'Marriott Bonvoy')).toMatchObject({ ratio: 0.85, hotels: 10 });
   });
   it('tells New Year from the week before Christmas in the same city', () => {
-    expect(eventPrices(stop('New York', 'United States', '2026-12-31', 1))).toMatchObject({ event: "New Year's Eve", ratio: 2.61 });
+    expect(eventPrices(stop('New York', 'United States', '2026-12-31', 1))).toMatchObject({ event: "New Year's Eve", ratio: 2.55, hotels: 18 });
     expect(eventPrices(stop('New York', 'United States', '2026-12-19', 2))?.event).toBe('Week before Christmas');
   });
   it('says nothing where nothing was measured', () => {
@@ -406,7 +421,10 @@ describe('measured event prices', () => {
       flights: [], stays: [stay({ programme: 'Marriott Bonvoy' })], stops: [stop('Dubai', 'UAE', '2026-12-30', 3)],
       outlooks: [{ ...stopOutlook([], [], stop('Tokyo', 'Japan', '2027-05-01', 4), [{ date: '2027-05-03', name: 'Constitution Memorial Day', localName: '', global: true, types: [] }])! }].filter((o) => o.guide),
     });
-    expect(items.find((i) => i.kind === 'prices')).toEqual({ kind: 'prices', title: 'New Year in Dubai', sub: 'Marriott +148% on 13–15 Jan · 5 hotels' });
+    expect(items.find((i) => i.kind === 'prices')).toEqual({ kind: 'prices', title: 'New Year in Dubai', sub: 'Marriott +140% on 13–15 Jan · 15 hotels' });
+    // Every hotel, when the programme had too few: no programme named.
+    const rio = forYou({ flights: [], stays: [stay({ programme: 'World of Hyatt' })], stops: [stop('Rio de Janeiro', 'Brazil', '2027-02-06', 3)], outlooks: [] });
+    expect(rio.find((i) => i.kind === 'prices')?.sub).toBe('+205% on 19–23 Feb · 8 hotels');
   });
   it('writes holidays and nights short', () => {
     const hol = (date: string, name: string) => ({ date, name, localName: '', global: true, types: [] });

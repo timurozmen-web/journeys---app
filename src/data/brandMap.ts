@@ -5,7 +5,7 @@
 const MARRIOTT_SUBBRANDS = [
   'The Ritz-Carlton', 'Ritz-Carlton', 'Ritz-Carlton Reserve', 'St. Regis', 'St Regis', 'JW Marriott',
   'W Hotels', 'W', 'Edition', 'The Luxury Collection', 'Luxury Collection', 'Marriott Hotels', 'Marriott',
-  'Sheraton', 'Marriott Vacation Club', 'Delta Hotels', 'Le Meridien', 'Le Méridien', 'Westin',
+  'Sheraton', 'Marriott Vacation Club', 'Delta Hotels', 'Le Meridien', 'Le Méridien', 'Le Royal Meridien', 'Le Royal Méridien', 'Westin',
   'Renaissance Hotels', 'Renaissance', 'Autograph Collection', 'Tribute Portfolio', 'Design Hotels',
   'Courtyard', 'Four Points', 'SpringHill Suites', 'Protea Hotels', 'Fairfield', 'AC Hotels', 'AC by Marriott',
   'Aloft', 'Moxy', 'City Express', 'Marriott Executive Apartments', 'Apartments by Marriott Bonvoy',
@@ -122,4 +122,21 @@ export function matchProgrammeStrict(raw: string): string | null {
     if (re.test(text)) return programme;
   }
   return null;
+}
+
+// Place names that share a word with a brand: Singapore's Raffles Place
+// (an Ascott hotel there came back in a search), London's Hyde Park.
+const PLACE_WORDS = /\b(raffles place|raffles city|hyde park|regent street)\b/g;
+
+/**
+ * The programme a hotel belongs to, read from its name the way
+ * matchProgrammeStrict reads it (whole words, so "Four Elements" isn't an
+ * Element), plus the two its four-letter floor misses: a W ("W
+ * Edinburgh") and a plain "Hyatt" or "IHG". Null for an independent.
+ */
+export function programmeOfHotel(name: string): string | null {
+  const text = name.toLowerCase().replace(PLACE_WORDS, ' ');
+  if (/^w\s/.test(text)) return 'Marriott Bonvoy';
+  return matchProgrammeStrict(text)
+    ?? (/\bhyatt\b/.test(text) ? 'World of Hyatt' : /\bihg\b/.test(text) ? 'IHG One Rewards' : null);
 }

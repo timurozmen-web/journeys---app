@@ -17,11 +17,14 @@
 // To add one: search the city's hotels for the event's nights and for the
 // same weekdays a fortnight away (brand-filtered searches return the same
 // hotels both times), keep the hotels priced in both, and add them here.
-// The brand filter only finds hotels with "Marriott" in the name, so where
-// it finds one or two, a 4-5★ search adds a sample of its own (and any
-// Marriott brands in it, a St. Regis or a Four Points, join the Marriott
-// one). A hotel with no rate for the event's nights is usually sold out:
-// it's left out of the pairs and noted.
+// The brand filter matches the hotel's name, so "Marriott" finds a
+// Courtyard by Marriott but not a Sheraton, a Westin or a Moxy: search
+// each sub-brand too (`set` says what was searched). A 4-5★ search adds
+// the other groups' hotels. Every pair is put to its programme by name
+// (`programmeOfHotel`, src/data/brandMap.ts), so a Sheraton counts as
+// Marriott and a Mercure as Accor whichever search found it, and an
+// event's samples are pooled. A hotel with no rate for the event's nights
+// is usually sold out: it's left out of the pairs and noted.
 
 export interface PricePair { hotel: string; event: number; base: number }
 
@@ -216,10 +219,96 @@ export const PRICE_SAMPLES: PriceSample[] = [
       p('Hyatt Centric Milan Centrale', 787, 338),
     ],
   },
+
+  // Marriott's other brands, searched by name (20 Oct 2026, same windows as above).
+  // Sharjah's hotels came back in Dubai's search and are left out; the
+  // Sheraton Jumeirah Beach had no rate for New Year's Eve.
+  {
+    city: 'Dubai', country: 'UAE', event: 'New Year', window: ['2026-12-30', '2027-01-02'], baseline: ['2027-01-13', '2027-01-16'], set: 'Sheraton, Le Méridien',
+    pairs: [
+      p('Four Points by Sheraton Bur Dubai', 226, 125), p('Four Points by Sheraton Production City', 250, 93), p('Four Points by Sheraton Sheikh Zayed Road', 401, 210),
+      p('Sheraton Dubai Creek Hotel & Towers', 473, 193), p('Sheraton Mall of the Emirates Hotel', 501, 240), p('Sheraton Grand Hotel, Dubai', 553, 287),
+      p('Sheraton The Walk, Dubai', 566, 217), p('Le Méridien Dubai Hotel & Conference Centre', 323, 215), p('Le Méridien Mina Seyahi Beach Resort', 726, 290),
+      p('Le Royal Méridien Beach Resort & Spa', 856, 356),
+    ],
+  },
+  {
+    city: 'Abu Dhabi', country: 'UAE', event: 'Grand Prix', window: ['2026-12-03', '2026-12-06'], baseline: ['2026-11-19', '2026-11-22'], set: 'Sheraton',
+    pairs: [p('Sheraton Khalidiya Hotel', 359, 132), p('Sheraton Abu Dhabi Hotel & Resort', 634, 229)],
+  },
+  // The Sheraton Grand and the Four Points Flex had no rate for Hogmanay.
+  {
+    city: 'Edinburgh', country: 'United Kingdom', event: 'Hogmanay', window: ['2026-12-30', '2027-01-02'], baseline: ['2027-01-13', '2027-01-16'], set: 'Moxy, W',
+    pairs: [p('Moxy Edinburgh', 398, 93), p('W Edinburgh', 776, 289)],
+  },
+  // Sheraton Lincoln Harbor came back too but is in New Jersey, so it's left out.
+  {
+    city: 'New York', country: 'United States', event: "New Year's Eve", window: ['2026-12-30', '2027-01-02'], baseline: ['2027-01-13', '2027-01-16'], set: 'Moxy, Sheraton',
+    pairs: [
+      p('Moxy NYC Downtown', 381, 176), p('Moxy Brooklyn Williamsburg', 413, 209), p('Moxy NYC East Village', 529, 302), p('Moxy NYC Chelsea', 551, 253),
+      p('Moxy NYC Lower East Side', 600, 225), p('Moxy NYC Times Square', 996, 195), p('Four Points by Sheraton Flushing', 259, 151),
+      p('Sheraton LaGuardia East Hotel', 276, 240), p('Sheraton Brooklyn New York Hotel', 419, 157), p('Four Points by Sheraton Manhattan SoHo Village', 450, 209),
+      p('Sheraton New York Times Square Hotel', 502, 193), p('Four Points by Sheraton New York Downtown', 512, 141),
+      p('Four Points by Sheraton Manhattan Midtown West', 598, 254), p('Four Points by Sheraton Midtown - Times Square', 644, 172),
+      p('Sheraton Tribeca New York Hotel', 1292, 215),
+    ],
+  },
+  // No Westin had a rate on either night.
+  {
+    city: 'Sydney', country: 'Australia', event: "New Year's Eve", window: ['2026-12-30', '2027-01-02'], baseline: ['2027-01-13', '2027-01-16'], set: 'Sheraton',
+    pairs: [p('Sheraton Grand Sydney Hyde Park', 805, 334)],
+  },
+  {
+    city: 'Singapore', country: 'Singapore', event: 'Lunar New Year', window: ['2027-02-05', '2027-02-08'], baseline: ['2027-02-19', '2027-02-22'], set: 'Sheraton, Westin',
+    pairs: [p('Sheraton Towers Singapore', 337, 331), p('The Westin Singapore', 472, 366)],
+  },
+  {
+    city: 'Hong Kong', country: 'Hong Kong', event: 'Lunar New Year', window: ['2027-02-05', '2027-02-08'], baseline: ['2027-02-19', '2027-02-22'], set: 'Sheraton',
+    pairs: [p('Sheraton Hong Kong Hotel & Towers', 363, 225)],
+  },
+  {
+    city: 'Rio de Janeiro', country: 'Brazil', event: 'Carnival', window: ['2027-02-05', '2027-02-10'], baseline: ['2027-02-19', '2027-02-24'], set: 'Sheraton',
+    pairs: [p('Sheraton Grand Rio Hotel & Resort', 1030, 526)],
+  },
+  {
+    city: 'Rome', country: 'Italy', event: 'Easter', window: ['2027-03-25', '2027-03-29'], baseline: ['2027-04-08', '2027-04-12'], set: 'Sheraton',
+    pairs: [p("Sheraton Rome Parco de' Medici", 154, 188), p("Sheraton Golf Parco de' Medici", 166, 199)],
+  },
+  {
+    city: 'Bangkok', country: 'Thailand', event: 'Songkran', window: ['2027-04-12', '2027-04-16'], baseline: ['2027-04-26', '2027-04-30'], set: 'Sheraton',
+    pairs: [
+      p('Four Points by Sheraton Bangkok Ploenchit Sukhumvit', 110, 107), p('Four Points by Sheraton Bangkok, Sukhumvit 22', 116, 116),
+      p('Royal Orchid Sheraton Riverside Hotel Bangkok', 122, 123), p('Sheraton Grande Sukhumvit, a Luxury Collection Hotel', 256, 256),
+    ],
+  },
+  {
+    city: 'Amsterdam', country: 'Netherlands', event: "King's Day", window: ['2027-04-26', '2027-04-28'], baseline: ['2027-04-12', '2027-04-14'], set: 'Moxy',
+    pairs: [p('Moxy Amsterdam Houthavens', 262, 252)],
+  },
+  // AC Hotel Milano had no rate for the fair's nights.
+  {
+    city: 'Milan', country: 'Italy', event: 'Salone del Mobile', window: ['2027-04-12', '2027-04-16'], baseline: ['2027-04-26', '2027-04-30'], set: 'Sheraton',
+    pairs: [p('Sheraton Milan San Siro', 694, 260)],
+  },
+  {
+    city: 'Tokyo', country: 'Japan', event: 'Golden Week', window: ['2027-05-01', '2027-05-05'], baseline: ['2027-05-15', '2027-05-19'], set: 'Courtyard, Sheraton',
+    pairs: [p('Courtyard by Marriott Tokyo Ginza', 519, 571), p('Sheraton Miyako Hotel Tokyo', 291, 363)],
+  },
+  // The Renaissance Vendôme had no rate for the holiday nights.
+  {
+    city: 'Paris', country: 'France', event: 'Christmas school holidays', window: ['2026-12-19', '2026-12-23'], baseline: ['2026-11-28', '2026-12-02'], set: 'Renaissance',
+    pairs: [
+      p('Renaissance Paris Hippodrome de St. Cloud', 179, 176), p('Renaissance Paris La Defense', 204, 277), p('Renaissance Paris Republique', 359, 421),
+      p('Renaissance Paris Nobel Tour Eiffel', 409, 440), p('Renaissance Paris Arc de Triomphe', 573, 551),
+    ],
+  },
 ];
 
 // Events with no sample yet, and why: Munich's Oktoberfest (18 Sep-3 Oct
-// 2027) had no published rates when searched, eleven months out.
+// 2027) had no published rates when searched, eleven months out. Sub-brand
+// searches found nothing priced for both windows in Barcelona (AC Hotels,
+// Renaissance: none for the congress nights) or Mexico City (the Sheraton
+// Maria Isabel: none for the event weekend).
 
 // Marriott's member rate is 2-3% under the booking sites' price for the
 // same room: the user's own observation (20 Oct 2026). 2.5%, the middle,
