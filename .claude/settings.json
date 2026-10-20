@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__SlickTrip__search_hotels",
+      "mcp__SlickTrip__hotel_details",
+      "mcp__SlickTrip__hotel_booking_options",
+      "mcp__SlickTrip__hotel_price_calendar",
+      "mcp__SlickTrip__find_places",
+      "mcp__SlickTrip__search_flights",
+      "mcp__SlickTrip__search_return_flights",
+      "mcp__SlickTrip__booking_options",
+      "mcp__SlickTrip__flight_lookup",
+      "mcp__SlickTrip__route_airlines",
+      "mcp__SlickTrip__price_calendar",
+      "mcp__SlickTrip__explore_destinations",
+      "WebSearch",
+      "WebFetch"
+    ]
+  }
+}
