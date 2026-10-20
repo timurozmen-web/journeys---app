@@ -16,12 +16,12 @@ import { useCardResults } from '../lib/useCardResults';
 import { computeStatusProgress } from '../lib/statusProgress';
 import { withLiveOverrides } from '../lib/walletValue';
 import {
-  agentContext, airPassengerDuty, awardCashLabel, awardOptions, awardPointsLabel, holidayLine, cityCashRates as ratesForCity, forYou, nightPoints, nightPointsShort, stayInsights, stayLines,
+  agentContext, airPassengerDuty, awardCashLabel, awardOptions, awardPointsLabel, holidayLine, schoolNote, cityCashRates as ratesForCity, forYou, nightPoints, nightPointsShort, stayInsights, stayLines,
   stopOutlook, usualAwardCabin, type ForYouItem, type Market, type PlannedStop, type StopOutlook,
 } from '../lib/planIntel';
 import type { AwardCabin } from '../data/awardClasses';
 import { AIRLINE_COLORS } from '../data/airlineBrand';
-import { countryCode, holidaysDuring, type Holiday } from '../lib/holidays';
+import { countryCode, holidaysDuring, schoolBreakDuring, type Holiday, type SchoolHoliday } from '../lib/holidays';
 import { useHolidays } from '../lib/useHolidays';
 import { haversineKm } from '../lib/travelStats';
 import { addTrip, addHotel, addFlight, type RealClimateMonth, type RealCrowdPriceMonth } from '../lib/queries';
@@ -168,7 +168,7 @@ function PickIcon({ kind }: { kind: ForYouItem['kind'] }) {
   if (kind === 'voucher') return <TagIcon size={18} />;
   if (kind === 'prices') return <CreditIcon size={18} />;
   if (kind === 'crowds') return <UsersIcon size={18} />;
-  if (kind === 'holiday') return <CalendarIcon size={18} />;
+  if (kind === 'holiday' || kind === 'school') return <CalendarIcon size={18} />;
   return <CloudRainIcon size={18} />;
 }
 
@@ -233,10 +233,14 @@ export function Plan() {
     const years = [...new Set([start.slice(0, 4), addDays(start, 60).slice(0, 4)])].map(Number);
     return code ? years.map((year) => ({ code, year })) : [];
   });
-  const holidaysByKey = useHolidays(holidayPairs);
+  const { holidays: holidaysByKey, school: schoolByKey } = useHolidays(holidayPairs);
   const holidaysFor = (country: string): Holiday[] => {
     const code = countryCode(country);
     return code ? Object.entries(holidaysByKey).filter(([k]) => k.startsWith(`${code}:`)).flatMap(([, v]) => v) : [];
+  };
+  const schoolFor = (country: string): SchoolHoliday[] => {
+    const code = countryCode(country);
+    return code ? Object.entries(schoolByKey).filter(([k]) => k.startsWith(`${code}:`)).flatMap(([, v]) => v) : [];
   };
 
   function smartFlightUrl(fromCity: string, toCity: string, departDate: string | null, returnDate: string | null | undefined): string {
@@ -382,7 +386,7 @@ export function Plan() {
 
         // The agent is given the season and crowds in the month of travel
         // and the cities already stayed in (planIntel's agentContext).
-        const context = agentContext(dest.country, destStart, totalNights, climateData, crowdPriceData, allHotels, homeLocation.city, holidaysFor(dest.country));
+        const context = agentContext(dest.country, destStart, totalNights, climateData, crowdPriceData, allHotels, homeLocation.city, holidaysFor(dest.country), schoolFor(dest.country));
         const res = await fetch('/.netlify/functions/suggest-cities', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -548,7 +552,7 @@ export function Plan() {
   const stays = cities.length > 0
     ? stayInsights(hotelOptions, stops, { programmes: loyaltyProgrammes, vouchers, flights: allFlights, hotels: allHotels, promotions }, progressOf, market, today)
     : [];
-  const outlooks = stops.map((st) => stopOutlook(climateData, crowdPriceData, st, holidaysFor(st.country))).filter((o): o is StopOutlook => o != null);
+  const outlooks = stops.map((st) => stopOutlook(climateData, crowdPriceData, st, holidaysFor(st.country), schoolFor(st.country))).filter((o): o is StopOutlook => o != null);
   const picks = cities.length > 0 ? forYou({ flights: pointsFlights, stays, outlooks, cabin: chosenCabin ?? usualCabin, stops }) : [];
   const apd = cities.length > 0 && home ? airPassengerDuty(cities[0].country, chosenCabin ?? 'Economy', travelDate) : null;
 
@@ -738,6 +742,9 @@ export function Plan() {
                         {blended?.crowdDriver && <div className="glance-note">{blended.crowdDriver}{blended.crowdDriverDates ? `, ${blended.crowdDriverDates}` : ''}</div>}
                         {checkIn && holidayLine(holidaysDuring(holidaysFor(c.country), checkIn, c.nights)) && (
                           <div className="glance-note">{holidayLine(holidaysDuring(holidaysFor(c.country), checkIn, c.nights))}</div>
+                        )}
+                        {checkIn && schoolNote(schoolBreakDuring(schoolFor(c.country), checkIn, c.nights), blended?.crowdDriver) && (
+                          <div className="glance-note">{schoolNote(schoolBreakDuring(schoolFor(c.country), checkIn, c.nights), blended?.crowdDriver)}</div>
                         )}
                         <SearchLink href={smartHotelUrl(c.city, c.country, checkIn, c.nights)}>{hotelBrandFilter !== 'any' ? shortProgramme(hotelBrandFilter) : 'Hotels'}</SearchLink>
                       </div>

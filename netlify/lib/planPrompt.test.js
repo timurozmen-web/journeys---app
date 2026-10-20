@@ -27,6 +27,14 @@ describe('what the agent is told', () => {
     ].join('\n'));
   });
 
+  test('the school break during the trip, and how widely', () => {
+    const msg = buildMessage({ country: 'France', nights: 7, context: { month: 'February', school: [{ start: '2027-02-21', end: '2027-03-07', name: 'Winter Holidays', reach: 'some' }] } });
+    expect(msg.split('\n').slice(-1)[0]).toBe('SCHOOL HOLIDAYS: 2027-02-21 to 2027-03-07 Winter Holidays (some regions)');
+    expect(SYSTEM_PROMPT).toMatch(/SCHOOL HOLIDAYS/);
+    const c = cleanContext({ school: [{ start: '2026-12-20', end: '2027-01-03', name: 'Christmas Holidays', reach: 'all' }, { start: '2027-02-21', end: 'later', name: 'x', reach: 'all' }, { start: '2027-02-21', end: '2027-03-07', name: 'x', reach: 'everywhere' }] });
+    expect(c.school).toEqual([{ start: '2026-12-20', end: '2027-01-03', name: 'Christmas Holidays', reach: 'all' }]);
+  });
+
   test('just the trip when there are no facts (no date picked yet)', () => {
     expect(buildMessage({ country: 'Japan', nights: 12 })).toBe('Country: Japan. Trip length: 12 nights.');
   });

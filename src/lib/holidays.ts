@@ -71,6 +71,63 @@ export function longWeekend(date: string): 'long weekend' | 'bridge' | null {
   return null;
 }
 
+/** A school holiday (OpenHolidays, through the same function): `end` is the last day off. */
+export interface SchoolHoliday {
+  start: string;
+  end: string;
+  name: string;
+  nationwide: boolean;
+  /** The regions that keep it (a German state, a French zone or académie). */
+  regions: string[];
+}
+
+/** How much of the country's schools are off: all, most or some of its regions. */
+export type SchoolReach = 'all' | 'most' | 'some';
+
+export interface SchoolBreak {
+  name: string;
+  start: string;
+  end: string;
+  reach: SchoolReach;
+}
+
+/**
+ * The schools off on a stay's busiest night, and how widely: a count of
+ * regions, not of pupils. A country's regions are those its holidays name
+ * within six months of the stay, as some regions' next year is published
+ * later than the rest (Corsica's and most of France's overseas académies'
+ * stopped at summer 2026 while the mainland's ran to summer 2027, as read
+ * 20 Oct 2026), and a region with no
+ * dates yet shouldn't make a nationwide break look partial. A one-day
+ * closure is left out: it doesn't send families away.
+ */
+export function schoolBreakDuring(school: SchoolHoliday[], checkIn: string, nights: number): SchoolBreak | null {
+  const checkOut = addDays(checkIn, nights);
+  const from = addDays(checkIn, -183);
+  const to = addDays(checkOut, 183);
+  const breaks = school.filter((s) => s.end > s.start);
+  const regions = new Set(breaks.filter((s) => s.end >= from && s.start <= to).flatMap((s) => s.regions));
+  let best: { share: number; on: SchoolHoliday } | null = null;
+  for (let day = checkIn; day < checkOut; day = addDays(day, 1)) {
+    const on = breaks.filter((s) => s.start <= day && day <= s.end);
+    if (on.length === 0) continue;
+    const off = new Set(on.flatMap((s) => s.regions));
+    const share = on.some((s) => s.nationwide) || regions.size === 0 ? 1 : off.size / regions.size;
+    // The holiday reaching most, to name it.
+    const widest = [...on].sort((a, b) => Number(b.nationwide) - Number(a.nationwide) || b.regions.length - a.regions.length)[0];
+    if (!best || share > best.share) best = { share, on: widest };
+  }
+  if (!best) return null;
+  const reach: SchoolReach = best.share >= 0.95 ? 'all' : best.share >= 0.5 ? 'most' : 'some';
+  // A break staggered by region (Germany's summer, state by state) runs
+  // from the first region's start to the last one's end.
+  const named = best.on;
+  const same = breaks.filter((s) => s.name === named.name && s.end >= named.start && s.start <= named.end);
+  const start = same.reduce((a, s) => (s.start < a ? s.start : a), named.start);
+  const end = same.reduce((a, s) => (s.end > a ? s.end : a), named.end);
+  return { name: named.name, start, end, reach };
+}
+
 /** "3 May" from "2027-05-03". */
 export function shortDate(date: string): string {
   const [, m, d] = date.split('-').map(Number);

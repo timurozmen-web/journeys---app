@@ -48,9 +48,10 @@ ready for an iOS build.
   Points, KrisFlyer) with taxes and the award class, nights toward or to
   keep your tier, a free-night voucher that fits, and the crowds or wet
   season to avoid. UK Air Passenger Duty from gov.uk's bands. Public
-  holidays at each stop (Nager.Date), and hotel prices over events taken
-  from measured samples rather than assumed. The city suggestions are
-  given the season, the holidays and the places you've already been.
+  holidays at each stop (Nager.Date), school holidays and how much of the
+  country is off (OpenHolidays), and hotel prices over events taken from
+  measured samples rather than assumed. The city suggestions are given
+  the season, the holidays and the places you've already been.
 - **Credit advisor**: the full calculation behind a flight's "Credit
   to", for any flight.
 
