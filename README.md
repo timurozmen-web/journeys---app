@@ -47,8 +47,10 @@ ready for an iOS build.
   for you from your own account: the flight on your points (Avios, Virgin
   Points, KrisFlyer) with taxes and the award class, nights toward or to
   keep your tier, a free-night voucher that fits, and the crowds or wet
-  season to avoid. UK Air Passenger Duty from gov.uk's bands. The city
-  suggestions are given the season and the places you've already been.
+  season to avoid. UK Air Passenger Duty from gov.uk's bands. Public
+  holidays at each stop (Nager.Date), and hotel prices over events taken
+  from measured samples rather than assumed. The city suggestions are
+  given the season, the holidays and the places you've already been.
 - **Credit advisor**: the full calculation behind a flight's "Credit
   to", for any flight.
 
@@ -61,7 +63,7 @@ ready for an iOS build.
 | `src/lib/` | App logic: points and status maths, planning, formatting, offline cache/queue, Supabase queries (`queries.ts`) and data hooks (`useLiveData.ts`) |
 | `src/data/` | Static data: airports, world cities, rail links, hotel brands, card definitions, and the mock data used as a fallback |
 | `src/types/index.ts` | Core types, mapping onto the Supabase tables |
-| `netlify/functions/` | Server-side functions: Claude-powered extraction and suggestions, bank linking, and two daily scheduled jobs (bank sync 06:00 UTC, promotion scan 07:00 UTC) |
+| `netlify/functions/` | Server-side functions: Claude-powered extraction and suggestions, bank linking, public holidays, and two daily scheduled jobs (bank sync 06:00 UTC, promotion scan 07:00 UTC) |
 | `supabase/` | SQL for the schema, storage bucket and sample data |
 
 ## How data loads

@@ -4,7 +4,7 @@ import { addDays } from '../lib/tripDay';
 import { calculateLeaveNeeded } from '../lib/annualLeave';
 import { blendedGuideForMonth, dominantMonth, PRICE_COLOR, PRICE_TINT, CROWD_COLOR, CROWD_TINT, MONTH_NAMES, type BlendedMonthGuide } from '../lib/destinationGuide';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
-import { PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon, ThermometerIcon, DropletIcon, CloudRainIcon, TagIcon, UsersIcon, MoonIcon, BedIcon, StatusIcon } from '../components/Icons';
+import { PlaneIcon, TrainIcon, CarIcon, GripIcon, ExternalLinkIcon, ThermometerIcon, DropletIcon, CloudRainIcon, TagIcon, UsersIcon, MoonIcon, BedIcon, StatusIcon, CreditIcon, CalendarIcon } from '../components/Icons';
 import { googleFlightsSearchUrl, googleHotelsSearchUrl, brandHotelSearchUrl, ALLIANCE_LABELS, type StopsFilter, type CabinFilter, type AllianceFilter } from '../lib/externalSearchLinks';
 import { planningCountries, PLANNING_AIRPORTS_BY_IATA } from '../data/planningAirports';
 import { allPlanningCountries } from '../data/globalAirportsLoader';
@@ -16,11 +16,13 @@ import { useCardResults } from '../lib/useCardResults';
 import { computeStatusProgress } from '../lib/statusProgress';
 import { withLiveOverrides } from '../lib/walletValue';
 import {
-  agentContext, airPassengerDuty, awardCashLabel, awardOptions, awardPointsLabel, cityCashRates as ratesForCity, forYou, nightPoints, nightPointsShort, stayInsights, stayLines,
+  agentContext, airPassengerDuty, awardCashLabel, awardOptions, awardPointsLabel, holidayLine, cityCashRates as ratesForCity, forYou, nightPoints, nightPointsShort, stayInsights, stayLines,
   stopOutlook, usualAwardCabin, type ForYouItem, type Market, type PlannedStop, type StopOutlook,
 } from '../lib/planIntel';
 import type { AwardCabin } from '../data/awardClasses';
 import { AIRLINE_COLORS } from '../data/airlineBrand';
+import { countryCode, holidaysDuring, type Holiday } from '../lib/holidays';
+import { useHolidays } from '../lib/useHolidays';
 import { haversineKm } from '../lib/travelStats';
 import { addTrip, addHotel, addFlight, type RealClimateMonth, type RealCrowdPriceMonth } from '../lib/queries';
 import { useCurrency } from '../lib/currency';
@@ -164,7 +166,9 @@ function PickIcon({ kind }: { kind: ForYouItem['kind'] }) {
   if (kind === 'stay') return <BedIcon size={18} />;
   if (kind === 'status') return <StatusIcon size={18} />;
   if (kind === 'voucher') return <TagIcon size={18} />;
+  if (kind === 'prices') return <CreditIcon size={18} />;
   if (kind === 'crowds') return <UsersIcon size={18} />;
+  if (kind === 'holiday') return <CalendarIcon size={18} />;
   return <CloudRainIcon size={18} />;
 }
 
@@ -222,6 +226,18 @@ export function Plan() {
   // City cash rates are researched in USD.
   const { rates: fx } = useCurrency();
   const usdToGbp = 1 / (fx.USD || 1.27);
+  // Public holidays for each destination in the years the trip touches.
+  const holidayPairs = destinations.flatMap((d) => {
+    const code = countryCode(d.country);
+    const start = startDate || today;
+    const years = [...new Set([start.slice(0, 4), addDays(start, 60).slice(0, 4)])].map(Number);
+    return code ? years.map((year) => ({ code, year })) : [];
+  });
+  const holidaysByKey = useHolidays(holidayPairs);
+  const holidaysFor = (country: string): Holiday[] => {
+    const code = countryCode(country);
+    return code ? Object.entries(holidaysByKey).filter(([k]) => k.startsWith(`${code}:`)).flatMap(([, v]) => v) : [];
+  };
 
   function smartFlightUrl(fromCity: string, toCity: string, departDate: string | null, returnDate: string | null | undefined): string {
     return googleFlightsSearchUrl(fromCity, toCity, departDate, returnDate, {
@@ -366,7 +382,7 @@ export function Plan() {
 
         // The agent is given the season and crowds in the month of travel
         // and the cities already stayed in (planIntel's agentContext).
-        const context = agentContext(dest.country, destStart, totalNights, climateData, crowdPriceData, allHotels, homeLocation.city);
+        const context = agentContext(dest.country, destStart, totalNights, climateData, crowdPriceData, allHotels, homeLocation.city, holidaysFor(dest.country));
         const res = await fetch('/.netlify/functions/suggest-cities', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -532,8 +548,8 @@ export function Plan() {
   const stays = cities.length > 0
     ? stayInsights(hotelOptions, stops, { programmes: loyaltyProgrammes, vouchers, flights: allFlights, hotels: allHotels, promotions }, progressOf, market, today)
     : [];
-  const outlooks = stops.map((st) => stopOutlook(climateData, crowdPriceData, st)).filter((o): o is StopOutlook => o != null);
-  const picks = cities.length > 0 ? forYou({ flights: pointsFlights, stays, outlooks, cabin: chosenCabin ?? usualCabin }) : [];
+  const outlooks = stops.map((st) => stopOutlook(climateData, crowdPriceData, st, holidaysFor(st.country))).filter((o): o is StopOutlook => o != null);
+  const picks = cities.length > 0 ? forYou({ flights: pointsFlights, stays, outlooks, cabin: chosenCabin ?? usualCabin, stops }) : [];
   const apd = cities.length > 0 && home ? airPassengerDuty(cities[0].country, chosenCabin ?? 'Economy', travelDate) : null;
 
   // A flight to or from home: where from and to, the flying time, and a
@@ -720,6 +736,9 @@ export function Plan() {
                         {blended && <WeatherLine blended={blended} />}
                         {blended && <SeasonFlags blended={blended} />}
                         {blended?.crowdDriver && <div className="glance-note">{blended.crowdDriver}{blended.crowdDriverDates ? `, ${blended.crowdDriverDates}` : ''}</div>}
+                        {checkIn && holidayLine(holidaysDuring(holidaysFor(c.country), checkIn, c.nights)) && (
+                          <div className="glance-note">{holidayLine(holidaysDuring(holidaysFor(c.country), checkIn, c.nights))}</div>
+                        )}
                         <SearchLink href={smartHotelUrl(c.city, c.country, checkIn, c.nights)}>{hotelBrandFilter !== 'any' ? shortProgramme(hotelBrandFilter) : 'Hotels'}</SearchLink>
                       </div>
                     </div>

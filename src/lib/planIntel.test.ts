@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   agentContext, airPassengerDuty, apdBand, awardCashLabel, awardOptions, awardPointsLabel, seasonOn, cityCashRates, forYou, nightsFromBalance,
-  nightPoints, pointsPerNight, seasonalCashUsd, shortDriver, stopPriceLevel, statusLabel, stayInsights, stayLines, stopOutlook, usualAwardCabin, voucherAdvice, voucherCap, voucherLine, type StayInsight,
+  eventPrices, holidayLine, memberCash, nightPoints, nightsRange, pointsPerNight, seasonalCashUsd, shortDriver, stopPriceLevel, statusLabel, stayInsights, stayLines, stopOutlook, usualAwardCabin, voucherAdvice, voucherCap, voucherLine, type StayInsight,
   type VoucherAdvice,
 } from './planIntel';
 import { nightsForTier } from './statusProgress';
@@ -277,7 +277,8 @@ describe('stayInsights', () => {
     expect(marriott.nightsCovered).toBe(15);
     // The 40k voucher runs out in March, so a £197 night (under its £200
     // worth) is still worth spending it on; the 50k doesn't expire.
-    expect(marriott.voucher).toMatchObject({ id: 'm40', verdict: 'use-soon', best: { city: 'Tokyo', tier: 'mid', points: 32000, topUp: 0, cashGBP: 197, worthGBP: 197 } });
+    // £192: the £197 night at Marriott's member rate, 2.5% under.
+    expect(marriott.voucher).toMatchObject({ id: 'm40', verdict: 'use-soon', best: { city: 'Tokyo', tier: 'mid', points: 32000, topUp: 0, cashGBP: 192, worthGBP: 192 } });
     expect(marriott.promoPoints).toBe(3000);
   });
 
@@ -307,8 +308,9 @@ describe('voucherAdvice', () => {
     { country: 'Japan', city: 'Kyoto', tier: 'mid', priceLowUsd: 180, priceHighUsd: 260 },
     { country: 'Japan', city: 'Kyoto', tier: 'luxury', priceLowUsd: 450, priceHighUsd: 550 },
   ] as CityCashRate[];
-  const tokyo = { city: 'Tokyo', country: 'Japan', nights: 4, checkIn: '2027-05-01' };
-  const kyoto = { city: 'Kyoto', country: 'Japan', nights: 3, checkIn: '2027-05-05' };
+  // After Golden Week, which has measured prices of its own.
+  const tokyo = { city: 'Tokyo', country: 'Japan', nights: 4, checkIn: '2027-05-20' };
+  const kyoto = { city: 'Kyoto', country: 'Japan', nights: 3, checkIn: '2027-05-24' };
   const forty = voucher({ id: 'v40', name: '40,000pt Marriott voucher', value: 200 });
   const mk = (v: PointsValueProgramme | null, r: CityCashRate[]) => ({ rates: r, crowd: [], pointsValue: v ? [v] : [], usdToGbp, usdToEur: 1.17 / 1.27 });
 
@@ -317,35 +319,35 @@ describe('voucherAdvice', () => {
   // its £200 worth, and there's no rush, so keep it.
   it('keeps a voucher when the best night here is worth less than the voucher', () => {
     const a = voucherAdvice(forty, marriott, [tokyo], mk(value, rates))!;
-    expect(a).toMatchObject({ verdict: 'keep', parGBP: 200, neededGBP: 200, best: { city: 'Tokyo', tier: 'mid', points: 32000, cashGBP: 197 } });
-    expect(voucherLine(a)).toEqual({ title: 'Keep the 40k free night', sub: 'best here mid-range in Tokyo, ~£197 · £200 to you' });
+    expect(a).toMatchObject({ verdict: 'keep', parGBP: 200, neededGBP: 200, best: { city: 'Tokyo', tier: 'mid', points: 32000, cashGBP: 192 } });
+    expect(voucherLine(a)).toEqual({ title: 'Keep the 40k free night', sub: 'best here mid-range in Tokyo, ~£192 · £200 to you' });
   });
 
   // Kyoto's luxury night is ~64,000 points: over the 40k cap, but within
-  // Marriott's 25,000 top-up. £394 of hotel for 24,000 points (£120 at
-  // 0.5p) beats the voucher's £200 worth.
+  // Marriott's 25,000 top-up. £384 of hotel (member rate) for 24,000
+  // points (£120 at 0.5p) beats the voucher's £200 worth.
   it('stretches it with a top-up when that gets the better night', () => {
     const a = voucherAdvice(forty, marriott, [tokyo, kyoto], mk(value, rates))!;
-    expect(a).toMatchObject({ verdict: 'top-up', best: { city: 'Kyoto', tier: 'luxury', points: 64000, topUp: 24000, cashGBP: 394, worthGBP: 274 } });
+    expect(a).toMatchObject({ verdict: 'top-up', best: { city: 'Kyoto', tier: 'luxury', points: 64000, topUp: 24000, cashGBP: 384, worthGBP: 264 } });
     expect(voucherLine(a).title).toBe('Top up the 40k free night');
-    expect(voucherLine(a).sub).toBe('luxury in Kyoto, ~£394 · ~64,000 pts · +24,000 top-up · £200 to you');
+    expect(voucherLine(a).sub).toBe('luxury in Kyoto, ~£384 · ~64,000 pts · +24,000 top-up · £200 to you');
   });
 
   // A 50k voucher was spent on a 27,500-point night seven months before
   // it expired; it now asks its full worth until the last six months.
   it('asks less of a night only in the voucher’s last six months', () => {
     const fifty = voucher({ id: 'v50', name: '50,000pt free night', value: 250, expiryDate: '2027-12-01' });
-    // Seven months out: still the full £250, so a £197 night doesn't do.
+    // Six and a half months out: still the full £250, so a £192 night doesn't do.
     expect(voucherAdvice(fifty, marriott, [tokyo], mk(value, rates))).toMatchObject({ verdict: 'keep', neededGBP: 250 });
-    // Three months out (92 days): about half its worth will do.
+    // Under two and a half months out (73 days): about 40% of its worth will do.
     const a = voucherAdvice({ ...fifty, expiryDate: '2027-08-01' }, marriott, [tokyo], mk(value, rates))!;
-    expect(a.neededGBP).toBe(126);
-    expect(a).toMatchObject({ verdict: 'use-soon', best: { tier: 'mid', worthGBP: 197 } });
+    expect(a.neededGBP).toBe(100);
+    expect(a).toMatchObject({ verdict: 'use-soon', best: { tier: 'mid', worthGBP: 192 } });
     expect(voucherLine(a).title).toBe('Use the 50k free night before it goes');
   });
 
   it('only counts stops before it expires', () => {
-    const a = voucherAdvice({ ...forty, expiryDate: '2027-05-03' }, marriott, [tokyo, kyoto], mk(value, rates))!;
+    const a = voucherAdvice({ ...forty, expiryDate: '2027-05-22' }, marriott, [tokyo, kyoto], mk(value, rates))!;
     expect(a.best?.city).toBe('Tokyo');
   });
 
@@ -361,6 +363,42 @@ describe('voucherAdvice', () => {
   it('needs a cap it can read and the programme’s point value', () => {
     expect(voucherAdvice(voucher({ name: 'Free night' }), marriott, [tokyo], mk(value, rates))).toBeNull();
     expect(voucherAdvice(forty, marriott, [tokyo], mk(null, rates))).toBeNull();
+  });
+});
+
+describe('measured event prices', () => {
+  const stop = (city: string, country: string, checkIn: string, nights: number) => ({ city, country, checkIn, nights });
+  it('takes the programme’s own hotels where they were sampled', () => {
+    // Dubai's Marriotts over New Year: the middle hotel at 2.48x mid-January.
+    expect(eventPrices(stop('Dubai', 'United Arab Emirates', '2026-12-31', 2), 'Marriott Bonvoy')).toEqual({ event: 'New Year', set: 'Marriott', ratio: 2.48, hotels: 5, baseline: ['2027-01-13', '2027-01-16'] });
+    // Tokyo's Marriotts were cheaper in Golden Week.
+    expect(eventPrices(stop('Tokyo', 'Japan', '2027-05-02', 3), 'Marriott Bonvoy')?.ratio).toBe(0.83);
+  });
+  it('else the sample with most hotels', () => {
+    expect(eventPrices(stop('Tokyo', 'Japan', '2027-05-02', 3), 'World of Hyatt')).toMatchObject({ set: '4-5★', ratio: 1.07, hotels: 5 });
+  });
+  it('says nothing where nothing was measured', () => {
+    expect(eventPrices(stop('Tokyo', 'Japan', '2027-05-20', 3))).toBeNull();
+    expect(eventPrices(stop('Osaka', 'Japan', '2027-05-02', 3))).toBeNull();
+    expect(eventPrices(stop('Tokyo', 'Japan', '2027-05-05', 2))).toBeNull(); // checks in the morning it ends
+  });
+  it('prices Marriott cash at the member rate', () => {
+    expect(memberCash('Marriott Bonvoy', 200)).toBe(195);
+    expect(memberCash('Hilton Honors', 200)).toBe(200);
+  });
+  it('shows a measured event and a holiday in For you', () => {
+    const items = forYou({
+      flights: [], stays: [stay({ programme: 'Marriott Bonvoy' })], stops: [stop('Dubai', 'UAE', '2026-12-30', 3)],
+      outlooks: [{ ...stopOutlook([], [], stop('Tokyo', 'Japan', '2027-05-01', 4), [{ date: '2027-05-03', name: 'Constitution Memorial Day', localName: '', global: true, types: [] }])! }].filter((o) => o.guide),
+    });
+    expect(items.find((i) => i.kind === 'prices')).toEqual({ kind: 'prices', title: 'New Year in Dubai', sub: 'Marriott +148% on 13–15 Jan · 5 hotels' });
+  });
+  it('writes holidays and nights short', () => {
+    const hol = (date: string, name: string) => ({ date, name, localName: '', global: true, types: [] });
+    expect(holidayLine([hol('2027-05-03', 'Constitution Memorial Day'), hol('2027-05-04', 'Greenery Day')])).toBe('Constitution Memorial Day, 3 May (long weekend) · +1 more');
+    expect(holidayLine([])).toBeNull();
+    expect(nightsRange(['2026-12-30', '2027-01-02'])).toBe('30 Dec–1 Jan');
+    expect(nightsRange(['2027-01-13', '2027-01-16'])).toBe('13–15 Jan');
   });
 });
 
@@ -523,6 +561,13 @@ describe('agentContext', () => {
     expect(ctx.visited).toEqual(['Kyoto', 'Tokyo']);
   });
   it('has no month or regions before a date is picked', () => {
-    expect(agentContext('Japan', null, 12, [climateRow('Apr')], [], [], 'London')).toEqual({ month: null, regions: [], visited: [], home: 'London' });
+    expect(agentContext('Japan', null, 12, [climateRow('Apr')], [], [], 'London')).toEqual({ month: null, holidays: [], regions: [], visited: [], home: 'London' });
+  });
+  it('lists the national holidays in the trip', () => {
+    const hols = [
+      { date: '2027-04-29', name: 'Shōwa Day', localName: '', global: true, types: [] },
+      { date: '2027-05-03', name: 'Constitution Memorial Day', localName: '', global: true, types: [] },
+    ];
+    expect(agentContext('Japan', '2027-05-01', 6, [], [], [], 'London', hols).holidays).toEqual([{ date: '2027-05-03', name: 'Constitution Memorial Day' }]);
   });
 });

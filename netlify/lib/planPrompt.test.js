@@ -9,6 +9,7 @@ const japanApril = {
     { region: 'Okinawa', highC: 24.8, rainMm: 179.2, crowd: 'medium', price: 'medium', event: null },
   ],
   visited: ['Kyoto', 'Tokyo'],
+  holidays: [{ date: '2027-04-29', name: 'Shōwa Day' }],
 };
 
 describe('what the agent is told', () => {
@@ -19,6 +20,8 @@ describe('what the agent is told', () => {
       'FACTS for April:',
       '- Tokyo / Kanto: high 19C, rain 125mm, crowds high, prices high (Cherry blossom)',
       '- Okinawa: high 25C, rain 179mm, crowds medium, prices medium',
+      '',
+      'HOLIDAYS: 2027-04-29 Shōwa Day',
       '',
       'VISITED: Kyoto, Tokyo',
     ].join('\n'));
@@ -31,6 +34,9 @@ describe('what the agent is told', () => {
   test('the rules hold it to the facts it was given', () => {
     expect(SYSTEM_PROMPT).toMatch(/Rely on them, not your own memory/);
     expect(SYSTEM_PROMPT).toMatch(/Prefer places they haven't been/);
+    // Holidays don't simply mean dearer hotels (Tokyo's Marriotts were
+    // cheaper in Golden Week), so it isn't told they do.
+    expect(SYSTEM_PROMPT).toMatch(/Don't assume they make hotels dearer/);
   });
 
   test('facts from the browser are trimmed to a sane size and shape', () => {
@@ -38,7 +44,9 @@ describe('what the agent is told', () => {
       month: 'April'.repeat(10),
       regions: [...Array(30)].map((_, i) => ({ region: `R${i}`, highC: 'hot', rainMm: 10, crowd: 'high', event: 'x'.repeat(500) })),
       visited: ['Kyoto', 42, ''],
+      holidays: [{ date: '2027-05-03', name: 'Constitution Memorial Day' }, { date: 'soon', name: 'x' }, null],
     });
+    expect(c.holidays).toEqual([{ date: '2027-05-03', name: 'Constitution Memorial Day' }]);
     expect(c.month).toHaveLength(20);
     expect(c.regions).toHaveLength(20);
     expect(c.regions[0]).toEqual({ region: 'R0', highC: null, rainMm: 10, crowd: 'high', price: null, event: 'x'.repeat(80) });
