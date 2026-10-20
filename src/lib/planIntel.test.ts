@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   agentContext, airPassengerDuty, apdBand, awardCashLabel, awardOptions, awardPointsLabel, seasonOn, cityCashRates, forYou, nightsFromBalance,
-  eventPrices, holidayLine, measuredCash, memberCash, schoolLine, schoolNote, nightPoints, nightsRange, pointsPerNight, seasonalCashUsd, shortDriver, stopPriceLevel, statusLabel, stayInsights, stayLines, stopOutlook, usualAwardCabin, voucherAdvice, voucherCap, voucherLine, type StayInsight,
+  eventPrices, holidayLine, marketPriceLevel, measuredCash, memberCash, schoolLine, schoolNote, nightPoints, nightsRange, pointsPerNight, seasonalCashUsd, shortDriver, stopPriceLevel, statusLabel, stayCashUsd, stayInsights, stayLines, stopOutlook, usualAwardCabin, voucherAdvice, voucherCap, voucherLine, type StayInsight,
   type VoucherAdvice,
 } from './planIntel';
 import { nightsForTier } from './statusProgress';
+import { addDays } from './tripDay';
 import { makeFlight, makeHotel } from '../test/fixtures';
 import type { LoyaltyProgramme, Promotion, Voucher } from '../types';
 import type { CityCashRate, PointsValueProgramme, RealClimateMonth, RealCrowdPriceMonth } from './queries';
@@ -691,6 +692,28 @@ describe('measuredCash (the price database)', () => {
     expect(measuredCash(stop('2027-08-10'), 'Marriott Bonvoy', 'mid', m)).toEqual({ usd: 527, low: 483, high: 577, hotels: 4, basis: 'season' });
     // Same month: as measured.
     expect(measuredCash(stop('2027-03-20'), 'Marriott Bonvoy', 'mid', m)?.usd).toBe(395);
+  });
+  it('moves them by the city’s measured month factors where it has them', () => {
+    // Three other hotels priced in March and August, every one at 1.5x in
+    // August: the city's index says August costs 1.5x March, and that
+    // beats the researched range's 4/3 for the four Marriotts priced only
+    // in March.
+    const other = (when: string, x: number): PriceSearch => ({ city: 'Barcelona', country: 'Spain', in: when, out: addDays(when, 3), q: '4-5★', hotels: [['Hotel A', 200 * x, 4], ['Hotel B', 300 * x, 4], ['Hotel C', 400 * x, 5]] });
+    const m = market([plain, other('2027-03-10', 1), other('2027-08-11', 1.5)], [crowd('Mar', 'medium'), crowd('Aug', 'high')]);
+    expect(measuredCash(stop('2027-08-10'), 'Marriott Bonvoy', 'mid', m)).toMatchObject({ usd: 593, hotels: 4, basis: 'season' });
+  });
+  it('reads a stay’s price level and a researched rate’s season from the measured months', () => {
+    // March and August, August 1.5x: about the year's average, March is
+    // 0.82x (low) and August 1.22x (high), whatever the crowd table says.
+    const other = (when: string, x: number): PriceSearch => ({ city: 'Barcelona', country: 'Spain', in: when, out: addDays(when, 3), q: '4-5★', hotels: [['Hotel A', 200 * x, 4], ['Hotel B', 300 * x, 4], ['Hotel C', 400 * x, 5]] });
+    const m = market([other('2027-03-10', 1), other('2027-08-11', 1.5)], [crowd('Mar', 'high'), crowd('Aug', 'medium')]);
+    expect(marketPriceLevel(m, stop('2027-03-20'))).toBe('low');
+    expect(marketPriceLevel(m, stop('2027-08-10'))).toBe('high');
+    // A month with no measurement goes by the table.
+    expect(marketPriceLevel(m, stop('2027-10-10'))).toBeNull();
+    // The researched $150-300 middle times August's factor, not the range's top.
+    expect(Math.round(stayCashUsd(rates[0], stop('2027-08-10'), m))).toBe(276);
+    expect(stayCashUsd(rates[0], stop('2027-08-10'), market([], [crowd('Aug', 'high')]))).toBe(300);
   });
   it('leaves event nights out of a plain price, and needs two hotels', () => {
     // Only the congress was searched for Luxury: no plain price to move.

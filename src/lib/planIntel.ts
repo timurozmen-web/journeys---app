@@ -6,7 +6,7 @@ import { FREE_NIGHT_TOP_UP } from '../data/freeNights';
 import { BA_DISPUTED_2026, BA_KNOWN, BA_PEAK_2026, VS_PEAK, type SeasonCalendar } from '../data/awardSeasons';
 import { HOTEL_PRICING, HYATT_LEVELS } from '../data/hotelAwardPricing';
 import { MEMBER_RATE_DISCOUNT, PRICE_EVENTS } from '../data/priceEvents';
-import { citySearches, eventPairs, rowProgramme, rowTier, type PriceSearch, type Tier } from './hotelPrices';
+import { citySearches, eventPairs, rowProgramme, rowTier, seasonIndex, type PriceSearch, type Tier } from './hotelPrices';
 import { holidaysDuring, longWeekend, schoolBreakDuring, shortDate, type Holiday, type SchoolBreak, type SchoolHoliday } from './holidays';
 import { promoBonusForStay } from './promoBonus';
 import { addDays } from './tripDay';
@@ -239,6 +239,39 @@ export function stopPriceLevel(crowd: RealCrowdPriceMonth[], stop: PlannedStop):
   return findCrowdPriceMonth(crowd, stop.city, stop.country, MONTH_NAMES[month].slice(0, 3))?.priceLevel ?? null;
 }
 
+/** The city's measured month factor (seasonIndex) for most of a stay's nights, where it has one. */
+export function stayMonthFactor(stop: PlannedStop, prices: PriceSearch[] | undefined): number | null {
+  if (!stop.checkIn || !prices?.length) return null;
+  const month = dominantMonth(stop.checkIn, addDays(stop.checkIn, stop.nights)) + 1;
+  return seasonIndex(stop.city, stop.country, PRICE_EVENTS, prices)?.months.get(month) ?? null;
+}
+
+/**
+ * How dear a stay's month is: measured where the city has a month index
+ * (more than a tenth under its year's average is low, over is high), else
+ * the crowd and price table. The table's levels are researched, not
+ * measured: it has Tokyo's January medium where its hotels were 23% under
+ * the year's average.
+ */
+export function marketPriceLevel(market: Market, stop: PlannedStop): PriceLevel | null {
+  const f = stayMonthFactor(stop, market.prices);
+  if (f != null) return f < 0.9 ? 'low' : f > 1.1 ? 'high' : 'medium';
+  return stopPriceLevel(market.crowd, stop);
+}
+
+/**
+ * A researched rate in a stay's season: its middle times the city's
+ * measured month factor where it has one (the researched ranges are far
+ * narrower than the year's real swing: New York's mid-range $338-423,
+ * where its hotels cost 2.6x as much in early December as in January),
+ * else placed in the range by the month's level (seasonalCashUsd).
+ */
+export function stayCashUsd(rate: CityCashRate, stop: PlannedStop, market: Market): number {
+  const f = stayMonthFactor(stop, market.prices);
+  if (f != null) return ((rate.priceLowUsd + rate.priceHighUsd) / 2) * f;
+  return seasonalCashUsd(rate, stopPriceLevel(market.crowd, stop));
+}
+
 /**
  * A night's cash at one of a city's price levels, placed by season: the
  * researched range runs from its low season to its high (Tokyo's mid-range
@@ -348,9 +381,10 @@ export interface MeasuredCash {
  * a city, from the price database, where at least two such hotels were
  * priced. Hotels priced for nights overlapping the stay are taken as they
  * are. Otherwise plain-night prices (not an event's) are moved to the
- * stay's month by the city's researched price range: a night measured in
- * a low month and wanted in a high one takes the range's top over its
- * bottom. Then any measured event on the stay's nights. Each hotel counts
+ * stay's month by the city's measured month factors (seasonIndex), else
+ * by its researched price range (a night measured in a low month and
+ * wanted in a high one takes the range's top over its bottom), which
+ * backtests far worse. Then any measured event on the stay's nights. Each hotel counts
  * once, at the average of its prices. Null where too few were priced:
  * the researched city rates stand in.
  */
@@ -375,7 +409,12 @@ export function measuredCash(stop: PlannedStop, programme: string | null, tier: 
   const plain = rows.filter(({ s }) => !events.some((e) => s.in < e.window[1] && s.out > e.window[0]));
   const rate = cityCashRates(market.rates, stop.country, stop.city).find((r) => r.tier === tier) ?? null;
   const want = stopPriceLevel(market.crowd, stop);
+  const index = seasonIndex(stop.city, stop.country, PRICE_EVENTS, market.prices);
   const toSeason = (s: PriceSearch) => {
+    // The city's measured month factors where both months have one.
+    const measuredWant = stayMonthFactor(stop, market.prices);
+    const measuredHad = index?.months.get(Number(s.in.slice(5, 7)));
+    if (measuredWant && measuredHad) return measuredWant / measuredHad;
     const had = stopPriceLevel(market.crowd, { city: stop.city, country: stop.country, checkIn: s.in, nights: Math.max(1, (Date.parse(s.out) - Date.parse(s.in)) / 86400000) });
     if (!rate || !want || !had || want === had) return 1;
     return seasonalCashUsd(rate, want) / seasonalCashUsd(rate, had);
@@ -507,7 +546,7 @@ export function voucherAdvice(v: Voucher, programme: LoyaltyProgramme, stops: Pl
   const usable = stops.filter((s) => s.checkIn && (!v.expiryDate || s.checkIn <= v.expiryDate));
   let best: VoucherAdvice['best'] = null;
   for (const s of usable) {
-    const level = stopPriceLevel(market.crowd, s);
+    const level = marketPriceLevel(market, s);
     const rates = cityCashRates(market.rates, s.country, s.city);
     for (const tier of TIERS) {
       const surge = eventPrices(s, programme.name, market.prices, tier)?.ratio ?? 1;
@@ -515,7 +554,7 @@ export function voucherAdvice(v: Voucher, programme: LoyaltyProgramme, stops: Pl
       const m = measuredCash(s, programme.name, tier, market);
       const r = rates.find((x) => x.tier === tier);
       if (!m && !r) continue;
-      const cashUsd = m ? m.usd : seasonalCashUsd(r!, level) * surge;
+      const cashUsd = m ? m.usd : stayCashUsd(r!, s, market) * surge;
       const points = nightPoints(programme.name, cashUsd, level, market)?.points;
       if (points == null || points > cap + topUpMax) continue;
       const topUp = Math.max(0, points - cap);
@@ -605,11 +644,11 @@ export function stayInsights(
   // rate in its season, moved by any measured event on those nights.
   const night = (programme: string, tier: CityCashRate['tier']) => {
     for (const s of stops) {
-      const level = stopPriceLevel(market.crowd, s);
+      const level = marketPriceLevel(market, s);
       const measured = measuredCash(s, programme, tier, market);
       if (measured) return { cashUsd: measured.usd, level, stop: s, measured };
       const r = cityCashRates(market.rates, s.country, s.city).find((x) => x.tier === tier);
-      if (r) return { cashUsd: seasonalCashUsd(r, level) * (eventPrices(s, programme, market.prices, tier)?.ratio ?? 1), level, stop: s, measured: null };
+      if (r) return { cashUsd: stayCashUsd(r, s, market) * (eventPrices(s, programme, market.prices, tier)?.ratio ?? 1), level, stop: s, measured: null };
     }
     return null;
   };

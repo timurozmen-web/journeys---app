@@ -16,7 +16,7 @@ import { useCardResults } from '../lib/useCardResults';
 import { computeStatusProgress } from '../lib/statusProgress';
 import { withLiveOverrides } from '../lib/walletValue';
 import {
-  agentContext, airPassengerDuty, awardCashLabel, awardOptions, awardPointsLabel, holidayLine, schoolNote, cityCashRates as ratesForCity, forYou, measuredCash, nightPoints, nightPointsShort, stayInsights, stayLines,
+  agentContext, airPassengerDuty, awardCashLabel, awardOptions, awardPointsLabel, holidayLine, schoolNote, cityCashRates as ratesForCity, forYou, measuredCash, nightPoints, nightPointsShort, stayCashUsd, stayInsights, stayLines,
   stopOutlook, usualAwardCabin, type ForYouItem, type Market, type PlannedStop, type StopOutlook,
 } from '../lib/planIntel';
 import type { AwardCabin } from '../data/awardClasses';
@@ -137,7 +137,8 @@ function CashVsPoints({ country, city, stop, market }: { country: string; city: 
         {(['budget', 'mid', 'luxury'] as const).map((tier) => {
           const rate = matched.find((r) => r.tier === tier);
           if (!rate) return null;
-          const midCashUsd = (rate.priceLowUsd + rate.priceHighUsd) / 2;
+          // The researched rate in the stop's season, where it has a date.
+          const midCashUsd = stop ? stayCashUsd(rate, stop, market) : (rate.priceLowUsd + rate.priceHighUsd) / 2;
           return (
             <div key={tier}>
               <div className="cashpts-tier">

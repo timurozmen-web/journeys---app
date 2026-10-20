@@ -143,3 +143,123 @@ export function heldOutEventError(events: PriceEvent[], db: PriceSearch[] = HOTE
   }
   return { error: median(errors), ignoring: median(flat), hotels: errors.length };
 }
+
+/** How a city's hotel prices move through the year, measured. */
+export interface SeasonIndex {
+  /** Each month's prices over the year's average (1-12 to a factor), for months with enough hotels priced. */
+  months: Map<number, number>;
+  /** Hotels priced in two months or more: the ones the index is drawn from. */
+  hotels: number;
+}
+
+// A month needs this many hotels also priced in another month before it
+// gets a factor: fewer and one hotel's odd price moves the whole month.
+const MIN_MONTH_HOTELS = 3;
+const seasonCache = new WeakMap<PriceSearch[], WeakMap<PriceEvent[], Map<string, SeasonIndex | null>>>();
+
+/**
+ * The city's month-by-month price index from the database's plain nights
+ * (an event's nights left out): each hotel has its own price level and
+ * each month a factor, fitted together to every hotel priced in two
+ * months or more (log price = hotel + month, by alternating means). The
+ * same hotels, not each month's mix, set the factors, so a month whose
+ * search came back with dearer hotels doesn't read as a dear month.
+ *
+ * It replaces the researched price range for moving a price from one
+ * month to another, which was out by more than not moving it at all:
+ * held out one hotel-month at a time (Oct 2026-Sep 2027, searched 20 Oct
+ * 2026), the index predicts a hotel's price in another month to a median
+ * 12% in Dubai, 8% in Tokyo and 10% in New York; the researched ranges
+ * 19%, 24% and 30%; no change 24%, 15% and 33%. Null for a city priced in
+ * fewer than two months.
+ */
+type SeasonObs = { hotel: string; month: number; y: number };
+
+/** A city's plain-night prices, one per hotel and month (the mean of its log prices). */
+function seasonObservations(city: string, country: string, events: PriceEvent[], db: PriceSearch[]): SeasonObs[] {
+  const own = events.filter((e) => sameCountry(e.country, country) && sameCity(e.city, city));
+  const logs = new Map<string, number[]>();
+  for (const s of citySearches(city, country, db)) {
+    if (own.some((e) => s.in < e.window[1] && s.out > e.window[0])) continue;
+    const month = Number(s.in.slice(5, 7));
+    for (const r of s.hotels) if (r[1] != null && r[1] > 0) {
+      const k = `${r[0].toLowerCase()}|${month}`;
+      logs.set(k, [...(logs.get(k) ?? []), Math.log(r[1])]);
+    }
+  }
+  return [...logs].map(([k, xs]) => ({ hotel: k.slice(0, k.lastIndexOf('|')), month: Number(k.slice(k.lastIndexOf('|') + 1)), y: xs.reduce((a, b) => a + b, 0) / xs.length }));
+}
+
+/** Fits log price = hotel level + month factor to hotels priced in two months or more; null under two months. */
+function fitSeason(all: SeasonObs[]): { level: Map<string, number>; factor: Map<number, number> } | null {
+  let obs = all;
+  // Only hotels seen in two months say anything about the months; a month
+  // too thinly linked is dropped, which can unlink a hotel, so repeat.
+  for (let changed = true; changed;) {
+    const months = new Map<string, number>();
+    for (const o of obs) months.set(o.hotel, (months.get(o.hotel) ?? 0) + 1);
+    const linked = obs.filter((o) => months.get(o.hotel)! >= 2);
+    const perMonth = new Map<number, number>();
+    for (const o of linked) perMonth.set(o.month, (perMonth.get(o.month) ?? 0) + 1);
+    const kept = linked.filter((o) => perMonth.get(o.month)! >= MIN_MONTH_HOTELS);
+    changed = kept.length !== obs.length;
+    obs = kept;
+  }
+  const monthSet = new Set(obs.map((o) => o.month));
+  if (monthSet.size < 2) return null;
+  const level = new Map<string, number>();
+  const factor = new Map<number, number>([...monthSet].map((m) => [m, 0]));
+  const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  for (let i = 0; i < 100; i++) {
+    const byHotel = new Map<string, number[]>();
+    for (const o of obs) byHotel.set(o.hotel, [...(byHotel.get(o.hotel) ?? []), o.y - factor.get(o.month)!]);
+    for (const [h, xs] of byHotel) level.set(h, mean(xs));
+    const byMonth = new Map<number, number[]>();
+    for (const o of obs) byMonth.set(o.month, [...(byMonth.get(o.month) ?? []), o.y - level.get(o.hotel)!]);
+    for (const [m, xs] of byMonth) factor.set(m, mean(xs));
+    const centre = mean([...factor.values()]);
+    for (const [m, f] of factor) factor.set(m, f - centre);
+  }
+  return { level, factor };
+}
+
+export function seasonIndex(city: string, country: string, events: PriceEvent[], db: PriceSearch[] = HOTEL_PRICES): SeasonIndex | null {
+  const key = `${city}|${country}`.toLowerCase();
+  // Plan asks for the same city once per programme and price level.
+  let byEvents = seasonCache.get(db);
+  if (!byEvents) seasonCache.set(db, (byEvents = new WeakMap()));
+  let cached = byEvents.get(events);
+  if (!cached) byEvents.set(events, (cached = new Map()));
+  if (cached.has(key)) return cached.get(key)!;
+  const fit = fitSeason(seasonObservations(city, country, events, db));
+  const index = fit && { months: new Map([...fit.factor].map(([m, f]) => [m, Math.exp(f)])), hotels: fit.level.size };
+  cached.set(key, index);
+  return index;
+}
+
+/**
+ * The index checked against the prices it's drawn from: each hotel's
+ * price in a month, held out, predicted from the index fitted without it
+ * (the hotel's level times the month's factor), as the median error over
+ * every hotel-month; and, for comparison, the error of taking the hotel's
+ * average from its other months unchanged. Null where too little to test.
+ */
+export function heldOutSeasonError(city: string, country: string, events: PriceEvent[], db: PriceSearch[] = HOTEL_PRICES): { error: number; unshifted: number; held: number } | null {
+  const obs = seasonObservations(city, country, events, db);
+  const errors: number[] = [];
+  const flat: number[] = [];
+  for (const o of obs) {
+    const others = obs.filter((x) => x.hotel === o.hotel && x !== o);
+    if (!others.length) continue;
+    const fit = fitSeason(obs.filter((x) => x !== o));
+    const level = fit?.level.get(o.hotel);
+    const factor = fit?.factor.get(o.month);
+    if (level == null || factor == null) continue;
+    const actual = Math.exp(o.y);
+    errors.push(Math.abs(Math.exp(level + factor) - actual) / actual);
+    flat.push(Math.abs(Math.exp(others.reduce((a, x) => a + x.y, 0) / others.length) - actual) / actual);
+  }
+  if (!errors.length) return null;
+  const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); const n = s.length; return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2; };
+  return { error: median(errors), unshifted: median(flat), held: errors.length };
+}

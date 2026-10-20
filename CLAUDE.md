@@ -175,9 +175,12 @@ Run all three; all must be clean:
     does (`src/data/hotelAwardPricing.ts`): Accor is money off (2,000 per
     €40), Hyatt is its chart (the category whose Moderate price fits the
     cash rate, at the season's level), Marriott and IHG are dynamic with no
-    cap, Hilton dynamic up to 250,000. Cash is placed in the city's range
-    by the month's price level (`seasonalCashUsd`): bottom in a cheap
-    month, top in a dear one. Marriott cash is the booking sites' price
+    cap, Hilton dynamic up to 250,000. A researched rate is put in the
+    stay's season by the city's measured month factor where it has one
+    (`stayCashUsd`: the range's middle times the factor), else by the
+    month's price level (`seasonalCashUsd`: bottom in a cheap month, top
+    in a dear one); the level itself is measured where it can be
+    (`marketPriceLevel`). Marriott cash is the booking sites' price
     less its member rate (2.5%, the user's own figure: `MEMBER_RATE_DISCOUNT`).
   - Hotel prices are measured: `src/data/hotelPrices.json` is a database
     of every hotel price search as it came back (SlickTrip, comparing the
@@ -189,7 +192,14 @@ Run all three; all must be clean:
     anything else by stars. `measuredCash` prices a programme's night at a
     level in a city from its hotels there (two or more): as priced where
     the search covers the stay's nights, else plain-night prices moved to
-    the stay's season by the city's researched range, then any event. It
+    the stay's month by the city's month index, then any event. The index
+    (`seasonIndex`) is fitted to the same hotels priced in different months
+    (log price = hotel + month), from one 4-5★ search a month (Wednesday to
+    Saturday in the second week; rates more than about eleven months out
+    aren't published). Held out one hotel-month at a time it predicts a
+    hotel's price in another month to 8-12% (Dubai, Tokyo, New York); the
+    researched ranges it replaced were 19-30% out, worse than no change in
+    Tokyo. Cities without one fall back to the researched range. It
     replaces the researched rate for that programme in Where to stay, the
     voucher advice and Cash or points. Searching: the brand filter matches
     the name and the search is "<brand> <city>", so "Marriott Barcelona"
