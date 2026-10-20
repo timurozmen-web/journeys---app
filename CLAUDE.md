@@ -198,8 +198,9 @@ Run all three; all must be clean:
     Saturday in the second week; rates more than about eleven months out
     aren't published). Held out one hotel-month at a time it predicts a
     hotel's price in another month to 7-12% (Dubai, Tokyo, New York,
-    London, Paris); the researched ranges it replaced were 19-30% out,
-    worse than no change in Tokyo. Cities without one fall back to the researched range. It
+    London, Paris, Las Vegas); the researched ranges it replaced were
+    19-30% out, worse than no change in Tokyo. Mexico City's hotels mostly
+    hold one price all year: no change is 5% out there, the index 6%. Cities without one fall back to the researched range. It
     replaces the researched rate for that programme in Where to stay, the
     voucher advice and Cash or points. Searching: the brand filter matches
     the name and the search is "<brand> <city>", so "Marriott Barcelona"
