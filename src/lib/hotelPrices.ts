@@ -116,3 +116,30 @@ export function eventPairs(e: PriceEvent, db: PriceSearch[] = HOTEL_PRICES): Pri
   }
   return pairs;
 }
+
+/**
+ * How well event ratios predict, held out one hotel at a time: each
+ * paired hotel's event price is predicted as its own plain-night price
+ * times the median ratio of the city's other paired hotels (at its own
+ * price level where at least `minLevel` others there were paired, if
+ * `byLevel`), and the median error over every hotel is returned, with the
+ * error of ignoring events altogether for comparison. Events with fewer
+ * than four pairs are skipped. A check on the method, run by the tests.
+ */
+export function heldOutEventError(events: PriceEvent[], db: PriceSearch[] = HOTEL_PRICES, byLevel = true, minLevel = 4): { error: number; ignoring: number; hotels: number } {
+  const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); const n = s.length; return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2; };
+  const errors: number[] = [];
+  const flat: number[] = [];
+  for (const e of events) {
+    const pairs = eventPairs(e, db);
+    if (pairs.length < 4) continue;
+    pairs.forEach((x, i) => {
+      const others = pairs.filter((_, j) => j !== i);
+      const same = others.filter((y) => y.tier === x.tier);
+      const ratio = median((byLevel && same.length >= minLevel ? same : others).map((y) => y.event / y.base));
+      errors.push(Math.abs(x.base * ratio - x.event) / x.event);
+      flat.push(Math.abs(x.base - x.event) / x.event);
+    });
+  }
+  return { error: median(errors), ignoring: median(flat), hotels: errors.length };
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PRICE_EVENTS } from '../data/priceEvents';
-import { eventPairs, HOTEL_PRICES, marriottSegment, rowProgramme, rowTier, type PriceRow } from './hotelPrices';
+import { eventPairs, heldOutEventError, HOTEL_PRICES, marriottSegment, rowProgramme, rowTier, type PriceRow } from './hotelPrices';
 
 // A brand search only returns that brand, so every hotel one priced must
 // be put to Marriott: a name the classifier can't place shows up here.
@@ -59,3 +59,19 @@ describe('eventPairs', () => {
     expect(eventPairs(mwc).some((q) => q.hotel === 'Renaissance Barcelona Hotel')).toBe(false);
   });
 });
+
+describe('event ratios held out one hotel at a time', () => {
+  // Each hotel's event price predicted from its own plain-night price and
+  // the other hotels' ratio. 20 Oct 2026: 12.4% by level, 13.0% city-wide,
+  // 48% ignoring events (240 hotels). If new searches push the error up a
+  // lot, the method needs another look, not a looser bound.
+  it('predicts a hotel’s event price far better than ignoring the event', () => {
+    const level = heldOutEventError(PRICE_EVENTS);
+    const city = heldOutEventError(PRICE_EVENTS, undefined, false);
+    expect(level.hotels).toBeGreaterThanOrEqual(200);
+    expect(level.error).toBeLessThan(0.2);
+    expect(level.error).toBeLessThan(level.ignoring / 2);
+    expect(level.error).toBeLessThanOrEqual(city.error + 0.01);
+  });
+});
+
