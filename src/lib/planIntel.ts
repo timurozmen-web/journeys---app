@@ -5,7 +5,8 @@ import { AWARD_CLASSES, type AwardCabin } from '../data/awardClasses';
 import { FREE_NIGHT_TOP_UP } from '../data/freeNights';
 import { BA_DISPUTED_2026, BA_KNOWN, BA_PEAK_2026, VS_PEAK, type SeasonCalendar } from '../data/awardSeasons';
 import { HOTEL_PRICING, HYATT_LEVELS } from '../data/hotelAwardPricing';
-import { MEMBER_RATE_DISCOUNT, PRICE_SAMPLES, type PriceSample } from '../data/priceSamples';
+import { MEMBER_RATE_DISCOUNT, PRICE_SAMPLES, type PricePair, type PriceSample } from '../data/priceSamples';
+import { programmeOfHotel } from '../data/brandMap';
 import { holidaysDuring, longWeekend, schoolBreakDuring, shortDate, type Holiday, type SchoolBreak, type SchoolHoliday } from './holidays';
 import { promoBonusForStay } from './promoBonus';
 import { addDays } from './tripDay';
@@ -13,7 +14,7 @@ import { blendedGuideForMonth, dominantMonth, findCrowdPriceMonth, MONTH_NAMES, 
 import type { HotelPlanOption } from './hotelPlanner';
 import { nightsForTier, type StatusProgress } from './statusProgress';
 import { formatDate } from './format';
-import { roundPointsEstimate } from './planFormat';
+import { roundPointsEstimate, shortProgramme } from './planFormat';
 import { countryKey, sameCountry } from './countryName';
 import type { CityCashRate, PointsValueProgramme, RealClimateMonth, RealCrowdPriceMonth } from './queries';
 
@@ -252,12 +253,17 @@ export function seasonalCashUsd(rate: CityCashRate, level: PriceLevel | null): n
 
 export interface EventPrices {
   event: string;
-  set: string;
+  /** Whose hotels the ratio is from: the stay's programme where enough were sampled, else null for every hotel sampled. */
+  programme: string | null;
   /** The middle hotel's event price over its plain-week price. */
   ratio: number;
   hotels: number;
   baseline: [string, string];
 }
+
+// A programme's own hotels are used when at least this many were sampled;
+// one hotel is that hotel's pricing, not the brand's in that city.
+const MIN_OWN_HOTELS = 2;
 
 const median = (xs: number[]) => {
   const s = [...xs].sort((a, b) => a - b);
@@ -266,23 +272,34 @@ const median = (xs: number[]) => {
 
 /**
  * What a measured event does to prices on a stay's nights
- * (src/data/priceSamples.ts): the sample for that city whose event nights
- * the stay overlaps, the programme's own hotels where sampled, else the
- * one with most hotels. Null where nothing was measured: a holiday alone
- * isn't taken to raise prices, as the samples show it often lowers them.
+ * (src/data/priceSamples.ts). Every sample of that city's event the stay
+ * overlaps is pooled, each hotel once (a St. Regis found by both a brand
+ * and a 4-5★ search is one hotel), and each hotel is put to its programme
+ * by name. The stay's programme's own hotels are used where at least two
+ * were sampled, else every hotel. It used to take one sample by the word
+ * in its search ("Marriott"), so the Sheratons, Westins and Moxys a
+ * Marriott member can book were never counted. Null where nothing was
+ * measured: a holiday alone isn't taken to raise prices, as the samples
+ * show it often lowers them.
  */
 export function eventPrices(stop: PlannedStop, programme: string | null = null): EventPrices | null {
   if (!stop.checkIn) return null;
   const checkOut = addDays(stop.checkIn, stop.nights);
   const city = stop.city.trim().toLowerCase();
-  const word = programme ? PROGRAMME_WORD[programme] : null;
   const matches = PRICE_SAMPLES.filter((x: PriceSample) => sameCountry(x.country, stop.country)
     && (city.includes(x.city.toLowerCase()) || x.city.toLowerCase().includes(city))
     && stop.checkIn! < x.window[1] && checkOut > x.window[0] && x.pairs.length > 0);
-  const pick = matches.find((x) => word?.test(x.set)) ?? [...matches].sort((a, b) => b.pairs.length - a.pairs.length)[0];
-  if (!pick) return null;
-  const ratio = Math.round(median(pick.pairs.map((q) => q.event / q.base)) * 100) / 100;
-  return { event: pick.event, set: pick.set, ratio, hotels: pick.pairs.length, baseline: pick.baseline };
+  if (matches.length === 0) return null;
+  const first = matches[0];
+  const byHotel = new Map<string, PricePair>();
+  for (const x of matches.filter((m) => m.event === first.event && m.window[0] === first.window[0])) {
+    for (const q of x.pairs) if (!byHotel.has(q.hotel.toLowerCase())) byHotel.set(q.hotel.toLowerCase(), q);
+  }
+  const all = [...byHotel.values()];
+  const own = programme ? all.filter((q) => programmeOfHotel(q.hotel) === programme) : [];
+  const use = own.length >= MIN_OWN_HOTELS ? own : all;
+  const ratio = Math.round(median(use.map((q) => q.event / q.base)) * 100) / 100;
+  return { event: first.event, programme: use === own ? programme : null, ratio, hotels: use.length, baseline: first.baseline };
 }
 
 /** Cash for a night at the member rate, where the programme has one cheaper than the booking sites. */
@@ -745,7 +762,8 @@ export function forYou(input: {
     const e = eventPrices(st, programme);
     if (!e) continue;
     const pct = Math.round((e.ratio - 1) * 100);
-    out.push({ kind: 'prices', title: `${e.event} in ${st.city}`, sub: `${e.set} ${pct >= 0 ? '+' : '−'}${Math.abs(pct)}% on ${nightsRange(e.baseline)} · ${e.hotels} hotel${e.hotels === 1 ? '' : 's'}` });
+    const change = `${pct >= 0 ? '+' : '−'}${Math.abs(pct)}% on ${nightsRange(e.baseline)} · ${e.hotels} hotel${e.hotels === 1 ? '' : 's'}`;
+    out.push({ kind: 'prices', title: `${e.event} in ${st.city}`, sub: e.programme ? `${shortProgramme(e.programme)} ${change}` : change });
     break;
   }
 

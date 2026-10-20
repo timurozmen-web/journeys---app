@@ -183,12 +183,16 @@ Run all three; all must be clean:
     (`eventPrices`, samples in `src/data/priceSamples.ts`): the same
     hotels priced for the event's nights and for plain nights a fortnight
     away, the median ratio applied to the stay's cash. Holidays don't all
-    raise prices: Dubai's Marriotts were x2.48 over New Year, Edinburgh's
-    x4.1 at Hogmanay, but Tokyo's x0.83 in Golden Week, Rome's x0.76 at
+    raise prices: Dubai's Marriotts were x2.4 over New Year, Edinburgh's
+    x4.1 at Hogmanay, but Tokyo's x0.83 in Golden Week, Rome's x0.82 at
     Easter, Las Vegas's flat for the Grand Prix. 19 events in 17 cities so
-    far; a city with no sample gets no uplift. To add one, follow the note
-    at the top of that file (brand searches only find hotels with
-    "Marriott" in the name, so thin cities get a 4-5★ sample too).
+    far; a city with no sample gets no uplift. An event's samples are
+    pooled and each hotel put to its programme by name
+    (`programmeOfHotel` in `src/data/brandMap.ts`: a Sheraton, Westin,
+    Moxy or W is Marriott), and a stay uses its programme's own hotels
+    where at least two were sampled, else every hotel. The search's brand
+    filter matches the name, so "Marriott" misses the sub-brands: search
+    them too, as the note at the top of that file says.
   - Public holidays: Nager.Date (free, no key) through
     `netlify/functions/holidays.js`, as the browser can't reach it;
     `useHolidays` keeps each country and year on the device for 30 days.
