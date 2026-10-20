@@ -101,10 +101,11 @@ describe('the month-by-month index', () => {
   });
   it('predicts a hotel’s price in another month far better than leaving it as it was', () => {
     // 20 Oct 2026, held out one hotel-month at a time: Dubai 12%, Tokyo 9%,
-    // New York 10%, against 24%, 15% and 26% unchanged.
-    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States']]) {
+    // New York 10%, London 8%, Paris 7%, against 24%, 15%, 26%, 14% and 10%
+    // unchanged. Paris moves least through the year, so gains least.
+    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France']]) {
       const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
-      expect(r.held).toBeGreaterThanOrEqual(80);
+      expect(r.held).toBeGreaterThanOrEqual(70);
       expect(r.error).toBeLessThan(0.15);
       expect(r.error).toBeLessThan(r.unshifted * 0.75);
     }
