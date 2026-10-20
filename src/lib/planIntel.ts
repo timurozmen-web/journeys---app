@@ -6,7 +6,7 @@ import { FREE_NIGHT_TOP_UP } from '../data/freeNights';
 import { BA_DISPUTED_2026, BA_KNOWN, BA_PEAK_2026, VS_PEAK, type SeasonCalendar } from '../data/awardSeasons';
 import { HOTEL_PRICING, HYATT_LEVELS } from '../data/hotelAwardPricing';
 import { MEMBER_RATE_DISCOUNT, PRICE_EVENTS } from '../data/priceEvents';
-import { citySearches, eventPairs, rowProgramme, rowTier, type PriceSearch } from './hotelPrices';
+import { citySearches, eventPairs, rowProgramme, rowTier, type PriceSearch, type Tier } from './hotelPrices';
 import { holidaysDuring, longWeekend, schoolBreakDuring, shortDate, type Holiday, type SchoolBreak, type SchoolHoliday } from './holidays';
 import { promoBonusForStay } from './promoBonus';
 import { addDays } from './tripDay';
@@ -257,6 +257,8 @@ export interface EventPrices {
   event: string;
   /** Whose hotels the ratio is from: the stay's programme where enough were sampled, else null for every hotel sampled. */
   programme: string | null;
+  /** The price level the ratio is from, where enough hotels at the stay's level were paired; null for every level. */
+  tier: Tier | null;
   /** The middle hotel's event price over its plain-week price. */
   ratio: number;
   hotels: number;
@@ -266,6 +268,8 @@ export interface EventPrices {
 // A programme's own hotels are used when at least this many were sampled;
 // one hotel is that hotel's pricing, not the brand's in that city.
 const MIN_OWN_HOTELS = 2;
+// Pairs needed at one price level before that level's own event ratio is used.
+const MIN_LEVEL_PAIRS = 4;
 
 const median = (xs: number[]) => {
   const s = [...xs].sort((a, b) => a - b);
@@ -288,14 +292,21 @@ const sameCity = (a: string, b: string) => {
  * What a measured event (src/data/priceEvents.ts) does to prices on a
  * stay's nights: the hotels priced in the price database for both its
  * nights and its plain nights, whichever search found them, each put to
- * its programme by name. The stay's programme's own hotels are used where
- * at least two were priced, else every hotel. It used to take one sample
- * by the word in its search ("Marriott"), so the Sheratons, Westins and
- * Moxys a Marriott member can book were never counted. Null where nothing
- * was measured: a holiday alone isn't taken to raise prices, as the
+ * its programme by name. Given a price level, the hotels at that level
+ * are used where at least four were paired (the programme's own first),
+ * as an event doesn't move every level alike: over New Year Dubai's
+ * Marriott Select hotels went up x1.95 and its Luxury ones x2.81, while
+ * New York's went the other way (x2.37 and x1.74). Held out one hotel at
+ * a time, that predicted each hotel's event price to a median 12.4%,
+ * against 13.0% from the city-wide ratio (240 hotels, 20 Oct 2026).
+ * Otherwise the stay's programme's own hotels where at least two were
+ * priced, else every hotel. It used to take one sample by the word in
+ * its search ("Marriott"), so the Sheratons, Westins and Moxys a
+ * Marriott member can book were never counted. Null where nothing was
+ * measured: a holiday alone isn't taken to raise prices, as the
  * measurements show it often lowers them.
  */
-export function eventPrices(stop: PlannedStop, programme: string | null = null, db?: PriceSearch[]): EventPrices | null {
+export function eventPrices(stop: PlannedStop, programme: string | null = null, db?: PriceSearch[], tier: Tier | null = null): EventPrices | null {
   if (!stop.checkIn) return null;
   const checkOut = addDays(stop.checkIn, stop.nights);
   for (const e of PRICE_EVENTS) {
@@ -303,9 +314,19 @@ export function eventPrices(stop: PlannedStop, programme: string | null = null, 
     const all = eventPairs(e, db);
     if (all.length === 0) continue;
     const own = programme ? all.filter((q) => q.programme === programme) : [];
-    const use = own.length >= MIN_OWN_HOTELS ? own : all;
+    const level = tier ? all.filter((q) => q.tier === tier) : [];
+    const ownLevel = level.filter((q) => programme != null && q.programme === programme);
+    const use = ownLevel.length >= MIN_LEVEL_PAIRS ? ownLevel
+      : level.length >= MIN_LEVEL_PAIRS ? level
+      : own.length >= MIN_OWN_HOTELS ? own
+      : all;
     const ratio = Math.round(median(use.map((q) => q.event / q.base)) * 100) / 100;
-    return { event: e.event, programme: use === own ? programme : null, ratio, hotels: use.length, baseline: e.baseline };
+    return {
+      event: e.event,
+      programme: use === own || use === ownLevel ? programme : null,
+      tier: use === level || use === ownLevel ? tier : null,
+      ratio, hotels: use.length, baseline: e.baseline,
+    };
   }
   return null;
 }
@@ -361,7 +382,7 @@ export function measuredCash(stop: PlannedStop, programme: string | null, tier: 
   };
   const season = summarise(collect(plain, ({ s, r }) => r[1]! * toSeason(s)), 'season');
   if (!season) return null;
-  const surge = eventPrices(stop, programme, market.prices)?.ratio ?? 1;
+  const surge = eventPrices(stop, programme, market.prices, tier)?.ratio ?? 1;
   return surge === 1 ? season : { ...season, usd: Math.round(season.usd * surge), low: Math.round(season.low * surge), high: Math.round(season.high * surge) };
 }
 
@@ -487,9 +508,9 @@ export function voucherAdvice(v: Voucher, programme: LoyaltyProgramme, stops: Pl
   let best: VoucherAdvice['best'] = null;
   for (const s of usable) {
     const level = stopPriceLevel(market.crowd, s);
-    const surge = eventPrices(s, programme.name, market.prices)?.ratio ?? 1;
     const rates = cityCashRates(market.rates, s.country, s.city);
     for (const tier of TIERS) {
+      const surge = eventPrices(s, programme.name, market.prices, tier)?.ratio ?? 1;
       // The programme's own hotels where they were priced, else the city's researched rate.
       const m = measuredCash(s, programme.name, tier, market);
       const r = rates.find((x) => x.tier === tier);
@@ -588,7 +609,7 @@ export function stayInsights(
       const measured = measuredCash(s, programme, tier, market);
       if (measured) return { cashUsd: measured.usd, level, stop: s, measured };
       const r = cityCashRates(market.rates, s.country, s.city).find((x) => x.tier === tier);
-      if (r) return { cashUsd: seasonalCashUsd(r, level) * (eventPrices(s, programme, market.prices)?.ratio ?? 1), level, stop: s, measured: null };
+      if (r) return { cashUsd: seasonalCashUsd(r, level) * (eventPrices(s, programme, market.prices, tier)?.ratio ?? 1), level, stop: s, measured: null };
     }
     return null;
   };

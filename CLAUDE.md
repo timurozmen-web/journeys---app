@@ -197,11 +197,16 @@ Run all three; all must be clean:
     of `hotelPrices.ts`). AC Hotels never come back priced.
   - Events (`src/data/priceEvents.ts`): an event's nights and plain nights
     a fortnight away; `eventPrices` pairs the hotels priced on both and
-    takes the median ratio (the programme's own hotels where at least two,
-    else all). Holidays don't all raise prices: Dubai's Marriotts were x2.4
-    over New Year, Barcelona's x3.85 for the Mobile World Congress, but
-    Tokyo's x0.83 in Golden Week, Rome's x0.82 at Easter, Las Vegas's flat
-    for the Grand Prix. A city with no event measured gets no uplift.
+    takes the median ratio: at the stay's price level where four or more
+    were paired there (the programme's own first), as levels move apart
+    (Dubai New Year: Marriott Select x1.95, Luxury x2.81), else the
+    programme's own hotels where at least two, else all. Held out one hotel
+    at a time this predicts a hotel's event price to a median 12.4% (240
+    hotels); ignoring events would be 48% out. Holidays don't all raise
+    prices: Dubai's Marriotts were x2.4 over New Year, Barcelona's x3.85
+    for the Mobile World Congress, but Tokyo's x0.93 in Golden Week,
+    Rome's x0.82 at Easter, Las Vegas's flat for the Grand Prix. A city
+    with no event measured gets no uplift.
   - Public holidays: Nager.Date (free, no key) through
     `netlify/functions/holidays.js`, as the browser can't reach it;
     `useHolidays` keeps each country and year on the device for 30 days.

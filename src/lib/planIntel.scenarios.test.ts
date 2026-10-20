@@ -60,9 +60,10 @@ function plan(stops: PlannedStop[], airport: string) {
 }
 
 describe('planning trips for this account', () => {
-  // Golden Week prices Tokyo's Marriotts 17% under mid-May (measured), so
-  // a luxury Tokyo night (~69,000 points) comes within the 50k voucher's
-  // reach with 19,000 topped up, and beats Kyoto's.
+  // Golden Week prices Tokyo's Luxury Marriotts (Ritz-Carlton, EDITION, JW,
+  // Prince Gallery) 10% under mid-May (measured), so a luxury Tokyo night
+  // (~75,000 points) comes within the 50k voucher's reach with the full
+  // 25,000 topped up, and beats Kyoto's.
   it('Tokyo and Kyoto in May: Avios cover economy, business is short; keep Titanium; top up the expiring voucher for Golden Week Tokyo', () => {
     const { picks } = plan([
       { city: 'Tokyo', country: 'Japan', nights: 4, checkIn: '2027-05-01' },
@@ -71,7 +72,7 @@ describe('planning trips for this account', () => {
     expect(picks.map((p) => [p.title, p.sub])).toEqual([
       ['British Airways economy on Avios', '38,500–44,000 · you have 67,309'],
       ['Stay Marriott Bonvoy', '12 of 75 nights to keep Titanium Elite next year · lounge access, free breakfast'],
-      ['Top up the 50k free night', 'luxury in Tokyo, ~£414 · ~69,000 pts · +19,000 top-up · £250 to you · expires 1 December 2027'],
+      ['Top up the 50k free night', 'luxury in Tokyo, ~£449 · ~75,000 pts · +25,000 top-up · £250 to you · expires 1 December 2027'],
     ]);
   });
 

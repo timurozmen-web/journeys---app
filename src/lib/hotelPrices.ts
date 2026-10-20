@@ -14,10 +14,13 @@ import { sameCountry } from './countryName';
 // the search itself is "<brand> <city>", so "Marriott Barcelona" finds a
 // "Courtyard by Marriott" but never a Sheraton, a W or a Cotton House,
 // Autograph Collection, and found nothing at all in Barcelona. Search every
-// brand by name: Marriott, Sheraton (catches Four Points), Westin, W
-// <city> (the city's W, with whatever else is nearby), Ritz-Carlton, St.
-// Regis, Le Méridien, Renaissance, Autograph Collection, Luxury
-// Collection, Tribute Portfolio, EDITION, Moxy, Aloft, Element, citizenM.
+// brand by name: Marriott, JW Marriott, Courtyard, Residence Inn,
+// Sheraton (catches Four Points), Westin, W <city> (the city's W, with
+// whatever else is nearby), Ritz-Carlton, St. Regis, Le Méridien,
+// Renaissance, Autograph Collection, Luxury Collection, Tribute Portfolio,
+// EDITION, Delta Hotels, Moxy, Aloft, Element, citizenM. Each search only
+// sees the twenty or so hotels nearest the place searched, so a city with
+// a dozen Courtyards returns a few at a time, on different nights.
 // A hotel whose name says none of these (Hotel Arts is a Ritz-Carlton)
 // carries its brand as a fourth field. AC Hotels don't come back priced
 // in any search; that's a gap in the source, not a sold-out hotel.
@@ -88,7 +91,7 @@ export function citySearches(city: string, country: string, db: PriceSearch[] = 
   return db.filter((s) => sameCountry(s.country, country) && sameCity(s.city, city));
 }
 
-export interface PricePair { hotel: string; event: number; base: number; programme: string | null }
+export interface PricePair { hotel: string; event: number; base: number; programme: string | null; tier: Tier | null }
 
 /**
  * The hotels priced both for an event's nights and for its plain nights,
@@ -109,7 +112,7 @@ export function eventPairs(e: PriceEvent, db: PriceSearch[] = HOTEL_PRICES): Pri
   const pairs: PricePair[] = [];
   for (const [k, r] of during) {
     const b = before.get(k);
-    if (b) pairs.push({ hotel: r[0], event: r[1]!, base: b[1]!, programme: rowProgramme(r) });
+    if (b) pairs.push({ hotel: r[0], event: r[1]!, base: b[1]!, programme: rowProgramme(r), tier: rowTier(r) });
   }
   return pairs;
 }
