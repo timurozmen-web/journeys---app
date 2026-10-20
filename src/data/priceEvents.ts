@@ -31,20 +31,20 @@ export interface PriceEvent {
 export const PRICE_EVENTS: PriceEvent[] = [
   {
     city: 'Dubai', country: 'UAE', event: 'New Year', window: ['2026-12-30', '2027-01-02'], baseline: ['2027-01-13', '2027-01-16'],
-    note: "Sharjah's hotels came back in Dubai's search and are left out; the Sheraton Jumeirah Beach had no rate for New Year's Eve.",
+    note: "Sharjah's hotels came back in Dubai's search and are left out, as is Arabian Courtyard (not a Courtyard). The Sheraton Jumeirah Beach and Courtyard Culture Village had no rate for New Year's Eve; no Moxy or Bulgari had a rate on either.",
   },
   { city: 'Tokyo', country: 'Japan', event: 'Golden Week', window: ['2027-05-01', '2027-05-05'], baseline: ['2027-05-15', '2027-05-19'] },
   {
     city: 'Paris', country: 'France', event: 'Christmas school holidays', window: ['2026-12-19', '2026-12-23'], baseline: ['2026-11-28', '2026-12-02'],
-    note: 'The Renaissance Vendôme had no rate for the holiday nights.',
+    note: "The Renaissance Vendôme had no rate for the holiday nights; Paris's W, EDITION, Westin and Autograph Collection hotels had none on either. The Sheraton and Four Points are at Charles de Gaulle.",
   },
   {
     city: 'New York', country: 'United States', event: 'Week before Christmas', window: ['2026-12-18', '2026-12-22'], baseline: ['2026-12-04', '2026-12-08'],
-    note: "Manhattan's Marriotts mostly weren't priced on 4-8 Dec (full, or the search left them out), so the Marriott pairs are outer-borough ones.",
+    note: "Early December is New York's dearest stretch (the same hotels cost 2.6x as much as in mid-January), so the week before Christmas comes in under it. Hotels in New Jersey and Westchester that came back are left out.",
   },
   {
     city: 'New York', country: 'United States', event: "New Year's Eve", window: ['2026-12-30', '2027-01-02'], baseline: ['2027-01-13', '2027-01-16'],
-    note: 'Sheraton Lincoln Harbor came back too but is in New Jersey, so it is left out.',
+    note: 'Hotels in New Jersey (Sheraton Lincoln Harbor, the Westin and Residence Inn in Jersey City, the Residence Inns at Newark and Weehawken) and Westchester came back too and are left out.',
   },
   {
     city: 'Mexico City', country: 'Mexico', event: 'Day of the Dead and the Grand Prix', window: ['2026-10-30', '2026-11-02'], baseline: ['2026-11-06', '2026-11-09'],

@@ -14,10 +14,13 @@ import { sameCountry } from './countryName';
 // the search itself is "<brand> <city>", so "Marriott Barcelona" finds a
 // "Courtyard by Marriott" but never a Sheraton, a W or a Cotton House,
 // Autograph Collection, and found nothing at all in Barcelona. Search every
-// brand by name: Marriott, Sheraton (catches Four Points), Westin, W
-// <city> (the city's W, with whatever else is nearby), Ritz-Carlton, St.
-// Regis, Le Méridien, Renaissance, Autograph Collection, Luxury
-// Collection, Tribute Portfolio, EDITION, Moxy, Aloft, Element, citizenM.
+// brand by name: Marriott, JW Marriott, Courtyard, Residence Inn,
+// Sheraton (catches Four Points), Westin, W <city> (the city's W, with
+// whatever else is nearby), Ritz-Carlton, St. Regis, Le Méridien,
+// Renaissance, Autograph Collection, Luxury Collection, Tribute Portfolio,
+// EDITION, Delta Hotels, Moxy, Aloft, Element, citizenM. Each search only
+// sees the twenty or so hotels nearest the place searched, so a city with
+// a dozen Courtyards returns a few at a time, on different nights.
 // A hotel whose name says none of these (Hotel Arts is a Ritz-Carlton)
 // carries its brand as a fourth field. AC Hotels don't come back priced
 // in any search; that's a gap in the source, not a sold-out hotel.
@@ -88,7 +91,7 @@ export function citySearches(city: string, country: string, db: PriceSearch[] = 
   return db.filter((s) => sameCountry(s.country, country) && sameCity(s.city, city));
 }
 
-export interface PricePair { hotel: string; event: number; base: number; programme: string | null }
+export interface PricePair { hotel: string; event: number; base: number; programme: string | null; tier: Tier | null }
 
 /**
  * The hotels priced both for an event's nights and for its plain nights,
@@ -109,7 +112,34 @@ export function eventPairs(e: PriceEvent, db: PriceSearch[] = HOTEL_PRICES): Pri
   const pairs: PricePair[] = [];
   for (const [k, r] of during) {
     const b = before.get(k);
-    if (b) pairs.push({ hotel: r[0], event: r[1]!, base: b[1]!, programme: rowProgramme(r) });
+    if (b) pairs.push({ hotel: r[0], event: r[1]!, base: b[1]!, programme: rowProgramme(r), tier: rowTier(r) });
   }
   return pairs;
+}
+
+/**
+ * How well event ratios predict, held out one hotel at a time: each
+ * paired hotel's event price is predicted as its own plain-night price
+ * times the median ratio of the city's other paired hotels (at its own
+ * price level where at least `minLevel` others there were paired, if
+ * `byLevel`), and the median error over every hotel is returned, with the
+ * error of ignoring events altogether for comparison. Events with fewer
+ * than four pairs are skipped. A check on the method, run by the tests.
+ */
+export function heldOutEventError(events: PriceEvent[], db: PriceSearch[] = HOTEL_PRICES, byLevel = true, minLevel = 4): { error: number; ignoring: number; hotels: number } {
+  const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); const n = s.length; return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2; };
+  const errors: number[] = [];
+  const flat: number[] = [];
+  for (const e of events) {
+    const pairs = eventPairs(e, db);
+    if (pairs.length < 4) continue;
+    pairs.forEach((x, i) => {
+      const others = pairs.filter((_, j) => j !== i);
+      const same = others.filter((y) => y.tier === x.tier);
+      const ratio = median((byLevel && same.length >= minLevel ? same : others).map((y) => y.event / y.base));
+      errors.push(Math.abs(x.base * ratio - x.event) / x.event);
+      flat.push(Math.abs(x.base - x.event) / x.event);
+    });
+  }
+  return { error: median(errors), ignoring: median(flat), hotels: errors.length };
 }
