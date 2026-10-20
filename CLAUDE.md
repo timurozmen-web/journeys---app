@@ -179,20 +179,29 @@ Run all three; all must be clean:
     by the month's price level (`seasonalCashUsd`): bottom in a cheap
     month, top in a dear one. Marriott cash is the booking sites' price
     less its member rate (2.5%, the user's own figure: `MEMBER_RATE_DISCOUNT`).
-  - Events: what an event does to hotel prices is measured, never assumed
-    (`eventPrices`, samples in `src/data/priceSamples.ts`): the same
-    hotels priced for the event's nights and for plain nights a fortnight
-    away, the median ratio applied to the stay's cash. Holidays don't all
-    raise prices: Dubai's Marriotts were x2.4 over New Year, Edinburgh's
-    x4.1 at Hogmanay, but Tokyo's x0.83 in Golden Week, Rome's x0.82 at
-    Easter, Las Vegas's flat for the Grand Prix. 19 events in 17 cities so
-    far; a city with no sample gets no uplift. An event's samples are
-    pooled and each hotel put to its programme by name
-    (`programmeOfHotel` in `src/data/brandMap.ts`: a Sheraton, Westin,
-    Moxy or W is Marriott), and a stay uses its programme's own hotels
-    where at least two were sampled, else every hotel. The search's brand
-    filter matches the name, so "Marriott" misses the sub-brands: search
-    them too, as the note at the top of that file says.
+  - Hotel prices are measured: `src/data/hotelPrices.json` is a database
+    of every hotel price search as it came back (SlickTrip, comparing the
+    booking sites; 2 adults, cheapest room, USD a night), read through
+    `src/lib/hotelPrices.ts`. Each hotel is put to its programme by name
+    (`programmeOfHotel`: a Sheraton, Westin, Moxy or W is Marriott, or a
+    brand given as a fourth field: Hotel Arts is a Ritz-Carlton) and to a
+    price level: Marriott by its own tiers (Luxury, Premium, Select),
+    anything else by stars. `measuredCash` prices a programme's night at a
+    level in a city from its hotels there (two or more): as priced where
+    the search covers the stay's nights, else plain-night prices moved to
+    the stay's season by the city's researched range, then any event. It
+    replaces the researched rate for that programme in Where to stay, the
+    voucher advice and Cash or points. Searching: the brand filter matches
+    the name and the search is "<brand> <city>", so "Marriott Barcelona"
+    finds nothing; search every sub-brand by name (the list is at the top
+    of `hotelPrices.ts`). AC Hotels never come back priced.
+  - Events (`src/data/priceEvents.ts`): an event's nights and plain nights
+    a fortnight away; `eventPrices` pairs the hotels priced on both and
+    takes the median ratio (the programme's own hotels where at least two,
+    else all). Holidays don't all raise prices: Dubai's Marriotts were x2.4
+    over New Year, Barcelona's x3.85 for the Mobile World Congress, but
+    Tokyo's x0.83 in Golden Week, Rome's x0.82 at Easter, Las Vegas's flat
+    for the Grand Prix. A city with no event measured gets no uplift.
   - Public holidays: Nager.Date (free, no key) through
     `netlify/functions/holidays.js`, as the browser can't reach it;
     `useHolidays` keeps each country and year on the device for 30 days.

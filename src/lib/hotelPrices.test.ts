@@ -1,0 +1,61 @@
+import { describe, expect, it } from 'vitest';
+import { PRICE_EVENTS } from '../data/priceEvents';
+import { eventPairs, HOTEL_PRICES, marriottSegment, rowProgramme, rowTier, type PriceRow } from './hotelPrices';
+
+// A brand search only returns that brand, so every hotel one priced must
+// be put to Marriott: a name the classifier can't place shows up here.
+const MARRIOTT_QUERIES = /^(marriott|sheraton|westin|moxy|aloft|element|courtyard|le m[eé]ridien|renaissance|autograph collection|luxury collection|tribute portfolio|edition|st\.? regis|ritz-carlton|citizenm|four points|jw marriott|w hotels|hotel arts|marriott bonvoy hotels)$/i;
+
+describe('the price database', () => {
+  it('puts every hotel a Marriott brand search priced to Marriott, with a tier', () => {
+    const misplaced = HOTEL_PRICES.filter((s) => MARRIOTT_QUERIES.test(s.q))
+      .flatMap((s) => s.hotels.filter((r) => rowProgramme(r) !== 'Marriott Bonvoy' || marriottSegment(r) == null).map((r) => `${s.city}: ${r[0]}`));
+    expect(misplaced).toEqual([]);
+  });
+
+  it('has every search well formed', () => {
+    for (const s of HOTEL_PRICES) {
+      expect(s.in < s.out, `${s.city} ${s.in}`).toBe(true);
+      for (const r of s.hotels) expect(r[1] == null || (r[1] > 20 && r[1] < 20000), `${s.city}: ${r[0]} ${r[1]}`).toBe(true);
+    }
+  });
+
+  it('has hotels priced for both nights of every event', () => {
+    expect(PRICE_EVENTS.filter((e) => eventPairs(e).length === 0).map((e) => `${e.city} ${e.event}`)).toEqual([]);
+  });
+});
+
+describe('tiers', () => {
+  const row = (name: string, stars: number | null = null, brand?: string): PriceRow => (brand ? [name, 100, stars, brand] : [name, 100, stars]);
+  it('reads Marriott’s own tiers, the specific brand before the parent name', () => {
+    expect(marriottSegment(row('W Barcelona'))).toBe('luxury');
+    expect(marriottSegment(row('JW Marriott Hotel Bangkok'))).toBe('luxury');
+    expect(marriottSegment(row('Hotel Arts Barcelona', 5, 'The Ritz-Carlton'))).toBe('luxury');
+    expect(marriottSegment(row('Cotton House Hotel, Autograph Collection'))).toBe('premium');
+    expect(marriottSegment(row('Edinburgh Marriott Hotel Holyrood'))).toBe('premium');
+    expect(marriottSegment(row('Courtyard by Marriott Edinburgh West'))).toBe('select');
+    expect(marriottSegment(row('Four Points by Sheraton Barcelona Diagonal'))).toBe('select');
+    expect(marriottSegment(row('Residence Inn by Marriott Edinburgh'))).toBe('select');
+  });
+  it('gives the app’s price level: Marriott by tier, anything else by stars', () => {
+    expect(rowTier(row('Moxy Barcelona', 4))).toBe('budget');
+    expect(rowTier(row('Le Méridien Barcelona', 5))).toBe('mid');
+    expect(rowTier(row('The Barcelona EDITION', 5))).toBe('luxury');
+    expect(rowTier(row('Hotel Duquesa de Cardona Barcelona', 4))).toBe('mid');
+    expect(rowTier(row('SLS Barcelona', 5))).toBe('luxury');
+    expect(rowTier(row('Hotel del Mar', 3))).toBe('budget');
+    expect(rowTier(row('Outsite Barcelona'))).toBeNull();
+  });
+});
+
+describe('eventPairs', () => {
+  it('pairs each hotel priced on both sides, whichever search found it', () => {
+    const mwc = PRICE_EVENTS.find((e) => e.event === 'Mobile World Congress')!;
+    const marriott = eventPairs(mwc).filter((q) => q.programme === 'Marriott Bonvoy').map((q) => [q.hotel, q.event, q.base]);
+    expect(marriott).toEqual(expect.arrayContaining([
+      ['Cotton House Hotel, Autograph Collection', 2488, 427], ['Moxy Barcelona', 999, 245], ['The Barcelona EDITION', 2151, 428], ['W Barcelona', 1448, 400],
+    ]));
+    // No rate for the congress nights: sold out, so not a pair.
+    expect(eventPairs(mwc).some((q) => q.hotel === 'Renaissance Barcelona Hotel')).toBe(false);
+  });
+});

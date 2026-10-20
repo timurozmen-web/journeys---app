@@ -16,13 +16,14 @@ import { useCardResults } from '../lib/useCardResults';
 import { computeStatusProgress } from '../lib/statusProgress';
 import { withLiveOverrides } from '../lib/walletValue';
 import {
-  agentContext, airPassengerDuty, awardCashLabel, awardOptions, awardPointsLabel, holidayLine, schoolNote, cityCashRates as ratesForCity, forYou, nightPoints, nightPointsShort, stayInsights, stayLines,
+  agentContext, airPassengerDuty, awardCashLabel, awardOptions, awardPointsLabel, holidayLine, schoolNote, cityCashRates as ratesForCity, forYou, measuredCash, nightPoints, nightPointsShort, stayInsights, stayLines,
   stopOutlook, usualAwardCabin, type ForYouItem, type Market, type PlannedStop, type StopOutlook,
 } from '../lib/planIntel';
 import type { AwardCabin } from '../data/awardClasses';
 import { AIRLINE_COLORS } from '../data/airlineBrand';
 import { countryCode, holidaysDuring, schoolBreakDuring, type Holiday, type SchoolHoliday } from '../lib/holidays';
 import { useHolidays } from '../lib/useHolidays';
+import { HOTEL_PRICES } from '../lib/hotelPrices';
 import { haversineKm } from '../lib/travelStats';
 import { addTrip, addHotel, addFlight, type RealClimateMonth, type RealCrowdPriceMonth } from '../lib/queries';
 import { useCurrency } from '../lib/currency';
@@ -112,10 +113,13 @@ function SeasonStrip({ country, city, climateData, crowdPriceData, highlightMont
   );
 }
 
-// Real cash rates for a city, tier by tier, next to what that same money
-// is worth in points at each programme researched -- to check a
-// redemption against what the cash price would have been.
-function CashVsPoints({ country, city, market }: { country: string; city: string | null; market: Market }) {
+// Real cash rates for a city, tier by tier, next to what a night costs in
+// points at each programme -- to check a redemption against what the cash
+// price would have been. A programme's points come from its own hotels'
+// measured prices for the stay where enough were priced, so the column
+// agrees with Where to stay (Marriott at New Year in Dubai is not the
+// city's everyday mid-range).
+function CashVsPoints({ country, city, stop, market }: { country: string; city: string | null; stop: PlannedStop | null; market: Market }) {
   const { format, fromUsd } = useCurrency();
   // Every tier from one city (see cityCashRates).
   const matched = ratesForCity(market.rates, country, city);
@@ -143,7 +147,8 @@ function CashVsPoints({ country, city, market }: { country: string; city: string
               <div className="cashpts-pts">
                 {mainProgrammes.map((p) => {
                   // Each programme priced its own way (planIntel's nightPoints).
-                  const n = nightPoints(p.programme, midCashUsd, null, market);
+                  const measured = stop ? measuredCash(stop, p.programme, tier, market) : null;
+                  const n = nightPoints(p.programme, measured?.usd ?? midCashUsd, null, market);
                   return n && <span key={p.programme}>{shortProgramme(p.programme)} {nightPointsShort(n)}</span>;
                 })}
               </div>
@@ -548,7 +553,7 @@ export function Plan() {
     const p = loyaltyProgrammes.find((x) => x.name === name);
     return p && p.category === 'hotel' && p.nextTier && p.nights != null ? computeStatusProgress(p, allHotels, promotions, cardResults, today) : null;
   };
-  const market: Market = { rates: cityCashRates, crowd: crowdPriceData, pointsValue: pointsValueData, usdToGbp, usdToEur: (fx.EUR || 1.17) / (fx.USD || 1.27) };
+  const market: Market = { rates: cityCashRates, crowd: crowdPriceData, pointsValue: pointsValueData, usdToGbp, usdToEur: (fx.EUR || 1.17) / (fx.USD || 1.27), prices: HOTEL_PRICES };
   const stays = cities.length > 0
     ? stayInsights(hotelOptions, stops, { programmes: loyaltyProgrammes, vouchers, flights: allFlights, hotels: allHotels, promotions }, progressOf, market, today)
     : [];
@@ -878,7 +883,7 @@ export function Plan() {
                     </div>
                   </details>
                 )}
-                <CashVsPoints country={cities[0].country} city={cities[0].city} market={market} />
+                <CashVsPoints country={cities[0].country} city={cities[0].city} stop={stops[0] ?? null} market={market} />
               </>
             )}
 
