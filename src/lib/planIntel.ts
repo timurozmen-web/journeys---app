@@ -6,7 +6,7 @@ import { FREE_NIGHT_TOP_UP } from '../data/freeNights';
 import { BA_DISPUTED_2026, BA_KNOWN, BA_PEAK_2026, VS_PEAK, type SeasonCalendar } from '../data/awardSeasons';
 import { HOTEL_PRICING, HYATT_LEVELS } from '../data/hotelAwardPricing';
 import { MEMBER_RATE_DISCOUNT, PRICE_SAMPLES, type PriceSample } from '../data/priceSamples';
-import { holidaysDuring, longWeekend, shortDate, type Holiday } from './holidays';
+import { holidaysDuring, longWeekend, schoolBreakDuring, shortDate, type Holiday, type SchoolBreak, type SchoolHoliday } from './holidays';
 import { promoBonusForStay } from './promoBonus';
 import { addDays } from './tripDay';
 import { blendedGuideForMonth, dominantMonth, findCrowdPriceMonth, MONTH_NAMES, type BlendedMonthGuide } from './destinationGuide';
@@ -595,13 +595,15 @@ export interface StopOutlook {
   driver: string | null;
   /** National public holidays on the stay's nights. */
   holidays: Holiday[];
+  /** The country's schools off on the stay's nights, and how widely. */
+  school: SchoolBreak | null;
 }
 
 const CROWD_RANK = { low: 0, medium: 1, high: 2 } as const;
 const WEATHER_RANK = { good: 0, okay: 1, poor: 2 } as const;
 
 /** The weather and crowds for a stay, and a quieter month either side when it's busy. */
-export function stopOutlook(climate: RealClimateMonth[], crowd: RealCrowdPriceMonth[], stop: PlannedStop, holidays: Holiday[] = []): StopOutlook | null {
+export function stopOutlook(climate: RealClimateMonth[], crowd: RealCrowdPriceMonth[], stop: PlannedStop, holidays: Holiday[] = [], school: SchoolHoliday[] = []): StopOutlook | null {
   if (!stop.checkIn) return null;
   const checkOut = addDays(stop.checkIn, stop.nights);
   const month = dominantMonth(stop.checkIn, checkOut);
@@ -616,7 +618,10 @@ export function stopOutlook(climate: RealClimateMonth[], crowd: RealCrowdPriceMo
     }
   }
   const driver = findCrowdPriceMonth(crowd, stop.city, stop.country, MONTH_NAMES[month].slice(0, 3))?.driver || null;
-  return { city: stop.city, guide, month, quieter, driver, holidays: holidaysDuring(holidays, stop.checkIn, stop.nights) };
+  return {
+    city: stop.city, guide, month, quieter, driver,
+    holidays: holidaysDuring(holidays, stop.checkIn, stop.nights), school: schoolBreakDuring(school, stop.checkIn, stop.nights),
+  };
 }
 
 /** The nights of a check-in/check-out pair: "13–15 Jan", or "30 Dec–1 Jan" across months. */
@@ -634,6 +639,24 @@ export function holidayLine(holidays: Holiday[]): string | null {
   return [`${first.name}, ${shortDate(first.date)}${lw ? ` (${lw})` : ''}`, holidays.length > 1 ? `+${holidays.length - 1} more` : null].filter(Boolean).join(' · ');
 }
 
+const REACH_WORDS = { all: 'nationwide', most: 'most regions', some: 'some regions' } as const;
+
+/** A school break on one line: "Christmas Holidays, 20 Dec–3 Jan · nationwide". */
+export function schoolLine(b: SchoolBreak | null): string | null {
+  if (!b) return null;
+  const dates = b.start === b.end ? shortDate(b.start) : nightsRange([b.start, addDays(b.end, 1)]);
+  return `${b.name}, ${dates} · ${REACH_WORDS[b.reach]}`;
+}
+
+/**
+ * A stop's school line, unless its crowd note already names the school
+ * holidays: Paris at Christmas showed "Christmas school holidays, all
+ * zones" and then "Christmas Holidays · nationwide" under it.
+ */
+export function schoolNote(b: SchoolBreak | null, crowdDriver: string | null | undefined): string | null {
+  return /school/i.test(crowdDriver ?? '') ? null : schoolLine(b);
+}
+
 /** A crowd driver short enough for a title: up to its first ";" or "(". */
 export function shortDriver(text: string): string {
   return text.split(/;|\s\(/)[0].trim();
@@ -642,7 +665,7 @@ export function shortDriver(text: string): string {
 // ---------- for you ----------
 
 export interface ForYouItem {
-  kind: 'flight' | 'stay' | 'status' | 'voucher' | 'prices' | 'crowds' | 'holiday' | 'weather';
+  kind: 'flight' | 'stay' | 'status' | 'voucher' | 'prices' | 'crowds' | 'holiday' | 'school' | 'weather';
   title: string;
   sub: string;
 }
@@ -746,6 +769,14 @@ export function forYou(input: {
     out.push({ kind: 'holiday', title: `Public holiday in ${hol.city}`, sub: holidayLine(hol.holidays)! });
   }
 
+  // Schools off across most of the country: families travel, so resorts
+  // and sights fill. A few regions' break isn't worth a line here; the
+  // stop card still shows it.
+  const school = input.outlooks.find((o) => o.school && o.school.reach !== 'some');
+  if (school && !(busy?.city === school.city && /school/i.test(busy.guide.crowdDriver ?? ''))) {
+    out.push({ kind: 'school', title: `School holidays in ${school.city}`, sub: schoolLine(school.school)! });
+  }
+
   const wet = input.outlooks.find((o) => o.guide.weather === 'poor');
   if (wet) out.push({ kind: 'weather', title: `Poor weather in ${wet.city}`, sub: `${Math.round(wet.guide.tempHigh)}° · ${wet.guide.rainLabel} rain in ${MONTH_NAMES[wet.month]}` });
 
@@ -757,6 +788,8 @@ export function forYou(input: {
 export interface AgentContext {
   month: string | null;
   holidays: { date: string; name: string }[];
+  /** The country's school break during the trip, at its widest. */
+  school: { start: string; end: string; name: string; reach: SchoolBreak['reach'] }[];
   regions: { region: string; highC: number | null; rainMm: number | null; crowd: string | null; price: string | null; event: string | null }[];
   visited: string[];
   home: string;
@@ -767,7 +800,7 @@ export interface AgentContext {
  * weather and crowds in the month of travel, and the cities already
  * stayed in there. The agent is told to rely on these, not its memory.
  */
-export function agentContext(country: string, startDate: string | null, nights: number, climate: RealClimateMonth[], crowd: RealCrowdPriceMonth[], hotels: Hotel[], home: string, holidays: Holiday[] = []): AgentContext {
+export function agentContext(country: string, startDate: string | null, nights: number, climate: RealClimateMonth[], crowd: RealCrowdPriceMonth[], hotels: Hotel[], home: string, holidays: Holiday[] = [], schoolHolidays: SchoolHoliday[] = []): AgentContext {
   const month = startDate ? dominantMonth(startDate, addDays(startDate, nights)) : null;
   const abbr = month != null ? MONTH_NAMES[month].slice(0, 3) : null;
   const regions = abbr
@@ -779,5 +812,6 @@ export function agentContext(country: string, startDate: string | null, nights: 
     : [];
   const visited = [...new Set(hotels.filter((h) => sameCountry(h.country, country) && h.city).map((h) => h.city!))].sort();
   const during = startDate ? holidaysDuring(holidays, startDate, nights).map((x) => ({ date: x.date, name: x.name })) : [];
-  return { month: month != null ? MONTH_NAMES[month] : null, holidays: during, regions, visited, home };
+  const brk = startDate ? schoolBreakDuring(schoolHolidays, startDate, nights) : null;
+  return { month: month != null ? MONTH_NAMES[month] : null, holidays: during, school: brk ? [brk] : [], regions, visited, home };
 }

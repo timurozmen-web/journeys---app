@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   agentContext, airPassengerDuty, apdBand, awardCashLabel, awardOptions, awardPointsLabel, seasonOn, cityCashRates, forYou, nightsFromBalance,
-  eventPrices, holidayLine, memberCash, nightPoints, nightsRange, pointsPerNight, seasonalCashUsd, shortDriver, stopPriceLevel, statusLabel, stayInsights, stayLines, stopOutlook, usualAwardCabin, voucherAdvice, voucherCap, voucherLine, type StayInsight,
+  eventPrices, holidayLine, memberCash, schoolLine, schoolNote, nightPoints, nightsRange, pointsPerNight, seasonalCashUsd, shortDriver, stopPriceLevel, statusLabel, stayInsights, stayLines, stopOutlook, usualAwardCabin, voucherAdvice, voucherCap, voucherLine, type StayInsight,
   type VoucherAdvice,
 } from './planIntel';
 import { nightsForTier } from './statusProgress';
@@ -377,6 +377,21 @@ describe('measured event prices', () => {
   it('else the sample with most hotels', () => {
     expect(eventPrices(stop('Tokyo', 'Japan', '2027-05-02', 3), 'World of Hyatt')).toMatchObject({ set: '4-5★', ratio: 1.07, hotels: 5 });
   });
+  it('knows the big events from the wider sampling', () => {
+    // Abu Dhabi's Marriotts for the Grand Prix: 4.6x and 5.2x in the middle.
+    expect(eventPrices(stop('Abu Dhabi', 'United Arab Emirates', '2026-12-04', 2), 'Marriott Bonvoy')).toMatchObject({ event: 'Grand Prix', ratio: 4.93, hotels: 4 });
+    expect(eventPrices(stop('Edinburgh', 'United Kingdom', '2026-12-31', 1), 'Marriott Bonvoy')?.ratio).toBe(4.1);
+    expect(eventPrices(stop('Milan', 'Italy', '2027-04-13', 2), 'Marriott Bonvoy')?.ratio).toBe(3.08);
+    expect(eventPrices(stop('Rio de Janeiro', 'Brazil', '2027-02-06', 3))).toMatchObject({ event: 'Carnival', set: '4-5★', ratio: 3.22, hotels: 6 });
+    // And the ones that barely move, or go the other way.
+    expect(eventPrices(stop('Las Vegas', 'United States', '2026-11-20', 2), 'Marriott Bonvoy')?.ratio).toBe(0.97);
+    expect(eventPrices(stop('Bangkok', 'Thailand', '2027-04-13', 2), 'Marriott Bonvoy')?.ratio).toBe(1.07);
+    expect(eventPrices(stop('Rome', 'Italy', '2027-03-26', 2))?.ratio).toBe(0.76);
+  });
+  it('tells New Year from the week before Christmas in the same city', () => {
+    expect(eventPrices(stop('New York', 'United States', '2026-12-31', 1))).toMatchObject({ event: "New Year's Eve", ratio: 2.61 });
+    expect(eventPrices(stop('New York', 'United States', '2026-12-19', 2))?.event).toBe('Week before Christmas');
+  });
   it('says nothing where nothing was measured', () => {
     expect(eventPrices(stop('Tokyo', 'Japan', '2027-05-20', 3))).toBeNull();
     expect(eventPrices(stop('Osaka', 'Japan', '2027-05-02', 3))).toBeNull();
@@ -399,6 +414,41 @@ describe('measured event prices', () => {
     expect(holidayLine([])).toBeNull();
     expect(nightsRange(['2026-12-30', '2027-01-02'])).toBe('30 Dec–1 Jan');
     expect(nightsRange(['2027-01-13', '2027-01-16'])).toBe('13–15 Jan');
+  });
+});
+
+describe('school holidays', () => {
+  const sch = (start: string, end: string, name: string, regions: string[]) => ({ start, end, name, regions, nationwide: false });
+  const mainland = ['FR-ZA', 'FR-ZB', 'FR-ZC', 'FR-IF', 'FR-AR'];
+  const france = [
+    sch('2026-12-20', '2027-01-03', 'Christmas Holidays', mainland),
+    sch('2027-02-07', '2027-02-21', 'Winter Holidays', ['FR-ZC', 'FR-IF']),
+  ];
+  const climate = () => ['Dec', 'Feb'].map((m) => climateRow(m, { country: 'France', region: 'Paris / Île-de-France', hubStation: 'Paris' }));
+  const paris = (checkIn: string) => stopOutlook(climate(), [], { city: 'Paris', country: 'France', nights: 3, checkIn }, [], france)!;
+
+  it('writes a school break on one line', () => {
+    expect(schoolLine({ name: 'Christmas Holidays', start: '2026-12-20', end: '2027-01-03', reach: 'all' })).toBe('Christmas Holidays, 20 Dec–3 Jan · nationwide');
+    expect(schoolLine({ name: 'Winter Holidays', start: '2027-02-07', end: '2027-02-21', reach: 'some' })).toBe('Winter Holidays, 7–21 Feb · some regions');
+    expect(schoolLine(null)).toBeNull();
+  });
+  it('doesn’t repeat a break the crowd note already names', () => {
+    const xmas = { name: 'Christmas Holidays', start: '2026-12-20', end: '2027-01-03', reach: 'all' as const };
+    expect(schoolNote(xmas, 'Christmas school holidays, all zones')).toBeNull();
+    expect(schoolNote(xmas, 'Christmas markets')).toBe('Christmas Holidays, 20 Dec–3 Jan · nationwide');
+  });
+  it('puts schools off across the country in For you, not one region’s break', () => {
+    const christmas = paris('2026-12-27');
+    expect(christmas.school?.reach).toBe('all');
+    expect(forYou({ flights: [], stays: [], outlooks: [christmas] }).find((i) => i.kind === 'school'))
+      .toEqual({ kind: 'school', title: 'School holidays in Paris', sub: 'Christmas Holidays, 20 Dec–3 Jan · nationwide' });
+    const winter = paris('2027-02-08');
+    expect(winter.school?.reach).toBe('some');
+    expect(forYou({ flights: [], stays: [], outlooks: [winter] }).find((i) => i.kind === 'school')).toBeUndefined();
+  });
+  it('tells the agent', () => {
+    expect(agentContext('France', '2026-12-27', 5, [], [], [], 'London', [], france).school)
+      .toEqual([{ name: 'Christmas Holidays', start: '2026-12-20', end: '2027-01-03', reach: 'all' }]);
   });
 });
 
@@ -561,7 +611,7 @@ describe('agentContext', () => {
     expect(ctx.visited).toEqual(['Kyoto', 'Tokyo']);
   });
   it('has no month or regions before a date is picked', () => {
-    expect(agentContext('Japan', null, 12, [climateRow('Apr')], [], [], 'London')).toEqual({ month: null, holidays: [], regions: [], visited: [], home: 'London' });
+    expect(agentContext('Japan', null, 12, [climateRow('Apr')], [], [], 'London')).toEqual({ month: null, holidays: [], school: [], regions: [], visited: [], home: 'London' });
   });
   it('lists the national holidays in the trip', () => {
     const hols = [

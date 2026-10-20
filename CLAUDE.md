@@ -183,14 +183,24 @@ Run all three; all must be clean:
     (`eventPrices`, samples in `src/data/priceSamples.ts`): the same
     hotels priced for the event's nights and for plain nights a fortnight
     away, the median ratio applied to the stay's cash. Holidays don't all
-    raise prices: Dubai's Marriotts were x2.48 over New Year, Tokyo's
-    x0.83 in Golden Week, Paris's x0.83 at Christmas. A city with no sample
-    gets no uplift. To add one, follow the note at the top of that file.
+    raise prices: Dubai's Marriotts were x2.48 over New Year, Edinburgh's
+    x4.1 at Hogmanay, but Tokyo's x0.83 in Golden Week, Rome's x0.76 at
+    Easter, Las Vegas's flat for the Grand Prix. 19 events in 17 cities so
+    far; a city with no sample gets no uplift. To add one, follow the note
+    at the top of that file (brand searches only find hotels with
+    "Marriott" in the name, so thin cities get a 4-5★ sample too).
   - Public holidays: Nager.Date (free, no key) through
     `netlify/functions/holidays.js`, as the browser can't reach it;
     `useHolidays` keeps each country and year on the device for 30 days.
     `holidaysDuring` lists the national ones on a stay's nights, and a
     Monday or Friday one is flagged as a long weekend.
+  - School holidays: OpenHolidays (free, no key; 33 countries, mostly
+    Europe, plus Mexico and South Africa; not the UK) through the same
+    function with `&kind=school`. They're regional, so `schoolBreakDuring`
+    reads how much of the country is off on the stay's busiest night:
+    all, most or some regions (regions counted within six months of the
+    stay, as some publish later). The stop card shows it unless the crowd
+    note already names it (`schoolNote`); For you only when all or most.
   - Free-night vouchers: `voucherAdvice` weighs each stop's price levels
     in season, the programme's top-up (`src/data/freeNights.ts`: Marriott
     25,000), the voucher's worth to the user (its stored value, else cap x
@@ -210,8 +220,8 @@ Run all three; all must be clean:
     hold together.
   - The agent (`netlify/functions/suggest-cities.js`, prompt and checks
     in `netlify/lib/planPrompt.js`) is sent `agentContext`: each region's
-    weather and crowds in the month of travel, the public holidays during
-    the trip and the cities already stayed in. It's told to rely on those
+    weather and crowds in the month of travel, the public and school
+    holidays during the trip and the cities already stayed in. It's told to rely on those
     facts, not its memory, and not to assume a holiday makes hotels
     dearer; its
     answer is checked (real coordinates, airport codes, nights that add
