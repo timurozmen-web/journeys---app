@@ -66,7 +66,8 @@ describe('eventPairs', () => {
 describe('event ratios held out one hotel at a time', () => {
   // Each hotel's event price predicted from its own plain-night price and
   // the other hotels' ratio. 20 Oct 2026: 12.4% by level, 13.0% city-wide,
-  // 48% ignoring events (240 hotels). If new searches push the error up a
+  // 48% ignoring events (240 hotels); 21 Oct, with the Open and Web Summit,
+  // 12.8% and 46% (271 hotels). If new searches push the error up a
   // lot, the method needs another look, not a looser bound.
   it('predicts a hotel’s event price far better than ignoring the event', () => {
     const level = heldOutEventError(PRICE_EVENTS);
@@ -105,13 +106,13 @@ describe('the month-by-month index', () => {
     // 20-21 Oct 2026, held out one hotel-month at a time: Dubai 12%, Tokyo
     // 9%, New York 10%, London 8%, Paris 7%, Las Vegas 11%, Edinburgh 10%,
     // Sydney 8%, Hong Kong 6%, Barcelona 9%, Rome 8%, Amsterdam 7%, Milan
-    // 8%, against 24%, 15%, 26%, 14%, 10%, 15%, 34%, 13%, 10%, 19%, 19%,
-    // 19% and 13% unchanged. Paris moves least through the year, so gains
+    // 8%, Lisbon 10%, against 24%, 15%, 26%, 14%, 10%, 15%, 34%, 13%, 10%,
+    // 19%, 19%, 19%, 13% and 20% unchanged. Paris moves least through the year, so gains
     // least; Edinburgh most (January under half the year's average, June
     // over one and a half). Milan's May search overlapped LAMIERA (11-14 May
     // 2027) but the week after priced the same (Château Monfort $432 and
     // $433), so May is dear there in its own right.
-    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States'], ['Edinburgh', 'United Kingdom'], ['Sydney', 'Australia'], ['Hong Kong', 'Hong Kong'], ['Barcelona', 'Spain'], ['Rome', 'Italy'], ['Amsterdam', 'Netherlands'], ['Milan', 'Italy']]) {
+    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States'], ['Edinburgh', 'United Kingdom'], ['Sydney', 'Australia'], ['Hong Kong', 'Hong Kong'], ['Barcelona', 'Spain'], ['Rome', 'Italy'], ['Amsterdam', 'Netherlands'], ['Milan', 'Italy'], ['Lisbon', 'Portugal']]) {
       const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
       expect(r.held).toBeGreaterThanOrEqual(70);
       expect(r.error).toBeLessThan(0.15);
@@ -124,7 +125,7 @@ describe('the month-by-month index', () => {
       expect(r.error).toBeLessThan(0.15);
       expect(r.error).toBeLessThan(r.unshifted * 0.95);
     }
-    // One refit per held-out hotel-month across fifteen cities: about 5s
+    // One refit per held-out hotel-month across sixteen cities: about 6s
     // alone, more with the other files running beside it.
   }, 30_000);
   it('stays close where prices hardly move through the year', () => {
