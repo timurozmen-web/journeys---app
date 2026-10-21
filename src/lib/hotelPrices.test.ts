@@ -17,7 +17,9 @@ describe('the price database', () => {
   it('has every search well formed', () => {
     for (const s of HOTEL_PRICES) {
       expect(s.in < s.out, `${s.city} ${s.in}`).toBe(true);
-      for (const r of s.hotels) expect(r[1] == null || (r[1] > 20 && r[1] < 20000), `${s.city}: ${r[0]} ${r[1]}`).toBe(true);
+      // $10, not $20: Bangkok's 4★ 130 Hotel & Residence came back at $18 a
+      // night ($55 for three), a real price, not a misread total.
+      for (const r of s.hotels) expect(r[1] == null || (r[1] > 10 && r[1] < 20000), `${s.city}: ${r[0]} ${r[1]}`).toBe(true);
     }
   });
 
@@ -102,11 +104,12 @@ describe('the month-by-month index', () => {
   it('predicts a hotel’s price in another month far better than leaving it as it was', () => {
     // 20-21 Oct 2026, held out one hotel-month at a time: Dubai 12%, Tokyo
     // 9%, New York 10%, London 8%, Paris 7%, Las Vegas 11%, Edinburgh 10%,
-    // Sydney 8%, Hong Kong 6%, Barcelona 9%, Rome 8%, against 24%, 15%,
-    // 26%, 14%, 10%, 15%, 34%, 13%, 10%, 19% and 19% unchanged. Paris moves
-    // least through the year, so gains least; Edinburgh most (January under
-    // half the year's average, June over one and a half).
-    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States'], ['Edinburgh', 'United Kingdom'], ['Sydney', 'Australia'], ['Hong Kong', 'Hong Kong'], ['Barcelona', 'Spain'], ['Rome', 'Italy']]) {
+    // Sydney 8%, Hong Kong 6%, Barcelona 9%, Rome 8%, Amsterdam 7%, against
+    // 24%, 15%, 26%, 14%, 10%, 15%, 34%, 13%, 10%, 19%, 19% and 19%
+    // unchanged. Paris moves least through the year, so gains least;
+    // Edinburgh most (January under half the year's average, June over one
+    // and a half).
+    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States'], ['Edinburgh', 'United Kingdom'], ['Sydney', 'Australia'], ['Hong Kong', 'Hong Kong'], ['Barcelona', 'Spain'], ['Rome', 'Italy'], ['Amsterdam', 'Netherlands']]) {
       const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
       expect(r.held).toBeGreaterThanOrEqual(70);
       expect(r.error).toBeLessThan(0.15);
@@ -119,15 +122,16 @@ describe('the month-by-month index', () => {
       expect(r.error).toBeLessThan(0.15);
       expect(r.error).toBeLessThan(r.unshifted * 0.95);
     }
-    // One refit per held-out hotel-month across thirteen cities: about 5s
+    // One refit per held-out hotel-month across fourteen cities: about 5s
     // alone, more with the other files running beside it.
   }, 30_000);
   it('stays close where prices hardly move through the year', () => {
     // Mexico City's 4-5★ hotels mostly hold one price all year (the JW
     // Marriott Santa Fe $183 every time from March to September), so no
     // change is out by 5% and the index, pulled by the few that move, by 6%.
-    // Singapore's barely move either: 5.5% unchanged, 5.2% with the index.
-    for (const [city, country] of [['Mexico City', 'Mexico'], ['Singapore', 'Singapore']]) {
+    // Singapore's and Bangkok's barely move either: 5.5% and 5.0%
+    // unchanged, 5.2% and 4.3% with the index.
+    for (const [city, country] of [['Mexico City', 'Mexico'], ['Singapore', 'Singapore'], ['Bangkok', 'Thailand']]) {
       const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
       expect(r.held).toBeGreaterThanOrEqual(100);
       expect(r.error).toBeLessThan(0.08);
