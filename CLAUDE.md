@@ -198,11 +198,11 @@ Run all three; all must be clean:
     Saturday in the second week; rates more than about eleven months out
     aren't published). Held out one hotel-month at a time it predicts a
     hotel's price in another month to 7-12% (Dubai, Tokyo, New York,
-    London, Paris, Las Vegas, Edinburgh, Abu Dhabi); the researched ranges
+    London, Paris, Las Vegas, Edinburgh, Sydney, Abu Dhabi); the researched ranges
     it replaced were 19-30% out, worse than no change in Tokyo. Edinburgh
     gains most (34% out unchanged: January is under half the year's
-    average). Mexico City's hotels mostly hold one price all year: no
-    change is 5% out there, the index 6%. A month search that lands on an
+    average). Mexico City's and Singapore's hotels mostly hold one price
+    all year: no change is 5-5.5% out there, the index 5-6%. A month search that lands on an
     event (Edinburgh's July on the Open) becomes that event, with plain
     nights a fortnight away, so the index never learns an event as a
     season. Cities without one fall back to the researched range. It
