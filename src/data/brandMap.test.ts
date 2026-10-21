@@ -11,6 +11,9 @@ describe('programmeOfHotel (hotel names in the price database)', () => {
     expect(programmeOfHotel('Hyatt Centric Milan Centrale')).toBe('World of Hyatt');
     expect(programmeOfHotel('Hyatt Herald Square New York')).toBe('World of Hyatt');
     expect(programmeOfHotel('Hotel Indigo Lower East Side')).toBe('IHG One Rewards');
+    // Each AC is named "AC Hotel <place>", which "AC Hotels" didn't match;
+    // none had come back priced until the group search priced Madrid's.
+    expect(programmeOfHotel('AC Hotel Recoletos')).toBe('Marriott Bonvoy');
   });
 
   test('leaves independents alone, even when a word looks like a brand', () => {

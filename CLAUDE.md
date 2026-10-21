@@ -199,23 +199,25 @@ Run all three; all must be clean:
     aren't published). Held out one hotel-month at a time it predicts a
     hotel's price in another month to 6-12% (Dubai, Tokyo, New York, London,
     Paris, Las Vegas, Edinburgh, Sydney, Hong Kong, Barcelona, Rome,
-    Amsterdam, Milan, Lisbon, Abu Dhabi, Rio de Janeiro); the researched
-    ranges it replaced were 19-30% out, worse than no change in Tokyo.
-    Edinburgh gains most (34% out unchanged: January is under half the
-    year's average). Mexico City's, Singapore's and Bangkok's hotels mostly
-    hold one price all year: no change is 5-5.5% out there, the index 4-6%.
-    A month search that lands on an event (Edinburgh's July on the Open)
-    becomes that event, with plain nights a fortnight away, so the index
-    never learns an event as a season. Cities without one fall back to the
-    researched range. It replaces the researched rate for that programme in
-    Where to stay, the voucher advice and Cash or points. Searching: the
-    brand filter matches the hotel's group, so one search each for Marriott,
-    Accor, Hilton, Hyatt and IHG covers a city's programme hotels, Design
-    Hotels and Autograph Collection included (it matched the name until
-    October 2026; the old brand-by-brand list is at the top of
-    `hotelPrices.ts`). A hotel whose name doesn't say its brand carries it
-    as a fourth field; hotels from towns nearby are left out. AC Hotels
-    never come back priced.
+    Amsterdam, Milan, Lisbon, Madrid, Abu Dhabi, Rio de Janeiro); the
+    researched ranges it replaced were 19-30% out, worse than no change in
+    Tokyo. Edinburgh gains most (34% out unchanged: January is under half
+    the year's average). Mexico City's, Singapore's and Bangkok's hotels
+    mostly hold one price all year: no change is 5-5.5% out there, the index
+    4-6%. A month search that lands on an event (Edinburgh's July on the
+    Open) becomes that event, with plain nights a fortnight away, so the
+    index never learns an event as a season; an event that couldn't be
+    measured yet (`UNMEASURED_EVENTS`: Madrid's Grand Prix, Munich's
+    Oktoberfest) has its nights left out all the same. Cities without one
+    fall back to the researched range. It replaces the researched rate for
+    that programme in Where to stay, the voucher advice and Cash or points.
+    Searching: the brand filter matches the hotel's group, so one search
+    each for Marriott, Accor, Hilton, Hyatt and IHG covers a city's
+    programme hotels, Design Hotels and Autograph Collection included (it
+    matched the name until October 2026; the old brand-by-brand list is at
+    the top of `hotelPrices.ts`). A hotel whose name doesn't say its brand
+    carries it as a fourth field; hotels from towns nearby are left out. AC
+    Hotels come back priced only in the group search.
   - Events (`src/data/priceEvents.ts`): an event's nights and plain nights a
     fortnight away; `eventPrices` pairs the hotels priced on both and takes
     the median ratio: at the stay's price level where four or more were

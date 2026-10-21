@@ -92,6 +92,18 @@ describe('the month-by-month index', () => {
     expect(index.months.get(7)! / index.months.get(1)!).toBeCloseTo(1.25, 5);
     expect(index.hotels).toBe(3);
   });
+  it('leaves out the nights of an event not yet measured', () => {
+    // Madrid's September search landed on the Grand Prix, which couldn't be
+    // paired with plain nights; the week before is what September costs.
+    const madrid = (when: string, hotels: PriceRow[]): PriceSearch => ({ ...search(when, hotels), city: 'Madrid', country: 'Spain' });
+    const db = [
+      madrid('2027-01-13', [['A', 100, 4], ['B', 200, 4], ['C', 300, 5]]),
+      madrid('2027-09-01', [['A', 120, 4], ['B', 240, 4], ['C', 360, 5]]),
+      madrid('2027-09-08', [['A', 300, 4], ['B', 600, 4], ['C', 900, 5]]),
+    ];
+    const index = seasonIndex('Madrid', 'Spain', [], db)!;
+    expect(index.months.get(9)! / index.months.get(1)!).toBeCloseTo(1.2, 5);
+  });
   it('leaves out a month too few hotels link, and an event’s nights', () => {
     const db = [
       search('2027-01-13', [['A', 100, 4], ['B', 200, 4], ['C', 300, 5]]),
@@ -106,13 +118,13 @@ describe('the month-by-month index', () => {
     // 20-21 Oct 2026, held out one hotel-month at a time: Dubai 12%, Tokyo
     // 9%, New York 10%, London 8%, Paris 7%, Las Vegas 11%, Edinburgh 10%,
     // Sydney 8%, Hong Kong 6%, Barcelona 9%, Rome 8%, Amsterdam 7%, Milan
-    // 8%, Lisbon 10%, against 24%, 15%, 26%, 14%, 10%, 15%, 34%, 13%, 10%,
-    // 19%, 19%, 19%, 13% and 20% unchanged. Paris moves least through the year, so gains
+    // 8%, Lisbon 10%, Madrid 8%, against 24%, 15%, 26%, 14%, 10%, 15%, 34%,
+    // 13%, 10%, 19%, 19%, 19%, 13%, 20% and 19% unchanged. Paris moves least through the year, so gains
     // least; Edinburgh most (January under half the year's average, June
     // over one and a half). Milan's May search overlapped LAMIERA (11-14 May
     // 2027) but the week after priced the same (Château Monfort $432 and
     // $433), so May is dear there in its own right.
-    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States'], ['Edinburgh', 'United Kingdom'], ['Sydney', 'Australia'], ['Hong Kong', 'Hong Kong'], ['Barcelona', 'Spain'], ['Rome', 'Italy'], ['Amsterdam', 'Netherlands'], ['Milan', 'Italy'], ['Lisbon', 'Portugal']]) {
+    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States'], ['Edinburgh', 'United Kingdom'], ['Sydney', 'Australia'], ['Hong Kong', 'Hong Kong'], ['Barcelona', 'Spain'], ['Rome', 'Italy'], ['Amsterdam', 'Netherlands'], ['Milan', 'Italy'], ['Lisbon', 'Portugal'], ['Madrid', 'Spain']]) {
       const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
       expect(r.held).toBeGreaterThanOrEqual(70);
       expect(r.error).toBeLessThan(0.15);
@@ -125,7 +137,7 @@ describe('the month-by-month index', () => {
       expect(r.error).toBeLessThan(0.15);
       expect(r.error).toBeLessThan(r.unshifted * 0.95);
     }
-    // One refit per held-out hotel-month across sixteen cities: about 6s
+    // One refit per held-out hotel-month across seventeen cities: about 6s
     // alone, more with the other files running beside it.
   }, 30_000);
   it('stays close where prices hardly move through the year', () => {
