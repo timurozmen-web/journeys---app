@@ -418,6 +418,8 @@ describe('measured event prices', () => {
     expect(ratio('Abu Dhabi', 'United Arab Emirates', '2026-12-04', 2)).toBeGreaterThan(3);
     expect(ratio('Milan', 'Italy', '2027-04-13', 2)).toBeGreaterThan(2);
     expect(ratio('Rio de Janeiro', 'Brazil', '2027-02-06', 3, null)).toBeGreaterThan(2);
+    // The Open at St Andrews, 50 miles away: Edinburgh's Marriotts x1.83.
+    expect(ratio('Edinburgh', 'United Kingdom', '2027-07-14', 3)).toBeGreaterThan(1.5);
     // Business cities empty out over holidays, and some big names barely move.
     expect(ratio('Tokyo', 'Japan', '2027-05-02', 3)).toBeLessThan(1);
     expect(ratio('Rome', 'Italy', '2027-03-26', 2)).toBeLessThan(1);
@@ -434,6 +436,8 @@ describe('measured event prices', () => {
   it('tells New Year from the week before Christmas in the same city', () => {
     expect(eventPrices(stop('New York', 'United States', '2026-12-31', 1))?.event).toBe("New Year's Eve");
     expect(eventPrices(stop('New York', 'United States', '2026-12-19', 2))?.event).toBe('Week before Christmas');
+    expect(eventPrices(stop('Edinburgh', 'United Kingdom', '2027-07-15', 2))?.event).toBe('The Open at St Andrews');
+    expect(eventPrices(stop('Edinburgh', 'United Kingdom', '2027-08-13', 2))?.event).toBe('Festival Fringe');
   });
   it('prices Marriott cash at the member rate', () => {
     expect(memberCash('Marriott Bonvoy', 200)).toBe(195);
