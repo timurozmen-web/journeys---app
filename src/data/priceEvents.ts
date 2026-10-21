@@ -111,8 +111,19 @@ export const PRICE_EVENTS: PriceEvent[] = [
   },
 ];
 
-// Events with no measurement yet, and why: Munich's Oktoberfest (18 Sep-3
-// Oct 2027) had no published rates when searched, eleven months out.
+// Events with no measurement yet, and why. Their nights are still kept out
+// of the month-by-month index (seasonIndex): Madrid's September search
+// landed on the Grand Prix, and counted as a plain month it would have
+// taught the index that September there is dear.
+export const UNMEASURED_EVENTS: (Omit<PriceEvent, 'baseline' | 'note'> & { why: string })[] = [
+  { city: 'Munich', country: 'Germany', event: 'Oktoberfest', window: ['2027-09-18', '2027-10-04'], why: 'No published rates when searched, eleven months out.' },
+  {
+    // MADRING, 10-12 September 2027 (madring.com; the 2027 F1 calendar,
+    // published 16 Sep 2026).
+    city: 'Madrid', country: 'Spain', event: 'Spanish Grand Prix', window: ['2027-09-09', '2027-09-13'],
+    why: 'Searched eleven months out, most hotels had no rate for the race nights or a fortnight later; only Hotel Atlántico was priced on both sides of it ($278 a night against $250 the week before).',
+  },
+];
 
 // Marriott's member rate is 2-3% under the booking sites' price for the
 // same room: the user's own observation (20 Oct 2026). 2.5%, the middle,

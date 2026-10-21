@@ -1,6 +1,6 @@
 import DATA from '../data/hotelPrices.json';
 import { programmeOfHotel } from '../data/brandMap';
-import type { PriceEvent } from '../data/priceEvents';
+import { UNMEASURED_EVENTS, type PriceEvent } from '../data/priceEvents';
 import { sameCountry } from './countryName';
 
 // The hotel price database (src/data/hotelPrices.json): every search kept
@@ -26,10 +26,10 @@ import { sameCountry } from './countryName';
 // so a city with a dozen Courtyards returns a few at a time, on different
 // nights. A hotel whose name says none of these (Hotel Arts is a
 // Ritz-Carlton, The Ivens an Autograph Collection) carries its brand as a
-// fourth field. AC Hotels don't come back priced in any search; that's a
-// gap in the source, not a sold-out hotel. Hotels the search brings back
-// from towns nearby (Sintra and Cascais for Lisbon, Sharjah for Dubai) are
-// left out.
+// fourth field. AC Hotels came back unpriced in every search by name; the
+// group search prices them (Madrid's AC Recoletos, $316 a night). Hotels
+// the search brings back from towns nearby (Sintra and Cascais for Lisbon,
+// Sharjah for Dubai) are left out.
 
 /** A hotel's name, its price a night in USD (null: listed with no rate, usually sold out), its stars, and its brand where the name doesn't say. */
 export type PriceRow = [name: string, usd: number | null, stars: number | null, brand?: string];
@@ -183,7 +183,8 @@ type SeasonObs = { hotel: string; month: number; y: number };
 
 /** A city's plain-night prices, one per hotel and month (the mean of its log prices). */
 function seasonObservations(city: string, country: string, events: PriceEvent[], db: PriceSearch[]): SeasonObs[] {
-  const own = events.filter((e) => sameCountry(e.country, country) && sameCity(e.city, city));
+  // Events not yet measured are skipped too: their nights aren't a season.
+  const own = [...events, ...UNMEASURED_EVENTS].filter((e) => sameCountry(e.country, country) && sameCity(e.city, city));
   const logs = new Map<string, number[]>();
   for (const s of citySearches(city, country, db)) {
     if (own.some((e) => s.in < e.window[1] && s.out > e.window[0])) continue;

@@ -7,7 +7,7 @@ const MARRIOTT_SUBBRANDS = [
   'W Hotels', 'W', 'Edition', 'The Luxury Collection', 'Luxury Collection', 'Marriott Hotels', 'Marriott',
   'Sheraton', 'Marriott Vacation Club', 'Delta Hotels', 'Le Meridien', 'Le Méridien', 'Le Royal Meridien', 'Le Royal Méridien', 'Westin',
   'Renaissance Hotels', 'Renaissance', 'Autograph Collection', 'Tribute Portfolio', 'Design Hotels',
-  'Courtyard', 'Four Points', 'SpringHill Suites', 'Protea Hotels', 'Fairfield', 'AC Hotels', 'AC by Marriott',
+  'Courtyard', 'Four Points', 'SpringHill Suites', 'Protea Hotels', 'Fairfield', 'AC Hotels', 'AC Hotel', 'AC by Marriott',
   'Aloft', 'Moxy', 'City Express', 'Marriott Executive Apartments', 'Apartments by Marriott Bonvoy',
   'Residence Inn', 'TownePlace Suites', 'Element', 'Homes & Villas by Marriott Bonvoy', 'MGM Collection',
   'citizenM', 'StudioRes',
