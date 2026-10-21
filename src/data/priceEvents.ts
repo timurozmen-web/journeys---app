@@ -6,18 +6,18 @@
 // Marriotts were cheaper in Golden Week than two weeks later, Paris's at
 // Christmas than in late November, Rome's at Easter than in mid-April.
 // Leisure ones surge: Dubai's Marriotts more than doubled over New Year,
-// Edinburgh's quadrupled for Hogmanay. Big events surge whatever the
-// city: Barcelona's Mobile World Congress, Milan's Design Week, Abu
-// Dhabi's Grand Prix, Rio's Carnival, the Open at St Andrews (Edinburgh's
-// hotels, 50 miles off, at 1.8 times a fortnight later). Some that sound big barely move:
-// Las Vegas's Grand Prix (Marriott's hotels there are off the Strip),
-// Songkran in Bangkok, King's Day in Amsterdam. So a holiday isn't priced
-// as a surge unless an event here says so.
+// Edinburgh's quadrupled for Hogmanay. Big events surge whatever the city:
+// Barcelona's Mobile World Congress, Milan's Design Week, Abu Dhabi's Grand
+// Prix, Rio's Carnival, Lisbon's Web Summit, the Open at St Andrews
+// (Edinburgh's hotels, 50 miles off, at 1.8 times a fortnight later). Some
+// that sound big barely move: Las Vegas's Grand Prix (Marriott's hotels
+// there are off the Strip), Songkran in Bangkok, King's Day in Amsterdam.
+// So a holiday isn't priced as a surge unless an event here says so.
 //
 // To add one: list it here, then search the city's hotels for the event's
-// nights and for the same weekdays a fortnight away, every brand by name
-// (see the note in src/lib/hotelPrices.ts), and add the searches to the
-// database.
+// nights and for the same weekdays a fortnight away, a search for each
+// hotel group and one for the city's 4-5★ hotels (see the note in
+// src/lib/hotelPrices.ts), and add the searches to the database.
 
 export interface PriceEvent {
   city: string;
@@ -87,6 +87,14 @@ export const PRICE_EVENTS: PriceEvent[] = [
   {
     city: 'Barcelona', country: 'Spain', event: 'Mobile World Congress', window: ['2027-02-28', '2027-03-04'], baseline: ['2027-03-14', '2027-03-18'],
     note: "Hotel Arts, the Renaissance, Le Méridien, Hotel 1898, Soho House, Miramar, Mandarin Oriental and Sofitel Skipper had no rate for the congress nights. AC Hotels don't come back priced in any search, here or in Milan.",
+  },
+  {
+    // Web Summit is 9-12 November 2026 at the MEO Arena and FIL, Parque das
+    // Nações (websummit.com; the Dutch delegation's page, rvo.nl). The Moxy
+    // Lisboa Oriente, beside the venue, was $711 a night against $107 a
+    // fortnight later.
+    city: 'Lisbon', country: 'Portugal', event: 'Web Summit', window: ['2026-11-09', '2026-11-12'], baseline: ['2026-11-23', '2026-11-26'],
+    note: 'Searched three weeks out. Hotels in Cascais, Sintra, Setúbal, Caparica and Oeiras that came back in the brand searches are left out.',
   },
   {
     city: 'Rome', country: 'Italy', event: 'Easter', window: ['2027-03-25', '2027-03-29'], baseline: ['2027-04-08', '2027-04-12'],

@@ -199,32 +199,36 @@ Run all three; all must be clean:
     aren't published). Held out one hotel-month at a time it predicts a
     hotel's price in another month to 6-12% (Dubai, Tokyo, New York, London,
     Paris, Las Vegas, Edinburgh, Sydney, Hong Kong, Barcelona, Rome,
-    Amsterdam, Milan, Abu Dhabi, Rio de Janeiro); the researched ranges it
-    replaced were 19-30% out, worse than no change in Tokyo. Edinburgh gains
-    most (34% out unchanged: January is under half the year's average).
-    Mexico City's, Singapore's and Bangkok's hotels mostly hold one price
-    all year: no change is 5-5.5% out there, the index 4-6%. A month search
-    that lands on an event (Edinburgh's July on the Open) becomes that
-    event, with plain nights a fortnight away, so the index never learns an
-    event as a season. Cities without one fall back to the researched range.
-    It replaces the researched rate for that programme in Where to stay, the
-    voucher advice and Cash or points. Searching: the brand filter matches
-    the name and the search is "<brand> <city>", so "Marriott Barcelona"
-    finds nothing; search every sub-brand by name (the list is at the top of
-    `hotelPrices.ts`). AC Hotels never come back priced.
-  - Events (`src/data/priceEvents.ts`): an event's nights and plain nights
-    a fortnight away; `eventPrices` pairs the hotels priced on both and
-    takes the median ratio: at the stay's price level where four or more
-    were paired there (the programme's own first), as levels move apart
-    (Dubai New Year: Marriott Select x1.95, Luxury x2.81), else the
-    programme's own hotels where at least two, else all. Held out one hotel
-    at a time this predicts a hotel's event price to a median 12.4% (240
-    hotels); ignoring events would be 48% out. Holidays don't all raise
-    prices: Dubai's Marriotts were x2.4 over New Year, Barcelona's x3.85
-    for the Mobile World Congress, but Tokyo's x0.93 in Golden Week,
-    Rome's x0.82 at Easter, Las Vegas's flat for the Grand Prix.
-    Edinburgh's were x1.83 for the Open at St Andrews, 50 miles away. A city
-    with no event measured gets no uplift.
+    Amsterdam, Milan, Lisbon, Abu Dhabi, Rio de Janeiro); the researched
+    ranges it replaced were 19-30% out, worse than no change in Tokyo.
+    Edinburgh gains most (34% out unchanged: January is under half the
+    year's average). Mexico City's, Singapore's and Bangkok's hotels mostly
+    hold one price all year: no change is 5-5.5% out there, the index 4-6%.
+    A month search that lands on an event (Edinburgh's July on the Open)
+    becomes that event, with plain nights a fortnight away, so the index
+    never learns an event as a season. Cities without one fall back to the
+    researched range. It replaces the researched rate for that programme in
+    Where to stay, the voucher advice and Cash or points. Searching: the
+    brand filter matches the hotel's group, so one search each for Marriott,
+    Accor, Hilton, Hyatt and IHG covers a city's programme hotels, Design
+    Hotels and Autograph Collection included (it matched the name until
+    October 2026; the old brand-by-brand list is at the top of
+    `hotelPrices.ts`). A hotel whose name doesn't say its brand carries it
+    as a fourth field; hotels from towns nearby are left out. AC Hotels
+    never come back priced.
+  - Events (`src/data/priceEvents.ts`): an event's nights and plain nights a
+    fortnight away; `eventPrices` pairs the hotels priced on both and takes
+    the median ratio: at the stay's price level where four or more were
+    paired there (the programme's own first), as levels move apart (Dubai
+    New Year: Marriott Select x1.95, Luxury x2.81), else the programme's own
+    hotels where at least two, else all. Held out one hotel at a time this
+    predicts a hotel's event price to a median 12.8% (271 hotels); ignoring
+    events would be 46% out. Holidays don't all raise prices: Dubai's
+    Marriotts were x2.4 over New Year, Barcelona's x3.85 for the Mobile
+    World Congress, but Tokyo's x0.93 in Golden Week, Rome's x0.82 at
+    Easter, Las Vegas's flat for the Grand Prix. Edinburgh's were x1.83 for
+    the Open at St Andrews, 50 miles away, and Lisbon's x1.62 for Web
+    Summit. A city with no event measured gets no uplift.
   - Public holidays: Nager.Date (free, no key) through
     `netlify/functions/holidays.js`, as the browser can't reach it;
     `useHolidays` keeps each country and year on the device for 30 days.

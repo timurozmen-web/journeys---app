@@ -8,22 +8,28 @@ import { sameCountry } from './countryName';
 // its check-in and check-out, what was searched and the hotels priced:
 // SlickTrip, which compares the booking sites (Expedia, Booking.com and
 // the rest) the way Google Hotels does, 2 adults, cheapest room, USD a
-// night, searched 20 Oct 2026 unless the search says otherwise.
+// night, searched 20-21 Oct 2026.
 //
-// Searching: the brand filter is matched against the hotel's name, and
-// the search itself is "<brand> <city>", so "Marriott Barcelona" finds a
-// "Courtyard by Marriott" but never a Sheraton, a W or a Cotton House,
-// Autograph Collection, and found nothing at all in Barcelona. Search every
-// brand by name: Marriott, JW Marriott, Courtyard, Residence Inn,
-// Sheraton (catches Four Points), Westin, W <city> (the city's W, with
-// whatever else is nearby), Ritz-Carlton, St. Regis, Le Méridien,
-// Renaissance, Autograph Collection, Luxury Collection, Tribute Portfolio,
-// EDITION, Delta Hotels, Moxy, Aloft, Element, citizenM. Each search only
-// sees the twenty or so hotels nearest the place searched, so a city with
-// a dozen Courtyards returns a few at a time, on different nights.
-// A hotel whose name says none of these (Hotel Arts is a Ritz-Carlton)
-// carries its brand as a fourth field. AC Hotels don't come back priced
-// in any search; that's a gap in the source, not a sold-out hotel.
+// Searching: the brand filter matches the hotel's group, not its name (seen
+// in Edinburgh and Lisbon, 20-21 Oct 2026): "Marriott" brings back the
+// Moxys, Residence Inns and Sheratons, Design Hotels and Autograph
+// Collection hotels whose names say nothing of Marriott (The Ivens in
+// Lisbon), and "Accor", "Hilton", "Hyatt" and "IHG" do the same for theirs,
+// so one search a group covers a city. Earlier it matched the name, and
+// "Marriott Barcelona" found a "Courtyard by Marriott" but never a
+// Sheraton, a W or a Cotton House, Autograph Collection; those cities were
+// searched brand by brand: Marriott, JW Marriott, Courtyard, Residence Inn,
+// Sheraton (catches Four Points), Westin, W <city>, Ritz-Carlton, St.
+// Regis, Le Méridien, Renaissance, Autograph Collection, Luxury Collection,
+// Tribute Portfolio, EDITION, Delta Hotels, Moxy, Aloft, Element, citizenM.
+// Each search only sees the twenty or so hotels nearest the place searched,
+// so a city with a dozen Courtyards returns a few at a time, on different
+// nights. A hotel whose name says none of these (Hotel Arts is a
+// Ritz-Carlton, The Ivens an Autograph Collection) carries its brand as a
+// fourth field. AC Hotels don't come back priced in any search; that's a
+// gap in the source, not a sold-out hotel. Hotels the search brings back
+// from towns nearby (Sintra and Cascais for Lisbon, Sharjah for Dubai) are
+// left out.
 
 /** A hotel's name, its price a night in USD (null: listed with no rate, usually sold out), its stars, and its brand where the name doesn't say. */
 export type PriceRow = [name: string, usd: number | null, stars: number | null, brand?: string];
