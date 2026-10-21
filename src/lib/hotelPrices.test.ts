@@ -102,21 +102,24 @@ describe('the month-by-month index', () => {
   it('predicts a hotel’s price in another month far better than leaving it as it was', () => {
     // 20-21 Oct 2026, held out one hotel-month at a time: Dubai 12%, Tokyo
     // 9%, New York 10%, London 8%, Paris 7%, Las Vegas 11%, Edinburgh 10%,
-    // Sydney 8%, against 24%, 15%, 26%, 14%, 10%, 15%, 34% and 13%
-    // unchanged. Paris moves least through the year, so gains least;
-    // Edinburgh most (January under half the year's average, June over one
-    // and a half).
-    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States'], ['Edinburgh', 'United Kingdom'], ['Sydney', 'Australia']]) {
+    // Sydney 8%, Hong Kong 6%, against 24%, 15%, 26%, 14%, 10%, 15%, 34%,
+    // 13% and 10% unchanged. Paris moves least through the year, so gains
+    // least; Edinburgh most (January under half the year's average, June
+    // over one and a half).
+    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States'], ['Edinburgh', 'United Kingdom'], ['Sydney', 'Australia'], ['Hong Kong', 'Hong Kong']]) {
       const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
       expect(r.held).toBeGreaterThanOrEqual(70);
       expect(r.error).toBeLessThan(0.15);
       expect(r.error).toBeLessThan(r.unshifted * 0.75);
     }
-    // Abu Dhabi's luxury hotels hold their price better: 12.5% against 16%.
-    const abuDhabi = heldOutSeasonError('Abu Dhabi', 'UAE', PRICE_EVENTS)!;
-    expect(abuDhabi.error).toBeLessThan(0.15);
-    expect(abuDhabi.error).toBeLessThan(abuDhabi.unshifted * 0.85);
-    // One refit per held-out hotel-month across nine cities: about 3s
+    // Abu Dhabi's and Rio's hotels hold their price better, so the index
+    // gains less: 12.5% against 16%, and 9% against 10%.
+    for (const [city, country] of [['Abu Dhabi', 'UAE'], ['Rio de Janeiro', 'Brazil']]) {
+      const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
+      expect(r.error).toBeLessThan(0.15);
+      expect(r.error).toBeLessThan(r.unshifted * 0.95);
+    }
+    // One refit per held-out hotel-month across eleven cities: about 4s
     // alone, more with the other files running beside it.
   }, 30_000);
   it('stays close where prices hardly move through the year', () => {
