@@ -198,8 +198,8 @@ Run all three; all must be clean:
     Saturday in the second week; rates more than about eleven months out
     aren't published). Held out one hotel-month at a time it predicts a
     hotel's price in another month to 6-12% (Dubai, Tokyo, New York, London,
-    Paris, Las Vegas, Edinburgh, Sydney, Hong Kong, Abu Dhabi, Rio de
-    Janeiro); the researched ranges it replaced were 19-30% out, worse than
+    Paris, Las Vegas, Edinburgh, Sydney, Hong Kong, Barcelona, Rome, Abu
+    Dhabi, Rio de Janeiro); the researched ranges it replaced were 19-30% out, worse than
     no change in Tokyo. Edinburgh gains most (34% out unchanged: January is
     under half the year's average). Mexico City's and Singapore's hotels
     mostly hold one price all year: no change is 5-5.5% out there, the index
