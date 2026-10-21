@@ -104,12 +104,14 @@ describe('the month-by-month index', () => {
   it('predicts a hotel’s price in another month far better than leaving it as it was', () => {
     // 20-21 Oct 2026, held out one hotel-month at a time: Dubai 12%, Tokyo
     // 9%, New York 10%, London 8%, Paris 7%, Las Vegas 11%, Edinburgh 10%,
-    // Sydney 8%, Hong Kong 6%, Barcelona 9%, Rome 8%, Amsterdam 7%, against
-    // 24%, 15%, 26%, 14%, 10%, 15%, 34%, 13%, 10%, 19%, 19% and 19%
-    // unchanged. Paris moves least through the year, so gains least;
-    // Edinburgh most (January under half the year's average, June over one
-    // and a half).
-    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States'], ['Edinburgh', 'United Kingdom'], ['Sydney', 'Australia'], ['Hong Kong', 'Hong Kong'], ['Barcelona', 'Spain'], ['Rome', 'Italy'], ['Amsterdam', 'Netherlands']]) {
+    // Sydney 8%, Hong Kong 6%, Barcelona 9%, Rome 8%, Amsterdam 7%, Milan
+    // 8%, against 24%, 15%, 26%, 14%, 10%, 15%, 34%, 13%, 10%, 19%, 19%,
+    // 19% and 13% unchanged. Paris moves least through the year, so gains
+    // least; Edinburgh most (January under half the year's average, June
+    // over one and a half). Milan's May search overlapped LAMIERA (11-14 May
+    // 2027) but the week after priced the same (Château Monfort $432 and
+    // $433), so May is dear there in its own right.
+    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States'], ['Edinburgh', 'United Kingdom'], ['Sydney', 'Australia'], ['Hong Kong', 'Hong Kong'], ['Barcelona', 'Spain'], ['Rome', 'Italy'], ['Amsterdam', 'Netherlands'], ['Milan', 'Italy']]) {
       const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
       expect(r.held).toBeGreaterThanOrEqual(70);
       expect(r.error).toBeLessThan(0.15);
@@ -122,7 +124,7 @@ describe('the month-by-month index', () => {
       expect(r.error).toBeLessThan(0.15);
       expect(r.error).toBeLessThan(r.unshifted * 0.95);
     }
-    // One refit per held-out hotel-month across fourteen cities: about 5s
+    // One refit per held-out hotel-month across fifteen cities: about 5s
     // alone, more with the other files running beside it.
   }, 30_000);
   it('stays close where prices hardly move through the year', () => {

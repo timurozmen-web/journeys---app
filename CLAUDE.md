@@ -199,15 +199,15 @@ Run all three; all must be clean:
     aren't published). Held out one hotel-month at a time it predicts a
     hotel's price in another month to 6-12% (Dubai, Tokyo, New York, London,
     Paris, Las Vegas, Edinburgh, Sydney, Hong Kong, Barcelona, Rome,
-    Amsterdam, Abu Dhabi, Rio de Janeiro); the researched ranges it replaced
-    were 19-30% out, worse than no change in Tokyo. Edinburgh gains most
-    (34% out unchanged: January is under half the year's average). Mexico
-    City's, Singapore's and Bangkok's hotels mostly hold one price all year:
-    no change is 5-5.5% out there, the index 4-6%. A month search that lands
-    on an event (Edinburgh's July on the Open) becomes that event, with
-    plain nights a fortnight away, so the index never learns an event as a
-    season. Cities without one fall back to the researched range. It
-    replaces the researched rate for that programme in Where to stay, the
+    Amsterdam, Milan, Abu Dhabi, Rio de Janeiro); the researched ranges it
+    replaced were 19-30% out, worse than no change in Tokyo. Edinburgh gains
+    most (34% out unchanged: January is under half the year's average).
+    Mexico City's, Singapore's and Bangkok's hotels mostly hold one price
+    all year: no change is 5-5.5% out there, the index 4-6%. A month search
+    that lands on an event (Edinburgh's July on the Open) becomes that
+    event, with plain nights a fortnight away, so the index never learns an
+    event as a season. Cities without one fall back to the researched range.
+    It replaces the researched rate for that programme in Where to stay, the
     voucher advice and Cash or points. Searching: the brand filter matches
     the name and the search is "<brand> <city>", so "Marriott Barcelona"
     finds nothing; search every sub-brand by name (the list is at the top of
