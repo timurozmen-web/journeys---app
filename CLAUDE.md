@@ -182,36 +182,36 @@ Run all three; all must be clean:
     in a dear one); the level itself is measured where it can be
     (`marketPriceLevel`). Marriott cash is the booking sites' price
     less its member rate (2.5%, the user's own figure: `MEMBER_RATE_DISCOUNT`).
-  - Hotel prices are measured: `src/data/hotelPrices.json` is a database
-    of every hotel price search as it came back (SlickTrip, comparing the
+  - Hotel prices are measured: `src/data/hotelPrices.json` is a database of
+    every hotel price search as it came back (SlickTrip, comparing the
     booking sites; 2 adults, cheapest room, USD a night), read through
     `src/lib/hotelPrices.ts`. Each hotel is put to its programme by name
     (`programmeOfHotel`: a Sheraton, Westin, Moxy or W is Marriott, or a
     brand given as a fourth field: Hotel Arts is a Ritz-Carlton) and to a
     price level: Marriott by its own tiers (Luxury, Premium, Select),
     anything else by stars. `measuredCash` prices a programme's night at a
-    level in a city from its hotels there (two or more): as priced where
-    the search covers the stay's nights, else plain-night prices moved to
-    the stay's month by the city's month index, then any event. The index
+    level in a city from its hotels there (two or more): as priced where the
+    search covers the stay's nights, else plain-night prices moved to the
+    stay's month by the city's month index, then any event. The index
     (`seasonIndex`) is fitted to the same hotels priced in different months
     (log price = hotel + month), from one 4-5★ search a month (Wednesday to
     Saturday in the second week; rates more than about eleven months out
     aren't published). Held out one hotel-month at a time it predicts a
-    hotel's price in another month to 6-12% (Dubai, Tokyo, New York,
-    London, Paris, Las Vegas, Edinburgh, Sydney, Hong Kong, Abu Dhabi, Rio
-    de Janeiro); the researched ranges it replaced were 19-30% out, worse
-    than no change in Tokyo. Edinburgh
-    gains most (34% out unchanged: January is under half the year's
-    average). Mexico City's and Singapore's hotels mostly hold one price
-    all year: no change is 5-5.5% out there, the index 5-6%. A month search that lands on an
-    event (Edinburgh's July on the Open) becomes that event, with plain
-    nights a fortnight away, so the index never learns an event as a
-    season. Cities without one fall back to the researched range. It
-    replaces the researched rate for that programme in Where to stay, the
-    voucher advice and Cash or points. Searching: the brand filter matches
-    the name and the search is "<brand> <city>", so "Marriott Barcelona"
-    finds nothing; search every sub-brand by name (the list is at the top
-    of `hotelPrices.ts`). AC Hotels never come back priced.
+    hotel's price in another month to 6-12% (Dubai, Tokyo, New York, London,
+    Paris, Las Vegas, Edinburgh, Sydney, Hong Kong, Abu Dhabi, Rio de
+    Janeiro); the researched ranges it replaced were 19-30% out, worse than
+    no change in Tokyo. Edinburgh gains most (34% out unchanged: January is
+    under half the year's average). Mexico City's and Singapore's hotels
+    mostly hold one price all year: no change is 5-5.5% out there, the index
+    5-6%. A month search that lands on an event (Edinburgh's July on the
+    Open) becomes that event, with plain nights a fortnight away, so the
+    index never learns an event as a season. Cities without one fall back to
+    the researched range. It replaces the researched rate for that programme
+    in Where to stay, the voucher advice and Cash or points. Searching: the
+    brand filter matches the name and the search is "<brand> <city>", so
+    "Marriott Barcelona" finds nothing; search every sub-brand by name (the
+    list is at the top of `hotelPrices.ts`). AC Hotels never come back
+    priced.
   - Events (`src/data/priceEvents.ts`): an event's nights and plain nights
     a fortnight away; `eventPrices` pairs the hotels priced on both and
     takes the median ratio: at the stay's price level where four or more
