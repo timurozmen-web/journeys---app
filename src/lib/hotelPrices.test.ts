@@ -100,17 +100,24 @@ describe('the month-by-month index', () => {
     expect(seasonIndex('Lisbon', 'Portugal', [fair], db)).toBeNull();
   });
   it('predicts a hotel’s price in another month far better than leaving it as it was', () => {
-    // 20 Oct 2026, held out one hotel-month at a time: Dubai 12%, Tokyo 9%,
-    // New York 10%, London 8%, Paris 7%, Las Vegas 11%, against 24%, 15%,
-    // 26%, 14%, 10% and 15% unchanged. Paris moves least through the year,
-    // so gains least.
-    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States']]) {
+    // 20-21 Oct 2026, held out one hotel-month at a time: Dubai 12%, Tokyo
+    // 9%, New York 10%, London 8%, Paris 7%, Las Vegas 11%, Edinburgh 10%,
+    // against 24%, 15%, 26%, 14%, 10%, 15% and 34% unchanged. Paris moves
+    // least through the year, so gains least; Edinburgh most (January
+    // under half the year's average, June over one and a half).
+    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States'], ['Edinburgh', 'United Kingdom']]) {
       const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
       expect(r.held).toBeGreaterThanOrEqual(70);
       expect(r.error).toBeLessThan(0.15);
       expect(r.error).toBeLessThan(r.unshifted * 0.75);
     }
-  });
+    // Abu Dhabi's luxury hotels hold their price better: 12.5% against 16%.
+    const abuDhabi = heldOutSeasonError('Abu Dhabi', 'UAE', PRICE_EVENTS)!;
+    expect(abuDhabi.error).toBeLessThan(0.15);
+    expect(abuDhabi.error).toBeLessThan(abuDhabi.unshifted * 0.85);
+    // One refit per held-out hotel-month across eight cities: about 3s
+    // alone, more with the other files running beside it.
+  }, 30_000);
   it('stays close where prices hardly move through the year', () => {
     // Mexico City's 4-5★ hotels mostly hold one price all year (the JW
     // Marriott Santa Fe $183 every time from March to September), so no change is

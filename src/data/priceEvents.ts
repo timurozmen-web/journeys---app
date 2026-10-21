@@ -8,7 +8,8 @@
 // Leisure ones surge: Dubai's Marriotts more than doubled over New Year,
 // Edinburgh's quadrupled for Hogmanay. Big events surge whatever the
 // city: Barcelona's Mobile World Congress, Milan's Design Week, Abu
-// Dhabi's Grand Prix, Rio's Carnival. Some that sound big barely move:
+// Dhabi's Grand Prix, Rio's Carnival, the Open at St Andrews (Edinburgh's
+// hotels, 50 miles off, at 1.8 times a fortnight later). Some that sound big barely move:
 // Las Vegas's Grand Prix (Marriott's hotels there are off the Strip),
 // Songkran in Bangkok, King's Day in Amsterdam. So a holiday isn't priced
 // as a surge unless an event here says so.
@@ -65,6 +66,13 @@ export const PRICE_EVENTS: PriceEvent[] = [
   {
     city: 'Edinburgh', country: 'United Kingdom', event: 'Festival Fringe', window: ['2027-08-13', '2027-08-16'], baseline: ['2027-09-10', '2027-09-13'],
     note: 'Searched ten months out, when both windows were already priced far above winter (Courtyard West $315 and $308 against $73 in January); the Fringe premium may grow as it sells.',
+  },
+  {
+    // The 155th Open is at the Old Course, St Andrews, 15-18 July 2027 (R&A,
+    // randa.org). Edinburgh's month-by-month search landed on it: the
+    // Courtyard was $1,002 a night against $555 a fortnight later.
+    city: 'Edinburgh', country: 'United Kingdom', event: 'The Open at St Andrews', window: ['2027-07-14', '2027-07-17'], baseline: ['2027-07-28', '2027-07-31'],
+    note: 'The Moxy Edinburgh and the Sheraton Grand had no rate for the Open, nor the Courtyard West; the Balmoral and the InterContinental had none in the 4-5★ search.',
   },
   {
     city: 'Sydney', country: 'Australia', event: "New Year's Eve", window: ['2026-12-30', '2027-01-02'], baseline: ['2027-01-13', '2027-01-16'],

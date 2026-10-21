@@ -209,15 +209,21 @@ function fitSeason(all: SeasonObs[]): { level: Map<string, number>; factor: Map<
   if (monthSet.size < 2) return null;
   const level = new Map<string, number>();
   const factor = new Map<number, number>([...monthSet].map((m) => [m, 0]));
-  const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  // Running sums, not arrays copied per observation: the held-out check
+  // refits once per hotel-month, and copying made eight cities' check
+  // overrun the test timeout.
+  const hotelCount = new Map<string, number>();
+  for (const o of obs) hotelCount.set(o.hotel, (hotelCount.get(o.hotel) ?? 0) + 1);
+  const monthCount = new Map<number, number>();
+  for (const o of obs) monthCount.set(o.month, (monthCount.get(o.month) ?? 0) + 1);
   for (let i = 0; i < 100; i++) {
-    const byHotel = new Map<string, number[]>();
-    for (const o of obs) byHotel.set(o.hotel, [...(byHotel.get(o.hotel) ?? []), o.y - factor.get(o.month)!]);
-    for (const [h, xs] of byHotel) level.set(h, mean(xs));
-    const byMonth = new Map<number, number[]>();
-    for (const o of obs) byMonth.set(o.month, [...(byMonth.get(o.month) ?? []), o.y - level.get(o.hotel)!]);
-    for (const [m, xs] of byMonth) factor.set(m, mean(xs));
-    const centre = mean([...factor.values()]);
+    for (const h of hotelCount.keys()) level.set(h, 0);
+    for (const o of obs) level.set(o.hotel, level.get(o.hotel)! + o.y - factor.get(o.month)!);
+    for (const [h, n] of hotelCount) level.set(h, level.get(h)! / n);
+    for (const m of monthCount.keys()) factor.set(m, 0);
+    for (const o of obs) factor.set(o.month, factor.get(o.month)! + o.y - level.get(o.hotel)!);
+    let centre = 0;
+    for (const [m, n] of monthCount) { factor.set(m, factor.get(m)! / n); centre += factor.get(m)! / monthCount.size; }
     for (const [m, f] of factor) factor.set(m, f - centre);
   }
   return { level, factor };

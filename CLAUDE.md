@@ -198,9 +198,14 @@ Run all three; all must be clean:
     Saturday in the second week; rates more than about eleven months out
     aren't published). Held out one hotel-month at a time it predicts a
     hotel's price in another month to 7-12% (Dubai, Tokyo, New York,
-    London, Paris, Las Vegas); the researched ranges it replaced were
-    19-30% out, worse than no change in Tokyo. Mexico City's hotels mostly
-    hold one price all year: no change is 5% out there, the index 6%. Cities without one fall back to the researched range. It
+    London, Paris, Las Vegas, Edinburgh, Abu Dhabi); the researched ranges
+    it replaced were 19-30% out, worse than no change in Tokyo. Edinburgh
+    gains most (34% out unchanged: January is under half the year's
+    average). Mexico City's hotels mostly hold one price all year: no
+    change is 5% out there, the index 6%. A month search that lands on an
+    event (Edinburgh's July on the Open) becomes that event, with plain
+    nights a fortnight away, so the index never learns an event as a
+    season. Cities without one fall back to the researched range. It
     replaces the researched rate for that programme in Where to stay, the
     voucher advice and Cash or points. Searching: the brand filter matches
     the name and the search is "<brand> <city>", so "Marriott Barcelona"
@@ -216,7 +221,8 @@ Run all three; all must be clean:
     hotels); ignoring events would be 48% out. Holidays don't all raise
     prices: Dubai's Marriotts were x2.4 over New Year, Barcelona's x3.85
     for the Mobile World Congress, but Tokyo's x0.93 in Golden Week,
-    Rome's x0.82 at Easter, Las Vegas's flat for the Grand Prix. A city
+    Rome's x0.82 at Easter, Las Vegas's flat for the Grand Prix.
+    Edinburgh's were x1.83 for the Open at St Andrews, 50 miles away. A city
     with no event measured gets no uplift.
   - Public holidays: Nager.Date (free, no key) through
     `netlify/functions/holidays.js`, as the browser can't reach it;
