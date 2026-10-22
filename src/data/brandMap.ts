@@ -26,7 +26,7 @@ const IHG_SUBBRANDS = [
   'Six Senses', 'Regent', 'InterContinental', 'Vignette Collection', 'Kimpton', 'HUALUXE', 'Crowne Plaza',
   'voco', 'Hotel Indigo', 'EVEN Hotels', 'avid hotels', 'Holiday Inn Express', 'Holiday Inn Club Vacations',
   'Atwell Suites', 'Staybridge Suites', 'Candlewood Suites', 'Holiday Inn Resort', 'Holiday Inn',
-  'Garner Hotels', 'the niu', 'Ruby Hotels',
+  'Garner Hotels', 'Garner Hotel', 'the niu', 'Ruby Hotels',
 ];
 
 const ACCOR_SUBBRANDS = [

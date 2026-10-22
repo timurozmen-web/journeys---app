@@ -67,9 +67,10 @@ describe('event ratios held out one hotel at a time', () => {
   // Each hotel's event price predicted from its own plain-night price and
   // the other hotels' ratio. 20 Oct 2026: 12.4% by level, 13.0% city-wide,
   // 48% ignoring events (240 hotels); 21 Oct, with the Open and Web Summit,
-  // 12.8% and 46% (271 hotels); 22 Oct, with Istanbul's Eid, which moved
-  // nothing, 11.1% and 31% (348 hotels). If new searches push the error up a
-  // lot, the method needs another look, not a looser bound.
+  // 12.8% and 46% (271 hotels); 22 Oct, with Istanbul's Eid and Berlin's
+  // three (two of which moved nothing), 11.4% and 30% (402 hotels). If new
+  // searches push the error up a lot, the method needs another look, not a
+  // looser bound.
   it('predicts a hotel’s event price far better than ignoring the event', () => {
     const level = heldOutEventError(PRICE_EVENTS);
     const city = heldOutEventError(PRICE_EVENTS, undefined, false);
@@ -116,16 +117,17 @@ describe('the month-by-month index', () => {
     expect(seasonIndex('Lisbon', 'Portugal', [fair], db)).toBeNull();
   });
   it('predicts a hotel’s price in another month far better than leaving it as it was', () => {
-    // 20-21 Oct 2026, held out one hotel-month at a time: Dubai 12%, Tokyo
+    // 20-22 Oct 2026, held out one hotel-month at a time: Dubai 12%, Tokyo
     // 9%, New York 10%, London 8%, Paris 7%, Las Vegas 11%, Edinburgh 10%,
-    // Sydney 8%, Hong Kong 6%, Barcelona 9%, Rome 8%, Amsterdam 7%, Milan
-    // 8%, Lisbon 10%, Madrid 8%, against 24%, 15%, 26%, 14%, 10%, 15%, 34%,
-    // 13%, 10%, 19%, 19%, 19%, 13%, 20% and 19% unchanged. Paris moves least through the year, so gains
-    // least; Edinburgh most (January under half the year's average, June
-    // over one and a half). Milan's May search overlapped LAMIERA (11-14 May
-    // 2027) but the week after priced the same (Château Monfort $432 and
-    // $433), so May is dear there in its own right.
-    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States'], ['Edinburgh', 'United Kingdom'], ['Sydney', 'Australia'], ['Hong Kong', 'Hong Kong'], ['Barcelona', 'Spain'], ['Rome', 'Italy'], ['Amsterdam', 'Netherlands'], ['Milan', 'Italy'], ['Lisbon', 'Portugal'], ['Madrid', 'Spain']]) {
+    // Sydney 8%, Hong Kong 6%, Barcelona 9%, Rome 8%, Amsterdam 7%, Milan 8%,
+    // Lisbon 10%, Madrid 8%, Berlin 7%, against 24%, 15%, 26%, 14%, 10%, 15%,
+    // 34%, 13%, 10%, 19%, 19%, 19%, 13%, 20%, 19% and 14% unchanged. Paris
+    // moves least through the year, so gains least; Edinburgh most (January
+    // under half the year's average, June over one and a half). Milan's May
+    // search overlapped LAMIERA (11-14 May 2027) but the week after priced
+    // the same (Château Monfort $432 and $433), so May is dear there in its
+    // own right.
+    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States'], ['Edinburgh', 'United Kingdom'], ['Sydney', 'Australia'], ['Hong Kong', 'Hong Kong'], ['Barcelona', 'Spain'], ['Rome', 'Italy'], ['Amsterdam', 'Netherlands'], ['Milan', 'Italy'], ['Lisbon', 'Portugal'], ['Madrid', 'Spain'], ['Berlin', 'Germany']]) {
       const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
       expect(r.held).toBeGreaterThanOrEqual(70);
       expect(r.error).toBeLessThan(0.15);
@@ -139,7 +141,7 @@ describe('the month-by-month index', () => {
       expect(r.error).toBeLessThan(0.15);
       expect(r.error).toBeLessThan(r.unshifted * 0.95);
     }
-    // One refit per held-out hotel-month across eighteen cities: about 6s
+    // One refit per held-out hotel-month across nineteen cities: about 6s
     // alone, more with the other files running beside it.
   }, 30_000);
   it('stays close where prices hardly move through the year', () => {

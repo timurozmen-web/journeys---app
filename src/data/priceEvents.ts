@@ -8,12 +8,12 @@
 // Leisure ones surge: Dubai's Marriotts more than doubled over New Year,
 // Edinburgh's quadrupled for Hogmanay. Big events surge whatever the city:
 // Barcelona's Mobile World Congress, Milan's Design Week, Abu Dhabi's Grand
-// Prix, Rio's Carnival, Lisbon's Web Summit, the Open at St Andrews
-// (Edinburgh's hotels, 50 miles off, at 1.8 times a fortnight later). Some
-// that sound big barely move: Las Vegas's Grand Prix (Marriott's hotels
-// there are off the Strip), Songkran in Bangkok, King's Day in Amsterdam,
-// the end of Ramadan in Istanbul.
-// So a holiday isn't priced as a surge unless an event here says so.
+// Prix, Rio's Carnival, Lisbon's Web Summit, Berlin's EULAR congress, the
+// Open at St Andrews (Edinburgh's hotels, 50 miles off, at 1.8 times a
+// fortnight later). Some that sound big barely move: Las Vegas's Grand Prix
+// (Marriott's hotels there are off the Strip), Songkran in Bangkok, King's
+// Day in Amsterdam, the end of Ramadan in Istanbul, the Berlinale. So a
+// holiday isn't priced as a surge unless an event here says so.
 //
 // To add one: list it here, then search the city's hotels for the event's
 // nights and for the same weekdays a fortnight away, a search for each
@@ -115,6 +115,26 @@ export const PRICE_EVENTS: PriceEvent[] = [
     // (Diyanet's calendar). Istanbul's March search landed on it.
     city: 'Istanbul', country: 'Türkiye', event: 'Ramazan Bayramı (Eid al-Fitr)', window: ['2027-03-10', '2027-03-13'], baseline: ['2027-03-24', '2027-03-27'],
     note: 'Hotels in Gebze that came back in the brand searches are left out.',
+  },
+  {
+    // The 77th Berlinale is 10-21 February 2027, the European Film Market
+    // 9-16 February (berlinale.de). Berlin's February search landed on it.
+    city: 'Berlin', country: 'Germany', event: 'Berlinale', window: ['2027-02-10', '2027-02-13'], baseline: ['2027-02-24', '2027-02-27'],
+    note: 'Measured on the 4-5★ search alone; Potsdam hotels that came back are left out.',
+  },
+  {
+    // EULAR, the European rheumatology congress, is at Messe Berlin on 9-12
+    // June 2027, about 14,000 delegates (visitBerlin's Convention Office, 9
+    // June 2026). Berlin's June search landed on it: the Ritz-Carlton was
+    // $1,161 a night against $444 a fortnight later.
+    city: 'Berlin', country: 'Germany', event: 'EULAR congress', window: ['2027-06-09', '2027-06-12'], baseline: ['2027-06-23', '2027-06-26'],
+    note: "BDEW's energy congress (22-24 June, STATION Berlin) is on the plain nights. Hotels in Potsdam, Schönefeld and Hoppegarten that came back in the group searches are left out; the Grand Hyatt and the JW Marriott had no rate for the congress.",
+  },
+  {
+    // The WeAreDevelopers World Congress is at CityCube Berlin on 14-16 July
+    // 2027, 15,000 expected. Berlin's July search landed on it.
+    city: 'Berlin', country: 'Germany', event: 'WeAreDevelopers World Congress', window: ['2027-07-14', '2027-07-17'], baseline: ['2027-07-28', '2027-07-31'],
+    note: 'Measured on the 4-5★ search alone.',
   },
 ];
 
