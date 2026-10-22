@@ -422,6 +422,16 @@ describe('measured event prices', () => {
     expect(ratio('Edinburgh', 'United Kingdom', '2027-07-14', 3)).toBeGreaterThan(1.5);
     // Web Summit, three weeks out: Lisbon's Marriotts x1.62.
     expect(ratio('Lisbon', 'Portugal', '2026-11-09', 3)).toBeGreaterThan(1.4);
+    // A medical congress of 14,000 (EULAR): Berlin's Marriotts x2.42.
+    expect(ratio('Berlin', 'Germany', '2027-06-09', 3)).toBeGreaterThan(2);
+    // Dublin: Ireland v France x2.41 and St Patrick's Day x2.08 for Marriott.
+    expect(ratio('Dublin', 'Ireland', '2027-03-12', 2)).toBeGreaterThan(2);
+    expect(ratio('Dublin', 'Ireland', '2027-03-16', 2)).toBeGreaterThan(1.7);
+    // Munich's trade fairs at the Messe: electronica x3.99, BAU x2.34 and
+    // IAA Mobility x1.73 for Marriott.
+    expect(ratio('Munich', 'Germany', '2026-11-10', 3)).toBeGreaterThan(3);
+    expect(ratio('Munich', 'Germany', '2027-01-11', 4)).toBeGreaterThan(2);
+    expect(ratio('Munich', 'Germany', '2027-09-07', 3)).toBeGreaterThan(1.5);
     // Business cities empty out over holidays, and some big names barely move.
     expect(ratio('Tokyo', 'Japan', '2027-05-02', 3)).toBeLessThan(1);
     expect(ratio('Rome', 'Italy', '2027-03-26', 2)).toBeLessThan(1);
@@ -429,6 +439,13 @@ describe('measured event prices', () => {
     expect(ratio('New York', 'United States', '2026-12-19', 2)).toBeLessThan(1);
     expect(Math.abs(ratio('Las Vegas', 'United States', '2026-11-20', 2) - 1)).toBeLessThan(0.1);
     expect(Math.abs(ratio('Bangkok', 'Thailand', '2027-04-13', 2) - 1)).toBeLessThan(0.1);
+    // Ramazan Bayramı: Istanbul's 4-5★ hotels x0.99 (77 paired). "Turkey"
+    // finds the database's "Türkiye".
+    expect(Math.abs(ratio('Istanbul', 'Turkey', '2027-03-10', 3, null) - 1)).toBeLessThan(0.1);
+    // Berlin is big enough that the Berlinale and a developer congress of
+    // 15,000 leave its 4-5★ hotels as they were: x0.99 and x1.03.
+    expect(Math.abs(ratio('Berlin', 'Germany', '2027-02-10', 3, null) - 1)).toBeLessThan(0.1);
+    expect(Math.abs(ratio('Berlin', 'Germany', '2027-07-14', 3, null) - 1)).toBeLessThan(0.1);
   });
   it('finds Barcelona’s Marriotts once every sub-brand is searched by name', () => {
     // "Marriott Barcelona" found nothing; searched as W, EDITION, Autograph

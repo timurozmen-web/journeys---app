@@ -14,6 +14,8 @@ describe('programmeOfHotel (hotel names in the price database)', () => {
     // Each AC is named "AC Hotel <place>", which "AC Hotels" didn't match;
     // none had come back priced until the group search priced Madrid's.
     expect(programmeOfHotel('AC Hotel Recoletos')).toBe('Marriott Bonvoy');
+    // Garner's the same: "Garner Hotel Berlin - Mitte", with no "IHG" in it.
+    expect(programmeOfHotel('Garner Hotel Berlin - Mitte')).toBe('IHG One Rewards');
   });
 
   test('leaves independents alone, even when a word looks like a brand', () => {

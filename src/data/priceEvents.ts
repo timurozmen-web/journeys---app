@@ -8,11 +8,12 @@
 // Leisure ones surge: Dubai's Marriotts more than doubled over New Year,
 // Edinburgh's quadrupled for Hogmanay. Big events surge whatever the city:
 // Barcelona's Mobile World Congress, Milan's Design Week, Abu Dhabi's Grand
-// Prix, Rio's Carnival, Lisbon's Web Summit, the Open at St Andrews
-// (Edinburgh's hotels, 50 miles off, at 1.8 times a fortnight later). Some
-// that sound big barely move: Las Vegas's Grand Prix (Marriott's hotels
-// there are off the Strip), Songkran in Bangkok, King's Day in Amsterdam.
-// So a holiday isn't priced as a surge unless an event here says so.
+// Prix, Rio's Carnival, Lisbon's Web Summit, Berlin's EULAR congress,
+// Munich's trade fairs, the Open at St Andrews (Edinburgh's hotels, 50 miles
+// off, at 1.8 times a fortnight later). Some that sound big barely move: Las Vegas's Grand Prix
+// (Marriott's hotels there are off the Strip), Songkran in Bangkok, King's
+// Day in Amsterdam, the end of Ramadan in Istanbul, the Berlinale. So a
+// holiday isn't priced as a surge unless an event here says so.
 //
 // To add one: list it here, then search the city's hotels for the event's
 // nights and for the same weekdays a fortnight away, a search for each
@@ -108,6 +109,70 @@ export const PRICE_EVENTS: PriceEvent[] = [
   {
     city: 'Milan', country: 'Italy', event: 'Salone del Mobile', window: ['2027-04-12', '2027-04-16'], baseline: ['2027-04-26', '2027-04-30'],
     note: 'Park Hyatt, Four Seasons, Casa Cipriani, Excelsior Gallia, Hotel Indigo and AC Hotel Milano had no rate for the fair nights.',
+  },
+  {
+    // Ramazan Bayramı 2027 is 9-11 March, the eve (arife) on the 8th
+    // (Diyanet's calendar). Istanbul's March search landed on it.
+    city: 'Istanbul', country: 'Türkiye', event: 'Ramazan Bayramı (Eid al-Fitr)', window: ['2027-03-10', '2027-03-13'], baseline: ['2027-03-24', '2027-03-27'],
+    note: 'Hotels in Gebze that came back in the brand searches are left out.',
+  },
+  {
+    // The 77th Berlinale is 10-21 February 2027, the European Film Market
+    // 9-16 February (berlinale.de). Berlin's February search landed on it.
+    city: 'Berlin', country: 'Germany', event: 'Berlinale', window: ['2027-02-10', '2027-02-13'], baseline: ['2027-02-24', '2027-02-27'],
+    note: 'Measured on the 4-5★ search alone; Potsdam hotels that came back are left out.',
+  },
+  {
+    // EULAR, the European rheumatology congress, is at Messe Berlin on 9-12
+    // June 2027, about 14,000 delegates (visitBerlin's Convention Office, 9
+    // June 2026). Berlin's June search landed on it: the Ritz-Carlton was
+    // $1,161 a night against $444 a fortnight later.
+    city: 'Berlin', country: 'Germany', event: 'EULAR congress', window: ['2027-06-09', '2027-06-12'], baseline: ['2027-06-23', '2027-06-26'],
+    note: "BDEW's energy congress (22-24 June, STATION Berlin) is on the plain nights. Hotels in Potsdam, Schönefeld and Hoppegarten that came back in the group searches are left out; the Grand Hyatt and the JW Marriott had no rate for the congress.",
+  },
+  {
+    // The WeAreDevelopers World Congress is at CityCube Berlin on 14-16 July
+    // 2027, 15,000 expected. Berlin's July search landed on it.
+    city: 'Berlin', country: 'Germany', event: 'WeAreDevelopers World Congress', window: ['2027-07-14', '2027-07-17'], baseline: ['2027-07-28', '2027-07-31'],
+    note: 'Measured on the 4-5★ search alone.',
+  },
+  {
+    // Ireland v France at the Aviva, Saturday 13 March 2027, the Six Nations'
+    // last round (irishrugby.ie, fixtures published 9 March 2026). The
+    // fortnight before, Ireland are away (Wales on the 20th, Scotland on 5
+    // March).
+    city: 'Dublin', country: 'Ireland', event: 'Six Nations: Ireland v France', window: ['2027-03-12', '2027-03-14'], baseline: ['2027-02-26', '2027-02-28'],
+    note: "The Shelbourne's cheapest room for the match weekend was $5,251 a night. Hotels in Blackrock, Killiney, Enniskerry, Maynooth and Naas that came back are left out.",
+  },
+  {
+    // St Patrick's Day is Wednesday 17 March 2027; the eve and the day
+    // against the same weekdays a fortnight before.
+    city: 'Dublin', country: 'Ireland', event: "St Patrick's Day", window: ['2027-03-16', '2027-03-18'], baseline: ['2027-03-02', '2027-03-04'],
+    note: 'The city-centre three- and four-star brands more than doubled (Hampton x3.2, Moxy City x2.9); the five-stars hardly moved (the Shelbourne was cheaper). Hotels in Blackrock, Killiney, Enniskerry, Maynooth and Naas are left out.',
+  },
+  {
+    // electronica, the electronics trade fair, is at Messe München on 10-13
+    // November 2026 (electronica.de). Munich's November search was moved to
+    // the 24th to miss it: the Sofitel was $658 a night for the fair against
+    // $259 a fortnight later.
+    city: 'Munich', country: 'Germany', event: 'electronica', window: ['2026-11-10', '2026-11-13'], baseline: ['2026-11-24', '2026-11-27'],
+    note: 'Hotels at the airport and in Weßling, Garching, Olching, Erding, Haar, Aschheim, Feldkirchen and Taufkirchen that came back in the group searches are left out.',
+  },
+  {
+    // BAU, the building trade fair, is at Messe München on 11-15 January
+    // 2027 (bau-muenchen.com). Munich's January search was moved to the
+    // 25th to miss it.
+    city: 'Munich', country: 'Germany', event: 'BAU', window: ['2027-01-11', '2027-01-15'], baseline: ['2027-01-25', '2027-01-29'],
+    note: 'Hotels at the airport and in nearby towns are left out, as for electronica.',
+  },
+  {
+    // IAA Mobility is at Messe München and in the city centre on 7-12
+    // September 2027, its Summit on 7-10 September (iaa-mobility.com). Set
+    // against the fortnight before, not after: the week after is the one
+    // before Oktoberfest (from the 18th), when several city-centre Marriotts
+    // were dearer still (the Aloft $908 against $444 for the show).
+    city: 'Munich', country: 'Germany', event: 'IAA Mobility', window: ['2027-09-07', '2027-09-10'], baseline: ['2027-08-24', '2027-08-27'],
+    note: 'Hotels by the Messe went up most (Four Points Messe $268 against $79). Hotels at the airport and in nearby towns are left out.',
   },
 ];
 
