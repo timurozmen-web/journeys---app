@@ -69,8 +69,10 @@ describe('event ratios held out one hotel at a time', () => {
   // 48% ignoring events (240 hotels); 21 Oct, with the Open and Web Summit,
   // 12.8% and 46% (271 hotels); 22 Oct, with Istanbul's Eid, Berlin's three
   // (two of which moved nothing) and Dublin's two, 11.9% and 35% (445
-  // hotels). If new searches push the error up a lot, the method needs
-  // another look, not a looser bound.
+  // hotels); with Munich's three trade fairs, 13.4% and 45% (573 hotels).
+  // IAA Mobility set against the week after, the one before Oktoberfest,
+  // was 33% out; against the fortnight before, 16.5%. If new searches push
+  // the error up a lot, the method needs another look, not a looser bound.
   it('predicts a hotel’s event price far better than ignoring the event', () => {
     const level = heldOutEventError(PRICE_EVENTS);
     const city = heldOutEventError(PRICE_EVENTS, undefined, false);
@@ -134,15 +136,18 @@ describe('the month-by-month index', () => {
       expect(r.error).toBeLessThan(0.15);
       expect(r.error).toBeLessThan(r.unshifted * 0.75);
     }
-    // Abu Dhabi's, Rio's and Istanbul's hotels hold their price better, so
-    // the index gains less: 12.5% against 16%, 9% against 10%, and 7.7%
-    // against 9.2%.
-    for (const [city, country] of [['Abu Dhabi', 'UAE'], ['Rio de Janeiro', 'Brazil'], ['Istanbul', 'Türkiye']]) {
+    // Abu Dhabi's, Rio's, Istanbul's and Munich's hotels hold their price
+    // better, so the index gains less: 12.5% against 16%, 9% against 10%,
+    // 7.7% against 9.2%, and 11.6% against 13.2%. Munich's prices move with
+    // its trade fairs rather than the season; its September is the week
+    // before Oktoberfest, when several of its Marriotts were two to three
+    // times their late-August price.
+    for (const [city, country] of [['Abu Dhabi', 'UAE'], ['Rio de Janeiro', 'Brazil'], ['Istanbul', 'Türkiye'], ['Munich', 'Germany']]) {
       const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
       expect(r.error).toBeLessThan(0.15);
       expect(r.error).toBeLessThan(r.unshifted * 0.95);
     }
-    // One refit per held-out hotel-month across twenty-two cities: about 6s
+    // One refit per held-out hotel-month across twenty-three cities: about 6s
     // alone, more with the other files running beside it.
   }, 30_000);
   it('stays close where prices hardly move through the year', () => {

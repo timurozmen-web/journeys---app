@@ -8,9 +8,9 @@
 // Leisure ones surge: Dubai's Marriotts more than doubled over New Year,
 // Edinburgh's quadrupled for Hogmanay. Big events surge whatever the city:
 // Barcelona's Mobile World Congress, Milan's Design Week, Abu Dhabi's Grand
-// Prix, Rio's Carnival, Lisbon's Web Summit, Berlin's EULAR congress, the
-// Open at St Andrews (Edinburgh's hotels, 50 miles off, at 1.8 times a
-// fortnight later). Some that sound big barely move: Las Vegas's Grand Prix
+// Prix, Rio's Carnival, Lisbon's Web Summit, Berlin's EULAR congress,
+// Munich's trade fairs, the Open at St Andrews (Edinburgh's hotels, 50 miles
+// off, at 1.8 times a fortnight later). Some that sound big barely move: Las Vegas's Grand Prix
 // (Marriott's hotels there are off the Strip), Songkran in Bangkok, King's
 // Day in Amsterdam, the end of Ramadan in Istanbul, the Berlinale. So a
 // holiday isn't priced as a surge unless an event here says so.
@@ -149,6 +149,30 @@ export const PRICE_EVENTS: PriceEvent[] = [
     // against the same weekdays a fortnight before.
     city: 'Dublin', country: 'Ireland', event: "St Patrick's Day", window: ['2027-03-16', '2027-03-18'], baseline: ['2027-03-02', '2027-03-04'],
     note: 'The city-centre three- and four-star brands more than doubled (Hampton x3.2, Moxy City x2.9); the five-stars hardly moved (the Shelbourne was cheaper). Hotels in Blackrock, Killiney, Enniskerry, Maynooth and Naas are left out.',
+  },
+  {
+    // electronica, the electronics trade fair, is at Messe München on 10-13
+    // November 2026 (electronica.de). Munich's November search was moved to
+    // the 24th to miss it: the Sofitel was $658 a night for the fair against
+    // $259 a fortnight later.
+    city: 'Munich', country: 'Germany', event: 'electronica', window: ['2026-11-10', '2026-11-13'], baseline: ['2026-11-24', '2026-11-27'],
+    note: 'Hotels at the airport and in Weßling, Garching, Olching, Erding, Haar, Aschheim, Feldkirchen and Taufkirchen that came back in the group searches are left out.',
+  },
+  {
+    // BAU, the building trade fair, is at Messe München on 11-15 January
+    // 2027 (bau-muenchen.com). Munich's January search was moved to the
+    // 25th to miss it.
+    city: 'Munich', country: 'Germany', event: 'BAU', window: ['2027-01-11', '2027-01-15'], baseline: ['2027-01-25', '2027-01-29'],
+    note: 'Hotels at the airport and in nearby towns are left out, as for electronica.',
+  },
+  {
+    // IAA Mobility is at Messe München and in the city centre on 7-12
+    // September 2027, its Summit on 7-10 September (iaa-mobility.com). Set
+    // against the fortnight before, not after: the week after is the one
+    // before Oktoberfest (from the 18th), when several city-centre Marriotts
+    // were dearer still (the Aloft $908 against $444 for the show).
+    city: 'Munich', country: 'Germany', event: 'IAA Mobility', window: ['2027-09-07', '2027-09-10'], baseline: ['2027-08-24', '2027-08-27'],
+    note: 'Hotels by the Messe went up most (Four Points Messe $268 against $79). Hotels at the airport and in nearby towns are left out.',
   },
 ];
 

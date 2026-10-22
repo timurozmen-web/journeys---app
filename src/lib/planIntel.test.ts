@@ -427,6 +427,11 @@ describe('measured event prices', () => {
     // Dublin: Ireland v France x2.41 and St Patrick's Day x2.08 for Marriott.
     expect(ratio('Dublin', 'Ireland', '2027-03-12', 2)).toBeGreaterThan(2);
     expect(ratio('Dublin', 'Ireland', '2027-03-16', 2)).toBeGreaterThan(1.7);
+    // Munich's trade fairs at the Messe: electronica x3.99, BAU x2.34 and
+    // IAA Mobility x1.73 for Marriott.
+    expect(ratio('Munich', 'Germany', '2026-11-10', 3)).toBeGreaterThan(3);
+    expect(ratio('Munich', 'Germany', '2027-01-11', 4)).toBeGreaterThan(2);
+    expect(ratio('Munich', 'Germany', '2027-09-07', 3)).toBeGreaterThan(1.5);
     // Business cities empty out over holidays, and some big names barely move.
     expect(ratio('Tokyo', 'Japan', '2027-05-02', 3)).toBeLessThan(1);
     expect(ratio('Rome', 'Italy', '2027-03-26', 2)).toBeLessThan(1);
