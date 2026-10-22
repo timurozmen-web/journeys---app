@@ -186,51 +186,63 @@ Run all three; all must be clean:
     every hotel price search as it came back (SlickTrip, comparing the
     booking sites; 2 adults, cheapest room, USD a night), read through
     `src/lib/hotelPrices.ts`. Each hotel is put to its programme by name
-    (`programmeOfHotel`: a Sheraton, Westin, Moxy or W is Marriott, or a
-    brand given as a fourth field: Hotel Arts is a Ritz-Carlton) and to a
-    price level: Marriott by its own tiers (Luxury, Premium, Select),
-    anything else by stars. `measuredCash` prices a programme's night at a
-    level in a city from its hotels there (two or more): as priced where the
-    search covers the stay's nights, else plain-night prices moved to the
-    stay's month by the city's month index, then any event. The index
-    (`seasonIndex`) is fitted to the same hotels priced in different months
-    (log price = hotel + month), from one 4-5★ search a month (Wednesday to
-    Saturday in the second week; rates more than about eleven months out
-    aren't published). Held out one hotel-month at a time it predicts a
-    hotel's price in another month to 6-12% (Dubai, Tokyo, New York, London,
-    Paris, Las Vegas, Edinburgh, Sydney, Hong Kong, Barcelona, Rome,
-    Amsterdam, Milan, Lisbon, Madrid, Abu Dhabi, Rio de Janeiro); the
-    researched ranges it replaced were 19-30% out, worse than no change in
-    Tokyo. Edinburgh gains most (34% out unchanged: January is under half
-    the year's average). Mexico City's, Singapore's and Bangkok's hotels
-    mostly hold one price all year: no change is 5-5.5% out there, the index
-    4-6%. A month search that lands on an event (Edinburgh's July on the
-    Open) becomes that event, with plain nights a fortnight away, so the
-    index never learns an event as a season; an event that couldn't be
-    measured yet (`UNMEASURED_EVENTS`: Madrid's Grand Prix, Munich's
-    Oktoberfest) has its nights left out all the same. Cities without one
-    fall back to the researched range. It replaces the researched rate for
-    that programme in Where to stay, the voucher advice and Cash or points.
-    Searching: the brand filter matches the hotel's group, so one search
-    each for Marriott, Accor, Hilton, Hyatt and IHG covers a city's
-    programme hotels, Design Hotels and Autograph Collection included (it
-    matched the name until October 2026; the old brand-by-brand list is at
-    the top of `hotelPrices.ts`). A hotel whose name doesn't say its brand
-    carries it as a fourth field; hotels from towns nearby are left out. AC
-    Hotels come back priced only in the group search.
+    (`programmeOfHotel`: a Sheraton, Westin, Moxy or W is Marriott, a Garner
+    IHG, or a brand given as a fourth field: Hotel Arts is a Ritz-Carlton)
+    and to a price level: Marriott by its own tiers (Luxury, Premium,
+    Select), anything else by stars. `measuredCash` prices a programme's
+    night at a level in a city from its hotels there (two or more): as
+    priced where the search covers the stay's nights, else plain-night
+    prices moved to the stay's month by the city's month index, then any
+    event. The index (`seasonIndex`) is fitted to the same hotels priced in
+    different months (log price = hotel + month), from one 4-5★ search a
+    month (Wednesday to Saturday in the second week, moved off any event
+    known beforehand: Berlin's January off Grüne Woche, Munich's November
+    off electronica; rates more than about eleven months out aren't
+    published). Held out one hotel-month at a time it predicts a hotel's
+    price in another month to 6-12% (Dubai, Tokyo, New York, London, Paris,
+    Las Vegas, Edinburgh, Sydney, Hong Kong, Barcelona, Rome, Amsterdam,
+    Milan, Lisbon, Madrid, Abu Dhabi, Rio de Janeiro, Istanbul, Berlin,
+    Vienna, Prague, Dublin, Munich); the researched ranges it replaced were
+    19-30% out, worse than no change in Tokyo. Edinburgh gains most (34% out
+    unchanged: January is under half the year's average); Vienna's December,
+    its Christmas markets, is 1.7 times its year. Munich's prices move with
+    its trade fairs more than the season, so it gains little (11.6% against
+    13.2%). Mexico City's, Singapore's and Bangkok's hotels mostly hold one
+    price all year: no change is 5-5.5% out there, the index 4-6%. A month
+    search that lands on an event (Edinburgh's July on the Open) becomes
+    that event, with plain nights a fortnight away, so the index never
+    learns an event as a season; an event that couldn't be measured yet
+    (`UNMEASURED_EVENTS`: Madrid's Grand Prix, Munich's Oktoberfest) has its
+    nights left out all the same. Cities without one fall back to the
+    researched range. It replaces the researched rate for that programme in
+    Where to stay, the voucher advice and Cash or points. Searching: the
+    brand filter matches the hotel's group, so one search each for Marriott,
+    Accor, Hilton, Hyatt and IHG covers a city's programme hotels, Design
+    Hotels and Autograph Collection included (it matched the name until
+    October 2026; the old brand-by-brand list is at the top of
+    `hotelPrices.ts`). A hotel whose name doesn't say its brand carries it
+    as a fourth field; hotels from towns nearby and at the airport are left
+    out. AC Hotels come back priced only in the group search.
   - Events (`src/data/priceEvents.ts`): an event's nights and plain nights a
-    fortnight away; `eventPrices` pairs the hotels priced on both and takes
+    fortnight away (before rather than after where the nights after are dear
+    themselves: Munich's IAA Mobility, whose week after leads into
+    Oktoberfest); `eventPrices` pairs the hotels priced on both and takes
     the median ratio: at the stay's price level where four or more were
     paired there (the programme's own first), as levels move apart (Dubai
     New Year: Marriott Select x1.95, Luxury x2.81), else the programme's own
     hotels where at least two, else all. Held out one hotel at a time this
-    predicts a hotel's event price to a median 12.8% (271 hotels); ignoring
-    events would be 46% out. Holidays don't all raise prices: Dubai's
+    predicts a hotel's event price to a median 13.4% (573 hotels); ignoring
+    events would be 45% out. Holidays don't all raise prices: Dubai's
     Marriotts were x2.4 over New Year, Barcelona's x3.85 for the Mobile
     World Congress, but Tokyo's x0.93 in Golden Week, Rome's x0.82 at
     Easter, Las Vegas's flat for the Grand Prix. Edinburgh's were x1.83 for
-    the Open at St Andrews, 50 miles away, and Lisbon's x1.62 for Web
-    Summit. A city with no event measured gets no uplift.
+    the Open at St Andrews, 50 miles away, Lisbon's x1.62 for Web Summit,
+    Berlin's x2.42 for a medical congress (EULAR), Dublin's x2.41 for
+    Ireland v France and x2.08 on St Patrick's Day, Munich's x3.99 for
+    electronica, x2.34 for BAU and x1.73 for IAA Mobility; the Berlinale, a
+    developers' congress of 15,000 in Berlin and the end of Ramadan in
+    Istanbul left 4-5★ prices as they were. A city with no event measured
+    gets no uplift.
   - Public holidays: Nager.Date (free, no key) through
     `netlify/functions/holidays.js`, as the browser can't reach it;
     `useHolidays` keeps each country and year on the device for 30 days.
