@@ -424,6 +424,9 @@ describe('measured event prices', () => {
     expect(ratio('Lisbon', 'Portugal', '2026-11-09', 3)).toBeGreaterThan(1.4);
     // A medical congress of 14,000 (EULAR): Berlin's Marriotts x2.42.
     expect(ratio('Berlin', 'Germany', '2027-06-09', 3)).toBeGreaterThan(2);
+    // Dublin: Ireland v France x2.41 and St Patrick's Day x2.08 for Marriott.
+    expect(ratio('Dublin', 'Ireland', '2027-03-12', 2)).toBeGreaterThan(2);
+    expect(ratio('Dublin', 'Ireland', '2027-03-16', 2)).toBeGreaterThan(1.7);
     // Business cities empty out over holidays, and some big names barely move.
     expect(ratio('Tokyo', 'Japan', '2027-05-02', 3)).toBeLessThan(1);
     expect(ratio('Rome', 'Italy', '2027-03-26', 2)).toBeLessThan(1);

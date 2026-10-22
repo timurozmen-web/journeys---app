@@ -136,6 +136,20 @@ export const PRICE_EVENTS: PriceEvent[] = [
     city: 'Berlin', country: 'Germany', event: 'WeAreDevelopers World Congress', window: ['2027-07-14', '2027-07-17'], baseline: ['2027-07-28', '2027-07-31'],
     note: 'Measured on the 4-5★ search alone.',
   },
+  {
+    // Ireland v France at the Aviva, Saturday 13 March 2027, the Six Nations'
+    // last round (irishrugby.ie, fixtures published 9 March 2026). The
+    // fortnight before, Ireland are away (Wales on the 20th, Scotland on 5
+    // March).
+    city: 'Dublin', country: 'Ireland', event: 'Six Nations: Ireland v France', window: ['2027-03-12', '2027-03-14'], baseline: ['2027-02-26', '2027-02-28'],
+    note: "The Shelbourne's cheapest room for the match weekend was $5,251 a night. Hotels in Blackrock, Killiney, Enniskerry, Maynooth and Naas that came back are left out.",
+  },
+  {
+    // St Patrick's Day is Wednesday 17 March 2027; the eve and the day
+    // against the same weekdays a fortnight before.
+    city: 'Dublin', country: 'Ireland', event: "St Patrick's Day", window: ['2027-03-16', '2027-03-18'], baseline: ['2027-03-02', '2027-03-04'],
+    note: 'The city-centre three- and four-star brands more than doubled (Hampton x3.2, Moxy City x2.9); the five-stars hardly moved (the Shelbourne was cheaper). Hotels in Blackrock, Killiney, Enniskerry, Maynooth and Naas are left out.',
+  },
 ];
 
 // Events with no measurement yet, and why. Their nights are still kept out
