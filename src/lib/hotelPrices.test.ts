@@ -67,7 +67,8 @@ describe('event ratios held out one hotel at a time', () => {
   // Each hotel's event price predicted from its own plain-night price and
   // the other hotels' ratio. 20 Oct 2026: 12.4% by level, 13.0% city-wide,
   // 48% ignoring events (240 hotels); 21 Oct, with the Open and Web Summit,
-  // 12.8% and 46% (271 hotels). If new searches push the error up a
+  // 12.8% and 46% (271 hotels); 22 Oct, with Istanbul's Eid, which moved
+  // nothing, 11.1% and 31% (348 hotels). If new searches push the error up a
   // lot, the method needs another look, not a looser bound.
   it('predicts a hotel’s event price far better than ignoring the event', () => {
     const level = heldOutEventError(PRICE_EVENTS);
@@ -130,14 +131,15 @@ describe('the month-by-month index', () => {
       expect(r.error).toBeLessThan(0.15);
       expect(r.error).toBeLessThan(r.unshifted * 0.75);
     }
-    // Abu Dhabi's and Rio's hotels hold their price better, so the index
-    // gains less: 12.5% against 16%, and 9% against 10%.
-    for (const [city, country] of [['Abu Dhabi', 'UAE'], ['Rio de Janeiro', 'Brazil']]) {
+    // Abu Dhabi's, Rio's and Istanbul's hotels hold their price better, so
+    // the index gains less: 12.5% against 16%, 9% against 10%, and 7.7%
+    // against 9.2%.
+    for (const [city, country] of [['Abu Dhabi', 'UAE'], ['Rio de Janeiro', 'Brazil'], ['Istanbul', 'Türkiye']]) {
       const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
       expect(r.error).toBeLessThan(0.15);
       expect(r.error).toBeLessThan(r.unshifted * 0.95);
     }
-    // One refit per held-out hotel-month across seventeen cities: about 6s
+    // One refit per held-out hotel-month across eighteen cities: about 6s
     // alone, more with the other files running beside it.
   }, 30_000);
   it('stays close where prices hardly move through the year', () => {

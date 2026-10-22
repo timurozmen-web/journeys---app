@@ -11,7 +11,8 @@
 // Prix, Rio's Carnival, Lisbon's Web Summit, the Open at St Andrews
 // (Edinburgh's hotels, 50 miles off, at 1.8 times a fortnight later). Some
 // that sound big barely move: Las Vegas's Grand Prix (Marriott's hotels
-// there are off the Strip), Songkran in Bangkok, King's Day in Amsterdam.
+// there are off the Strip), Songkran in Bangkok, King's Day in Amsterdam,
+// the end of Ramadan in Istanbul.
 // So a holiday isn't priced as a surge unless an event here says so.
 //
 // To add one: list it here, then search the city's hotels for the event's
@@ -108,6 +109,12 @@ export const PRICE_EVENTS: PriceEvent[] = [
   {
     city: 'Milan', country: 'Italy', event: 'Salone del Mobile', window: ['2027-04-12', '2027-04-16'], baseline: ['2027-04-26', '2027-04-30'],
     note: 'Park Hyatt, Four Seasons, Casa Cipriani, Excelsior Gallia, Hotel Indigo and AC Hotel Milano had no rate for the fair nights.',
+  },
+  {
+    // Ramazan Bayramı 2027 is 9-11 March, the eve (arife) on the 8th
+    // (Diyanet's calendar). Istanbul's March search landed on it.
+    city: 'Istanbul', country: 'Türkiye', event: 'Ramazan Bayramı (Eid al-Fitr)', window: ['2027-03-10', '2027-03-13'], baseline: ['2027-03-24', '2027-03-27'],
+    note: 'Hotels in Gebze that came back in the brand searches are left out.',
   },
 ];
 

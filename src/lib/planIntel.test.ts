@@ -429,6 +429,9 @@ describe('measured event prices', () => {
     expect(ratio('New York', 'United States', '2026-12-19', 2)).toBeLessThan(1);
     expect(Math.abs(ratio('Las Vegas', 'United States', '2026-11-20', 2) - 1)).toBeLessThan(0.1);
     expect(Math.abs(ratio('Bangkok', 'Thailand', '2027-04-13', 2) - 1)).toBeLessThan(0.1);
+    // Ramazan Bayramı: Istanbul's 4-5★ hotels x0.99 (77 paired). "Turkey"
+    // finds the database's "Türkiye".
+    expect(Math.abs(ratio('Istanbul', 'Turkey', '2027-03-10', 3, null) - 1)).toBeLessThan(0.1);
   });
   it('finds Barcelona’s Marriotts once every sub-brand is searched by name', () => {
     // "Marriott Barcelona" found nothing; searched as W, EDITION, Autograph
