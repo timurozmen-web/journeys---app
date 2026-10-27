@@ -278,6 +278,16 @@ export const PRICE_EVENTS: PriceEvent[] = [
     note: 'Measured on the 4-5★ and the Hilton, Hyatt, IHG and Accor searches: x0.94 across 15 hotels, IHG\'s x0.88 across 3, Hilton\'s x1.02 across 3. The festival, in the walled city, left prices as they were: the Sofitel Legend there was x1.33 ($855 a night against $641), the beach and Manga hotels a little cheaper than the week after.',
   },
   {
+    // 3 Days of Design, 9-11 June 2027, across Copenhagen's showrooms and
+    // galleries (Dezeen events guide); Optica's Quantum 2.0 conference is at
+    // the Bella Center 7-10 June. The window is the city's June search. The
+    // plain nights are the same weekdays a fortnight after, before Roskilde
+    // Festival's opening weekend; a fortnight before runs into Euroanaesthesia
+    // at the Bella Center (29-31 May).
+    city: 'Copenhagen', country: 'Denmark', event: '3 Days of Design', window: ['2027-06-09', '2027-06-12'], baseline: ['2027-06-23', '2027-06-26'],
+    note: 'Measured on the 4-5★ and the Marriott and IHG searches (no Hilton, Hyatt or Accor came back priced in Copenhagen): x1.41 across 15 hotels, Marriott\'s x1.34 across 6. The city-centre hotels were dearest: the Radisson Collection Royal x1.89 ($821 a night against $434), the Copenhagen Marriott $865 against $602.',
+  },
+  {
     // Cisco Live APJC, 9-12 November 2026 at the Melbourne Convention and
     // Exhibition Centre, South Wharf (ciscolive.com). The window is the city's
     // November search, 11-14 November, taking in its last nights. The plain
