@@ -298,6 +298,25 @@ export const PRICE_EVENTS: PriceEvent[] = [
     note: 'Measured on the 4-5★ and the Marriott, Hilton, Hyatt and IHG searches (no Accor came back priced in Stockholm): x0.97 across 16 hotels. Only the Grand Hôtel, where the laureates stay, rose: $1,459 a night against $430.',
   },
   {
+    // The Nobel Peace Prize is presented at Oslo City Hall on 10 December
+    // (nobelpeacecenter.org; visitoslo.com). The window is the city's December
+    // search. The plain nights are a fortnight before: a fortnight after is
+    // Christmas.
+    city: 'Oslo', country: 'Norway', event: 'Nobel Peace Prize', window: ['2026-12-09', '2026-12-12'], baseline: ['2026-11-25', '2026-11-28'],
+    note: 'Measured on the 4-5★ searches (no Marriott, Hilton, Hyatt, IHG or Accor came back priced in Oslo): x0.88 across 9 hotels. Prices eased into December rather than rising for the ceremony: the Grand Hotel $296 a night against $368.',
+  },
+  {
+    // Nor-Shipping, 7-11 June 2027: the exhibition at NOVA Spektrum, Lillestrøm,
+    // opening at Oslo City Hall on 7 June (nor-shipping.com; Hellenic Shipping
+    // News). The window is the city's June search. The plain nights are a week
+    // after: a fortnight before is late May, before Oslo's summer prices begin
+    // (the same hotels were a quarter dearer on 16-19 June than 26-29 May), and
+    // a fortnight after, the week of Sankthans (23 June), several were dearer
+    // again.
+    city: 'Oslo', country: 'Norway', event: 'Nor-Shipping', window: ['2027-06-09', '2027-06-12'], baseline: ['2027-06-16', '2027-06-19'],
+    note: 'Measured on the 4-5★ searches (no Marriott, Hilton, Hyatt, IHG or Accor came back priced in Oslo): x1.54 across 7 hotels. The city-centre hotels were dearest: the Radisson Blu Scandinavia $482 a night against $246, the Grand Hotel $608 against $377.',
+  },
+  {
     // Cisco Live APJC, 9-12 November 2026 at the Melbourne Convention and
     // Exhibition Centre, South Wharf (ciscolive.com). The window is the city's
     // November search, 11-14 November, taking in its last nights. The plain
