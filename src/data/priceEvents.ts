@@ -277,6 +277,52 @@ export const PRICE_EVENTS: PriceEvent[] = [
     city: 'Cartagena', country: 'Colombia', event: 'Cartagena Festival de Música', window: ['2027-01-13', '2027-01-16'], baseline: ['2027-01-20', '2027-01-23'],
     note: 'Measured on the 4-5★ and the Hilton, Hyatt, IHG and Accor searches: x0.94 across 15 hotels, IHG\'s x0.88 across 3, Hilton\'s x1.02 across 3. The festival, in the walled city, left prices as they were: the Sofitel Legend there was x1.33 ($855 a night against $641), the beach and Manga hotels a little cheaper than the week after.',
   },
+  {
+    // Cisco Live APJC, 9-12 November 2026 at the Melbourne Convention and
+    // Exhibition Centre, South Wharf (ciscolive.com). The window is the city's
+    // November search, 11-14 November, taking in its last nights. The plain
+    // nights are the same weekdays a week after: a fortnight before is Derby
+    // Day's eve and the next day's rates (searched 27 October), a fortnight
+    // after Harry Styles at Marvel Stadium (27 and 28 November).
+    city: 'Melbourne', country: 'Australia', event: 'Cisco Live', window: ['2026-11-11', '2026-11-14'], baseline: ['2026-11-18', '2026-11-21'],
+    note: 'Measured on the 4-5★ and the Marriott, Hilton, Hyatt, IHG and Accor searches: x1.27 across 32 hotels, Marriott\'s x1.44 across 8, IHG\'s x1.18 across 8, Hyatt\'s x1.24 across 5, Accor\'s x1.13 across 5. The Crowne Plaza, on the river by the convention centre, was $905 a night against $287.',
+  },
+  {
+    // The Australian Open's Opening Week, Monday 11 to Saturday 16 January 2027:
+    // qualifying and practice at Melbourne Park, the main draw from Sunday the
+    // 17th (Melbourne Park: three weeks, 11-31 January). The window is the
+    // city's January search. The plain nights are the same weekdays a week
+    // before, as a fortnight before is New Year.
+    city: 'Melbourne', country: 'Australia', event: 'Australian Open (Opening Week)', window: ['2027-01-13', '2027-01-16'], baseline: ['2027-01-06', '2027-01-09'],
+    note: 'Measured on the 4-5★ and the Marriott, Hilton, Hyatt, IHG and Accor searches: x1.10 across 41 hotels, Marriott\'s x1.10 across 10, IHG\'s x1.12 across 9, Accor\'s x1.19 across 9. Qualifying moved prices a little, a few hotels a lot: the Crowne Plaza Carlton x1.85, the Westin x1.64.',
+  },
+  {
+    // The Australian Open's main draw, 17-31 January 2027 (Melbourne Park; LTA;
+    // Sportsnet Holidays): the window is its first Wednesday to Saturday. The
+    // plain nights are 6-9 January, a fortnight before: the week before that
+    // is New Year, and the weeks after are the rest of the Open and BTS.
+    city: 'Melbourne', country: 'Australia', event: 'Australian Open', window: ['2027-01-20', '2027-01-23'], baseline: ['2027-01-06', '2027-01-09'],
+    note: 'Measured on the 4-5★ and the Marriott, Hilton, Hyatt, IHG and Accor searches: x3.00 across 33 hotels, Marriott\'s x2.94 across 10, IHG\'s x2.96 across 9, Hyatt\'s x3.16 across 5, Hilton\'s x3.49 across 4. The Westin was $874 a night against $177, the Ritz-Carlton $1,511 against $530.',
+  },
+  {
+    // BTS at Marvel Stadium, Docklands, on 10, 12 and 13 February 2027, their
+    // ARIRANG world tour (Variety Australia; austadiums). The window is the
+    // city's February search. The plain nights are the same weekdays a week
+    // before: a fortnight before is the Open's last week, a fortnight after
+    // Bruno Mars at the same stadium (19, 20, 23 and 24 February).
+    city: 'Melbourne', country: 'Australia', event: 'BTS at Marvel Stadium', window: ['2027-02-10', '2027-02-13'], baseline: ['2027-02-03', '2027-02-06'],
+    note: 'Measured on the 4-5★ and the Marriott, Hilton, Hyatt, IHG and Accor searches: x2.12 across 36 hotels, Marriott\'s x1.88 across 9, IHG\'s x2.45 across 9, Accor\'s x2.11 across 7, Hilton\'s x2.16 across 4. The Marriott Docklands, next to the stadium, was $643 a night against $198.',
+  },
+  {
+    // The 150th Anniversary Test, Australia v England at the MCG under lights,
+    // 11-15 March 2027 (Cricket Australia; ICC; cricket.com.au), 150 years on
+    // from the first Test there. The window is the city's March search. The
+    // plain nights are the same weekdays a week after: a fortnight before is
+    // Bruno Mars's last night, a fortnight after the Comedy Festival's opening
+    // and Easter.
+    city: 'Melbourne', country: 'Australia', event: 'MCG 150th Anniversary Test', window: ['2027-03-10', '2027-03-13'], baseline: ['2027-03-17', '2027-03-20'],
+    note: 'Measured on the 4-5★ and the Marriott, Hilton, Hyatt, IHG and Accor searches: x1.42 across 32 hotels, Marriott\'s x1.32 across 10, IHG\'s x1.42 across 8, Hyatt\'s x1.64 across 5, Hilton\'s x1.42 across 4. The Ritz-Carlton was $982 a night against $547.',
+  },
 ];
 
 // Events with no measurement yet, and why. Their nights are still kept out
@@ -298,6 +344,21 @@ export const UNMEASURED_EVENTS: (Omit<PriceEvent, 'baseline' | 'note'> & { why: 
     // out of September's season all the same.
     city: 'Toronto', country: 'Canada', event: 'TIFF opening weekend', window: ['2027-09-09', '2027-09-12'],
     why: 'The same nights a fortnight later had no published rates when searched, eleven months out, and a fortnight earlier is the CNE.',
+  },
+  {
+    // The Melbourne Cup Carnival at Flemington: Derby Day 31 October 2026,
+    // Cup Day 3 November (a public holiday in Melbourne), Oaks Day 5
+    // November, Stakes Day 7 November (VRC). The window starts the night
+    // before Derby Day, which the city's October search, 28-31 October,
+    // takes in.
+    city: 'Melbourne', country: 'Australia', event: 'Melbourne Cup Carnival', window: ['2026-10-30', '2026-11-08'],
+    why: 'Searched the week before, so the plain nights a fortnight earlier had gone; its first night was only priced at the next day\'s rates.',
+  },
+  {
+    // Harry Styles at Marvel Stadium, Docklands, on 27 and 28 November 2026
+    // (Marvel Stadium), with two more shows on 2 and 4 December.
+    city: 'Melbourne', country: 'Australia', event: 'Harry Styles at Marvel Stadium', window: ['2026-11-27', '2026-11-29'],
+    why: 'Only 25-28 November was searched, taking in the first show\'s night; the shows\' own nights weren\'t priced against plain ones.',
   },
 ];
 
