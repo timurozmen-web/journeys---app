@@ -242,6 +242,15 @@ export const PRICE_EVENTS: PriceEvent[] = [
     city: 'Montreal', country: 'Canada', event: 'IUPAC World Chemistry Congress', window: ['2027-07-18', '2027-07-21'], baseline: ['2027-07-04', '2027-07-07'],
     note: 'Measured on the 4-5★ and Marriott searches: x1.01 across 16 hotels, Marriott\'s x1.01 across 9. The congress left prices as they were.',
   },
+  {
+    // Lollapalooza Argentina, Friday 12 to Sunday 14 March 2027 at the
+    // Hipódromo de San Isidro, just outside the city (El Litoral; Infobae,
+    // 1 Jun 2026). The window is its three nights; the plain nights are the
+    // same weekdays a fortnight before, as the fortnight after is Easter.
+    // Buenos Aires' March search (10-13 March) took in its first night.
+    city: 'Buenos Aires', country: 'Argentina', event: 'Lollapalooza Argentina', window: ['2027-03-12', '2027-03-15'], baseline: ['2027-02-26', '2027-03-01'],
+    note: 'Measured on the 4-5★ and every group\'s searches: x1.22 across 18 hotels, Marriott\'s x1.30 across 5, Accor\'s x1.04 across 7. The festival is out of town, so most hotels moved little; a few were far dearer (the Marriott Downtown $1,651 a night against $209, the Park Hyatt $1,229 against $703), and the Hilton, InterContinental and Four Seasons had no rate left.',
+  },
 ];
 
 // Events with no measurement yet, and why. Their nights are still kept out

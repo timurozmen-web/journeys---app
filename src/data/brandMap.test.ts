@@ -16,6 +16,9 @@ describe('programmeOfHotel (hotel names in the price database)', () => {
     expect(programmeOfHotel('AC Hotel Recoletos')).toBe('Marriott Bonvoy');
     // Garner's the same: "Garner Hotel Berlin - Mitte", with no "IHG" in it.
     expect(programmeOfHotel('Garner Hotel Berlin - Mitte')).toBe('IHG One Rewards');
+    // Accor runs some hotels under their own name: the Park Royal City in
+    // Buenos Aires came back in the Accor search with no brand in its name.
+    expect(programmeOfHotel('Park Royal Buenos Aires managed by Accor')).toBe('Accor ALL');
   });
 
   test('leaves independents alone, even when a word looks like a brand', () => {

@@ -37,6 +37,9 @@ const ACCOR_SUBBRANDS = [
   'hotelF1', 'greet', '21c Museum Hotels', '25hours', 'Delano', 'Gleneagles', 'Hyde', 'Jo&Joe',
   'Mama Shelter', 'Mondrian', 'Morgans Originals', 'SLS', 'SO/', 'The Hoxton', 'Rixos', 'Our Habitas',
   'Rikas', 'onefinestay',
+  // Hotels Accor runs under their own name, listed on all.accor.com as
+  // "<name> managed by Accor" (Park Royal Buenos Aires, hotel C4N6).
+  'managed by Accor',
 ];
 
 const HYATT_SUBBRANDS = [
