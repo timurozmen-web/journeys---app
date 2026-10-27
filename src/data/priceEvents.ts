@@ -288,6 +288,16 @@ export const PRICE_EVENTS: PriceEvent[] = [
     note: 'Measured on the 4-5★ and the Marriott and IHG searches (no Hilton, Hyatt or Accor came back priced in Copenhagen): x1.41 across 15 hotels, Marriott\'s x1.34 across 6. The city-centre hotels were dearest: the Radisson Collection Royal x1.89 ($821 a night against $434), the Copenhagen Marriott $865 against $602.',
   },
   {
+    // Nobel Week, with the prize ceremony and banquet on 10 December
+    // (nobelprize.org: Nobel Week Dialogue 9 December 2026; Nobel Week Lights
+    // 5-13 December, visitstockholm.com). The window is the city's December
+    // search. The plain nights are a fortnight before: a fortnight after is
+    // Christmas. The laureates and their families stay at the Grand Hôtel
+    // (grandhotel.se), the one hotel the week moved.
+    city: 'Stockholm', country: 'Sweden', event: 'Nobel Week', window: ['2026-12-09', '2026-12-12'], baseline: ['2026-11-25', '2026-11-28'],
+    note: 'Measured on the 4-5★ and the Marriott, Hilton, Hyatt and IHG searches (no Accor came back priced in Stockholm): x0.97 across 16 hotels. Only the Grand Hôtel, where the laureates stay, rose: $1,459 a night against $430.',
+  },
+  {
     // Cisco Live APJC, 9-12 November 2026 at the Melbourne Convention and
     // Exhibition Centre, South Wharf (ciscolive.com). The window is the city's
     // November search, 11-14 November, taking in its last nights. The plain
