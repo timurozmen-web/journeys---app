@@ -251,6 +251,14 @@ export const PRICE_EVENTS: PriceEvent[] = [
     city: 'Buenos Aires', country: 'Argentina', event: 'Lollapalooza Argentina', window: ['2027-03-12', '2027-03-15'], baseline: ['2027-02-26', '2027-03-01'],
     note: 'Measured on the 4-5★ and every group\'s searches: x1.22 across 18 hotels, Marriott\'s x1.30 across 5, Accor\'s x1.04 across 7. The festival is out of town, so most hotels moved little; a few were far dearer (the Marriott Downtown $1,651 a night against $209, the Park Hyatt $1,229 against $703), and the Hilton, InterContinental and Four Seasons had no rate left.',
   },
+  {
+    // FILBo, Bogotá's international book fair, 20 April to 3 May 2027 at
+    // Corferias (Noticias RCN, 25 Sep 2026; PredictHQ). The window is the
+    // city's April search, inside the fair; the plain nights are the same
+    // weekdays a fortnight before, clear of Easter (28 March).
+    city: 'Bogota', country: 'Colombia', event: 'FILBo', window: ['2027-04-21', '2027-04-24'], baseline: ['2027-04-07', '2027-04-10'],
+    note: 'Measured on the 4-5★, Marriott, Hilton and Accor searches: x1.00 across 30 hotels, Marriott\'s x1.00 across 10, Hilton\'s x1.00 across 8. The fair left prices as they were; the Hilton by Corferias, next to it, was x1.31 ($199 a night against $152).',
+  },
 ];
 
 // Events with no measurement yet, and why. Their nights are still kept out
