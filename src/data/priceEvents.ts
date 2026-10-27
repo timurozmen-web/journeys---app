@@ -360,6 +360,13 @@ export const UNMEASURED_EVENTS: (Omit<PriceEvent, 'baseline' | 'note'> & { why: 
     city: 'Melbourne', country: 'Australia', event: 'Harry Styles at Marvel Stadium', window: ['2026-11-27', '2026-11-29'],
     why: 'Only 25-28 November was searched, taking in the first show\'s night; the shows\' own nights weren\'t priced against plain ones.',
   },
+  {
+    // Bruno Mars at Eden Park on 13, 14 and 16 March 2027, three sold-out
+    // nights (1News, 3 Sep 2026; Le Petit Journal). The window starts the night
+    // before the first show, which the city's March search, 10-13 March, takes in.
+    city: 'Auckland', country: 'New Zealand', event: 'Bruno Mars at Eden Park', window: ['2027-03-12', '2027-03-17'],
+    why: 'The March search took in only the night before the first show: x1.16 against the week after across 24 hotels. The shows\' own nights weren\'t priced.',
+  },
 ];
 
 // Marriott's member rate is 2-3% under the booking sites' price for the
