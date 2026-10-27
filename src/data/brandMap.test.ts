@@ -26,8 +26,9 @@ describe('programmeOfHotel (hotel names in the price database)', () => {
     // Ascott on Raffles Place isn't a Raffles, the Regent Warsaw, a Hyatt
     // until 2014 and independent since, isn't one of IHG's Regents, and Arlo
     // NoMad (named for its Manhattan district) isn't Hilton's NoMad. Vancouver's
-    // St Regis Hotel, independent since 1913, came back counted as Marriott's.
-    for (const name of ['Four Elements Hotel Amsterdam', 'Park Regis by Prince Singapore', 'Ascott Raffles Place Singapore', 'Atlantis The Palm', 'Hotel Da Vinci Milano', 'Wanderlust Inn', 'Regent Warsaw Hotel', 'Arlo NoMad', 'St Regis Hotel']) {
+    // St Regis Hotel, independent since 1913, came back counted as Marriott's,
+    // as did Cartagena's Casa Lola, listed as "Casa Lola Luxury Collection".
+    for (const name of ['Four Elements Hotel Amsterdam', 'Park Regis by Prince Singapore', 'Ascott Raffles Place Singapore', 'Atlantis The Palm', 'Hotel Da Vinci Milano', 'Wanderlust Inn', 'Regent Warsaw Hotel', 'Arlo NoMad', 'St Regis Hotel', 'Casa Lola Luxury Collection']) {
       expect(programmeOfHotel(name), name).toBeNull();
     }
     expect(programmeOfHotel('Sheraton Grand Sydney Hyde Park')).toBe('Marriott Bonvoy');

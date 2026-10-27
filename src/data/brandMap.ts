@@ -138,8 +138,11 @@ const PLACE_WORDS = /\b(raffles place|raffles city|hyde park|regent street)\b/g;
 // district, not Hilton's NoMad. The St Regis Hotel in Vancouver (602
 // Dunsmuir Street, open since 1913) is independent and Canadian-owned
 // (Forbes Travel Guide; Montecristo); Marriott's are all "The St. Regis
-// <place>", so only that bare name is left out.
-const NOT_THE_BRAND = /\b(regent warsaw|arlo nomad)\b|^st regis hotel$/;
+// <place>", so only that bare name is left out. Casa Lola in Cartagena's
+// Getsemaní, "Casa Lola Luxury Collection" in the search, is Hotel Casa Lola
+// Deluxe Gallery, opened by its designer Ignacio García de Vinuesa (La
+// República, Nov 2025; Forbes Colombia, 18 Nov 2025), not Marriott's.
+const NOT_THE_BRAND = /\b(regent warsaw|arlo nomad|casa lola)\b|^st regis hotel$/;
 
 /**
  * The programme a hotel belongs to, read from its name the way

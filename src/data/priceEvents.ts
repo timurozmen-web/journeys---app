@@ -259,6 +259,24 @@ export const PRICE_EVENTS: PriceEvent[] = [
     city: 'Bogota', country: 'Colombia', event: 'FILBo', window: ['2027-04-21', '2027-04-24'], baseline: ['2027-04-07', '2027-04-10'],
     note: 'Measured on the 4-5★, Marriott, Hilton and Accor searches: x1.00 across 30 hotels, Marriott\'s x1.00 across 10, Hilton\'s x1.00 across 8. The fair left prices as they were; the Hilton by Corferias, next to it, was x1.31 ($199 a night against $152).',
   },
+  {
+    // Cartagena's Fiestas de Independencia: the main week 6-12 November 2026,
+    // the Festival Náutico 13-14 November, closing on the 16th, a national
+    // holiday (El Universal, 16 Sep 2026). The window is the city's November
+    // search, 11 November itself to the 14th. The plain nights are the same
+    // weekdays a week after, clear of the fiestas: a fortnight before is the
+    // next day's rates (searched 27 October), a fortnight after US Thanksgiving.
+    city: 'Cartagena', country: 'Colombia', event: 'Fiestas de Independencia', window: ['2026-11-11', '2026-11-14'], baseline: ['2026-11-18', '2026-11-21'],
+    note: 'Measured on the 4-5★ and the Hilton, Hyatt, IHG and Accor searches (no Marriott came back priced in Cartagena): x1.02 across 13 hotels, IHG\'s x1.14 across 3, Hilton\'s x1.02 across 3. The fiestas left prices much as they were; the Hilton Cartagena was dearer the week after ($377 a night against $206), with no event found to say why.',
+  },
+  {
+    // Cartagena Festival de Música, its 21st edition, 9-17 January 2027 (Rio
+    // Times; colombia.travel). The window is the city's January search, inside
+    // it. The plain nights are the same weekdays a week after: a fortnight
+    // before is New Year, a fortnight after the Hay Festival (28-31 January).
+    city: 'Cartagena', country: 'Colombia', event: 'Cartagena Festival de Música', window: ['2027-01-13', '2027-01-16'], baseline: ['2027-01-20', '2027-01-23'],
+    note: 'Measured on the 4-5★ and the Hilton, Hyatt, IHG and Accor searches: x0.94 across 15 hotels, IHG\'s x0.88 across 3, Hilton\'s x1.02 across 3. The festival, in the walled city, left prices as they were: the Sofitel Legend there was x1.33 ($855 a night against $641), the beach and Manga hotels a little cheaper than the week after.',
+  },
 ];
 
 // Events with no measurement yet, and why. Their nights are still kept out
