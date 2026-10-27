@@ -174,6 +174,74 @@ export const PRICE_EVENTS: PriceEvent[] = [
     city: 'Munich', country: 'Germany', event: 'IAA Mobility', window: ['2027-09-07', '2027-09-10'], baseline: ['2027-08-24', '2027-08-27'],
     note: 'Hotels by the Messe went up most (Four Points Messe $268 against $79). Hotels at the airport and in nearby towns are left out.',
   },
+  {
+    // The Canadian International AutoShow, 12-21 February 2027 at the Metro
+    // Toronto Convention Centre (Tradefest; EventsEye). The February month
+    // search (10-13 February) is its media days and opening weekend, so
+    // February is 24-27 February, the same weekdays a fortnight later.
+    city: 'Toronto', country: 'Canada', event: 'Canadian International AutoShow', window: ['2027-02-10', '2027-02-13'], baseline: ['2027-02-24', '2027-02-27'],
+    note: 'Measured on the 4-5★ and Marriott searches: x1.03 across 15 hotels, Marriott\'s x1.04 across 9. The show left prices about where they were (the Westin Harbour Castle x1.20, Hotel X x0.85).',
+  },
+  {
+    // PDAC, the mining industry's convention, 7-10 March 2027 at the Metro
+    // Toronto Convention Centre and the Fairmont Royal York (pdac.ca). The
+    // window is its Sunday to Tuesday nights; the plain nights are the same
+    // weekdays a fortnight later. The March month search (10-13 March)
+    // starts the night it ends.
+    city: 'Toronto', country: 'Canada', event: 'PDAC', window: ['2027-03-07', '2027-03-10'], baseline: ['2027-03-21', '2027-03-24'],
+    note: 'Measured on the 4-5★ and every group\'s searches: x2.43 across 16 hotels. Downtown rose most (the Hilton Toronto x7.28, the Novotel Toronto Centre x4.85, the Hyatt Regency x3.32); North York\'s hotels, half an hour north, x0.97-1.35. Only two Marriotts had a rate for the convention nights (x2.56: the Eaton Centre x2.42, the Ritz-Carlton x2.70); the rest downtown and the Fairmont Royal York, the second venue, had none.',
+  },
+  {
+    // The Canadian National Exhibition, 20 August to 6 September 2027 at
+    // Exhibition Place (theex.com dates via Wikipedia). The window is its
+    // second Thursday to Saturday nights; the plain nights are the same
+    // weekdays a fortnight earlier, a week before it opens.
+    city: 'Toronto', country: 'Canada', event: 'CNE', window: ['2027-08-26', '2027-08-29'], baseline: ['2027-08-12', '2027-08-15'],
+    note: 'Measured on the 4-5★ and Marriott searches: x1.00 across 13 hotels, Marriott\'s x1.03 across 7. The fair left the city\'s prices as they were; Hotel X, on the exhibition grounds, was x0.84.',
+  },
+  {
+    // The Toronto International Film Festival opens the Thursday after
+    // Labour Day (4-14 September 2025, 10-20 September 2026), so 9-19
+    // September 2027; tiff.net hadn't published 2027's dates when searched.
+    // The window is its first Monday to Wednesday nights; the plain nights
+    // are the same weekdays the week after it, as a fortnight later wasn't
+    // priced yet. September's month observation is those plain nights.
+    city: 'Toronto', country: 'Canada', event: 'TIFF', window: ['2027-09-13', '2027-09-16'], baseline: ['2027-09-20', '2027-09-23'],
+    note: 'Measured on the 4-5★ and every group\'s searches: x1.20 across 17 hotels, Marriott\'s x1.28 across 3. The Fairmont Royal York x1.65 and the Novotel Toronto Centre x1.80; the InterContinental and North York\'s hotels held their price. The Ritz-Carlton\'s cheapest room was $7,254 a night (x11.87).',
+  },
+  {
+    // AME Roundup, the mineral exploration conference, Monday 25 to Thursday
+    // 28 January 2027 at the Vancouver Convention Centre East (roundup.amebc.ca).
+    // The window is its Monday to Wednesday nights; the plain nights are the
+    // same weekdays a fortnight earlier, as a fortnight later is BUILDEX.
+    city: 'Vancouver', country: 'Canada', event: 'AME Roundup', window: ['2027-01-25', '2027-01-28'], baseline: ['2027-01-11', '2027-01-14'],
+    note: 'Measured on the 4-5★ and Marriott searches: x1.21 across 12 hotels, Marriott\'s x1.34 across 8. The hotels nearest the convention centre rose most (the Marriott Pinnacle x1.69, the Westin Bayshore x1.59, the Delta Downtown Suites x1.50); those at the south end of downtown held their price (the Sheraton Wall Centre x0.96, the JW Marriott Parq x1.04).',
+  },
+  {
+    // Web Summit Vancouver, 25-28 May 2027 at the Vancouver Convention Centre
+    // (Dealroom; Beri; Web Summit committed to May 2025-2027, City of
+    // Vancouver, 12 May 2025). The window is its Tuesday to Thursday nights;
+    // the plain nights are the same weekdays a fortnight earlier.
+    city: 'Vancouver', country: 'Canada', event: 'Web Summit Vancouver', window: ['2027-05-25', '2027-05-28'], baseline: ['2027-05-11', '2027-05-14'],
+    note: 'Measured on the 4-5★ and Marriott searches: x0.97 across 11 hotels, Marriott\'s x0.95 across 7. The summit left prices as they were; the Marriott Pinnacle was dearer the fortnight before ($877 a night against $465).',
+  },
+  {
+    // The Canadian Grand Prix, a sprint weekend, Friday 21 to Sunday 23 May
+    // 2027 at Circuit Gilles-Villeneuve (the 2027 F1 calendar, FIA, 16 Sep
+    // 2026). The window is its Thursday to Saturday nights; the plain nights
+    // are the same weekdays a fortnight earlier.
+    city: 'Montreal', country: 'Canada', event: 'Canadian Grand Prix', window: ['2027-05-20', '2027-05-23'], baseline: ['2027-05-06', '2027-05-09'],
+    note: 'Measured on the 4-5★ and every group\'s searches: x3.25 across 9 hotels, Hilton\'s x3.46 across 6. Most hotels had no rate left for the race weekend 205 days out (16 of 18 Marriotts, every Accor); those still selling were about three times their price a fortnight before (the AC Hotel Old Montreal x3.25, the Hyatt Centric x2.81, the Spark Midtown x5.65).',
+  },
+  {
+    // IUPAC 2027, the World Chemistry Congress and IUPAC General Assembly, 16-23
+    // July 2027 at the Palais des congrès, for up to 3,500 delegates (IUPAC
+    // Council, 2021; Quebec government). The window is the congress's Sunday
+    // to Tuesday nights; the plain nights are the same weekdays a fortnight
+    // earlier.
+    city: 'Montreal', country: 'Canada', event: 'IUPAC World Chemistry Congress', window: ['2027-07-18', '2027-07-21'], baseline: ['2027-07-04', '2027-07-07'],
+    note: 'Measured on the 4-5★ and Marriott searches: x1.01 across 16 hotels, Marriott\'s x1.01 across 9. The congress left prices as they were.',
+  },
 ];
 
 // Events with no measurement yet, and why. Their nights are still kept out
@@ -187,6 +255,14 @@ export const UNMEASURED_EVENTS: (Omit<PriceEvent, 'baseline' | 'note'> & { why: 
     // published 16 Sep 2026).
     city: 'Madrid', country: 'Spain', event: 'Spanish Grand Prix', window: ['2027-09-09', '2027-09-13'],
     why: 'Searched eleven months out, most hotels had no rate for the race nights or a fortnight later; only Hotel Atlántico was priced on both sides of it ($278 a night against $250 the week before).',
+  },
+  {
+    // TIFF's opening weekend (see TIFF above). A fortnight later wasn't
+    // priced when searched and a fortnight earlier is the CNE's last
+    // weekend, so its own uplift couldn't be measured; its nights are kept
+    // out of September's season all the same.
+    city: 'Toronto', country: 'Canada', event: 'TIFF opening weekend', window: ['2027-09-09', '2027-09-12'],
+    why: 'The same nights a fortnight later had no published rates when searched, eleven months out, and a fortnight earlier is the CNE.',
   },
 ];
 

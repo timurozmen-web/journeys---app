@@ -19,12 +19,27 @@ describe('programmeOfHotel (hotel names in the price database)', () => {
   });
 
   test('leaves independents alone, even when a word looks like a brand', () => {
-    // "Four Elements" isn't an Element, Park Regis isn't a St. Regis, and an
-    // Ascott on Raffles Place isn't a Raffles.
-    for (const name of ['Four Elements Hotel Amsterdam', 'Park Regis by Prince Singapore', 'Ascott Raffles Place Singapore', 'Atlantis The Palm', 'Hotel Da Vinci Milano', 'Wanderlust Inn']) {
+    // "Four Elements" isn't an Element, Park Regis isn't a St. Regis, an
+    // Ascott on Raffles Place isn't a Raffles, the Regent Warsaw, a Hyatt
+    // until 2014 and independent since, isn't one of IHG's Regents, and Arlo
+    // NoMad (named for its Manhattan district) isn't Hilton's NoMad. Vancouver's
+    // St Regis Hotel, independent since 1913, came back counted as Marriott's.
+    for (const name of ['Four Elements Hotel Amsterdam', 'Park Regis by Prince Singapore', 'Ascott Raffles Place Singapore', 'Atlantis The Palm', 'Hotel Da Vinci Milano', 'Wanderlust Inn', 'Regent Warsaw Hotel', 'Arlo NoMad', 'St Regis Hotel']) {
       expect(programmeOfHotel(name), name).toBeNull();
     }
     expect(programmeOfHotel('Sheraton Grand Sydney Hyde Park')).toBe('Marriott Bonvoy');
+    expect(programmeOfHotel('Regent Hong Kong')).toBe('IHG One Rewards');
+    expect(programmeOfHotel('The Ritz-Carlton New York, NoMad')).toBe('Marriott Bonvoy');
+    expect(programmeOfHotel('The St. Regis Toronto')).toBe('Marriott Bonvoy');
+  });
+
+  test('reads SLS and SO/, under the four-letter floor, as Accor', () => {
+    // SLS Barcelona and the SO/ hotels in Paris, Vienna and Dubai were read
+    // as independents. The SLS Beverly Hills is now a Luxury Collection hotel.
+    for (const name of ['SLS Barcelona', 'SO/ PARIS', 'SO/ Vienna', 'SO/ Uptown Dubai']) {
+      expect(programmeOfHotel(name), name).toBe('Accor ALL');
+    }
+    expect(programmeOfHotel('SLS Hotel, a Luxury Collection Hotel, Beverly Hills')).toBe('Marriott Bonvoy');
   });
 });
 
