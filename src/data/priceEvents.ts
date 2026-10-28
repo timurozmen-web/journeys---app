@@ -381,6 +381,15 @@ export const PRICE_EVENTS: PriceEvent[] = [
     note: 'Measured on the 4-5★ and all five group searches: x1.11 across 16 hotels, Marriott\'s x1.06 across 5, Accor\'s x1.15 across 4, Hilton\'s x1.04 across 3. In June the city is full anyway: the Sina Villa Medici $1,030 a night against $767, the W $649 on both.',
   },
   {
+    // The Carnival of Venice, 23 January to Shrove Tuesday, 9 February 2027
+    // (carnevale.venezia.it). The window is its last weekend, the busiest,
+    // Friday to Monday; the plain nights are the same weekdays a fortnight
+    // after, in Lent. The city's February search, 10-13 February, starts on
+    // Ash Wednesday, after it.
+    city: 'Venice', country: 'Italy', event: 'Carnival', window: ['2027-02-05', '2027-02-08'], baseline: ['2027-02-19', '2027-02-22'],
+    note: 'Measured on the 4-5★ and all five group searches: x1.52 across 19 hotels, Hilton\'s x1.92 across 3, IHG\'s x1.76 across 3, Accor\'s x1.49 across 4, Marriott\'s x1.36 across 4. The Papadopoli was $441 a night against $192, the Hampton by Hilton on Tronchetto $442 against $107.',
+  },
+  {
     // Cisco Live APJC, 9-12 November 2026 at the Melbourne Convention and
     // Exhibition Centre, South Wharf (ciscolive.com). The window is the city's
     // November search, 11-14 November, taking in its last nights. The plain
