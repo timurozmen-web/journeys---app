@@ -363,6 +363,24 @@ export const PRICE_EVENTS: PriceEvent[] = [
     note: 'Measured on the 4-5★ and all five group searches: x1.50 across 16 hotels, Marriott\'s x2.05 across 4, Accor\'s x1.58 across 4, Hilton\'s x1.07 across 3. The hotels by Syntagma, near the finish, went up most: the King George $2,278 a night against $343, the Grande Bretagne $1,194 against $472; the Grand Hyatt on Syngrou was $185 against $411 (dearer itself a fortnight later).',
   },
   {
+    // Pitti Immagine Uomo 111, the menswear fair at the Fortezza da Basso,
+    // 12-15 January 2027 (uomo.pittimmagine.com). The window is the fair's
+    // first three nights. The plain nights are the same weekdays a fortnight
+    // after: a week after is Pitti Bimbo and Pitti Filati (20-22 January), a
+    // fortnight before New Year. The city's January search, 13-16 January,
+    // takes in its last nights, so January's plain nights are 27-30 January.
+    city: 'Florence', country: 'Italy', event: 'Pitti Uomo (January)', window: ['2027-01-12', '2027-01-15'], baseline: ['2027-01-26', '2027-01-29'],
+    note: 'Measured on the 4-5★ and all five group searches: x1.29 across 15 hotels, Marriott\'s x1.37 across 4, Accor\'s x1.49 across 4, Hilton\'s x1.00 across 3. The hotels by the Fortezza went up most: the Hotel Indigo $802 a night against $149, the Hoxton $510 against $166.',
+  },
+  {
+    // Pitti Immagine Uomo 112, 15-18 June 2027 at the Fortezza da Basso
+    // (uomo.pittimmagine.com). The window is the fair's first three nights;
+    // the plain nights are the same weekdays a fortnight after, as a
+    // fortnight before takes in Republic Day (2 June).
+    city: 'Florence', country: 'Italy', event: 'Pitti Uomo (June)', window: ['2027-06-15', '2027-06-18'], baseline: ['2027-06-29', '2027-07-02'],
+    note: 'Measured on the 4-5★ and all five group searches: x1.11 across 16 hotels, Marriott\'s x1.06 across 5, Accor\'s x1.15 across 4, Hilton\'s x1.04 across 3. In June the city is full anyway: the Sina Villa Medici $1,030 a night against $767, the W $649 on both.',
+  },
+  {
     // Cisco Live APJC, 9-12 November 2026 at the Melbourne Convention and
     // Exhibition Centre, South Wharf (ciscolive.com). The window is the city's
     // November search, 11-14 November, taking in its last nights. The plain
