@@ -336,6 +336,60 @@ export const PRICE_EVENTS: PriceEvent[] = [
     note: 'Measured on the 4-5★ and the Marriott, Hilton and IHG searches (no Hyatt or Accor came back priced in Helsinki): x0.84 across 9 hotels. The festival nights were no dearer than plain ones a fortnight later: the Hotel Indigo $151 a night against $216, the Waldorf Astoria $367 against $364.',
   },
   {
+    // Iceland Airwaves, 5-7 November 2026 in downtown Reykjavík, with its
+    // industry conference on 5-6 November (Iceland Airwaves release, 8 April
+    // 2026). The window is the festival's three nights, searched a week
+    // before (28 October). The plain nights are a fortnight after: a
+    // fortnight before had passed.
+    city: 'Reykjavik', country: 'Iceland', event: 'Iceland Airwaves', window: ['2026-11-05', '2026-11-08'], baseline: ['2026-11-19', '2026-11-22'],
+    note: 'Measured on the 4-5★ and the Hilton and IHG searches (no Hyatt or Accor came back priced in Reykjavík, and Marriott\'s only at Keflavík airport): x1.36 across 9 hotels, Hilton\'s x1.49 across 4. The hotels in the centre went up most: the Canopy $622 a night against $312, the Hotel Reykjavík Saga $428 against $253; the Hilton Reykjavik Nordica, out of the centre, was $190 against $201.',
+  },
+  {
+    // The Winter Lights Festival, 4-7 February 2027 across the capital area's
+    // six municipalities: a light trail, Museum Night and Pool Night, all free
+    // (reykjavik.is). The city's February search, 10-13 February, is clear of
+    // it, so its nights were searched on their own, against the same weekdays
+    // a fortnight after.
+    city: 'Reykjavik', country: 'Iceland', event: 'Winter Lights Festival', window: ['2027-02-04', '2027-02-07'], baseline: ['2027-02-18', '2027-02-21'],
+    note: 'Measured on the 4-5★ and the Hilton searches: x0.94 across 9 hotels, Hilton\'s x0.94 across 4. The festival nights were no dearer than plain ones a fortnight later: the Konsulat $286 a night against $340, the Hotel Reykjavík Grand $188 against $183.',
+  },
+  {
+    // Athens Marathon. The Authentic, Sunday 8 November 2026, from Marathon
+    // to the Panathenaic Stadium, with the 5 km on the Saturday (organisers'
+    // registration notice, 24 April 2026; sold out). The window is the race
+    // weekend's three nights, searched nine days before. The plain nights are
+    // a fortnight after: a fortnight before had passed.
+    city: 'Athens', country: 'Greece', event: 'Athens Marathon', window: ['2026-11-06', '2026-11-09'], baseline: ['2026-11-20', '2026-11-23'],
+    note: 'Measured on the 4-5★ and all five group searches: x1.50 across 16 hotels, Marriott\'s x2.05 across 4, Accor\'s x1.58 across 4, Hilton\'s x1.07 across 3. The hotels by Syntagma, near the finish, went up most: the King George $2,278 a night against $343, the Grande Bretagne $1,194 against $472; the Grand Hyatt on Syngrou was $185 against $411 (dearer itself a fortnight later).',
+  },
+  {
+    // Pitti Immagine Uomo 111, the menswear fair at the Fortezza da Basso,
+    // 12-15 January 2027 (uomo.pittimmagine.com). The window is the fair's
+    // first three nights. The plain nights are the same weekdays a fortnight
+    // after: a week after is Pitti Bimbo and Pitti Filati (20-22 January), a
+    // fortnight before New Year. The city's January search, 13-16 January,
+    // takes in its last nights, so January's plain nights are 27-30 January.
+    city: 'Florence', country: 'Italy', event: 'Pitti Uomo (January)', window: ['2027-01-12', '2027-01-15'], baseline: ['2027-01-26', '2027-01-29'],
+    note: 'Measured on the 4-5★ and all five group searches: x1.29 across 15 hotels, Marriott\'s x1.37 across 4, Accor\'s x1.49 across 4, Hilton\'s x1.00 across 3. The hotels by the Fortezza went up most: the Hotel Indigo $802 a night against $149, the Hoxton $510 against $166.',
+  },
+  {
+    // Pitti Immagine Uomo 112, 15-18 June 2027 at the Fortezza da Basso
+    // (uomo.pittimmagine.com). The window is the fair's first three nights;
+    // the plain nights are the same weekdays a fortnight after, as a
+    // fortnight before takes in Republic Day (2 June).
+    city: 'Florence', country: 'Italy', event: 'Pitti Uomo (June)', window: ['2027-06-15', '2027-06-18'], baseline: ['2027-06-29', '2027-07-02'],
+    note: 'Measured on the 4-5★ and all five group searches: x1.11 across 16 hotels, Marriott\'s x1.06 across 5, Accor\'s x1.15 across 4, Hilton\'s x1.04 across 3. In June the city is full anyway: the Sina Villa Medici $1,030 a night against $767, the W $649 on both.',
+  },
+  {
+    // The Carnival of Venice, 23 January to Shrove Tuesday, 9 February 2027
+    // (carnevale.venezia.it). The window is its last weekend, the busiest,
+    // Friday to Monday; the plain nights are the same weekdays a fortnight
+    // after, in Lent. The city's February search, 10-13 February, starts on
+    // Ash Wednesday, after it.
+    city: 'Venice', country: 'Italy', event: 'Carnival', window: ['2027-02-05', '2027-02-08'], baseline: ['2027-02-19', '2027-02-22'],
+    note: 'Measured on the 4-5★ and all five group searches: x1.52 across 19 hotels, Hilton\'s x1.92 across 3, IHG\'s x1.76 across 3, Accor\'s x1.49 across 4, Marriott\'s x1.36 across 4. The Papadopoli was $441 a night against $192, the Hampton by Hilton on Tronchetto $442 against $107.',
+  },
+  {
     // Cisco Live APJC, 9-12 November 2026 at the Melbourne Convention and
     // Exhibition Centre, South Wharf (ciscolive.com). The window is the city's
     // November search, 11-14 November, taking in its last nights. The plain
@@ -381,6 +435,22 @@ export const PRICE_EVENTS: PriceEvent[] = [
     city: 'Melbourne', country: 'Australia', event: 'MCG 150th Anniversary Test', window: ['2027-03-10', '2027-03-13'], baseline: ['2027-03-17', '2027-03-20'],
     note: 'Measured on the 4-5★ and the Marriott, Hilton, Hyatt, IHG and Accor searches: x1.42 across 32 hotels, Marriott\'s x1.32 across 10, IHG\'s x1.42 across 8, Hyatt\'s x1.64 across 5, Hilton\'s x1.42 across 4. The Ritz-Carlton was $982 a night against $547.',
   },
+  {
+    // Nice Carnival, 9-28 February 2027 (Côte d'Azur France tourist board).
+    // The city's February search, 10-13 February, lands on it; the plain
+    // nights are a fortnight before, and February's season comes from a
+    // 3-6 February search.
+    city: 'Nice', country: 'France', event: 'Carnival', window: ['2027-02-10', '2027-02-13'], baseline: ['2027-01-27', '2027-01-30'],
+    note: 'Measured on the 4-5★ searches: x1.20 across 6 hotels. The Radisson Blu was $164 a night against $116; Le Negresco $411 against $415.',
+  },
+  {
+    // The Cannes Film Festival, 11-22 May 2027 (Festival de Cannes;
+    // Screen Daily), 30km along the coast. The city's May search, 12-15
+    // May, lands on it; the plain nights are a fortnight after, which are
+    // also May's plain search.
+    city: 'Nice', country: 'France', event: 'Cannes Film Festival', window: ['2027-05-12', '2027-05-15'], baseline: ['2027-05-26', '2027-05-29'],
+    note: 'Measured on the 4-5★ searches: x1.00 across 7 hotels. Le Negresco was $852 a night against $840, the Excelsior $226 against $198.',
+  },
 ];
 
 // Events with no measurement yet, and why. Their nights are still kept out
@@ -424,6 +494,11 @@ export const UNMEASURED_EVENTS: (Omit<PriceEvent, 'baseline' | 'note'> & { why: 
     // before the first show, which the city's March search, 10-13 March, takes in.
     city: 'Auckland', country: 'New Zealand', event: 'Bruno Mars at Eden Park', window: ['2027-03-12', '2027-03-17'],
     why: 'The March search took in only the night before the first show: x1.16 against the week after across 24 hotels. The shows\' own nights weren\'t priced.',
+  },  {
+    // The Monaco Grand Prix, Sunday 6 June 2027 (the 2027 F1 calendar), 20km
+    // from Nice, where most of its visitors stay.
+    city: 'Nice', country: 'France', event: 'Monaco Grand Prix', window: ['2027-06-03', '2027-06-07'],
+    why: 'Searched seven months out, 9 of the 12 4-5★ hotels had no rate for the race weekend; of the rest only Crisol Mozart was priced a fortnight later ($560 a night against $254).',
   },
 ];
 
