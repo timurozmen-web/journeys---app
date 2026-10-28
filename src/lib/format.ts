@@ -67,3 +67,10 @@ export function dayMonth(iso: string): { day: string; month: string } {
   const { m, d } = parts(iso);
   return { day: String(d).padStart(2, '0'), month: MONTHS_SHORT[m].toUpperCase() };
 }
+
+// "May 2026", from a full date or a year and month alone (older reviews
+// were logged by month).
+export function monthYear(iso: string): string {
+  const { y, m } = parts(iso);
+  return Number.isFinite(y) && m >= 0 && m < 12 ? `${MONTHS_SHORT[m]} ${y}` : iso;
+}

@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFinish } from '../lib/useFinish';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { addReview } from '../lib/queries';
+import { addReview, addReviewPhoto } from '../lib/queries';
 import { withOfflineFallback } from '../lib/offlineQueue';
-import { useReviews } from '../lib/useLiveData';
+import { useReviewPhotos, useReviews } from '../lib/useLiveData';
 import { REVIEW_CATEGORIES } from '../lib/reviewScoring';
+import { aspectPhoto } from '../lib/reviewSummary';
 import {
   pickComparisonCandidate, narrowRange, computeFinalScore, sortedSameBand,
   type Sentiment, type RankedItem,
 } from '../lib/reviewRanking';
 import type { HotelNeedingReview } from '../lib/reviewScoring';
-import { ScreenHeader } from '../components/ui';
+import { Field, ScreenHeader } from '../components/ui';
+import { PhotoStrip, PhotoViewer } from '../components/ReviewPhotos';
 
 type Phase = 'sentiment' | 'comparing' | 'done';
 
@@ -22,10 +24,14 @@ interface CategoryState {
   history: { lo: number; hi: number }[];
   score: number | null;
   skipped: boolean;
+  note: string;
+  photos: StagedPhoto[]; // uploaded at Finish, once the review is saved
 }
 
+interface StagedPhoto { id: string; file: File; url: string }
+
 function freshCategoryState(): CategoryState {
-  return { sentiment: null, sameBand: [], lo: 0, hi: 0, history: [], score: null, skipped: false };
+  return { sentiment: null, sameBand: [], lo: 0, hi: 0, history: [], score: null, skipped: false, note: '', photos: [] };
 }
 
 const SENTIMENT_CIRCLES: { key: Sentiment; label: string; color: string }[] = [
@@ -41,12 +47,19 @@ export function ReviewTrip() {
   const state = location.state as { hotel?: HotelNeedingReview; onlyCategories?: string[] } | null;
   const hotel = state?.hotel;
   const { data: allReviews } = useReviews();
+  const { data: allPhotos } = useReviewPhotos();
   const categories = state?.onlyCategories ? REVIEW_CATEGORIES.filter((c) => state.onlyCategories!.includes(c.key)) : REVIEW_CATEGORIES;
 
   const [step, setStep] = useState(0);
   const [states, setStates] = useState<CategoryState[]>(categories.map(() => freshCategoryState()));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [viewing, setViewing] = useState<number | null>(null);
+  // Set once the scores are saved: if a photo upload then fails, Finish
+  // tries the photos again without saving the scores twice.
+  const [scoresSaved, setScoresSaved] = useState(false);
+  const previews = useRef<string[]>([]);
+  useEffect(() => () => previews.current.forEach((u) => URL.revokeObjectURL(u)), []);
 
   if (!hotel) {
     return (
@@ -69,7 +82,7 @@ export function ReviewTrip() {
 
   function chooseSentiment(sentiment: Sentiment) {
     const existingInCategory = allReviews.filter((r) => r.category === category.key).map((r) => ({ hotelName: r.hotelName, score: r.score }));
-    const sameBand = sortedSameBand(sentiment, existingInCategory);
+    const sameBand = sortedSameBand(sentiment, existingInCategory, hotel!.hotelName);
     if (sameBand.length === 0) {
       updateCurrent({ sentiment, sameBand, lo: 0, hi: 0, history: [], score: computeFinalScore(sentiment, [], 0) });
       return;
@@ -107,7 +120,16 @@ export function ReviewTrip() {
   }
 
   function skipCategory() {
-    updateCurrent({ skipped: true, score: null });
+    updateCurrent({ skipped: true, score: null, photos: [] });
+  }
+
+  function stagePhotos(files: File[]) {
+    const staged = files.map((file) => {
+      const url = URL.createObjectURL(file);
+      previews.current.push(url);
+      return { id: url, file, url };
+    });
+    updateCurrent({ photos: [...current.photos, ...staged] });
   }
 
   async function handleNext() {
@@ -118,13 +140,25 @@ export function ReviewTrip() {
     setSaving(true);
     setError('');
     try {
+      if (!scoresSaved) {
+        for (let i = 0; i < categories.length; i++) {
+          const s = states[i];
+          if (s.score == null) continue;
+          await withOfflineFallback('addReview', `${hotel!.hotelName}: ${categories[i].label}`, addReview, {
+            hotelId: hotel!.hotelId, hotelName: hotel!.hotelName, country: hotel!.country,
+            date: hotel!.date, category: categories[i].key, score: s.score, note: s.note,
+          });
+        }
+        setScoresSaved(true);
+      }
+      // Photos need a connection (they can't wait in the offline queue);
+      // each one is dropped from the list as it goes up, so a retry sends
+      // only the rest.
       for (let i = 0; i < categories.length; i++) {
-        const s = states[i];
-        if (s.score == null) continue;
-        await withOfflineFallback('addReview', `${hotel!.hotelName}: ${categories[i].label}`, addReview, {
-          hotelId: hotel!.hotelId, hotelName: hotel!.hotelName, country: hotel!.country,
-          date: hotel!.date, category: categories[i].key, score: s.score,
-        });
+        for (const p of states[i].photos) {
+          await addReviewPhoto(hotel!.hotelName, hotel!.hotelId || null, categories[i].key, p.file);
+          setStates((prev) => prev.map((s, j) => (j === i ? { ...s, photos: s.photos.filter((q) => q.id !== p.id) } : s)));
+        }
       }
       finish.done('/');
     } catch (err) {
@@ -189,25 +223,16 @@ export function ReviewTrip() {
               Which do you prefer?
             </div>
             <div style={{ position: 'relative', display: 'flex', gap: 10 }}>
-              <button
+              <ChoiceCard
+                name={hotel.hotelName} chosen
+                photo={aspectPhoto(allPhotos, hotel.hotelName, category.key)?.url ?? null}
                 onClick={() => answerComparison(true)}
-                style={{
-                  flex: 1, minHeight: 150, padding: '18px 12px', borderRadius: 'var(--r-md)', border: '2px solid var(--brand)',
-                  background: 'rgba(217,183,124,.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <div style={{ fontSize: 'var(--fs-input)', fontWeight: 600, textAlign: 'center' }}>{hotel.hotelName}</div>
-              </button>
-              <button
+              />
+              <ChoiceCard
+                name={comparisonCandidate.hotelName} sub={comparisonCandidate.score.toFixed(1)}
+                photo={aspectPhoto(allPhotos, comparisonCandidate.hotelName, category.key)?.url ?? null}
                 onClick={() => answerComparison(false)}
-                style={{
-                  flex: 1, minHeight: 150, padding: '18px 12px', borderRadius: 'var(--r-md)', border: '1px solid var(--line)',
-                  background: 'var(--card)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
-                }}
-              >
-                <div style={{ fontSize: 'var(--fs-input)', fontWeight: 600, textAlign: 'center' }}>{comparisonCandidate.hotelName}</div>
-                <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)' }}>{comparisonCandidate.score.toFixed(1)}</div>
-              </button>
+              />
               <span
                 style={{
                   position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
@@ -248,6 +273,20 @@ export function ReviewTrip() {
           </div>
         )}
 
+        {phase === 'done' && !current.skipped && (
+          <div style={{ display: 'grid', gap: 'var(--s3)', marginTop: 'var(--s6)' }}>
+            <Field label="Note">
+              <textarea className="input" rows={2} value={current.note} onChange={(e) => updateCurrent({ note: e.target.value })} />
+            </Field>
+            <PhotoStrip
+              label={category.label}
+              photos={current.photos}
+              onAdd={saving ? undefined : stagePhotos}
+              onOpen={setViewing}
+            />
+          </div>
+        )}
+
         {error && <div style={{ color: 'var(--red)', fontSize: 'var(--fs-body)', margin: '16px 0 0', textAlign: 'center' }}>{error}</div>}
 
         {phase === 'done' && (
@@ -264,6 +303,30 @@ export function ReviewTrip() {
           </button>
         )}
       </div>
+
+      {viewing != null && (
+        <PhotoViewer
+          photos={current.photos}
+          start={viewing}
+          title={`${hotel.hotelName} · ${category.label}`}
+          onClose={() => setViewing(null)}
+          onDelete={(p) => updateCurrent({ photos: current.photos.filter((q) => q.id !== p.id) })}
+        />
+      )}
     </div>
+  );
+}
+
+// One side of "Which do you prefer?": the hotel's photo of this aspect
+// where there is one, so the choice is made looking at the two.
+function ChoiceCard({ name, sub, photo, chosen, onClick }: { name: string; sub?: string; photo: string | null; chosen?: boolean; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className={['choicecard', chosen && 'chosen', photo && 'withphoto'].filter(Boolean).join(' ')}>
+      {photo && <img src={photo} alt="" />}
+      <span className="cc-text">
+        <span className="cc-name">{name}</span>
+        {sub && <span className="cc-sub">{sub}</span>}
+      </span>
+    </button>
   );
 }

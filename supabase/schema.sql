@@ -557,3 +557,22 @@ grant update (payment_card_id) on open_banking_accounts to authenticated;
 -- funded from Monzo). A line then names the card it belongs to; null means
 -- the card its account is mapped to.
 alter table card_spend add column if not exists payment_card_id text references payment_cards(id) on delete cascade;
+
+-- Review notes and photos (28 Oct 2026). A note belongs to one review row
+-- (one aspect of one visit); a photo to a hotel, by name as reviews are,
+-- and an aspect. The files are in the trip-photos bucket under the user's
+-- own folder, which storage.sql's policies already cover.
+alter table reviews add column if not exists note text;
+
+create table if not exists review_photos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users not null default auth.uid(),
+  hotel_name text not null,
+  hotel_id uuid references hotels on delete set null,
+  category text not null,
+  url text not null,
+  path text not null,
+  created_at timestamptz not null default now()
+);
+alter table review_photos enable row level security;
+create policy "own rows only" on review_photos for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

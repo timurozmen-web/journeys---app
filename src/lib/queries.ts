@@ -6,9 +6,10 @@ import { addDays } from './tripDay';
 import { canonicalStay } from './stayNormalise';
 import { dedupeStays, foldEmptyTrips } from './tripFold';
 import { notifyDataChanged } from './dataEvents';
+import { shrinkImage } from './imageShrink';
 import type { CardDef } from '../data/cardDefs';
 import type { SpendRecord } from './bankSpend';
-import type { Trip, Hotel, Flight, LoyaltyProgramme, PaymentCard, Review, Voucher, Promotion, PromoType, DiscoverItem } from '../types';
+import type { Trip, Hotel, Flight, LoyaltyProgramme, PaymentCard, Review, ReviewPhoto, Voucher, Promotion, PromoType, DiscoverItem } from '../types';
 
 export async function fetchTrips(): Promise<Trip[]> {
   const { data: trips, error } = await supabase.from('trips').select('*');
@@ -311,18 +312,71 @@ export async function fetchReviews(): Promise<Review[]> {
   if (error) throw error;
   return (data ?? []).map((r) => ({
     id: r.id, hotelId: r.hotel_id, hotelName: r.hotel_name, country: r.country, date: r.date, category: r.category ?? 'overall', score: r.score,
+    note: r.note ?? null,
   }));
 }
 
 export interface NewReviewInput {
-  hotelId: string; hotelName: string; country: string; date: string; category: string; score: number;
+  hotelId: string; hotelName: string; country: string; date: string; category: string; score: number; note?: string | null;
 }
 export async function addReview(input: NewReviewInput) {
   const { error } = await supabase.from('reviews').insert({
     hotel_id: input.hotelId, hotel_name: input.hotelName, country: input.country,
     date: input.date, category: input.category, score: input.score,
+    // Sent only when written: a review without one saves the same way it
+    // always has.
+    ...(input.note?.trim() ? { note: input.note.trim() } : {}),
   });
   if (error) throw error;
+  notifyDataChanged();
+}
+
+export async function updateReviewNote(id: string, note: string) {
+  const { data, error } = await supabase.from('reviews').update({ note: note.trim() || null }).eq('id', id).select('id');
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error(`No review found with id "${id}" -- the update silently matched nothing.`);
+  notifyDataChanged();
+}
+
+export async function fetchReviewPhotos(): Promise<ReviewPhoto[]> {
+  const { data, error } = await supabase.from('review_photos').select('*').order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((p) => ({
+    id: p.id, hotelName: p.hotel_name, hotelId: p.hotel_id ?? null, category: p.category, url: p.url, path: p.path, createdAt: p.created_at,
+  }));
+}
+
+/* A photo of one aspect of a stay. It's made smaller on the phone first
+   (a phone photo is 3-5MB; 1,600px across is plenty on a screen), then
+   goes in the trip-photos bucket under the user's own folder, which is
+   what the bucket's upload policy allows. */
+export async function addReviewPhoto(hotelName: string, hotelId: string | null, category: string, file: File) {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) throw new Error('Not signed in');
+
+  const image = await shrinkImage(file);
+  const path = `${userData.user.id}/reviews/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${image.ext}`;
+  const { error: uploadError } = await supabase.storage.from('trip-photos').upload(path, image.blob, {
+    cacheControl: '3600', upsert: false, contentType: image.blob.type || undefined,
+  });
+  if (uploadError) throw uploadError;
+  const { data: urlData } = supabase.storage.from('trip-photos').getPublicUrl(path);
+
+  const { error } = await supabase.from('review_photos').insert({ hotel_name: hotelName, hotel_id: hotelId, category, url: urlData.publicUrl, path });
+  if (error) {
+    // The row is what shows it; without one the file would only take up space.
+    await supabase.storage.from('trip-photos').remove([path]);
+    throw error;
+  }
+  notifyDataChanged();
+}
+
+export async function deleteReviewPhoto(photo: ReviewPhoto) {
+  const { error } = await supabase.from('review_photos').delete().eq('id', photo.id);
+  if (error) throw error;
+  // The row goes first: a file left behind is harmless, a row pointing at
+  // a missing file shows a broken picture.
+  await supabase.storage.from('trip-photos').remove([photo.path]);
   notifyDataChanged();
 }
 

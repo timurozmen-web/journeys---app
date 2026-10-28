@@ -55,7 +55,7 @@ describe('tripsTaken', () => {
 });
 
 describe('averageOverall', () => {
-  const r = (score: number, category = 'overall'): Review => ({ id: String(score), hotelId: null, hotelName: 'H', country: 'X', date: '2026-01-01', category, score });
+  const r = (score: number, category = 'overall'): Review => ({ id: String(score), hotelId: null, hotelName: 'H', country: 'X', date: '2026-01-01', category, score, note: null });
   test('averages overall ratings only', () => {
     expect(averageOverall([r(8), r(10), r(2, 'food')])).toEqual({ avg: 9, count: 2 });
     expect(averageOverall([])).toEqual({ avg: null, count: 0 });
