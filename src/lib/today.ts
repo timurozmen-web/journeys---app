@@ -153,11 +153,6 @@ export function weekdayShort(date: string): string {
   return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
 }
 
-/** Whole days from today to a date, never negative. */
-export function daysTo(today: string, date: string): number {
-  return Math.max(0, daysBetweenISO(today, date));
-}
-
 /** "Marriott Fall 2026" for a promotion titled "Fall 2026: 1,500 bonus points…" under Marriott Bonvoy. */
 export function promoShortName(p: Pick<Promotion, 'title' | 'brand'>): string {
   const head = p.title.split(/[:–—]/)[0].trim();

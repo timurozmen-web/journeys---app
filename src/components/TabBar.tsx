@@ -77,7 +77,7 @@ export function TabBar() {
           style={{
             position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 'calc(74px + env(safe-area-inset-bottom, 0px) * 0.5)',
             zIndex: 94, display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 'var(--r-pill)', border: 'none',
-            background: 'var(--ink)', color: 'var(--on-dark)', fontSize: 'var(--fs-caption)', fontWeight: 700, boxShadow: '0 4px 14px rgba(0,0,0,.4)', cursor: 'pointer',
+            background: 'var(--ink)', color: 'var(--on-dark)', fontSize: 'var(--fs-caption)', fontWeight: 700, boxShadow: 'var(--shadow-float)', cursor: 'pointer',
           }}
         >
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--amber)' }} />
@@ -88,7 +88,7 @@ export function TabBar() {
       <div
         style={{
           position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 96, background: 'var(--card)',
-          borderTopLeftRadius: 24, borderTopRightRadius: 24, boxShadow: '0 -8px 30px rgba(0,0,0,.4)',
+          borderTopLeftRadius: 'var(--r-xl)', borderTopRightRadius: 'var(--r-xl)', boxShadow: 'var(--shadow-sheet)',
           padding: '18px 20px calc(20px + env(safe-area-inset-bottom, 0px))',
           transform: pendingOpen ? 'translateY(0)' : 'translateY(110%)', transition: 'transform .3s cubic-bezier(.2,1.1,.3,1)',
         }}

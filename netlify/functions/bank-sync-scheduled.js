@@ -1,5 +1,6 @@
 import { withLambda } from '@netlify/aws-lambda-compat';
-import { adminClient, supabaseStore, syncConnection } from '../lib/openBanking.js';
+import { adminClient } from '../lib/http.js';
+import { supabaseStore, syncConnection } from '../lib/openBanking.js';
 import { truelayerConfig } from '../lib/truelayer.js';
 
 export const config = { schedule: '0 6 * * *' }; // daily, 06:00 UTC

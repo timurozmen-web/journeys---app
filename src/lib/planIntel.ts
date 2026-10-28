@@ -240,7 +240,7 @@ export function stopPriceLevel(crowd: RealCrowdPriceMonth[], stop: PlannedStop):
 }
 
 /** The city's measured month factor (seasonIndex) for most of a stay's nights, where it has one. */
-export function stayMonthFactor(stop: PlannedStop, prices: PriceSearch[] | undefined): number | null {
+function stayMonthFactor(stop: PlannedStop, prices: PriceSearch[] | undefined): number | null {
   if (!stop.checkIn || !prices?.length) return null;
   const month = dominantMonth(stop.checkIn, addDays(stop.checkIn, stop.nights)) + 1;
   return seasonIndex(stop.city, stop.country, PRICE_EVENTS, prices)?.months.get(month) ?? null;
@@ -575,7 +575,7 @@ export function voucherAdvice(v: Voucher, programme: LoyaltyProgramme, stops: Pl
 // Which voucher to talk about first: one to use now (the most it saves
 // over its worth), then one to use before it goes, then one to keep.
 const VERDICT_RANK: Record<VoucherVerdict, number> = { 'top-up': 0, use: 0, 'use-soon': 1, keep: 2, 'too-dear': 3 };
-export function firstVoucher(advice: VoucherAdvice[]): VoucherAdvice | null {
+function firstVoucher(advice: VoucherAdvice[]): VoucherAdvice | null {
   return [...advice].sort((a, b) => VERDICT_RANK[a.verdict] - VERDICT_RANK[b.verdict]
     || ((b.best?.worthGBP ?? 0) - b.parGBP) - ((a.best?.worthGBP ?? 0) - a.parGBP)
     || (a.expiry ?? '9999').localeCompare(b.expiry ?? '9999'))[0] ?? null;

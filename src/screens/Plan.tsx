@@ -34,6 +34,7 @@ import { CitySearchInput } from '../components/CitySearchInput';
 import { BrandLogo } from '../components/BrandLogo';
 import type { WorldCity } from '../data/worldCitiesLoader';
 import { Badge, Button, ErrorText, ScreenHeader, SectionLabel } from '../components/ui';
+import { postFunction } from '../lib/serverFunction';
 
 const PlanMap = lazyWithRetry(() => import('../components/PlanMap').then((m) => ({ default: m.PlanMap })));
 
@@ -271,11 +272,7 @@ export function Plan() {
   function fetchSmartQuery(key: string, type: 'flight' | 'hotel', params: Record<string, unknown>) {
     if (smartQueries[key] !== undefined) return; // already fetched or in flight
     setSmartQueries((prev) => ({ ...prev, [key]: '' }));
-    fetch('/.netlify/functions/smart-search-query', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, params }),
-    })
+    postFunction('smart-search-query', { type, params })
       .then((res) => res.json())
       .then((data) => {
         if (data.query) setSmartQueries((prev) => ({ ...prev, [key]: data.query }));
@@ -393,11 +390,7 @@ export function Plan() {
         // The agent is given the season and crowds in the month of travel
         // and the cities already stayed in (planIntel's agentContext).
         const context = agentContext(dest.country, destStart, totalNights, climateData, crowdPriceData, allHotels, homeLocation.city, holidaysFor(dest.country), schoolFor(dest.country));
-        const res = await fetch('/.netlify/functions/suggest-cities', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ country: dest.country, nights: totalNights, context }),
-        });
+        const res = await postFunction('suggest-cities', { country: dest.country, nights: totalNights, context });
         const data = await res.json();
         if (!res.ok) throw new Error(`${dest.country}: ${data.error || 'Could not get suggestions'}`);
         for (const c of data.cities ?? []) {

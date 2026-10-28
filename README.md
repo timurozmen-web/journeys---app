@@ -54,17 +54,23 @@ ready for an iOS build.
   the season, the holidays and the places you've already been.
 - **Credit advisor**: the full calculation behind a flight's "Credit
   to", for any flight.
+- **Reviews**: rate a stay on one page, each aspect (overall, service,
+  value, facilities, food, shower, bed, room) out of 10 with a note;
+  "which was better?" only against stays given the same score. Add a few
+  photos and Claude files each under the aspects it shows (a bedroom
+  under room and bed). Each hotel has a review page with its scores over
+  every visit, notes and photos; rated stays rank on the map.
 
 ## Project layout
 
 | Path | What's there |
 | --- | --- |
 | `src/screens/` | One file per screen; routes are in `src/App.tsx` |
-| `src/components/` | Shared UI: trip cards, maps, logos, tab bar, auth gate |
+| `src/components/` | Shared UI (`ui.tsx`), maps, logos, the card carousel and status rings, review photos, tab bar, auth gate |
 | `src/lib/` | App logic: points and status maths, planning, formatting, offline cache/queue, Supabase queries (`queries.ts`) and data hooks (`useLiveData.ts`) |
 | `src/data/` | Static data: airports, world cities, rail links, hotel brands, card definitions, and the mock data used as a fallback |
 | `src/types/index.ts` | Core types, mapping onto the Supabase tables |
-| `netlify/functions/` | Server-side functions: Claude-powered extraction and suggestions, bank linking, public holidays, and two daily scheduled jobs (bank sync 06:00 UTC, promotion scan 07:00 UTC) |
+| `netlify/functions/` | Server-side functions: Claude-powered extraction, suggestions and review photo sorting, bank linking, public holidays, and two daily scheduled jobs (bank sync 06:00 UTC, promotion scan 07:00 UTC) |
 | `supabase/` | SQL for the schema, storage bucket and sample data |
 
 ## How data loads
@@ -100,9 +106,10 @@ when that fallback is in use. Sign-in is enforced by `AuthGate`.
 **Server-side only (Netlify environment variables, never in `.env`
 with a `VITE_` prefix):**
 
-- `ANTHROPIC_API_KEY`: email/promotion scanning and the smart
-  suggestion functions.
-- `SUPABASE_SERVICE_ROLE_KEY`: scheduled jobs and bank linking.
+- `ANTHROPIC_API_KEY`: email/promotion scanning, the smart
+  suggestion functions and sorting review photos.
+- `SUPABASE_SERVICE_ROLE_KEY`: scheduled jobs, bank linking, and checking
+  who is signed in before a photo sort.
 - `TRUELAYER_CLIENT_ID`, `TRUELAYER_CLIENT_SECRET`: bank linking.
   `TRUELAYER_ENV=sandbox` switches to TrueLayer's mock bank (default is
   live). In the TrueLayer console, register

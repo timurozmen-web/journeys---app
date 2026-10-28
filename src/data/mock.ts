@@ -1,7 +1,7 @@
 // Stand-in for what Supabase will return once Phase 2 is wired up.
 // Same shape as the real query results — swapping this for a real
 // `supabase.from('trips').select()` call later is mechanical, not a rewrite.
-import type { Trip, LoyaltyProgramme, PaymentCard, Review, DiscoverItem } from '../types';
+import type { Trip, LoyaltyProgramme, PaymentCard, Review } from '../types';
 
 export const trips: Trip[] = [
   {
@@ -59,30 +59,4 @@ export const reviews: Review[] = [
   { id: 'rev5', hotelId: 'r5', hotelName: 'Marriott Marble Arch', country: 'United Kingdom', date: '2026-07', category: 'overall', score: 9.4, note: null },
   { id: 'rev6', hotelId: 'r6', hotelName: 'Hilton Dalaman', country: 'Türkiye', date: '2026-07', category: 'overall', score: 8.6, note: null },
   { id: 'rev7', hotelId: 'r7', hotelName: 'Courtyard London City', country: 'United Kingdom', date: '2026-07', category: 'overall', score: 5.8, note: null },
-];
-
-// Real, researched items (not fabricated) -- used as both the offline
-// fallback and the basis for the initial live seed. See the Discover
-// screen for how these render.
-export const discoverItems: DiscoverItem[] = [
-  {
-    id: 'dis1', category: 'loyalty_news', title: 'Marriott Bonvoy Opens Registration for Autumn 2026 Bonus Points Promotion',
-    summary: 'Marriott Bonvoy has launched registration for its autumn global promotion, offering members up to 4,500 bonus points per qualifying stay between 22 September and 22 November 2026. Registration opened on 9 September 2026 and must be completed before stays begin.',
-    detail: 'Members who register and complete paid stays of two or more consecutive nights between 22 September and 22 November 2026 earn 1,500 bonus points per stay; designated resort properties earn an additional 3,000 bonus points, for a maximum of 4,500. Homes & Villas by Marriott Bonvoy properties count, though bonus posting can take up to six weeks. Award stays using points or certificates are ineligible. Registration closes 13 November 2026 via Marriott\u2019s Promotion Central page.',
-    source: 'Head for Points / LoyaltyLobby', sourceUrl: 'https://www.headforpoints.com/2026/09/10/register-marriott-1500-bonus-points-promotion/',
-    deadline: '2026-11-13', relatedProgramme: 'Marriott Bonvoy', annualFee: null, headlineStat: '4,500 bonus points per resort stay',
-    createdAt: '2026-09-10', status: 'new', requiresRegistration: true, registered: false, registeredAt: null,
-    newBookingsOnly: false, promoStart: '2026-09-22', promoEnd: '2026-11-22', minNights: 2, bonusPoints: 4500,
-    bonusDescription: '1,500 points per stay of 2+ nights, +3,000 more at resort properties',
-  },
-  {
-    id: 'dis2', category: 'loyalty_news', title: 'Qatar Airways Privilege Club Launches September Bonus Avios + Fare Sale for UK Members',
-    summary: 'Qatar Airways has launched a short-window promotion giving Privilege Club members up to 10,000 bonus Avios and up to 20% off base fares on European departures, bookable 8-18 September 2026 using promo code SEPTPC26.',
-    detail: 'Booking via promo code SEPTPC26 on qatarairways.com or the app gives up to 20% off the base fare plus up to 10,000 bonus Avios, credited on the Europe-to-Doha sector only and cabin-dependent. Booking window 8-18 September 2026, travel valid through 31 May 2027. Since Avios transfer freely between Privilege Club and The British Airways Club, this is accessible to UK-based Avios collectors holding either programme.',
-    source: 'Head for Points', sourceUrl: 'https://www.headforpoints.com/2026/09/09/10000-avios-with-qatar-airways/',
-    deadline: '2026-09-18', relatedProgramme: 'Qatar Privilege Club', annualFee: null, headlineStat: 'Up to 10,000 bonus Avios + 20% off fares',
-    createdAt: '2026-09-10', status: 'new', requiresRegistration: false, registered: false, registeredAt: null,
-    newBookingsOnly: true, promoStart: '2026-09-08', promoEnd: '2027-05-31', minNights: null, bonusPoints: 10000,
-    bonusDescription: 'Up to 10,000 bonus Avios on Europe-Doha bookings made 8-18 Sep 2026',
-  },
 ];

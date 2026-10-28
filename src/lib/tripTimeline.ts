@@ -6,7 +6,7 @@ import { addDays, addMonths, daysBetweenISO } from './tripDay';
 // to come below it, and anything older folded into a single "earlier"
 // row until it's asked for.
 
-export const HISTORY_MONTHS = 3;
+const HISTORY_MONTHS = 3;
 
 export interface TripTimeline {
   /** Older than the history window, oldest first. Folded by default. */
@@ -33,7 +33,7 @@ export function buildTripTimeline(trips: Trip[], today: string, historyMonths = 
 }
 
 /** "2026-08" for a YYYY-MM-DD date. */
-export function monthKey(date: string): string {
+function monthKey(date: string): string {
   return date.slice(0, 7);
 }
 

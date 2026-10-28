@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { addDaysISO, callbackUri, completeLink, HttpError, requireUser, syncConnection } from './openBanking.js';
+import { addDaysISO, callbackUri, completeLink, syncConnection } from './openBanking.js';
+import { HttpError, requireUser } from './http.js';
 import { truelayerConfig } from './truelayer.js';
 
 const cfg = truelayerConfig({ TRUELAYER_CLIENT_ID: 'id', TRUELAYER_CLIENT_SECRET: 's' });

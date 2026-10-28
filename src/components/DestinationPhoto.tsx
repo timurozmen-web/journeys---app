@@ -31,7 +31,7 @@ export function DestinationPhoto({ query, seed, height }: { query: string; seed:
         href={photo.photographerUrl} onClick={(e) => e.stopPropagation()}
         style={{
           position: 'absolute', right: 6, bottom: 3, fontSize: 'calc(var(--fs-micro) * .8)', color: 'var(--on-dark2)',
-          opacity: 0.75, textShadow: '0 1px 3px rgba(0,0,0,.6)', textDecoration: 'none', lineHeight: 1,
+          opacity: 0.75, textShadow: 'var(--text-on-photo-shadow)', textDecoration: 'none', lineHeight: 1,
         }}
       >
         {photo.photographerName} / Unsplash

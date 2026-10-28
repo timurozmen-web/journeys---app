@@ -9,7 +9,7 @@ import { notifyDataChanged } from './dataEvents';
 import { shrinkImage } from './imageShrink';
 import type { CardDef } from '../data/cardDefs';
 import type { SpendRecord } from './bankSpend';
-import type { Trip, Hotel, Flight, LoyaltyProgramme, PaymentCard, Review, ReviewPhoto, Voucher, Promotion, PromoType, DiscoverItem } from '../types';
+import type { Trip, Hotel, Flight, LoyaltyProgramme, PaymentCard, Review, ReviewPhoto, Voucher, Promotion, PromoType } from '../types';
 
 export async function fetchTrips(): Promise<Trip[]> {
   const { data: trips, error } = await supabase.from('trips').select('*');
@@ -513,16 +513,8 @@ export async function fetchVouchers(): Promise<Voucher[]> {
   return (data ?? []).map(mapVoucher);
 }
 
-export interface NewVoucherInput {
+interface NewVoucherInput {
   name: string; source: string; value: number | null; earnedDate: string; expiryDate: string | null; sourceKey: string | null;
-}
-export async function addVoucher(input: NewVoucherInput) {
-  const { error } = await supabase.from('vouchers').insert({
-    name: input.name, source: input.source, value: input.value,
-    earned_date: input.earnedDate, expiry_date: input.expiryDate, source_key: input.sourceKey,
-  });
-  if (error) throw error;
-  notifyDataChanged();
 }
 
 // Auto-sync uses upsert on the (user_id, source_key) unique constraint so
@@ -547,12 +539,6 @@ export async function setVoucherRedeemed(id: string, redeemed: boolean) {
   const { error } = await supabase.from('vouchers').update({
     redeemed, redeemed_date: redeemed ? new Date().toISOString().slice(0, 10) : null,
   }).eq('id', id);
-  if (error) throw error;
-  notifyDataChanged();
-}
-
-export async function deleteVoucher(id: string) {
-  const { error } = await supabase.from('vouchers').delete().eq('id', id);
   if (error) throw error;
   notifyDataChanged();
 }
@@ -625,44 +611,6 @@ export async function deletePromotion(id: string) {
   const { error } = await supabase.from('promotions').delete().eq('id', id);
   if (error) throw error;
   notifyDataChanged();
-}
-
-export interface PromotionCandidate {
-  id: string; source: string; brand: string | null; title: string; description: string | null;
-  startDate: string | null; endDate: string | null; promoType: PromoType;
-  multiplier: number | null; thresholdSpend: number | null; bonusPoints: number | null;
-  discountValue: number | null; statusNightsBonus: number | null; partnerAirline: string | null;
-}
-export async function fetchPromotionCandidates(): Promise<PromotionCandidate[]> {
-  const { data, error } = await supabase
-    .from('promotion_scan_candidates')
-    .select('*')
-    .eq('dismissed', false)
-    .eq('promoted', false)
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data ?? []).map((p) => ({
-    id: p.id, source: p.source, brand: p.brand, title: p.title, description: p.description,
-    startDate: p.start_date, endDate: p.end_date, promoType: p.promo_type,
-    multiplier: p.multiplier, thresholdSpend: p.threshold_spend, bonusPoints: p.bonus_points,
-    discountValue: p.discount_value, statusNightsBonus: p.status_nights_bonus, partnerAirline: p.partner_airline,
-  }));
-}
-
-export async function acceptPromotionCandidate(candidate: PromotionCandidate) {
-  await addPromotion({
-    title: candidate.title, description: candidate.description, brand: candidate.brand,
-    startDate: candidate.startDate, endDate: candidate.endDate, promoType: candidate.promoType,
-    multiplier: candidate.multiplier, thresholdSpend: candidate.thresholdSpend, bonusPoints: candidate.bonusPoints,
-    discountValue: candidate.discountValue, statusNightsBonus: candidate.statusNightsBonus, partnerAirline: candidate.partnerAirline,
-  });
-  const { error } = await supabase.from('promotion_scan_candidates').update({ promoted: true }).eq('id', candidate.id);
-  if (error) throw error;
-}
-
-export async function dismissPromotionCandidate(id: string) {
-  const { error } = await supabase.from('promotion_scan_candidates').update({ dismissed: true }).eq('id', id);
-  if (error) throw error;
 }
 
 // Discover feed -- curated travel/loyalty news (new card launches, existing
@@ -796,41 +744,6 @@ export async function fetchClimateData(): Promise<RealClimateMonth[]> {
     rainyDays: d.rainy_days, sunshineHours: d.sunshine_hours, seaTempC: d.sea_temp_c,
     source: d.source, confidence: d.confidence,
   }));
-}
-
-export async function fetchDiscoverItems(): Promise<DiscoverItem[]> {
-  const { data, error } = await supabase
-    .from('discover_items')
-    .select('*')
-    .neq('status', 'dismissed')
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data ?? []).map((d) => ({
-    id: d.id, category: d.category, title: d.title, summary: d.summary, detail: d.detail,
-    source: d.source, sourceUrl: d.source_url, deadline: d.deadline, relatedProgramme: d.related_programme,
-    annualFee: d.annual_fee, headlineStat: d.headline_stat, createdAt: d.created_at,
-    status: d.status ?? 'new', requiresRegistration: d.requires_registration ?? false,
-    registered: d.registered ?? false, registeredAt: d.registered_at,
-    newBookingsOnly: d.new_bookings_only ?? false, promoStart: d.promo_start, promoEnd: d.promo_end,
-    minNights: d.min_nights, bonusPoints: d.bonus_points, bonusDescription: d.bonus_description,
-  }));
-}
-
-export async function dismissDiscoverItem(id: string) {
-  const { error } = await supabase.from('discover_items').update({ status: 'dismissed', dismissed: true }).eq('id', id);
-  if (error) throw error;
-}
-
-export async function keepDiscoverItem(id: string) {
-  const { error } = await supabase.from('discover_items').update({ status: 'kept' }).eq('id', id);
-  if (error) throw error;
-}
-
-export async function registerDiscoverItem(id: string, registered: boolean) {
-  const { error } = await supabase.from('discover_items').update({
-    registered, registered_at: registered ? new Date().toISOString() : null,
-  }).eq('id', id);
-  if (error) throw error;
 }
 
 export interface BankConnection {

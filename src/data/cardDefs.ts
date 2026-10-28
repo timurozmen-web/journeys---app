@@ -103,7 +103,7 @@ const BA_NAME = /british airways|\bba\b|avios/;
 
 const IHG_PROMO_END = '2026-10-31';
 const IHG_PREMIUM_COUNTRIES = new Set(['Canada', 'Japan', 'Singapore', 'Thailand', 'United Arab Emirates', 'United States']);
-export const EUROPE_COUNTRIES = new Set([
+const EUROPE_COUNTRIES = new Set([
   'United Kingdom', 'Ireland', 'France', 'Germany', 'Spain', 'Italy', 'Portugal', 'Netherlands', 'Belgium',
   'Switzerland', 'Austria', 'Greece', 'Sweden', 'Norway', 'Denmark', 'Finland', 'Poland', 'Czech Republic',
   'Hungary', 'Croatia', 'Albania', 'Lithuania', 'Latvia', 'Estonia', 'Romania', 'Bulgaria', 'Slovakia',

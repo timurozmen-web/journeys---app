@@ -4,7 +4,6 @@
 
 // The arc's curve, in a 342 x 54 viewBox (ends low, peak in the middle).
 export const ARC = { x0: 8, y0: 46, c1x: 110, c1y: -8, c2x: 232, c2y: -8, x1: 334, y1: 46 } as const;
-export const ARC_PATH = `M${ARC.x0} ${ARC.y0} C ${ARC.c1x} ${ARC.c1y}, ${ARC.c2x} ${ARC.c2y}, ${ARC.x1} ${ARC.y1}`;
 
 // Point on the arc at t (0 = origin, 1 = destination), clamped.
 export function arcPoint(t: number): { x: number; y: number } {

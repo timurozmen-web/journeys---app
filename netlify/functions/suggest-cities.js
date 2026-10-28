@@ -1,4 +1,5 @@
 import { withLambda } from '@netlify/aws-lambda-compat';
+import { adminClient, json, requireUser } from '../lib/http.js';
 import { suggestCities } from '../lib/planPrompt.js';
 
 // Plan a trip's city suggestions. The prompt, the facts it's given and
@@ -6,6 +7,12 @@ import { suggestCities } from '../lib/planPrompt.js';
 export default withLambda(async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+  }
+  // Signed-in callers only: each call is paid for.
+  try {
+    await requireUser(adminClient(), event);
+  } catch (err) {
+    return json(err.status ?? 500, { error: err.message });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;

@@ -1,5 +1,5 @@
 import { haversineKm } from './travelStats';
-import { PLANNING_AIRPORTS_BY_IATA, type PlanningAirport } from '../data/planningAirports';
+import type { PlanningAirport } from '../data/planningAirports';
 import { findRailConnection } from '../data/railConnections';
 
 export type TransportMode = 'flight' | 'rail' | 'road';
@@ -38,7 +38,7 @@ const CONVENTIONAL_RAIL_KMH = 110;
 const RAIL_OVERHEAD_H = 0.5;
 const ROAD_AVG_KMH = 80;
 
-export function recommendMode(distanceKm: number, railLikely: boolean): { mode: TransportMode; rationale: string } {
+function recommendMode(distanceKm: number, railLikely: boolean): { mode: TransportMode; rationale: string } {
   if (distanceKm < 150) {
     return { mode: 'road', rationale: 'Short hop — driving or a local train is usually quicker door-to-door than flying.' };
   }
@@ -57,7 +57,7 @@ export function estimateTravelHours(distanceKm: number, mode: TransportMode, hig
   return distanceKm / ROAD_AVG_KMH;
 }
 
-export function estimateOverheadHours(mode: TransportMode): number {
+function estimateOverheadHours(mode: TransportMode): number {
   if (mode === 'flight') return FLIGHT_OVERHEAD_H;
   if (mode === 'rail') return RAIL_OVERHEAD_H;
   return 0;
@@ -72,7 +72,7 @@ const COST_PER_KM_GBP: Record<TransportMode, number> = {
 };
 const FLIGHT_MIN_COST_GBP = 60;
 
-export function estimateCostGBP(distanceKm: number, mode: TransportMode): number {
+function estimateCostGBP(distanceKm: number, mode: TransportMode): number {
   const raw = distanceKm * COST_PER_KM_GBP[mode];
   return mode === 'flight' ? Math.max(FLIGHT_MIN_COST_GBP, raw) : raw;
 }
@@ -81,20 +81,6 @@ export interface TransferInfo {
   airport: PlanningAirport;
   distanceToCityKm: number; // exact
   estimatedTransferMinutes: number; // estimated
-}
-
-// Airport-to-city transfer, computed from real coordinates for the distance,
-// with time estimated at a conservative average speed that accounts for
-// urban approach rather than open road.
-export function transferForAirport(iata: string): TransferInfo | null {
-  const airport = PLANNING_AIRPORTS_BY_IATA[iata];
-  if (!airport) return null;
-  const distanceToCityKm = haversineKm(airport.lat, airport.lng, airport.cityLat, airport.cityLng);
-  return {
-    airport,
-    distanceToCityKm,
-    estimatedTransferMinutes: Math.round((distanceToCityKm / 45) * 60 + 10),
-  };
 }
 
 export function planLeg(

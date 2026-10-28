@@ -1,4 +1,5 @@
 import { withLambda } from '@netlify/aws-lambda-compat';
+import { adminClient, json, requireUser } from '../lib/http.js';
 
 const SYSTEM_PROMPT = `You extract and classify a travel loyalty promotion from a screenshot (e.g. an email, app screen, or website page advertising a hotel/airline promotion).
 
@@ -27,6 +28,12 @@ const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'i
 export default withLambda(async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+  }
+  // Signed-in callers only: each call is paid for.
+  try {
+    await requireUser(adminClient(), event);
+  } catch (err) {
+    return json(err.status ?? 500, { error: err.message });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;

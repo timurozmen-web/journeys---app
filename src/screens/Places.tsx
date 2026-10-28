@@ -2,30 +2,20 @@ import { useState, useMemo, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useReviews, useReviewPhotos, useAllHotels, useAllFlights, useTrips } from '../lib/useLiveData';
 import { aspectPhoto, scoreColour } from '../lib/reviewSummary';
+import { REVIEW_CATEGORIES } from '../lib/reviewScoring';
 import { ScreenHeader } from '../components/ui';
 import { completedStays, shareOfWorld, visitedCountries } from '../lib/logbook';
 import { useGlobalAirports } from '../lib/useGlobalAirports';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
 const WorldMap = lazyWithRetry(() => import('../components/WorldMap').then((m) => ({ default: m.WorldMap })));
 
-const CATEGORIES = [
-  { key: 'overall', label: 'Overall' },
-  { key: 'service', label: 'Service' },
-  { key: 'value', label: 'Value' },
-  { key: 'facilities', label: 'Facilities' },
-  { key: 'food', label: 'Food' },
-  { key: 'shower', label: 'Shower' },
-  { key: 'bed', label: 'Bed' },
-  { key: 'room', label: 'Room' },
-];
-
 type SortMode = 'score' | 'recent' | 'az';
 const SHOW_INITIALLY = 10;
 
 function rankBadge(rank: number) {
-  if (rank === 1) return { bg: '#F4C430', fg: '#5C4300' };
-  if (rank === 2) return { bg: '#D6DCE5', fg: '#3A4150' };
-  if (rank === 3) return { bg: '#E3A76F', fg: '#5C3A17' };
+  if (rank === 1) return { bg: 'var(--medal-gold)', fg: 'var(--medal-gold-ink)' };
+  if (rank === 2) return { bg: 'var(--medal-silver)', fg: 'var(--medal-silver-ink)' };
+  if (rank === 3) return { bg: 'var(--medal-bronze)', fg: 'var(--medal-bronze-ink)' };
   return null;
 }
 
@@ -116,7 +106,7 @@ export function Places() {
 
       <div className="nf-eyebrow lb-label">Rated stays</div>
       <div className="catchip">
-        {CATEGORIES.map((c) => (
+        {REVIEW_CATEGORIES.map((c) => (
           <button key={c.key} className={cat === c.key ? 'won' : ''} onClick={() => { setCat(c.key); setShowAll(false); }}>
             {c.label}
           </button>

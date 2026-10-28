@@ -18,7 +18,3 @@ export const BRAND_LOGOS: Record<string, LogoEntry> = {
   'IHG One Rewards': { url: '/brand-logos/ihg.png', aspect: 'wide' },
   'World of Hyatt': { url: '/brand-logos/hyatt.png', aspect: 'wide' },
 };
-
-export function hasWordmarkLogo(name: string): boolean {
-  return BRAND_LOGOS[name]?.aspect === 'wide';
-}

@@ -34,7 +34,7 @@ export interface RatesResult {
   fetchedAt: number | null;
 }
 
-export async function fetchExchangeRates(): Promise<RatesResult> {
+async function fetchExchangeRates(): Promise<RatesResult> {
   const now = Date.now();
   if (cachedRates && now - cachedAt < CACHE_MS) {
     return { rates: cachedRates, isLive: true, fetchedAt: cachedAt };

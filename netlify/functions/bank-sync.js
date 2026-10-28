@@ -1,7 +1,6 @@
 import { withLambda } from '@netlify/aws-lambda-compat';
-import {
-  adminClient, handle, HttpError, json, readJson, requireUser, supabaseStore, syncConnection,
-} from '../lib/openBanking.js';
+import { adminClient, handle, HttpError, json, readJson, requireUser } from '../lib/http.js';
+import { supabaseStore, syncConnection } from '../lib/openBanking.js';
 import { truelayerConfig } from '../lib/truelayer.js';
 
 // Pulls purchases for one of the signed-in user's connections now (the

@@ -118,13 +118,13 @@ export function TripMemories({ tripId }: { tripId: string }) {
               <div key={p.id} style={{ position: 'relative', aspectRatio: '1', borderRadius: 'var(--r-xs)', overflow: 'hidden', background: 'var(--card2)' }}>
                 <img src={p.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 {p.lat != null && (
-                  <div style={{ position: 'absolute', bottom: 3, left: 3, background: 'rgba(0,0,0,.55)', borderRadius: 'var(--r-xs)', padding: '3px 5px', display: 'flex', alignItems: 'center' }}>
-                    <PinIcon size={10} color="#fff" />
+                  <div style={{ position: 'absolute', bottom: 3, left: 3, background: 'var(--photo-chip)', borderRadius: 'var(--r-xs)', padding: '3px 5px', display: 'flex', alignItems: 'center' }}>
+                    <PinIcon size={10} color="var(--on-dark)" />
                   </div>
                 )}
                 <button
                   onClick={() => handleDelete(p.id)}
-                  style={{ position: 'absolute', top: 3, right: 3, width: 18, height: 18, borderRadius: '50%', background: 'rgba(0,0,0,.55)', border: 'none', color: 'var(--on-dark)', fontSize: 'var(--fs-caption)', cursor: 'pointer', display: 'grid', placeItems: 'center', padding: 0 }}
+                  style={{ position: 'absolute', top: 3, right: 3, width: 18, height: 18, borderRadius: '50%', background: 'var(--photo-chip)', border: 'none', color: 'var(--on-dark)', fontSize: 'var(--fs-caption)', cursor: 'pointer', display: 'grid', placeItems: 'center', padding: 0 }}
                 >
                   ✕
                 </button>

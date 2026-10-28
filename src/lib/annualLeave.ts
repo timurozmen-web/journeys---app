@@ -2,7 +2,7 @@
 // (page last updated 24 November 2025). Covers 2026-2028 -- re-fetch and
 // extend when this runs out, since bank holidays are only confirmed a
 // couple of years ahead.
-export const UK_BANK_HOLIDAYS = new Set([
+const UK_BANK_HOLIDAYS = new Set([
   // 2026
   '2026-01-01', '2026-04-03', '2026-04-06', '2026-05-04', '2026-05-25', '2026-08-31', '2026-12-25', '2026-12-28',
   // 2027

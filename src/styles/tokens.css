@@ -31,6 +31,10 @@
   --pending: #C8C0B2;   /* booked but not yet stayed, in progress rings */
   --promo: #2F8C78;     /* promotion nights, in progress rings */
   --member: #B07A12;    /* nights from a paid membership (ALL Accor+ Explorer), in progress rings */
+  /* The podium on the map's rated stays: first, second and third. */
+  --medal-gold: #F4C430; --medal-gold-ink: #5C4300;
+  --medal-silver: #D6DCE5; --medal-silver-ink: #3A4150;
+  --medal-bronze: #E3A76F; --medal-bronze-ink: #5C3A17;
 
   --font-body: 'Archivo Variable', 'Archivo', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, system-ui, sans-serif;
   --font-display: 'Space Mono', ui-monospace, 'SFMono-Regular', Menlo, 'Courier New', monospace;
@@ -93,10 +97,13 @@
      because white text can't sit on a pale fade. */
   --scrim-dissolve: linear-gradient(180deg, rgba(0,0,0,.42) 0%, rgba(0,0,0,0) 24%, rgba(0,0,0,.06) 50%, rgba(0,0,0,.55) 82%, rgba(0,0,0,.72) 100%);
   --text-on-photo-shadow: 0 1px 10px rgba(0,0,0,.45);
+  --photo-chip: rgba(0,0,0,.55); /* a small badge or button laid on a photo */
 
   --shadow-card: 0 1px 2px rgba(40,30,20,.06);
   --shadow-raised: 0 12px 28px -10px rgba(40,30,20,.28);
   --shadow-hero: 0 18px 36px -16px rgba(40,30,20,.4);
+  --shadow-float: 0 4px 14px rgba(0,0,0,.4);   /* a pill floating over the tab bar */
+  --shadow-sheet: 0 -8px 30px rgba(0,0,0,.4);  /* a sheet risen from the bottom */
 
   /* Maps: a pencil sketch on paper with orange routes. */
   --map-bg: #FBF9F4;

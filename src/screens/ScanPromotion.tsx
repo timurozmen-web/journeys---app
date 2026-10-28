@@ -5,6 +5,7 @@ import { addPromotion, type NewPromotionInput } from '../lib/queries';
 import { useLoyaltyProgrammes } from '../lib/useLiveData';
 import { normalizeBrand } from '../data/brandMap';
 import { Button, ErrorText, Field, ScreenHeader } from '../components/ui';
+import { postFunction } from '../lib/serverFunction';
 
 
 const TYPE_LABELS: Record<string, string> = {
@@ -46,11 +47,7 @@ export function ScanPromotion() {
     setError('');
     try {
       const encodedImages = await Promise.all(images.map(async (img) => ({ mediaType: img.file.type, data: await fileToBase64(img.file) })));
-      const res = await fetch('/.netlify/functions/extract-promotion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ promoText: text || undefined, images: encodedImages.length ? encodedImages : undefined }),
-      });
+      const res = await postFunction('extract-promotion', { promoText: text || undefined, images: encodedImages.length ? encodedImages : undefined });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Extraction failed');
       if (data.title === 'Unrecognized') {
@@ -196,11 +193,6 @@ export function ScanPromotion() {
             </label>
           </div>
 
-          {result.promoType === 'multiplier' && (
-            <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', background: 'rgba(217,183,124,.1)', padding: '10px 12px', borderRadius: 'var(--r-control)' }}>
-              This one actually affects your points: any matching, active stay at this brand will show the multiplier applied in Trip Detail.
-            </div>
-          )}
           {result.promoType !== 'multiplier' && result.promoType !== 'other' && (
             <div className="formnote">Not counted in points or status yet</div>
           )}

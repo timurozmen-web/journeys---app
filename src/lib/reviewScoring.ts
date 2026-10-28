@@ -1,7 +1,5 @@
 import { addDays } from './tripDay';
 
-export type ReviewIntensity = 'mild' | 'strong' | 'extreme';
-
 export const REVIEW_CATEGORIES = [
   { key: 'overall', label: 'Overall' },
   { key: 'service', label: 'Service' },
@@ -12,27 +10,6 @@ export const REVIEW_CATEGORIES = [
   { key: 'bed', label: 'Bed' },
   { key: 'room', label: 'Room' },
 ];
-
-// Liked -> top band (6-10), not liked -> bottom band (1-5). Intensity
-// picks the position within that band -- this is the real, deterministic
-// "system" a like/dislike choice maps through, rather than an arbitrary
-// fixed score.
-export function computeBucketScore(liked: boolean, intensity: ReviewIntensity): number {
-  if (liked) {
-    if (intensity === 'mild') return 6;
-    if (intensity === 'strong') return 8;
-    return 10;
-  }
-  if (intensity === 'mild') return 5;
-  if (intensity === 'strong') return 3;
-  return 1;
-}
-
-export const INTENSITY_LABELS: Record<ReviewIntensity, { liked: string; disliked: string }> = {
-  mild: { liked: 'It was good', disliked: "Wasn't great" },
-  strong: { liked: 'Really good', disliked: 'Disappointing' },
-  extreme: { liked: 'One of the best', disliked: 'Avoid' },
-};
 
 export interface HotelNeedingReview {
   tripId: string;
@@ -129,39 +106,4 @@ export interface HotelMissingCategories {
   date: string;
   hotelId: string;
   missing: string[]; // REVIEW_CATEGORIES keys not yet rated for this property
-}
-
-export function findHotelsMissingCategories(
-  trips: { hotels: { id: string; name: string; country: string; date: string; status: string }[] }[],
-  reviews: { hotelName: string; category: string }[]
-): HotelMissingCategories[] {
-  const ratedCategoriesByName = new Map<string, Set<string>>();
-  for (const r of reviews) {
-    const key = r.hotelName.trim().toLowerCase();
-    const set = ratedCategoriesByName.get(key) ?? new Set<string>();
-    set.add(r.category);
-    ratedCategoriesByName.set(key, set);
-  }
-
-  const allKeys = REVIEW_CATEGORIES.map((c) => c.key);
-  const latestStayByName = new Map<string, { id: string; name: string; country: string; date: string }>();
-  for (const trip of trips) {
-    for (const h of trip.hotels) {
-      if (h.status !== 'Completed') continue;
-      const key = h.name.trim().toLowerCase();
-      const existing = latestStayByName.get(key);
-      if (!existing || h.date > existing.date) latestStayByName.set(key, h);
-    }
-  }
-
-  const result: HotelMissingCategories[] = [];
-  for (const [key, rated] of ratedCategoriesByName) {
-    if (!rated.has('overall')) continue; // never properly reviewed at all -- that's Outstanding's job, not this
-    const missing = allKeys.filter((k) => k !== 'overall' && !rated.has(k));
-    if (missing.length === 0) continue;
-    const stay = latestStayByName.get(key);
-    if (!stay) continue;
-    result.push({ hotelName: stay.name, country: stay.country, date: stay.date, hotelId: stay.id, missing });
-  }
-  return result;
 }

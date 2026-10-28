@@ -1,4 +1,5 @@
 import { withLambda } from '@netlify/aws-lambda-compat';
+import { adminClient, json, requireUser } from '../lib/http.js';
 
 const FLIGHT_SYSTEM_PROMPT = `You build a single, natural-language Google Flights search query from structured flight search parameters.
 
@@ -27,6 +28,12 @@ Rules:
 export default withLambda(async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+  }
+  // Signed-in callers only: each call is paid for.
+  try {
+    await requireUser(adminClient(), event);
+  } catch (err) {
+    return json(err.status ?? 500, { error: err.message });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;

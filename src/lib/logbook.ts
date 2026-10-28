@@ -78,7 +78,7 @@ export function travellingSince(hotels: Hotel[]): string | null {
 // Share of the world's countries visited, against 195: the 193 UN member
 // states plus its two observer states (Holy See, Palestine) -- the usual
 // basis for "countries of the world" counts.
-export const WORLD_COUNTRIES = 195;
+const WORLD_COUNTRIES = 195;
 export function shareOfWorld(countries: number): number {
   return Math.round((countries / WORLD_COUNTRIES) * 100);
 }

@@ -1,50 +1,11 @@
-// Open banking orchestration shared by the bank-* functions: who is
-// calling, how a connection is synced, and the Supabase-backed store the
+// Open banking orchestration shared by the bank-* functions: how a
+// connection is linked and synced, and the Supabase-backed store the
 // sync writes through. The sync itself only talks to the `store`
 // interface, so it is tested against an in-memory fake (we can't call a
 // real bank from a test).
-import { serviceClient } from './supabaseAdmin.js';
+import { HttpError, header } from './http.js';
 import { FUNDING_RULES, matchFundingCard } from './fundingRules.js';
-import { ConfigError, exchangeCode, fetchTransactions, listItems, refreshAccessToken, toSpendRow } from './truelayer.js';
-
-export class HttpError extends Error {
-  constructor(status, message) {
-    super(message);
-    this.status = status;
-  }
-}
-
-export function json(statusCode, body) {
-  return { statusCode, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
-}
-
-export function readJson(event) {
-  try { return JSON.parse(event.body || '{}'); } catch { throw new HttpError(400, 'Invalid request body'); }
-}
-
-export function header(event, name) {
-  const h = event.headers || {};
-  const key = Object.keys(h).find((k) => k.toLowerCase() === name.toLowerCase());
-  return key ? h[key] : undefined;
-}
-
-export function adminClient(env = process.env) {
-  const url = env.VITE_SUPABASE_URL;
-  const key = env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new HttpError(500, 'Server is missing its Supabase credentials.');
-  return serviceClient(url, key);
-}
-
-// The signed-in user, from the Supabase access token the app sends. The
-// user id always comes from here, never from the request body or from an
-// OAuth `state` -- so nobody can attach a bank to someone else's account.
-export async function requireUser(admin, event) {
-  const token = (header(event, 'authorization') || '').replace(/^Bearer\s+/i, '').trim();
-  if (!token) throw new HttpError(401, 'Sign in required.');
-  const { data, error } = await admin.auth.getUser(token);
-  if (error || !data?.user) throw new HttpError(401, 'Your session is not valid. Sign in again.');
-  return data.user;
-}
+import { exchangeCode, fetchTransactions, listItems, refreshAccessToken, toSpendRow } from './truelayer.js';
 
 // The one address TrueLayer sends the user back to; must be registered in
 // the TrueLayer console. Built from the request's own host so start and
@@ -54,15 +15,6 @@ export function callbackUri(event) {
   if (!host) throw new HttpError(400, 'Could not work out this site\'s address.');
   const proto = header(event, 'x-forwarded-proto') || 'https';
   return `${proto}://${host}/bank-link-callback`;
-}
-
-export async function handle(fn) {
-  try {
-    return await fn();
-  } catch (err) {
-    const status = err instanceof HttpError ? err.status : err instanceof ConfigError ? 503 : 500;
-    return json(status, { error: err?.message || 'Something went wrong.' });
-  }
 }
 
 export function addDaysISO(dateStr, days) {

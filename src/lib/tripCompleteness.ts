@@ -18,10 +18,6 @@ export function checkTripCompleteness(trip: Trip): TripGap | null {
   return gap.missingOutbound || gap.missingReturn ? gap : null;
 }
 
-export function isTripIncomplete(trip: Trip): boolean {
-  return checkTripCompleteness(trip) !== null;
-}
-
 // Google Flights parses a plain-language "q=" query reasonably reliably,
 // and doesn't need an API key or documented deep-link params (which are
 // undocumented/fragile) the way a fully prefilled search would.

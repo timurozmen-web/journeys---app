@@ -45,14 +45,3 @@ export function setCached<T>(key: string, data: T): void {
     // an instant/offline fallback for this one key.
   }
 }
-
-export function clearAllCached(): void {
-  try {
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const k = localStorage.key(i);
-      if (k && k.startsWith(PREFIX)) localStorage.removeItem(k);
-    }
-  } catch {
-    // Nothing to do if storage isn't available.
-  }
-}

@@ -35,7 +35,7 @@ export interface DestinationGuide {
 
 const M = (price: PriceLevel, weather: WeatherLevel, summary: string, tempRangeC: [number, number]): MonthGuide => ({ price, weather, summary, tempRangeC });
 
-export const DESTINATION_GUIDES: DestinationGuide[] = [
+const DESTINATION_GUIDES: DestinationGuide[] = [
   {
     name: 'Tokyo', country: 'Japan', aliases: ['tokyo', 'yokohama', 'kanto', 'japan'],
     months: [
@@ -253,7 +253,7 @@ function findGuideByAlias(query: string): DestinationGuide | null {
   return DESTINATION_GUIDES.find((g) => g.aliases.some((a) => q.includes(a) || a.includes(q))) ?? null;
 }
 
-export function findDestinationGuide(city: string | null, country: string): DestinationGuide | null {
+function findDestinationGuide(city: string | null, country: string): DestinationGuide | null {
   if (city) {
     const byCity = findGuideByAlias(city);
     if (byCity) return byCity;
@@ -285,13 +285,13 @@ const RAIN_WORDS: [RegExp, RainfallLevel][] = [
   [/\brain\b|\bwet\b|showers/i, 'medium'],
   [/dry|sunny/i, 'low'],
 ];
-export function rainfallLevel(summary: string, weather: WeatherLevel): RainfallLevel {
+function rainfallLevel(summary: string, weather: WeatherLevel): RainfallLevel {
   for (const [pattern, level] of RAIN_WORDS) {
     if (pattern.test(summary)) return level;
   }
   return weather === 'poor' ? 'medium' : 'low';
 }
-export const RAINFALL_LABEL: Record<RainfallLevel, string> = { low: 'Dry', medium: 'Some rain', high: 'Wet season' };
+const RAINFALL_LABEL: Record<RainfallLevel, string> = { low: 'Dry', medium: 'Some rain', high: 'Wet season' };
 
 // Derives a rough weather-comfort level directly from real climate
 // numbers -- used for destinations that have real climate_data but no
@@ -385,7 +385,7 @@ function formatDriverDateRange(start: Date, end: Date): string {
 // starts three weeks after Golden Week ends. A driver with no specific
 // date (a general season description, not a dated event) never shows
 // a callout at all, since there's nothing to check proximity against.
-export function relevantHolidayDriver(cp: RealCrowdPriceMonth | null, tripStart: string, tripEnd: string): { text: string; dates: string } | null {
+function relevantHolidayDriver(cp: RealCrowdPriceMonth | null, tripStart: string, tripEnd: string): { text: string; dates: string } | null {
   if (!cp || !cp.driverStartDate || !cp.driverEndDate) return null;
   const { start, end, gapDays } = nearestOccurrence(cp.driverStartDate, cp.driverEndDate, tripStart, tripEnd, cp.lunarCalendar);
   if (gapDays > HOLIDAY_BUFFER_DAYS) return null;
@@ -460,7 +460,6 @@ export const PRICE_COLOR: Record<PriceLevel, string> = { high: 'var(--red)', sho
 export const PRICE_TINT: Record<PriceLevel, string> = { high: 'rgba(210,60,60,.08)', shoulder: 'rgba(156,95,8,.08)', low: 'rgba(12,122,66,.08)' };
 export const CROWD_COLOR: Record<'low' | 'medium' | 'high', string> = { high: 'var(--red)', medium: 'var(--amber)', low: 'var(--green)' };
 export const CROWD_TINT: Record<'low' | 'medium' | 'high', string> = { high: 'rgba(210,60,60,.08)', medium: 'rgba(156,95,8,.08)', low: 'rgba(12,122,66,.08)' };
-export const WEATHER_COLOR: Record<WeatherLevel, string> = { poor: 'var(--red)', okay: 'var(--amber)', good: 'var(--green)' };
 export const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -470,7 +469,7 @@ const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep
 // above but keyed on hub_station/region since that's what the real
 // data uses. Real data takes priority over the static estimates when
 // both exist for the same destination.
-export function findRealClimateMonths(realData: RealClimateMonth[], city: string | null, country: string, defaultHint?: string | null) {
+function findRealClimateMonths(realData: RealClimateMonth[], city: string | null, country: string, defaultHint?: string | null) {
   const cq = city?.trim().toLowerCase();
   let rows = realData.filter((r) => sameCountry(r.country, country));
   if (rows.length === 0) return null;
@@ -499,6 +498,6 @@ export function findRealClimateMonths(realData: RealClimateMonth[], city: string
   return rows.filter((r) => r.region === firstRegion).sort((a, b) => MONTH_ABBR.indexOf(a.month) - MONTH_ABBR.indexOf(b.month));
 }
 
-export function realClimateForMonth(months: RealClimateMonth[], monthIndex: number): RealClimateMonth | null {
+function realClimateForMonth(months: RealClimateMonth[], monthIndex: number): RealClimateMonth | null {
   return months.find((m) => MONTH_ABBR[monthIndex] === m.month) ?? null;
 }

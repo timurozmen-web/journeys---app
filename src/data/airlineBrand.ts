@@ -7,7 +7,7 @@
 // airline name doesn't exactly match). Flight numbers sometimes use an
 // ICAO-style prefix (e.g. "EZY8540") that isn't the real IATA code
 // ("U2" for easyJet), so name matching is used ahead of prefix-parsing.
-export const AIRLINE_CODES: Record<string, string> = {
+const AIRLINE_CODES: Record<string, string> = {
   'british airways': 'BA', 'virgin atlantic': 'VS', 'singapore airlines': 'SQ', qantas: 'QF',
   ryanair: 'FR', easyjet: 'U2', lufthansa: 'LH', 'qatar airways': 'QR', 'cathay pacific': 'CX',
   'etihad airways': 'EY', emirates: 'EK', 'turkish airlines': 'TK', 'ita airways': 'AZ', iberia: 'IB',

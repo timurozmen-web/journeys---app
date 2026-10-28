@@ -155,9 +155,6 @@ export function PaymentTab({ cardResults, loyaltyProgrammes, refetchCards, initi
                     </button>
                   ))}
                 </div>
-                <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink3)', marginTop: 6 }}>
-                  Earning rate differs by region -- this is used to work out the points this spend earns.
-                </div>
                 {spendSaveError && <div style={{ color: 'var(--red)', fontSize: 'var(--fs-small)', marginTop: 6 }}>{spendSaveError}</div>}
               </div>
             ) : (

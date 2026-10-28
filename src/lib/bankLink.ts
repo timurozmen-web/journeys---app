@@ -1,17 +1,10 @@
 // The app's side of connecting a bank. Every call goes to a Netlify
 // function with the signed-in user's Supabase token; the bank login itself
 // never reaches the browser.
-import { supabase } from './supabase';
+import { postFunction } from './serverFunction';
 
 async function call<T>(fn: string, body: unknown = {}): Promise<T> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error('Sign in first.');
-  const res = await fetch(`/.netlify/functions/${fn}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify(body),
-  });
+  const res = await postFunction(fn, body);
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json.error || json.message || `Request failed (${res.status})`);
   return json as T;
