@@ -9,7 +9,7 @@ import type { BankLinks } from './queries';
 import { groupBankSpend } from './bankSpend';
 import { shouldReplace } from './liveRefresh';
 import { DATA_CHANGED } from './dataEvents';
-import { fetchTrips, fetchLoyaltyProgrammes, fetchPaymentCards, fetchReviews, fetchReviewPhotos, fetchAllHotels, fetchAllFlights, fetchVouchers, fetchPromotions, fetchBankLinks, fetchPromotionCandidates, fetchDiscoverItems, fetchHomeLocation, fetchClimateData, fetchCrowdPriceData, fetchPointsValueData, fetchCityCashRates, fetchCurrencyPreference } from './queries';
+import { fetchTrips, fetchLoyaltyProgrammes, fetchPaymentCards, fetchReviews, fetchReviewPhotos, fetchAllHotels, fetchAllFlights, fetchVouchers, fetchPromotions, fetchBankLinks, fetchHomeLocation, fetchClimateData, fetchCrowdPriceData, fetchPointsValueData, fetchCityCashRates, fetchCurrencyPreference } from './queries';
 
 function useLive<T>(cacheKey: string, fetcher: () => Promise<T[]>, fallback: T[]) {
   // Synchronous on first render, not an effect -- this is what makes
@@ -131,8 +131,6 @@ export function useBankLinks() {
   const bankSpend = useMemo(() => groupBankSpend(data.accounts, data.spend), [data]);
   return { ...data, bankSpend, loaded, refetch };
 }
-export const usePromotionCandidates = () => useLive('promotionCandidates', fetchPromotionCandidates, []);
-export const useDiscoverItems = () => useLive('discoverItems', fetchDiscoverItems, mock.discoverItems);
 export const useHomeLocation = () => useLiveSingle('homeLocation', fetchHomeLocation, { city: 'London', country: 'United Kingdom' });
 export const useClimateData = () => useLive('climateData', fetchClimateData, []);
 export const useCrowdPriceData = () => useLive('crowdPriceData', fetchCrowdPriceData, []);

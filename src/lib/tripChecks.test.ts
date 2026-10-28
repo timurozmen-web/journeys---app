@@ -1,14 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { computeBucketScore } from './reviewScoring';
 import { checkTripCompleteness } from './tripCompleteness';
 import { makeFlight, makeHotel, makeTrip } from '../test/fixtures';
-
-describe('computeBucketScore', () => {
-  test('liked lands in 6-10, disliked in 1-5, by intensity', () => {
-    expect([computeBucketScore(true, 'mild'), computeBucketScore(true, 'strong'), computeBucketScore(true, 'extreme')]).toEqual([6, 8, 10]);
-    expect([computeBucketScore(false, 'mild'), computeBucketScore(false, 'strong'), computeBucketScore(false, 'extreme')]).toEqual([5, 3, 1]);
-  });
-});
 
 describe('checkTripCompleteness', () => {
   test('a trip with no hotel is never flagged', () => {

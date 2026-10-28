@@ -27,7 +27,7 @@ export interface RailConnection {
   notes?: string;
 }
 
-export const RAIL_CONNECTIONS: RailConnection[] = [
+const RAIL_CONNECTIONS: RailConnection[] = [
   { cityA: 'Tokyo', cityB: 'Nagoya', minutes: 100, source: 'Multiple Shinkansen timetable sources, fastest Nozomi', confidence: 'High' },
   { cityA: 'Tokyo', cityB: 'Kyoto', minutes: 140, source: 'kyotostation.com, japantravel.com -- fastest Nozomi ~2h20m', confidence: 'High' },
   { cityA: 'Tokyo', cityB: 'Osaka', minutes: 141, source: 'Wikipedia (Nozomi train), osakastation.com -- fastest Nozomi 2h21m', confidence: 'High' },

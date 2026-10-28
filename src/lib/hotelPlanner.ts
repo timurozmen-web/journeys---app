@@ -3,8 +3,7 @@ import { addDays } from './tripDay';
 import { BASE_PROGRAMS, basePointsPerGBP, stayPoints, TIER_BONUS } from './loyaltyPoints';
 
 // Earning rates come from the one source in loyaltyPoints.ts.
-export { TIER_BONUS };
-export const BASE_POINTS_PER_GBP: Record<string, number> = Object.fromEntries(
+const BASE_POINTS_PER_GBP: Record<string, number> = Object.fromEntries(
   BASE_PROGRAMS.map((d) => [d.brand, basePointsPerGBP(d.brand) as number]),
 );
 

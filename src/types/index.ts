@@ -127,37 +127,6 @@ export interface Voucher {
   sourceKey: string | null; // stable key for auto-synced card vouchers, prevents duplicate creation
 }
 
-export type DiscoverCategory = 'new_card' | 'card_bonus' | 'loyalty_news';
-export type DiscoverStatus = 'new' | 'kept' | 'dismissed';
-
-export interface DiscoverItem {
-  id: string;
-  category: DiscoverCategory;
-  title: string;
-  summary: string;
-  detail: string | null;
-  source: string;
-  sourceUrl: string | null;
-  deadline: string | null;
-  relatedProgramme: string | null; // matches a loyalty_programmes.name, for wallet intelligence
-  annualFee: string | null;
-  headlineStat: string | null;
-  createdAt: string;
-  status: DiscoverStatus;
-  // Structured promo terms, extracted from the source when possible --
-  // lets the app actually apply a promo to real logged stays instead of
-  // just showing it as a headline.
-  requiresRegistration: boolean;
-  registered: boolean;
-  registeredAt: string | null;
-  newBookingsOnly: boolean;
-  promoStart: string | null;
-  promoEnd: string | null;
-  minNights: number | null;
-  bonusPoints: number | null;
-  bonusDescription: string | null;
-}
-
 export type PromoType = 'multiplier' | 'threshold_bonus' | 'fixed_discount' | 'status_boost' | 'airline_partner' | 'other';
 
 export interface Promotion {

@@ -86,14 +86,6 @@ export function computeTripPoints(trip: Trip, loyaltyProgrammes: LoyaltyProgramm
   return { totalPoints, totalValue, centsPerPoint: totalPoints > 0 ? (totalValue / totalPoints) * 100 : 0 };
 }
 
-export function computeTripSavings(trip: Trip): number {
-  let savings = 0;
-  for (const h of trip.hotels) {
-    if (h.avgRate != null && h.nightlyRate != null) savings += (h.avgRate - h.nightlyRate) * h.nights;
-  }
-  return savings;
-}
-
 export interface Destination {
   place: string;
   start: string;

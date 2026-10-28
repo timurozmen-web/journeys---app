@@ -397,6 +397,10 @@ Run all three; all must be clean:
 - `netlify/functions/*.js` are plain JS. Secrets (`ANTHROPIC_API_KEY`,
   `SUPABASE_SERVICE_ROLE_KEY`, `TRUELAYER_*`) are only read there,
   never with a `VITE_` prefix, which would ship them to the browser.
+- Functions that call Claude or the bank only answer the signed-in user
+  (`requireUser`, with `HttpError` and `handle`, in `netlify/lib/http.js`);
+  the app calls them through `postFunction` (`src/lib/serverFunction.ts`),
+  which sends the user's token. Only the holidays lookup is open.
 - `netlify.toml` stops `index.html`, `sw.js` and the manifest being
   cached. Keep that when touching headers; stale HTML pointing at old
   chunk names has broken deploys before.

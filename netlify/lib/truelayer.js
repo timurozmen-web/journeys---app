@@ -15,6 +15,7 @@
 //   - Only genuine purchases are kept (see toSpendRow); repayments,
 //     transfers, cash and fees never count toward spend goals.
 // All server-side: nothing here is bundled into the app.
+import { HttpError } from './http.js';
 
 export const HOSTS = {
   sandbox: { auth: 'https://auth.truelayer-sandbox.com', api: 'https://api.truelayer-sandbox.com' },
@@ -25,7 +26,12 @@ export const HOSTS = {
 // for the spend, offline_access so the daily sync can refresh its token.
 export const SCOPE = 'accounts cards transactions offline_access';
 
-export class ConfigError extends Error {}
+// Missing bank keys: the service isn't available (503), not a fault.
+export class ConfigError extends HttpError {
+  constructor(message) {
+    super(503, message);
+  }
+}
 
 export function truelayerConfig(env = process.env) {
   // Trimmed: a space or newline pasted along with a key in the Netlify

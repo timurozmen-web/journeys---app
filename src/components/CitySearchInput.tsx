@@ -105,7 +105,7 @@ export function CitySearchInput({
           style={{
             position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 10,
             background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 'var(--r-control)',
-            boxShadow: '0 8px 24px rgba(0,0,0,.12)', maxHeight: 260, overflowY: 'auto',
+            boxShadow: 'var(--shadow-raised)', maxHeight: 260, overflowY: 'auto',
           }}
         >
           {cityMatches.map((c) => (

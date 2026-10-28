@@ -16,7 +16,7 @@ const GREATER_LONDON_BOROUGHS = new Set([
   'canary wharf', 'city of london', 'borehamwood', 'heathrow',
 ]);
 
-export function isLondonArea(city: string | null, country: string): boolean {
+function isLondonArea(city: string | null, country: string): boolean {
   if (country !== 'United Kingdom') return false;
   if (!city) return false;
   return GREATER_LONDON_BOROUGHS.has(city.trim().toLowerCase());

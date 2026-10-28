@@ -4,7 +4,6 @@
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BackIcon, PlaneIcon } from './Icons';
-import { dayMonth } from '../lib/format';
 
 // Back arrow + title at the top of every pushed screen, with an optional
 // line under the title for what it belongs to (a form's trip).
@@ -22,11 +21,6 @@ export function ScreenHeader({ title, sub, right, onBack }: { title: ReactNode; 
       {right && <div className="right">{right}</div>}
     </div>
   );
-}
-
-// Short explanatory paragraph directly under a ScreenHeader.
-export function ScreenIntro({ children }: { children: ReactNode }) {
-  return <p className="screenintro">{children}</p>;
 }
 
 // Label + control (+ optional hint) for a form field. The control itself
@@ -72,11 +66,6 @@ export function Notice({ icon, title, children, action }: { icon: ReactNode; tit
       {action}
     </div>
   );
-}
-
-// Two fields side by side.
-export function FieldRow({ children }: { children: ReactNode }) {
-  return <div className="field-row">{children}</div>;
 }
 
 type ButtonVariant = 'primary' | 'secondary' | 'soft' | 'ghost' | 'danger' | 'onphoto';
@@ -161,29 +150,6 @@ export function PhotoHero({
 // tone is a solid brand-blue badge for something that needs attention.
 export function Eyebrow({ children, tone }: { children: ReactNode; tone?: 'alert' }) {
   return <span className={tone === 'alert' ? 'ph-eyebrow alert' : 'ph-eyebrow'}>{children}</span>;
-}
-
-// Gold day-over-month date for itinerary rows. Plain text, deliberately
-// not in a box or circle -- the colour alone marks it out.
-export function DateStack({ date }: { date: string | null }) {
-  if (!date) return <span className="datestack" aria-hidden="true" />;
-  const { day, month } = dayMonth(date);
-  return (
-    <span className="datestack">
-      <span className="ds-day">{day}</span>
-      <span className="ds-month">{month}</span>
-    </span>
-  );
-}
-
-// A full-width tappable row with an icon: a choice on a menu-style screen.
-export function OptionRow({ icon, label, onClick }: { icon: ReactNode; label: ReactNode; onClick: () => void }) {
-  return (
-    <button type="button" className="optionrow" onClick={onClick}>
-      <span className="optionrow-icon">{icon}</span>
-      <span className="optionrow-label">{label}</span>
-    </button>
-  );
 }
 
 // A booking's square badge in its airline's or programme's colour: the

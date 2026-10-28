@@ -1,5 +1,5 @@
 import { withLambda } from '@netlify/aws-lambda-compat';
-import { adminClient, handle, HttpError, json, readJson, requireUser } from '../lib/openBanking.js';
+import { adminClient, handle, HttpError, json, readJson, requireUser } from '../lib/http.js';
 
 // Removes a bank connection, its saved login, and the card spend pulled
 // through it (they cascade from the connection row).

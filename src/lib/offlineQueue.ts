@@ -74,7 +74,7 @@ function enqueue(key: string, args: unknown[], label: string) {
 // session can be replayed -- functions themselves can't be serialized
 // into localStorage, only their name and arguments can.
 const registry = new Map<string, (...args: unknown[]) => Promise<void>>();
-export function registerWriteHandler(key: string, fn: (...args: unknown[]) => Promise<void>) {
+function registerWriteHandler(key: string, fn: (...args: unknown[]) => Promise<void>) {
   registry.set(key, fn);
 }
 

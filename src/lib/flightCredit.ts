@@ -8,7 +8,7 @@ import { haversineKm } from './travelStats';
 
 const KM_TO_MI = 0.621371;
 
-export const PROGRAMME_SHORT: Record<ProgramId, string> = { BA: 'BA Club', QR: 'Privilege Club', QF: 'Qantas', KF: 'KrisFlyer' };
+const PROGRAMME_SHORT: Record<ProgramId, string> = { BA: 'BA Club', QR: 'Privilege Club', QF: 'Qantas', KF: 'KrisFlyer' };
 
 /** Great-circle miles along a flight's legs (from, any stops, to), or null if an airport can't be placed. */
 export function flightMiles(f: Pick<Flight, 'from' | 'via' | 'to'>, locate: (iata: string) => { lat: number; lng: number } | null): number | null {

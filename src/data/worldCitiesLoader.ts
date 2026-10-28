@@ -19,11 +19,6 @@ export async function loadWorldCities(): Promise<WorldCity[]> {
   return cached;
 }
 
-export async function citiesForCountry(country: string, limit = 20): Promise<WorldCity[]> {
-  const cities = await loadWorldCities();
-  return cities.filter((c) => c.country === country).slice(0, limit);
-}
-
 export interface NearestAirportResult {
   airport: { iata: string; name: string; lat: number; lng: number; city: string; country: string; large?: boolean };
   distanceKm: number;

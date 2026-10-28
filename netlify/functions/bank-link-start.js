@@ -1,6 +1,7 @@
 import { withLambda } from '@netlify/aws-lambda-compat';
 import { randomUUID } from 'node:crypto';
-import { adminClient, callbackUri, handle, HttpError, json, requireUser } from '../lib/openBanking.js';
+import { adminClient, handle, HttpError, json, requireUser } from '../lib/http.js';
+import { callbackUri } from '../lib/openBanking.js';
 import { signState } from '../lib/linkState.js';
 import { buildAuthUrl, truelayerConfig } from '../lib/truelayer.js';
 

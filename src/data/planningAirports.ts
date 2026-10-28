@@ -89,10 +89,6 @@ export const PLANNING_AIRPORTS_BY_IATA: Record<string, PlanningAirport> = Object
   PLANNING_AIRPORTS.map((a) => [a.iata, a])
 );
 
-export function airportsForCountry(country: string): PlanningAirport[] {
-  return PLANNING_AIRPORTS.filter((a) => a.country === country);
-}
-
 export function planningCountries(): string[] {
   return [...new Set(PLANNING_AIRPORTS.map((a) => a.country))].sort();
 }

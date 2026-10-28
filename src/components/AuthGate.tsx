@@ -23,10 +23,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (!session) {
     return (
       <div className="head" style={{ paddingTop: '18vh' }}>
-        <div className="h1">Sign in</div>
-        <div className="h-sub" style={{ marginBottom: 20 }}>
-          Password sign-in — no email delivery involved.
-        </div>
+        <div className="h1" style={{ marginBottom: 20 }}>Sign in</div>
         <div style={{ display: 'grid', gap: 10 }}>
           <input
             className="input"

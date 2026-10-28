@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFinish } from '../lib/useFinish';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { addReview, addReviewPhoto } from '../lib/queries';
 import { withOfflineFallback } from '../lib/offlineQueue';
 import { useReviewPhotos, useReviews } from '../lib/useLiveData';
@@ -8,7 +8,7 @@ import { REVIEW_CATEGORIES, type HotelNeedingReview } from '../lib/reviewScoring
 import { aspectPhoto } from '../lib/reviewSummary';
 import { sortPhotos } from '../lib/photoSort';
 import { narrowRange, pickComparisonCandidate, placedScore, sameScore, type RankedItem } from '../lib/reviewRanking';
-import { Button, ErrorText, ScreenHeader } from '../components/ui';
+import { Button, EmptyState, ErrorText, ScreenHeader } from '../components/ui';
 import { PhotoStrip, PhotoViewer } from '../components/ReviewPhotos';
 import { ScorePicker } from '../components/ScorePicker';
 
@@ -31,14 +31,13 @@ interface Placing {
 // once and sorted into the aspects they show, then "which was better?"
 // only where another stay has the same score in that aspect.
 export function ReviewTrip() {
-  const navigate = useNavigate();
   const finish = useFinish();
   const location = useLocation();
-  const state = location.state as { hotel?: HotelNeedingReview; onlyCategories?: string[] } | null;
+  const state = location.state as { hotel?: HotelNeedingReview } | null;
   const hotel = state?.hotel;
   const { data: allReviews } = useReviews();
   const { data: allPhotos } = useReviewPhotos();
-  const categories = state?.onlyCategories ? REVIEW_CATEGORIES.filter((c) => state.onlyCategories!.includes(c.key)) : REVIEW_CATEGORIES;
+  const categories = REVIEW_CATEGORIES;
 
   const [scores, setScores] = useState<Record<string, number | null>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -58,16 +57,7 @@ export function ReviewTrip() {
   const previews = useRef<string[]>([]);
   useEffect(() => () => previews.current.forEach((u) => URL.revokeObjectURL(u)), []);
 
-  if (!hotel) {
-    return (
-      <div style={{ padding: 20 }}>
-        <p style={{ color: 'var(--ink3)', fontSize: 'var(--fs-body)' }}>No stay selected to review.</p>
-        <button onClick={() => navigate('/', { replace: true })} className="linkbtn">
-          Back to Today
-        </button>
-      </div>
-    );
-  }
+  if (!hotel) return <div><ScreenHeader title="Rate a stay" /><EmptyState>No stay selected</EmptyState></div>;
 
   const scored = categories.filter((c) => scores[c.key] != null);
 
@@ -202,7 +192,7 @@ export function ReviewTrip() {
             <span className="figure" style={{ fontSize: 'var(--fs-heading)', color: 'var(--brand)' }}>{p.label} · {p.score}</span>
             <span className="rowtitle">Which was better?</span>
           </div>
-          <div style={{ position: 'relative', display: 'flex', gap: 10 }}>
+          <div style={{ position: 'relative', display: 'flex', gap: 'var(--s3)' }}>
             <ChoiceCard
               name={hotel.hotelName} chosen
               photo={photos.find((q) => q.aspects.includes(p.key))?.url ?? aspectPhoto(allPhotos, hotel.hotelName, p.key)?.url ?? null}

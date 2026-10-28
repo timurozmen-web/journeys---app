@@ -32,6 +32,7 @@ Rules:
 }
 
 import { withLambda } from '@netlify/aws-lambda-compat';
+import { adminClient, json, requireUser } from '../lib/http.js';
 
 const MAX_IMAGES = 4;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
@@ -39,6 +40,12 @@ const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'i
 export default withLambda(async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+  }
+  // Signed-in callers only: each call is paid for.
+  try {
+    await requireUser(adminClient(), event);
+  } catch (err) {
+    return json(err.status ?? 500, { error: err.message });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;

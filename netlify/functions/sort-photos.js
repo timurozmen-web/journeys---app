@@ -1,5 +1,5 @@
 import { withLambda } from '@netlify/aws-lambda-compat';
-import { adminClient, handle, HttpError, json, readJson, requireUser } from '../lib/openBanking.js';
+import { adminClient, handle, HttpError, json, readJson, requireUser } from '../lib/http.js';
 import { MAX_PHOTOS, PHOTO_SCHEMA, PHOTO_SYSTEM, aspectsByPhoto } from '../lib/photoAspects.js';
 
 // Sorts a stay's photos into the review's aspects (src/lib/photoSort.ts

@@ -8,6 +8,7 @@ import { bookingRoute } from '../lib/bookingPrefill';
 import type { ExtractedBooking } from '../lib/bookingPrefill';
 import { addDays } from '../lib/tripDay';
 import { formatDate, formatDateRange } from '../lib/format';
+import { postFunction } from '../lib/serverFunction';
 
 const MAX_SHOWN = 100;
 
@@ -53,11 +54,7 @@ export function ImportCalendar() {
     setError('');
     setBusy(e.uid);
     try {
-      const res = await fetch('/.netlify/functions/extract-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailText: eventToText(e) }),
-      });
+      const res = await postFunction('extract-email', { emailText: eventToText(e) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not read that event');
       const found: ExtractedBooking[] = data.bookings ?? [];

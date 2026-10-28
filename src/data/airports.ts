@@ -57,7 +57,7 @@ export const AIRPORTS: Record<string, { lat: number; lng: number; name: string }
 // The airport dataset's names are mapped too, since a country reached only
 // by flight is scratched off by its arrival airport's country: "United
 // States" there didn't match the atlas, so San Diego never coloured the US.
-export const COUNTRY_NAME_MAP: Record<string, string> = {
+const COUNTRY_NAME_MAP: Record<string, string> = {
   'United States of America': 'United States of America',
   'United States': 'United States of America',
   USA: 'United States of America',

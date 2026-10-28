@@ -1,7 +1,7 @@
 // Phone photos are 3-5MB at 4,000px or more across; a review photo is
 // looked at on a phone screen, so it's stored at most 1,600px on its long
 // side, which comes to a few hundred KB.
-export const MAX_EDGE = 1600;
+const MAX_EDGE = 1600;
 const QUALITY = 0.82;
 
 // The size to draw a w x h image at so its long side is at most `max`,

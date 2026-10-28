@@ -1,5 +1,6 @@
 import { withLambda } from '@netlify/aws-lambda-compat';
-import { adminClient, callbackUri, completeLink, header, supabaseStore } from '../lib/openBanking.js';
+import { adminClient, header } from '../lib/http.js';
+import { callbackUri, completeLink, supabaseStore } from '../lib/openBanking.js';
 import { verifyState } from '../lib/linkState.js';
 import { truelayerConfig } from '../lib/truelayer.js';
 

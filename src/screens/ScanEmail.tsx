@@ -6,6 +6,7 @@ import type { ExtractedBooking } from '../lib/bookingPrefill';
 import { useAllHotels, useAllFlights, useTrips } from '../lib/useLiveData';
 import { findLikelyDuplicateHotel, findLikelyDuplicateFlight } from '../lib/duplicateDetection';
 import { Button, ErrorText, Field, ScreenHeader } from '../components/ui';
+import { postFunction } from '../lib/serverFunction';
 
 const MAX_IMAGES = 4;
 
@@ -83,11 +84,7 @@ export function ScanEmail() {
         images.map(async (img) => ({ mediaType: img.file.type, data: await fileToBase64(img.file) }))
       );
 
-      const res = await fetch('/.netlify/functions/extract-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailText: text || undefined, images: encodedImages.length ? encodedImages : undefined }),
-      });
+      const res = await postFunction('extract-email', { emailText: text || undefined, images: encodedImages.length ? encodedImages : undefined });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Extraction failed');
 

@@ -41,7 +41,7 @@ const CITY: Record<string, string> = {
   kobenhavn: 'copenhagen',
 };
 
-export function cityKey(name: string): string {
+function cityKey(name: string): string {
   // NFD splits "á" into "a" and its accent; "ø" and "æ" have no such split.
   const n = name.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ø/g, 'o').replace(/æ/g, 'ae');
   return CITY[n] ?? n;
