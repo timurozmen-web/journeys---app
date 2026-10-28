@@ -354,6 +354,15 @@ export const PRICE_EVENTS: PriceEvent[] = [
     note: 'Measured on the 4-5★ and the Hilton searches: x0.94 across 9 hotels, Hilton\'s x0.94 across 4. The festival nights were no dearer than plain ones a fortnight later: the Konsulat $286 a night against $340, the Hotel Reykjavík Grand $188 against $183.',
   },
   {
+    // Athens Marathon. The Authentic, Sunday 8 November 2026, from Marathon
+    // to the Panathenaic Stadium, with the 5 km on the Saturday (organisers'
+    // registration notice, 24 April 2026; sold out). The window is the race
+    // weekend's three nights, searched nine days before. The plain nights are
+    // a fortnight after: a fortnight before had passed.
+    city: 'Athens', country: 'Greece', event: 'Athens Marathon', window: ['2026-11-06', '2026-11-09'], baseline: ['2026-11-20', '2026-11-23'],
+    note: 'Measured on the 4-5★ and all five group searches: x1.50 across 16 hotels, Marriott\'s x2.05 across 4, Accor\'s x1.58 across 4, Hilton\'s x1.07 across 3. The hotels by Syntagma, near the finish, went up most: the King George $2,278 a night against $343, the Grande Bretagne $1,194 against $472; the Grand Hyatt on Syngrou was $185 against $411 (dearer itself a fortnight later).',
+  },
+  {
     // Cisco Live APJC, 9-12 November 2026 at the Melbourne Convention and
     // Exhibition Centre, South Wharf (ciscolive.com). The window is the city's
     // November search, 11-14 November, taking in its last nights. The plain
