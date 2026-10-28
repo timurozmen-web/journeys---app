@@ -1,6 +1,7 @@
 import { useState, useMemo, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useReviews, useAllHotels, useAllFlights, useTrips } from '../lib/useLiveData';
+import { useReviews, useReviewPhotos, useAllHotels, useAllFlights, useTrips } from '../lib/useLiveData';
+import { aspectPhoto, scoreColour } from '../lib/reviewSummary';
 import { ScreenHeader } from '../components/ui';
 import { completedStays, shareOfWorld, visitedCountries } from '../lib/logbook';
 import { useGlobalAirports } from '../lib/useGlobalAirports';
@@ -34,11 +35,11 @@ function rankBadge(rank: number) {
 export function Places() {
   const navigate = useNavigate();
   const [cat, setCat] = useState('overall');
-  const [expandedHotel, setExpandedHotel] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('score');
   const [showAll, setShowAll] = useState(false);
 
   const { data: reviews, isLive: reviewsLive } = useReviews();
+  const { data: photos } = useReviewPhotos();
   const { data: hotels, isLive: hotelsLive } = useAllHotels();
   const { data: flights, isLive: flightsLive } = useAllFlights();
   const { isLive: tripsLive } = useTrips();
@@ -138,16 +139,11 @@ export function Places() {
           {visible.map((r, i) => {
             const rank = sortMode === 'score' ? i + 1 : null;
             const badge = rank ? rankBadge(rank) : null;
-            // Most recent completed stay at this hotel across every trip --
-            // a re-review reflects the latest real visit, not necessarily
-            // the specific stay that originally triggered the review.
-            const mostRecentStay = [...hotels]
-              .filter((h) => h.status === 'Completed' && h.name.trim().toLowerCase() === r.hotelName.trim().toLowerCase())
-              .sort((a, b) => b.date.localeCompare(a.date))[0];
+            const photo = aspectPhoto(photos, r.hotelName, cat);
             return (
               <div
                 key={r.key}
-                onClick={() => setExpandedHotel(expandedHotel === r.key ? null : r.key)}
+                onClick={() => navigate(`/review/${encodeURIComponent(r.hotelName)}`)}
                 style={{
                   display: 'flex', flexDirection: 'column', gap: 0, padding: '12px 16px', cursor: 'pointer',
                   borderRadius: 'var(--r-md)', background: 'var(--card)', border: '1px solid var(--line)',
@@ -173,38 +169,16 @@ export function Places() {
                       {r.country} · {r.latestDate}{r.reviewCount > 1 ? ` · average rating (${r.reviewCount} reviews)` : ''}
                     </div>
                   </div>
+                  {photo && <img src={photo.url} alt="" loading="lazy" className="rowthumb" />}
                   <div
                     style={{
                       fontSize: 'var(--fs-body-lg)', fontWeight: 600, flexShrink: 0,
-                      color: r.avgScore >= 6.7 ? 'var(--green)' : r.avgScore >= 3.4 ? 'var(--amber)' : 'var(--red)',
+                      color: scoreColour(r.avgScore),
                     }}
                   >
                     {r.avgScore.toFixed(1)}
                   </div>
                 </div>
-                {expandedHotel === r.key && (
-                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--line)', display: 'grid', gap: 6 }}>
-                    {r.entries.length > 1 && (
-                      <div style={{ fontSize: 'var(--fs-micro)', fontWeight: 700, color: 'var(--ink3)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                        Average rating, from {r.entries.length} visits
-                      </div>
-                    )}
-                    {[...r.entries].sort((a, b) => b.date.localeCompare(a.date)).map((e) => (
-                      <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-small)' }}>
-                        <span style={{ color: 'var(--ink2)' }}>{e.date}</span>
-                        <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{e.score.toFixed(1)}</span>
-                      </div>
-                    ))}
-                    {mostRecentStay && (
-                      <button
-                        onClick={(ev) => { ev.stopPropagation(); navigate('/review-trip', { state: { hotel: { tripId: '', tripTitle: '', hotelId: mostRecentStay.id, hotelName: mostRecentStay.name, country: mostRecentStay.country, date: mostRecentStay.date } } } ); }}
-                        style={{ marginTop: 2, background: 'none', border: 'none', color: 'var(--brand)', fontSize: 'var(--fs-caption)', fontWeight: 700, cursor: 'pointer', padding: 0, textAlign: 'left' }}
-                      >
-                        Review again
-                      </button>
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}

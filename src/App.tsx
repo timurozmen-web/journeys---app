@@ -22,6 +22,7 @@ import { BankSync } from './screens/BankSync';
 import { AddCard } from './screens/AddCard';
 import { ImportCalendar } from './screens/ImportCalendar';
 import { ReviewTrip } from './screens/ReviewTrip';
+import { StayReview } from './screens/StayReview';
 
 // Plan carries the hotel price database, so it loads when it's opened.
 const Plan = lazy(() => import('./screens/Plan').then((m) => ({ default: m.Plan })));
@@ -69,6 +70,7 @@ export default function App() {
             <Route path="/scan-promotion" element={<ScanPromotion />} />
             <Route path="/bank-sync" element={<BankSync />} />
             <Route path="/review-trip" element={<ReviewTrip />} />
+            <Route path="/review/:name" element={<StayReview />} />
             <Route path="/log-loyalty-programme" element={<LogLoyaltyProgramme />} />
             <Route path="/credit" element={<CreditAdvisor />} />
             {/* Old addresses from the two-section app, kept so saved links and

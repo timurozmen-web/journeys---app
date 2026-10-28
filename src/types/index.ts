@@ -99,6 +99,20 @@ export interface Review {
   date: string;
   category: string;
   score: number; // 1–10, derived from the bucket-ranking algorithm
+  note: string | null; // what stood out, in the reviewer's words
+}
+
+// A photo of one aspect of a stay (the shower, the bed, breakfast), kept
+// by hotel name like reviews are, since most reviews predate the app's
+// hotel records.
+export interface ReviewPhoto {
+  id: string;
+  hotelName: string;
+  hotelId: string | null;
+  category: string;
+  url: string;
+  path: string; // in the trip-photos bucket, so the file goes when the photo does
+  createdAt: string;
 }
 
 export interface Voucher {

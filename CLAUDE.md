@@ -121,6 +121,18 @@ Run all three; all must be clean:
   'subscription'` (ALL Accor+ Explorer: 30 status nights each
   membership year, sourced) has its own Memberships section in the
   wallet, never the carousel or Archived, and no fee or earning.
+- **Reviews** (`ReviewTrip.tsx`, `StayReview.tsx`, `src/lib/reviewSummary.ts`):
+  a stay is rated aspect by aspect (Overall, Service, Value, Facilities,
+  Food, Shower, Bed, Room): liked, fine or not, then "which do you prefer?"
+  against your other stays in that band (never the hotel itself), each
+  card showing that hotel's photo of the aspect. Each aspect takes a note
+  and photos as it's rated. `/review/:name` is a hotel's review: each
+  aspect's average over visits, its latest note (edited in place) and its
+  photos (added and deleted in place, opened full screen); rated stays on
+  the map open it. Photos are `review_photos` rows, by hotel name and
+  aspect as reviews are; the files are in the `trip-photos` bucket under
+  `<user>/reviews/`, made 1,600px on the long side on the phone first
+  (`src/lib/imageShrink.ts`).
 - **Spent things archive.** Closed cards and promotions that have ended,
   been used or been applied (`promoArchiveReason`) move to an Archived
   list of compact swipe-to-delete rows that open in place.

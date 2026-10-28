@@ -9,7 +9,7 @@ import type { BankLinks } from './queries';
 import { groupBankSpend } from './bankSpend';
 import { shouldReplace } from './liveRefresh';
 import { DATA_CHANGED } from './dataEvents';
-import { fetchTrips, fetchLoyaltyProgrammes, fetchPaymentCards, fetchReviews, fetchAllHotels, fetchAllFlights, fetchVouchers, fetchPromotions, fetchBankLinks, fetchPromotionCandidates, fetchDiscoverItems, fetchHomeLocation, fetchClimateData, fetchCrowdPriceData, fetchPointsValueData, fetchCityCashRates, fetchCurrencyPreference } from './queries';
+import { fetchTrips, fetchLoyaltyProgrammes, fetchPaymentCards, fetchReviews, fetchReviewPhotos, fetchAllHotels, fetchAllFlights, fetchVouchers, fetchPromotions, fetchBankLinks, fetchPromotionCandidates, fetchDiscoverItems, fetchHomeLocation, fetchClimateData, fetchCrowdPriceData, fetchPointsValueData, fetchCityCashRates, fetchCurrencyPreference } from './queries';
 
 function useLive<T>(cacheKey: string, fetcher: () => Promise<T[]>, fallback: T[]) {
   // Synchronous on first render, not an effect -- this is what makes
@@ -98,6 +98,7 @@ export const useTrips = () => useLive('trips', fetchTrips, mock.trips);
 export const useLoyaltyProgrammes = () => useLive('loyaltyProgrammes', fetchLoyaltyProgrammes, mock.loyaltyProgrammes);
 export const usePaymentCards = () => useLive('paymentCards', fetchPaymentCards, mock.paymentCards);
 export const useReviews = () => useLive('reviews', fetchReviews, mock.reviews);
+export const useReviewPhotos = () => useLive('reviewPhotos', fetchReviewPhotos, []);
 export const useAllHotels = () => useLive('allHotels', fetchAllHotels, mock.trips.flatMap((t) => t.hotels));
 export const useAllFlights = () => useLive('allFlights', fetchAllFlights, mock.trips.flatMap((t) => t.flights));
 export const useVouchers = () => useLive('vouchers', fetchVouchers, []);

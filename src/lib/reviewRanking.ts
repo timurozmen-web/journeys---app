@@ -60,7 +60,13 @@ export function computeFinalScore(sentiment: Sentiment, sameBandSorted: RankedIt
   return Math.min(band.max, Math.max(band.min, Math.round(score * 100) / 100));
 }
 
-export function sortedSameBand(sentiment: Sentiment, existing: RankedItem[]): RankedItem[] {
+// The stays a new rating is compared against: the band's, best first,
+// leaving out the hotel being rated. Re-rating a hotel asked "W Melbourne
+// or W Melbourne?" against its own earlier rating.
+export function sortedSameBand(sentiment: Sentiment, existing: RankedItem[], ratingHotel?: string): RankedItem[] {
   const band = BANDS[sentiment];
-  return existing.filter((r) => r.score >= band.min && r.score <= band.max).sort((a, b) => b.score - a.score);
+  const self = ratingHotel?.trim().toLowerCase();
+  return existing
+    .filter((r) => r.score >= band.min && r.score <= band.max && r.hotelName.trim().toLowerCase() !== self)
+    .sort((a, b) => b.score - a.score);
 }
