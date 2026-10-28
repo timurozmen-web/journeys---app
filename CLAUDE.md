@@ -208,10 +208,12 @@ Run all three; all must be clean:
     Vegas, Edinburgh, Sydney, Hong Kong, Barcelona, Rome, Amsterdam, Milan,
     Lisbon, Madrid, Abu Dhabi, Rio de Janeiro, Istanbul, Berlin, Vienna,
     Prague, Dublin, Munich, Toronto, Vancouver, Montreal, Buenos Aires,
-    Melbourne, Auckland, Copenhagen, Oslo, Helsinki); the researched ranges
-    it replaced were 19-30% out, worse than no change in Tokyo. Edinburgh
-    gains most (34% out unchanged: January is under half the year's
-    average), then Vancouver (33%: July and August over one and a half times
+    Melbourne, Auckland, Copenhagen, Oslo, Helsinki, Reykjavik, Athens,
+    Florence, Venice, Naples, Nice); the researched ranges
+    it replaced were 19-30% out, worse than no change in Tokyo. Nice
+    gains most (41% out unchanged, 7.3% with it: summer is over two and a
+    half times its winter), then Edinburgh (34%: January is under half the
+    year's average), then Vancouver (33%: July and August over one and a half times
     its year); Vienna's December, its Christmas markets, is 1.7 times its
     year. Munich's prices move with its trade fairs more than the season, so
     it gains little (11.6% against 13.2%). Singapore's, Bangkok's and
@@ -224,7 +226,7 @@ Run all three; all must be clean:
     July on the Open) becomes that event, with plain nights a fortnight
     away, so the index never learns an event as a season; an event that
     couldn't be measured yet (`UNMEASURED_EVENTS`: Madrid's Grand Prix,
-    Munich's Oktoberfest) has its nights left out all the same. Cities
+    Munich's Oktoberfest, the Monaco Grand Prix for Nice) has its nights left out all the same. Cities
     without one fall back to the researched range. It replaces the
     researched rate for that programme in Where to stay, the voucher advice
     and Cash or points. Searching: the brand filter matches the hotel's
@@ -246,8 +248,8 @@ Run all three; all must be clean:
     paired there (the programme's own first), as levels move apart (Dubai
     New Year: Marriott Select x1.95, Luxury x2.81), else the programme's own
     hotels where at least two, else all. Held out one hotel at a time this
-    predicts a hotel's event price to a median 11.9% (997 hotels, 53
-    events); ignoring events would be 33% out. Holidays don't all raise
+    predicts a hotel's event price to a median 12.1% (1,094 hotels, 61
+    events); ignoring events would be 31% out. Holidays don't all raise
     prices: Dubai's Marriotts were x2.4 over New Year, Barcelona's x3.85 for
     the Mobile World Congress, but Tokyo's x0.93 in Golden Week, Rome's
     x0.82 at Easter, Las Vegas's flat for the Grand Prix. Edinburgh's were
@@ -260,7 +262,10 @@ Run all three; all must be clean:
     Canadian Grand Prix, Melbourne's x3.00 for the Australian Open and x2.12
     for BTS, Toronto's x2.43 for PDAC, Oslo's x1.54 for Nor-Shipping,
     Helsinki's x1.49 for the EAACI congress, Copenhagen's x1.41 for 3 Days
-    of Design; Nobel Week moved only Stockholm's Grand Hôtel (x0.97 across
+    of Design, Venice's x1.52 for Carnival, Athens's x1.50 for its
+    marathon, Reykjavik's x1.36 for Iceland Airwaves, Florence's x1.29 for
+    January's Pitti Uomo (x1.11 in June) and Nice's x1.20 for its Carnival;
+    the Cannes Film Festival left Nice's as they were. Nobel Week moved only Stockholm's Grand Hôtel (x0.97 across
     the city), and the Peace Prize (x0.88), Flow Festival (x0.84), FILBo in
     Bogotá and Web Summit Vancouver none. A city with no event measured gets
     no uplift.

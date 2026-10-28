@@ -136,8 +136,11 @@ describe('the month-by-month index', () => {
     // 32.7% (its July and August over one and a half times its year),
     // Montreal 9.5% against 18.6%, Melbourne 9.0% against 13.2%, Auckland
     // 8.2% against 14.6%, Copenhagen 8.4% against 23.2%, Oslo 6.7% against
-    // 13.6% and Helsinki 10.1% against 13.6%.
-    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States'], ['Edinburgh', 'United Kingdom'], ['Sydney', 'Australia'], ['Hong Kong', 'Hong Kong'], ['Barcelona', 'Spain'], ['Rome', 'Italy'], ['Amsterdam', 'Netherlands'], ['Milan', 'Italy'], ['Lisbon', 'Portugal'], ['Madrid', 'Spain'], ['Berlin', 'Germany'], ['Vienna', 'Austria'], ['Prague', 'Czechia'], ['Dublin', 'Ireland'], ['Toronto', 'Canada'], ['Vancouver', 'Canada'], ['Montreal', 'Canada'], ['Melbourne', 'Australia'], ['Auckland', 'New Zealand'], ['Copenhagen', 'Denmark'], ['Oslo', 'Norway'], ['Helsinki', 'Finland']]) {
+    // 13.6% and Helsinki 10.1% against 13.6%. 28 Oct 2026: Reykjavik 8.3%
+    // against 26.3%, Athens 10.8% against 24.1%, Florence 8.3% against
+    // 30.5%, Venice 8.8% against 25.6%, Naples 9.0% against 19.1% and Nice
+    // 7.3% against 41.2% (its summer over two and a half times its winter).
+    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States'], ['Edinburgh', 'United Kingdom'], ['Sydney', 'Australia'], ['Hong Kong', 'Hong Kong'], ['Barcelona', 'Spain'], ['Rome', 'Italy'], ['Amsterdam', 'Netherlands'], ['Milan', 'Italy'], ['Lisbon', 'Portugal'], ['Madrid', 'Spain'], ['Berlin', 'Germany'], ['Vienna', 'Austria'], ['Prague', 'Czechia'], ['Dublin', 'Ireland'], ['Toronto', 'Canada'], ['Vancouver', 'Canada'], ['Montreal', 'Canada'], ['Melbourne', 'Australia'], ['Auckland', 'New Zealand'], ['Copenhagen', 'Denmark'], ['Oslo', 'Norway'], ['Helsinki', 'Finland'], ['Reykjavik', 'Iceland'], ['Athens', 'Greece'], ['Florence', 'Italy'], ['Venice', 'Italy'], ['Naples', 'Italy'], ['Nice', 'France']]) {
       const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
       expect(r.held).toBeGreaterThanOrEqual(70);
       expect(r.error).toBeLessThan(0.15);
@@ -154,7 +157,7 @@ describe('the month-by-month index', () => {
       expect(r.error).toBeLessThan(0.15);
       expect(r.error).toBeLessThan(r.unshifted * 0.95);
     }
-    // One refit per held-out hotel-month across thirty-two cities: about 15s
+    // One refit per held-out hotel-month across thirty-eight cities: about 15s
     // alone, more with the other files running beside it.
   }, 60_000);
   it('stays close where prices hardly move through the year', () => {
