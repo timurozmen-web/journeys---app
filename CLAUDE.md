@@ -121,18 +121,24 @@ Run all three; all must be clean:
   'subscription'` (ALL Accor+ Explorer: 30 status nights each
   membership year, sourced) has its own Memberships section in the
   wallet, never the carousel or Archived, and no fee or earning.
-- **Reviews** (`ReviewTrip.tsx`, `StayReview.tsx`, `src/lib/reviewSummary.ts`):
-  a stay is rated aspect by aspect (Overall, Service, Value, Facilities,
-  Food, Shower, Bed, Room): liked, fine or not, then "which do you prefer?"
-  against your other stays in that band (never the hotel itself), each
-  card showing that hotel's photo of the aspect. Each aspect takes a note
-  and photos as it's rated. `/review/:name` is a hotel's review: each
+- **Reviews** (`ReviewTrip.tsx`, `StayReview.tsx`, `src/lib/reviewRanking.ts`,
+  `src/lib/reviewSummary.ts`): a stay is rated on one page, each aspect
+  (Overall, Service, Value, Facilities, Food, Shower, Bed, Room) scored 1-10
+  with a tap, unscored ones skipped, an optional note each. "Which was
+  better?" then asks only among the stays given the same whole score in
+  that aspect (never the hotel itself; usually none, two or three at most),
+  so a stored score always reads as the score given: an 8 is stored between
+  7.5 and 8.49 (`placedScore`). Photos are added once for the stay and sorted
+  into every aspect they show (a bedroom is Room and Bed; Value has none)
+  by `netlify/functions/sort-photos.js` (Claude Opus 5.5 vision, signed-in
+  callers only, rules in `netlify/lib/photoAspects.js`); a photo's tags in
+  the viewer move it. One file is one `review_photos` row per aspect,
+  sharing its path; files are in the `trip-photos` bucket under
+  `<user>/reviews/`, 1,600px on the long side (`src/lib/imageShrink.ts`),
+  sent for sorting at 768px. `/review/:name` is a hotel's review: each
   aspect's average over visits, its latest note (edited in place) and its
-  photos (added and deleted in place, opened full screen); rated stays on
-  the map open it. Photos are `review_photos` rows, by hotel name and
-  aspect as reviews are; the files are in the `trip-photos` bucket under
-  `<user>/reviews/`, made 1,600px on the long side on the phone first
-  (`src/lib/imageShrink.ts`).
+  photos; rated stays on the map open it. The comparison cards show each
+  hotel's photo of that aspect.
 - **Spent things archive.** Closed cards and promotions that have ended,
   been used or been applied (`promoArchiveReason`) move to an Archived
   list of compact swipe-to-delete rows that open in place.

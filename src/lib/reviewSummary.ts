@@ -70,3 +70,23 @@ export function aspectPhoto(photos: ReviewPhoto[], name: string, category: strin
 export function scoreColour(score: number): string {
   return score >= 6.7 ? 'var(--green)' : score >= 3.4 ? 'var(--amber)' : 'var(--red)';
 }
+
+// The aspects a photo can be filed under: all but Value, which has no
+// photo of its own. netlify/lib/photoAspects.js sorts into the same keys.
+export const PHOTO_ASPECTS = REVIEW_CATEGORIES.filter((c) => c.key !== 'value');
+
+// Every aspect a saved photo is filed under (one row per aspect, sharing
+// the file's path).
+export function photoAspects(photos: ReviewPhoto[], path: string): string[] {
+  return photos.filter((p) => p.path === path).map((p) => p.category);
+}
+
+// The photos to show for a hotel, one per file however many aspects it's
+// under, newest first.
+export function distinctPhotos(photos: ReviewPhoto[], name: string): ReviewPhoto[] {
+  const seen = new Set<string>();
+  return photos
+    .filter((p) => propertyKey(p.hotelName) === propertyKey(name))
+    .sort(newestFirst)
+    .filter((p) => (seen.has(p.path) ? false : (seen.add(p.path), true)));
+}

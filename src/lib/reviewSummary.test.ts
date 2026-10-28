@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aspectPhoto, propertyReview } from './reviewSummary';
+import { aspectPhoto, distinctPhotos, photoAspects, propertyReview } from './reviewSummary';
 import type { Review, ReviewPhoto } from '../types';
 
 const review = (over: Partial<Review>): Review => ({
@@ -59,5 +59,23 @@ describe('aspectPhoto', () => {
   });
   it('falls back to the newest photo for overall', () => {
     expect(aspectPhoto(photos, 'w melbourne', 'overall')!.id).toBe('shower');
+  });
+});
+
+describe('photos under several aspects', () => {
+  // A bedroom photo is one file filed under Room and Bed: one row each.
+  const rows = [
+    photo({ id: 'a', path: 'f1', category: 'room', createdAt: '2026-05-02T10:00:00Z' }),
+    photo({ id: 'b', path: 'f1', category: 'bed', createdAt: '2026-05-02T10:00:00Z' }),
+    photo({ id: 'c', path: 'f2', category: 'shower', createdAt: '2026-05-03T10:00:00Z' }),
+  ];
+  it('shows the photo under each aspect', () => {
+    const r = propertyReview('W Melbourne', [], rows)!;
+    expect(r.aspects.find((a) => a.key === 'room')!.photos.map((p) => p.path)).toEqual(['f1']);
+    expect(r.aspects.find((a) => a.key === 'bed')!.photos.map((p) => p.path)).toEqual(['f1']);
+  });
+  it('knows every aspect a file is under, and lists each file once', () => {
+    expect(photoAspects(rows, 'f1')).toEqual(['room', 'bed']);
+    expect(distinctPhotos(rows, 'W Melbourne').map((p) => p.path)).toEqual(['f2', 'f1']);
   });
 });

@@ -4,42 +4,32 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { addReview, addReviewPhoto } from '../lib/queries';
 import { withOfflineFallback } from '../lib/offlineQueue';
 import { useReviewPhotos, useReviews } from '../lib/useLiveData';
-import { REVIEW_CATEGORIES } from '../lib/reviewScoring';
+import { REVIEW_CATEGORIES, type HotelNeedingReview } from '../lib/reviewScoring';
 import { aspectPhoto } from '../lib/reviewSummary';
-import {
-  pickComparisonCandidate, narrowRange, computeFinalScore, sortedSameBand,
-  type Sentiment, type RankedItem,
-} from '../lib/reviewRanking';
-import type { HotelNeedingReview } from '../lib/reviewScoring';
-import { Field, ScreenHeader } from '../components/ui';
+import { sortPhotos } from '../lib/photoSort';
+import { narrowRange, pickComparisonCandidate, placedScore, sameScore, type RankedItem } from '../lib/reviewRanking';
+import { Button, ErrorText, ScreenHeader } from '../components/ui';
 import { PhotoStrip, PhotoViewer } from '../components/ReviewPhotos';
+import { ScorePicker } from '../components/ScorePicker';
 
-type Phase = 'sentiment' | 'comparing' | 'done';
+// A photo picked for this review: sorted into aspects as soon as it's
+// added, uploaded when the review is saved.
+interface StagedPhoto { id: string; file: File; url: string; aspects: string[] }
 
-interface CategoryState {
-  sentiment: Sentiment | null;
-  sameBand: RankedItem[];
+// One aspect being placed among the stays given the same score.
+interface Placing {
+  key: string;
+  label: string;
+  score: number;
+  sorted: RankedItem[];
   lo: number;
   hi: number;
   history: { lo: number; hi: number }[];
-  score: number | null;
-  skipped: boolean;
-  note: string;
-  photos: StagedPhoto[]; // uploaded at Finish, once the review is saved
 }
 
-interface StagedPhoto { id: string; file: File; url: string }
-
-function freshCategoryState(): CategoryState {
-  return { sentiment: null, sameBand: [], lo: 0, hi: 0, history: [], score: null, skipped: false, note: '', photos: [] };
-}
-
-const SENTIMENT_CIRCLES: { key: Sentiment; label: string; color: string }[] = [
-  { key: 'liked', label: 'I liked it!', color: 'var(--green)' },
-  { key: 'okay', label: 'It was fine', color: 'var(--amber)' },
-  { key: 'disliked', label: "I didn't like it", color: 'var(--red)' },
-];
-
+// Rating a stay: every aspect scored out of 10 on one page, photos added
+// once and sorted into the aspects they show, then "which was better?"
+// only where another stay has the same score in that aspect.
 export function ReviewTrip() {
   const navigate = useNavigate();
   const finish = useFinish();
@@ -50,12 +40,19 @@ export function ReviewTrip() {
   const { data: allPhotos } = useReviewPhotos();
   const categories = state?.onlyCategories ? REVIEW_CATEGORIES.filter((c) => state.onlyCategories!.includes(c.key)) : REVIEW_CATEGORIES;
 
-  const [step, setStep] = useState(0);
-  const [states, setStates] = useState<CategoryState[]>(categories.map(() => freshCategoryState()));
+  const [scores, setScores] = useState<Record<string, number | null>>({});
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [noteOpen, setNoteOpen] = useState<Record<string, boolean>>({});
+  const [photos, setPhotos] = useState<StagedPhoto[]>([]);
+  const [sorting, setSorting] = useState(false);
+  const [viewing, setViewing] = useState<{ aspect: string | null; index: number } | null>(null);
+  // The comparisons under way (null on the scoring page), and the stored
+  // score each placed aspect came out at.
+  const [placings, setPlacings] = useState<{ list: Placing[]; at: number } | null>(null);
+  const [placed, setPlaced] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [viewing, setViewing] = useState<number | null>(null);
-  // Set once the scores are saved: if a photo upload then fails, Finish
+  // Set once the scores are saved: if a photo upload then fails, Save
   // tries the photos again without saving the scores twice.
   const [scoresSaved, setScoresSaved] = useState(false);
   const previews = useRef<string[]>([]);
@@ -72,253 +69,218 @@ export function ReviewTrip() {
     );
   }
 
-  const category = categories[step];
-  const current = states[step];
-  const phase: Phase = current.score != null || current.skipped ? 'done' : current.sentiment == null ? 'sentiment' : 'comparing';
+  const scored = categories.filter((c) => scores[c.key] != null);
 
-  function updateCurrent(patch: Partial<CategoryState>) {
-    setStates((prev) => prev.map((s, i) => (i === step ? { ...s, ...patch } : s)));
+  // The aspects still to place: scored, not placed yet, and sharing their
+  // score with another stay in that aspect.
+  function toPlace(): Placing[] {
+    return scored
+      .filter((c) => placed[c.key] == null)
+      .map((c) => {
+        const existing = allReviews.filter((r) => r.category === c.key).map((r) => ({ hotelName: r.hotelName, score: r.score }));
+        const sorted = sameScore(scores[c.key]!, existing, hotel!.hotelName);
+        return { key: c.key, label: c.label, score: scores[c.key]!, sorted, lo: 0, hi: sorted.length, history: [] };
+      })
+      .filter((p) => p.sorted.length > 0);
   }
 
-  function chooseSentiment(sentiment: Sentiment) {
-    const existingInCategory = allReviews.filter((r) => r.category === category.key).map((r) => ({ hotelName: r.hotelName, score: r.score }));
-    const sameBand = sortedSameBand(sentiment, existingInCategory, hotel!.hotelName);
-    if (sameBand.length === 0) {
-      updateCurrent({ sentiment, sameBand, lo: 0, hi: 0, history: [], score: computeFinalScore(sentiment, [], 0) });
-      return;
-    }
-    updateCurrent({ sentiment, sameBand, lo: 0, hi: sameBand.length, history: [], score: null });
+  function setScore(key: string, n: number | null) {
+    setScores((s) => ({ ...s, [key]: n }));
+    // A changed score is placed afresh.
+    setPlaced((p) => { const next = { ...p }; delete next[key]; return next; });
   }
 
-  function answerComparison(preferredNew: boolean) {
-    const mid = Math.floor((current.lo + current.hi) / 2);
-    const { lo, hi } = narrowRange(current.lo, current.hi, mid, preferredNew);
-    const history = [...current.history, { lo: current.lo, hi: current.hi }];
-    if (lo >= hi) {
-      updateCurrent({ lo, hi, history, score: computeFinalScore(current.sentiment!, current.sameBand, lo) });
-    } else {
-      updateCurrent({ lo, hi, history });
-    }
-  }
-
-  function tooTough() {
-    // Too close to call -- settle right at this candidate's position
-    // rather than continuing to narrow further.
-    const mid = Math.floor((current.lo + current.hi) / 2);
-    const history = [...current.history, { lo: current.lo, hi: current.hi }];
-    updateCurrent({ lo: mid, hi: mid, history, score: computeFinalScore(current.sentiment!, current.sameBand, mid) });
-  }
-
-  function undo() {
-    if (current.history.length === 0) {
-      // Nothing to undo within comparisons -- back out of sentiment choice entirely.
-      updateCurrent(freshCategoryState());
-      return;
-    }
-    const prevState = current.history[current.history.length - 1];
-    updateCurrent({ lo: prevState.lo, hi: prevState.hi, history: current.history.slice(0, -1), score: null });
-  }
-
-  function skipCategory() {
-    updateCurrent({ skipped: true, score: null, photos: [] });
-  }
-
-  function stagePhotos(files: File[]) {
+  async function addPhotos(files: File[]) {
+    setError('');
     const staged = files.map((file) => {
       const url = URL.createObjectURL(file);
       previews.current.push(url);
-      return { id: url, file, url };
+      return { id: url, file, url, aspects: [] as string[] };
     });
-    updateCurrent({ photos: [...current.photos, ...staged] });
+    setPhotos((prev) => [...prev, ...staged]);
+    setSorting(true);
+    try {
+      const sorted = await sortPhotos(files);
+      setPhotos((prev) => prev.map((p) => { const i = staged.findIndex((s) => s.id === p.id); return i >= 0 ? { ...p, aspects: sorted[i] } : p; }));
+    } catch (err) {
+      // Unsorted photos wait under Overall, to be moved by hand.
+      setPhotos((prev) => prev.map((p) => (staged.some((s) => s.id === p.id) ? { ...p, aspects: ['overall'] } : p)));
+      setError(err instanceof Error ? err.message : 'Photos not sorted');
+    } finally {
+      setSorting(false);
+    }
   }
 
-  async function handleNext() {
-    if (step < categories.length - 1) {
-      setStep(step + 1);
-      return;
+  function toggleAspect(id: string, key: string) {
+    setPhotos((prev) => prev.map((p) => (p.id !== id ? p : { ...p, aspects: p.aspects.includes(key) ? p.aspects.filter((a) => a !== key) : [...p.aspects, key] })));
+  }
+
+  function next() {
+    const list = toPlace();
+    if (list.length === 0) { save(placed); return; }
+    setPlacings({ list, at: 0 });
+    // The comparison opened where the long scoring page had been scrolled to.
+    window.scrollTo(0, 0);
+  }
+
+  function updatePlacing(patch: Partial<Placing>) {
+    setPlacings((s) => (s ? { ...s, list: s.list.map((p, i) => (i === s.at ? { ...p, ...patch } : p)) } : s));
+  }
+
+  // The current aspect is placed at `index`: record it and move on, or
+  // save once every aspect is placed.
+  function settle(index: number) {
+    const s = placings!;
+    const p = s.list[s.at];
+    const all = { ...placed, [p.key]: placedScore(p.score, p.sorted, index) };
+    setPlaced(all);
+    if (s.at + 1 < s.list.length) {
+      setPlacings({ ...s, at: s.at + 1 });
+    } else {
+      setPlacings(null);
+      save(all);
     }
+  }
+
+  function answer(preferredNew: boolean) {
+    const p = placings!.list[placings!.at];
+    const mid = Math.floor((p.lo + p.hi) / 2);
+    const { lo, hi } = narrowRange(p.lo, p.hi, mid, preferredNew);
+    if (lo >= hi) settle(lo);
+    else updatePlacing({ lo, hi, history: [...p.history, { lo: p.lo, hi: p.hi }] });
+  }
+
+  function undo() {
+    const p = placings!.list[placings!.at];
+    if (p.history.length === 0) { setPlacings(null); return; }
+    const prev = p.history[p.history.length - 1];
+    updatePlacing({ lo: prev.lo, hi: prev.hi, history: p.history.slice(0, -1) });
+  }
+
+  async function save(final: Record<string, number>) {
     setSaving(true);
     setError('');
     try {
       if (!scoresSaved) {
-        for (let i = 0; i < categories.length; i++) {
-          const s = states[i];
-          if (s.score == null) continue;
-          await withOfflineFallback('addReview', `${hotel!.hotelName}: ${categories[i].label}`, addReview, {
+        for (const c of scored) {
+          await withOfflineFallback('addReview', `${hotel!.hotelName}: ${c.label}`, addReview, {
             hotelId: hotel!.hotelId, hotelName: hotel!.hotelName, country: hotel!.country,
-            date: hotel!.date, category: categories[i].key, score: s.score, note: s.note,
+            date: hotel!.date, category: c.key, score: final[c.key] ?? scores[c.key]!, note: notes[c.key] ?? '',
           });
         }
         setScoresSaved(true);
       }
       // Photos need a connection (they can't wait in the offline queue);
-      // each one is dropped from the list as it goes up, so a retry sends
-      // only the rest.
-      for (let i = 0; i < categories.length; i++) {
-        for (const p of states[i].photos) {
-          await addReviewPhoto(hotel!.hotelName, hotel!.hotelId || null, categories[i].key, p.file);
-          setStates((prev) => prev.map((s, j) => (j === i ? { ...s, photos: s.photos.filter((q) => q.id !== p.id) } : s)));
-        }
+      // each one leaves the list as it goes up, so a retry sends the rest.
+      for (const p of photos) {
+        await addReviewPhoto(hotel!.hotelName, hotel!.hotelId || null, p.aspects, p.file);
+        setPhotos((prev) => prev.filter((q) => q.id !== p.id));
       }
       finish.done('/');
     } catch (err) {
-      const message =
+      setError(
         err instanceof Error
           ? err.message
           : typeof err === 'object' && err !== null && 'message' in err
           ? String((err as { message: unknown }).message)
-          : 'Failed to save review';
-      setError(message);
+          : 'Failed to save review',
+      );
     } finally {
       setSaving(false);
     }
   }
 
-  const comparisonCandidate = phase === 'comparing' ? pickComparisonCandidate(current.sameBand, current.lo, current.hi) : null;
+  if (placings) {
+    const p = placings.list[placings.at];
+    const candidate = pickComparisonCandidate(p.sorted, p.lo, p.hi)!;
+    return (
+      <div style={{ paddingBottom: 'var(--s7)' }}>
+        <ScreenHeader title="Rate a stay" sub={hotel.hotelName} onBack={() => setPlacings(null)} />
+        <div className="stack">
+          <div style={{ textAlign: 'center', display: 'grid', gap: 'var(--s1)' }}>
+            {placings.list.length > 1 && <span className="rowsub" style={{ justifyContent: 'center' }}>{placings.at + 1} of {placings.list.length}</span>}
+            <span className="figure" style={{ fontSize: 'var(--fs-heading)', color: 'var(--brand)' }}>{p.label} · {p.score}</span>
+            <span className="rowtitle">Which was better?</span>
+          </div>
+          <div style={{ position: 'relative', display: 'flex', gap: 10 }}>
+            <ChoiceCard
+              name={hotel.hotelName} chosen
+              photo={photos.find((q) => q.aspects.includes(p.key))?.url ?? aspectPhoto(allPhotos, hotel.hotelName, p.key)?.url ?? null}
+              onClick={() => answer(true)}
+            />
+            <ChoiceCard
+              name={candidate.hotelName} sub={candidate.score.toFixed(1)}
+              photo={aspectPhoto(allPhotos, candidate.hotelName, p.key)?.url ?? null}
+              onClick={() => answer(false)}
+            />
+            <span className="choice-or">OR</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button type="button" className="tagbtn" onClick={undo}>‹ Undo</button>
+            <button type="button" className="tagbtn" onClick={() => settle(Math.floor((p.lo + p.hi) / 2))}>Same</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const viewList = viewing ? (viewing.aspect ? photos.filter((p) => p.aspects.includes(viewing.aspect!)) : photos) : [];
+  const pending = toPlace().length > 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
+    <div style={{ paddingBottom: 'var(--s7)' }}>
       <ScreenHeader title="Rate a stay" sub={hotel.hotelName} />
-
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px 20px 100px' }}>
-        <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--ink3)', fontWeight: 700, marginBottom: 16, textAlign: 'center' }}>
-          {step + 1} of {categories.length}
-        </div>
-        <div className="figure" style={{ fontSize: 'var(--fs-heading)', marginBottom: 28, textAlign: 'center', color: 'var(--brand)' }}>{category.label}</div>
-
-        {phase === 'sentiment' && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-              {SENTIMENT_CIRCLES.map((s) => (
-                <button
-                  key={s.key}
-                  onClick={() => chooseSentiment(s.key)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, flex: 1 }}
-                >
-                  <span
-                    style={{
-                      width: 68, height: 68, borderRadius: '50%', background: s.color,
-                      display: 'grid', placeItems: 'center', boxShadow: '0 6px 16px rgba(0,0,0,.15)',
-                    }}
-                  />
-                  <span style={{ fontSize: 'var(--fs-small)', fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>{s.label}</span>
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={skipCategory}
-              style={{
-                display: 'block', margin: '28px auto 0', background: 'none', border: 'none',
-                color: 'var(--ink3)', fontSize: 'var(--fs-body)', fontWeight: 700, cursor: 'pointer',
-              }}
-            >
-              N/A for this stay
-            </button>
-          </div>
-        )}
-
-        {phase === 'comparing' && comparisonCandidate && (
-          <div>
-            <div style={{ fontSize: 'var(--fs-input)', fontWeight: 600, textAlign: 'center', marginBottom: 16, color: 'var(--brand)' }}>
-              Which do you prefer?
-            </div>
-            <div style={{ position: 'relative', display: 'flex', gap: 10 }}>
-              <ChoiceCard
-                name={hotel.hotelName} chosen
-                photo={aspectPhoto(allPhotos, hotel.hotelName, category.key)?.url ?? null}
-                onClick={() => answerComparison(true)}
-              />
-              <ChoiceCard
-                name={comparisonCandidate.hotelName} sub={comparisonCandidate.score.toFixed(1)}
-                photo={aspectPhoto(allPhotos, comparisonCandidate.hotelName, category.key)?.url ?? null}
-                onClick={() => answerComparison(false)}
-              />
-              <span
-                style={{
-                  position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-                  width: 34, height: 34, borderRadius: '50%', background: 'var(--brand)', color: 'var(--on-brand)',
-                  fontSize: 'var(--fs-micro)', fontWeight: 600, display: 'grid', placeItems: 'center', boxShadow: '0 2px 8px rgba(0,0,0,.25)',
-                }}
-              >
-                OR
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 18 }}>
-              <button onClick={undo} style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}>
-                ‹ Undo
-              </button>
-              <button onClick={tooTough} className="tagbtn">
-                Too tough
-              </button>
-              <button onClick={skipCategory} style={{ background: 'none', border: 'none', color: 'var(--ink3)', fontSize: 'var(--fs-small)', fontWeight: 700, cursor: 'pointer' }}>
-                Skip ›
-              </button>
-            </div>
-          </div>
-        )}
-
-        {phase === 'done' && (
-          <div style={{ textAlign: 'center' }}>
-            {current.skipped ? (
-              <div style={{ fontSize: 'var(--fs-input)', color: 'var(--ink3)', fontWeight: 600 }}>Skipped</div>
-            ) : (
-              <>
-                <div className="figure" style={{ fontSize: 'var(--fs-hero)', color: 'var(--brand)' }}>{current.score!.toFixed(1)}</div>
-                <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink3)', marginTop: 4 }}>
-                  {current.sameBand.length === 0 ? 'First rating in this category' : 'Ranked against your other stays'}
+      <div className="stack">
+        <PhotoStrip
+          label="stay" photos={photos} busy={sorting ? '…' : null}
+          onAdd={saving ? undefined : addPhotos}
+          onOpen={(index) => setViewing({ aspect: null, index })}
+        />
+        <div className="listcard">
+          {categories.map((c) => {
+            const own = photos.filter((p) => p.aspects.includes(c.key));
+            return (
+              <div key={c.key} className="aspectrow">
+                <div className="aspectrow-head">
+                  <span className="rowtitle display">{c.label}</span>
+                  {!noteOpen[c.key] && (
+                    <button type="button" className="tagbtn" onClick={() => setNoteOpen((o) => ({ ...o, [c.key]: true }))}>Note</button>
+                  )}
                 </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {phase === 'done' && !current.skipped && (
-          <div style={{ display: 'grid', gap: 'var(--s3)', marginTop: 'var(--s6)' }}>
-            <Field label="Note">
-              <textarea className="input" rows={2} value={current.note} onChange={(e) => updateCurrent({ note: e.target.value })} />
-            </Field>
-            <PhotoStrip
-              label={category.label}
-              photos={current.photos}
-              onAdd={saving ? undefined : stagePhotos}
-              onOpen={setViewing}
-            />
-          </div>
-        )}
-
-        {error && <div style={{ color: 'var(--red)', fontSize: 'var(--fs-body)', margin: '16px 0 0', textAlign: 'center' }}>{error}</div>}
-
-        {phase === 'done' && (
-          <button
-            onClick={handleNext}
-            disabled={saving}
-            style={{
-              width: '100%', marginTop: 28, padding: '13px 0', borderRadius: 'var(--r-sm)', border: 'none', fontSize: 'var(--fs-input)', fontWeight: 700,
-              background: saving ? 'var(--card2)' : 'var(--brand)', color: saving ? 'var(--ink3)' : 'var(--on-brand)',
-              cursor: saving ? 'default' : 'pointer',
-            }}
-          >
-            {saving ? 'Saving…' : step < categories.length - 1 ? 'Next' : 'Finish'}
-          </button>
-        )}
+                <ScorePicker label={c.label} value={scores[c.key] ?? null} onChange={(n) => setScore(c.key, n)} />
+                {noteOpen[c.key] && (
+                  <textarea
+                    className="input" rows={2} autoFocus aria-label={`${c.label} note`}
+                    value={notes[c.key] ?? ''} onChange={(e) => setNotes((n) => ({ ...n, [c.key]: e.target.value }))}
+                  />
+                )}
+                {own.length > 0 && <PhotoStrip label={c.label} photos={own} onOpen={(index) => setViewing({ aspect: c.key, index })} />}
+              </div>
+            );
+          })}
+        </div>
+        {error && <ErrorText>{error}</ErrorText>}
+        <Button block disabled={saving || sorting || (scored.length === 0 && photos.length === 0)} onClick={next}>
+          {saving ? 'Saving…' : pending ? 'Next' : 'Save'}
+        </Button>
       </div>
 
-      {viewing != null && (
+      {viewing && (
         <PhotoViewer
-          photos={current.photos}
-          start={viewing}
-          title={`${hotel.hotelName} · ${category.label}`}
+          photos={viewList}
+          start={viewing.index}
+          title={`${hotel.hotelName}${viewing.aspect ? ` · ${categories.find((c) => c.key === viewing.aspect)?.label ?? ''}` : ''}`}
           onClose={() => setViewing(null)}
-          onDelete={(p) => updateCurrent({ photos: current.photos.filter((q) => q.id !== p.id) })}
+          onDelete={(p) => setPhotos((prev) => prev.filter((q) => q.id !== p.id))}
+          aspects={{ of: (p) => photos.find((q) => q.id === p.id)?.aspects ?? [], toggle: (p, key) => toggleAspect(p.id, key) }}
         />
       )}
     </div>
   );
 }
 
-// One side of "Which do you prefer?": the hotel's photo of this aspect
-// where there is one, so the choice is made looking at the two.
+// One side of "Which was better?": the hotel's photo of this aspect where
+// there is one, so the choice is made looking at the two.
 function ChoiceCard({ name, sub, photo, chosen, onClick }: { name: string; sub?: string; photo: string | null; chosen?: boolean; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} className={['choicecard', chosen && 'chosen', photo && 'withphoto'].filter(Boolean).join(' ')}>

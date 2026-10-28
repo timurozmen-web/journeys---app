@@ -15,12 +15,14 @@ export function fitWithin(w: number, h: number, max = MAX_EDGE): { w: number; h:
 // A JPEG of the photo at fitWithin's size. createImageBitmap applies the
 // photo's own rotation (a portrait shot otherwise lands on its side); a
 // file the browser can't decode (HEIC outside Safari) goes up as it is.
-export async function shrinkImage(file: File): Promise<{ blob: Blob; ext: string }> {
+// Sorting photos sends a smaller copy (`maxEdge` 768), plenty to see
+// what's in it at a fraction of the size.
+export async function shrinkImage(file: File, maxEdge = MAX_EDGE, quality = QUALITY): Promise<{ blob: Blob; ext: string }> {
   const original = { blob: file as Blob, ext: (file.name.split('.').pop() || 'jpg').toLowerCase() };
   if (typeof createImageBitmap !== 'function' || typeof document === 'undefined') return original;
   try {
     const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
-    const size = fitWithin(bitmap.width, bitmap.height);
+    const size = fitWithin(bitmap.width, bitmap.height, maxEdge);
     const canvas = document.createElement('canvas');
     canvas.width = size.w;
     canvas.height = size.h;
@@ -28,7 +30,7 @@ export async function shrinkImage(file: File): Promise<{ blob: Blob; ext: string
     if (!ctx) return original;
     ctx.drawImage(bitmap, 0, 0, size.w, size.h);
     bitmap.close();
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', QUALITY));
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
     // Already small and compressed: the re-encode can come out bigger.
     if (!blob || blob.size >= file.size) return original;
     return { blob, ext: 'jpg' };

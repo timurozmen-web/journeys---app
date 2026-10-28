@@ -346,11 +346,12 @@ export async function fetchReviewPhotos(): Promise<ReviewPhoto[]> {
   }));
 }
 
-/* A photo of one aspect of a stay. It's made smaller on the phone first
-   (a phone photo is 3-5MB; 1,600px across is plenty on a screen), then
-   goes in the trip-photos bucket under the user's own folder, which is
-   what the bucket's upload policy allows. */
-export async function addReviewPhoto(hotelName: string, hotelId: string | null, category: string, file: File) {
+/* A photo of a stay, filed under each aspect it shows (a bedroom under Room
+   and Bed): one file, one row per aspect, sharing its path. It's made
+   smaller on the phone first (a phone photo is 3-5MB; 1,600px across is
+   plenty on a screen), then goes in the trip-photos bucket under the
+   user's own folder, which is what the bucket's upload policy allows. */
+export async function addReviewPhoto(hotelName: string, hotelId: string | null, aspects: string[], file: File) {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) throw new Error('Not signed in');
 
@@ -362,19 +363,39 @@ export async function addReviewPhoto(hotelName: string, hotelId: string | null, 
   if (uploadError) throw uploadError;
   const { data: urlData } = supabase.storage.from('trip-photos').getPublicUrl(path);
 
-  const { error } = await supabase.from('review_photos').insert({ hotel_name: hotelName, hotel_id: hotelId, category, url: urlData.publicUrl, path });
+  const rows = (aspects.length ? aspects : ['overall']).map((category) => ({ hotel_name: hotelName, hotel_id: hotelId, category, url: urlData.publicUrl, path }));
+  const { error } = await supabase.from('review_photos').insert(rows);
   if (error) {
-    // The row is what shows it; without one the file would only take up space.
+    // The rows are what show it; without them the file would only take up space.
     await supabase.storage.from('trip-photos').remove([path]);
     throw error;
   }
   notifyDataChanged();
 }
 
+// Files a saved photo under exactly these aspects. None left deletes it.
+export async function setReviewPhotoAspects(photo: ReviewPhoto, current: string[], next: string[]) {
+  if (next.length === 0) return deleteReviewPhoto(photo);
+  const added = next.filter((a) => !current.includes(a));
+  const removed = current.filter((a) => !next.includes(a));
+  if (added.length) {
+    const { error } = await supabase.from('review_photos').insert(added.map((category) => ({
+      hotel_name: photo.hotelName, hotel_id: photo.hotelId, category, url: photo.url, path: photo.path,
+    })));
+    if (error) throw error;
+  }
+  if (removed.length) {
+    const { error } = await supabase.from('review_photos').delete().eq('path', photo.path).in('category', removed);
+    if (error) throw error;
+  }
+  notifyDataChanged();
+}
+
+// Deletes the photo from every aspect it's filed under, then its file.
 export async function deleteReviewPhoto(photo: ReviewPhoto) {
-  const { error } = await supabase.from('review_photos').delete().eq('id', photo.id);
+  const { error } = await supabase.from('review_photos').delete().eq('path', photo.path);
   if (error) throw error;
-  // The row goes first: a file left behind is harmless, a row pointing at
+  // The rows go first: a file left behind is harmless, a row pointing at
   // a missing file shows a broken picture.
   await supabase.storage.from('trip-photos').remove([photo.path]);
   notifyDataChanged();
