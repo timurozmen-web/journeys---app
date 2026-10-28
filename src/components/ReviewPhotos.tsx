@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CameraIcon, XIcon, BackIcon } from './Icons';
 import { Confirm } from './ui';
+import { PHOTO_ASPECTS } from '../lib/reviewSummary';
 
 export interface StripPhoto { id: string; url: string }
 
@@ -42,12 +43,14 @@ export function PhotoStrip({ photos, onAdd, busy, onOpen, label }: {
 // between them; deleting asks once. It's drawn on the page's body: inside
 // a screen it sat under the tab bar, whatever its z-index, as the screen
 // is a stacking context of its own.
-export function PhotoViewer({ photos, start, title, onClose, onDelete }: {
+export function PhotoViewer({ photos, start, title, onClose, onDelete, aspects }: {
   photos: StripPhoto[];
   start: number;
   title: string;
   onClose: () => void;
   onDelete?: (photo: StripPhoto) => Promise<void> | void;
+  // The aspects the photo is filed under, as tags to move it between them.
+  aspects?: { of: (photo: StripPhoto) => string[]; toggle: (photo: StripPhoto, key: string) => void };
 }) {
   const [index, setIndex] = useState(start);
   const [confirming, setConfirming] = useState(false);
@@ -99,6 +102,18 @@ export function PhotoViewer({ photos, start, title, onClose, onDelete }: {
         {onDelete ? <button type="button" className="pv-text" onClick={() => setConfirming(true)}>Delete</button> : <span className="pv-btn" />}
       </div>
       <img className="pv-img" src={photo.url} alt="" />
+      {aspects && (
+        <div className="pv-tags">
+          {PHOTO_ASPECTS.map((a) => {
+            const on = aspects.of(photo).includes(a.key);
+            return (
+              <button key={a.key} type="button" className={on ? 'tagbtn on' : 'tagbtn'} aria-pressed={on} onClick={() => aspects.toggle(photo, a.key)}>
+                {a.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
       {count > 1 && (
         <div className="pv-nav">
           <button type="button" className="pv-btn" aria-label="Previous" disabled={at === 0} onClick={() => setIndex(at - 1)}><BackIcon size={20} color="currentColor" /></button>

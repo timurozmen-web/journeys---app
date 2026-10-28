@@ -686,3 +686,12 @@ input[type=date].input.inline-date:focus{border-color:var(--brand2)}
 .cc-sub{font-size:var(--fs-caption);color:var(--ink3)}
 .choicecard.withphoto .cc-sub{color:var(--on-dark2)}
 .rowthumb{width:40px;height:40px;flex-shrink:0;object-fit:cover;border-radius:var(--r-control);border:1px solid var(--line)}
+.scorepick{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+.scorepick button{height:38px;padding:0;border:1.5px solid var(--ink);border-radius:var(--r-control);background:none;color:var(--ink);font-family:var(--font-display);font-size:var(--fs-small);font-weight:700;cursor:pointer}
+.scorepick button.on{background:var(--brand2);border-color:var(--brand2);color:var(--on-brand)}
+.pv-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding-top:var(--s3)}
+.pv-tags .tagbtn{border-color:var(--on-dark-line);color:var(--on-dark);background:none}
+.pv-tags .tagbtn.on{background:var(--brand2);border-color:var(--brand2);color:var(--on-brand)}
+.aspectrow{display:grid;gap:var(--s2);padding:var(--s3) var(--s4)}
+.aspectrow-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3)}
+.choice-or{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:var(--brand2);color:var(--on-brand);font-family:var(--font-display);font-size:var(--fs-micro);font-weight:700;display:grid;place-items:center;box-shadow:var(--shadow-raised);z-index:2}

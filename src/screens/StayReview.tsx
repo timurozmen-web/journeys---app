@@ -1,23 +1,27 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAllHotels, useReviewPhotos, useReviews } from '../lib/useLiveData';
-import { propertyKey, propertyReview, scoreColour, aspectPhoto, type AspectSummary } from '../lib/reviewSummary';
-import { addReviewPhoto, deleteReviewPhoto, updateReviewNote } from '../lib/queries';
+import { propertyKey, propertyReview, scoreColour, aspectPhoto, distinctPhotos, photoAspects } from '../lib/reviewSummary';
+import { addReviewPhoto, deleteReviewPhoto, setReviewPhotoAspects, updateReviewNote } from '../lib/queries';
+import { sortPhotos } from '../lib/photoSort';
 import { monthYear } from '../lib/format';
 import { Button, EmptyState, ErrorText, PhotoHero, ScreenHeader } from '../components/ui';
 import { PhotoStrip, PhotoViewer } from '../components/ReviewPhotos';
 import type { ReviewPhoto } from '../types';
 
 // One hotel's review: its score in each aspect over every visit, the
-// latest note, and photos of each aspect, added and removed in place.
+// latest note, and photos of each aspect. Photos are added once, at the
+// top, and sorted into the aspects they show; a photo's tags in the viewer
+// move it between aspects.
 export function StayReview() {
   const navigate = useNavigate();
   const { name = '' } = useParams();
   const { data: reviews } = useReviews();
   const { data: photos } = useReviewPhotos();
   const { data: hotels } = useAllHotels();
-  const [uploading, setUploading] = useState<{ aspect: string; done: number; total: number } | null>(null);
-  const [viewing, setViewing] = useState<{ aspect: AspectSummary; index: number } | null>(null);
+  const [uploading, setUploading] = useState<{ done: number; total: number } | null>(null);
+  // Which photos the viewer pages through: one aspect's, or (null) all.
+  const [viewing, setViewing] = useState<{ aspect: string | null; index: number } | null>(null);
   const [error, setError] = useState('');
 
   const review = propertyReview(name, reviews, photos);
@@ -30,19 +34,39 @@ export function StayReview() {
     .sort((a, b) => b.date.localeCompare(a.date))[0];
   const cover = aspectPhoto(photos, review.hotelName, 'overall');
   const all = [review.overall, ...review.aspects];
+  const everyPhoto = distinctPhotos(photos, review.hotelName);
+  const viewList = viewing ? (viewing.aspect ? all.find((a) => a.key === viewing.aspect)?.photos ?? [] : everyPhoto) : [];
 
-  async function add(aspect: string, files: File[]) {
+  // Sorted first; any that can't be go under Overall, to be moved by hand.
+  async function add(files: File[]) {
     setError('');
-    setUploading({ aspect, done: 0, total: files.length });
+    setUploading({ done: 0, total: files.length });
     try {
-      for (const file of files) {
-        await addReviewPhoto(review!.hotelName, lastStay?.id ?? null, aspect, file);
+      let sorted = files.map(() => ['overall']);
+      try {
+        sorted = await sortPhotos(files);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Photos not sorted');
+      }
+      for (const [i, file] of files.entries()) {
+        await addReviewPhoto(review!.hotelName, lastStay?.id ?? null, sorted[i], file);
         setUploading((u) => (u ? { ...u, done: u.done + 1 } : u));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Photo not saved');
     } finally {
       setUploading(null);
+    }
+  }
+
+  async function toggle(photo: ReviewPhoto, key: string) {
+    const current = photoAspects(photos, photo.path);
+    const next = current.includes(key) ? current.filter((a) => a !== key) : [...current, key];
+    setError('');
+    try {
+      await setReviewPhotoAspects(photo, current, next);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Photo not moved');
     }
   }
 
@@ -60,10 +84,7 @@ export function StayReview() {
       <ScreenHeader title={review.hotelName} sub={review.country || undefined} />
       <div className="stack">
         {cover && (
-          <PhotoHero src={cover.url} height={220} rounded scrim="bottom" onClick={() => {
-            const aspect = all.find((a) => a.photos.some((p) => p.id === cover.id))!;
-            setViewing({ aspect, index: aspect.photos.findIndex((p) => p.id === cover.id) });
-          }}>
+          <PhotoHero src={cover.url} height={220} rounded scrim="bottom" onClick={() => setViewing({ aspect: null, index: everyPhoto.findIndex((p) => p.path === cover.path) })}>
             {review.overall.score != null && (
               <div style={{ marginTop: 'auto', padding: 'var(--s4)' }}>
                 <span className="figure big">{review.overall.score.toFixed(1)}</span>
@@ -77,12 +98,19 @@ export function StayReview() {
         {review.visits.length > 0 && (
           <div className="rowsub">{review.visits.map(monthYear).join(' · ')}</div>
         )}
+        <PhotoStrip
+          label={review.hotelName}
+          photos={everyPhoto}
+          busy={uploading ? `${uploading.done}/${uploading.total}` : null}
+          onAdd={uploading ? undefined : add}
+          onOpen={(index) => setViewing({ aspect: null, index })}
+        />
         {error && <ErrorText>{error}</ErrorText>}
 
         <div className="listcard">
           {all.map((a) => (
-            <div key={a.key} style={{ display: 'grid', gap: 'var(--s2)', padding: 'var(--s3) var(--s4)' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--s3)' }}>
+            <div key={a.key} className="aspectrow">
+              <div className="aspectrow-head">
                 <span className="rowtitle display">{a.label}</span>
                 {a.score != null
                   ? <span className="figure" style={{ fontSize: 'var(--fs-title)', color: scoreColour(a.score) }}>{a.score.toFixed(1)}</span>
@@ -92,9 +120,7 @@ export function StayReview() {
               <PhotoStrip
                 label={a.label}
                 photos={a.photos}
-                busy={uploading?.aspect === a.key ? `${uploading.done}/${uploading.total}` : null}
-                onAdd={uploading ? undefined : (files) => add(a.key, files)}
-                onOpen={(index) => setViewing({ aspect: a, index })}
+                onOpen={(index) => setViewing({ aspect: a.key, index })}
               />
             </div>
           ))}
@@ -112,12 +138,13 @@ export function StayReview() {
 
       {viewing && (
         <PhotoViewer
-          // Follows the live list, so a deleted photo drops out of view.
-          photos={all.find((a) => a.key === viewing.aspect.key)?.photos ?? []}
+          // Follows the live list, so a deleted or moved photo drops out of view.
+          photos={viewList}
           start={viewing.index}
-          title={`${review.hotelName} · ${viewing.aspect.label}`}
+          title={`${review.hotelName}${viewing.aspect ? ` · ${all.find((a) => a.key === viewing.aspect)?.label ?? ''}` : ''}`}
           onClose={() => setViewing(null)}
           onDelete={(p) => remove(p as ReviewPhoto)}
+          aspects={{ of: (p) => photoAspects(photos, (p as ReviewPhoto).path), toggle: (p, key) => toggle(p as ReviewPhoto, key) }}
         />
       )}
     </div>
