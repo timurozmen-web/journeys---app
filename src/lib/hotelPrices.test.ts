@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PRICE_EVENTS } from '../data/priceEvents';
 import { addDays } from './tripDay';
-import { eventPairs, heldOutEventError, heldOutSeasonError, HOTEL_PRICES, marriottSegment, rowProgramme, rowTier, seasonIndex, type PriceRow, type PriceSearch } from './hotelPrices';
+import { eventPairs, heldOutEventError, heldOutSeasonError, HOTEL_PRICES, marriottSegment, rowProgramme, rowTier, SEASON_INDEX_SKIP, seasonIndex, type PriceRow, type PriceSearch } from './hotelPrices';
 
 // A brand search only returns that brand, so every hotel one priced must
 // be put to Marriott: a name the classifier can't place shows up here.
@@ -69,7 +69,9 @@ describe('event ratios held out one hotel at a time', () => {
   // 48% ignoring events (240 hotels); 21 Oct, with the Open and Web Summit,
   // 12.8% and 46% (271 hotels); 22 Oct, with Istanbul's Eid, Berlin's three
   // (two of which moved nothing) and Dublin's two, 11.9% and 35% (445
-  // hotels); with Munich's three trade fairs, 13.4% and 45% (573 hotels).
+  // hotels); with Munich's three trade fairs, 13.4% and 45% (573 hotels);
+  // 28 Oct, with the Americas, Melbourne, Auckland and the Nordic capitals,
+  // 11.9% and 33% (997 hotels, 53 events).
   // IAA Mobility set against the week after, the one before Oktoberfest,
   // was 33% out; against the fortnight before, 16.5%. If new searches push
   // the error up a lot, the method needs another look, not a looser bound.
@@ -130,7 +132,12 @@ describe('the month-by-month index', () => {
     // overlapped LAMIERA (11-14 May 2027) but the week after priced the same
     // (Château Monfort $432 and $433), so May is dear there in its own right.
     // Vienna's December, its Christmas markets, is 1.7 times its year.
-    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States'], ['Edinburgh', 'United Kingdom'], ['Sydney', 'Australia'], ['Hong Kong', 'Hong Kong'], ['Barcelona', 'Spain'], ['Rome', 'Italy'], ['Amsterdam', 'Netherlands'], ['Milan', 'Italy'], ['Lisbon', 'Portugal'], ['Madrid', 'Spain'], ['Berlin', 'Germany'], ['Vienna', 'Austria'], ['Prague', 'Czechia'], ['Dublin', 'Ireland']]) {
+    // 25-28 Oct 2026: Toronto 8.6% against 18.2%, Vancouver 7.9% against
+    // 32.7% (its July and August over one and a half times its year),
+    // Montreal 9.5% against 18.6%, Melbourne 9.0% against 13.2%, Auckland
+    // 8.2% against 14.6%, Copenhagen 8.4% against 23.2%, Oslo 6.7% against
+    // 13.6% and Helsinki 10.1% against 13.6%.
+    for (const [city, country] of [['Dubai', 'UAE'], ['Tokyo', 'Japan'], ['New York', 'United States'], ['London', 'United Kingdom'], ['Paris', 'France'], ['Las Vegas', 'United States'], ['Edinburgh', 'United Kingdom'], ['Sydney', 'Australia'], ['Hong Kong', 'Hong Kong'], ['Barcelona', 'Spain'], ['Rome', 'Italy'], ['Amsterdam', 'Netherlands'], ['Milan', 'Italy'], ['Lisbon', 'Portugal'], ['Madrid', 'Spain'], ['Berlin', 'Germany'], ['Vienna', 'Austria'], ['Prague', 'Czechia'], ['Dublin', 'Ireland'], ['Toronto', 'Canada'], ['Vancouver', 'Canada'], ['Montreal', 'Canada'], ['Melbourne', 'Australia'], ['Auckland', 'New Zealand'], ['Copenhagen', 'Denmark'], ['Oslo', 'Norway'], ['Helsinki', 'Finland']]) {
       const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
       expect(r.held).toBeGreaterThanOrEqual(70);
       expect(r.error).toBeLessThan(0.15);
@@ -141,26 +148,48 @@ describe('the month-by-month index', () => {
     // 7.7% against 9.2%, and 11.6% against 13.2%. Munich's prices move with
     // its trade fairs rather than the season; its September is the week
     // before Oktoberfest, when several of its Marriotts were two to three
-    // times their late-August price.
-    for (const [city, country] of [['Abu Dhabi', 'UAE'], ['Rio de Janeiro', 'Brazil'], ['Istanbul', 'Türkiye'], ['Munich', 'Germany']]) {
+    // times their late-August price. Buenos Aires: 10.4% against 11.3%.
+    for (const [city, country] of [['Abu Dhabi', 'UAE'], ['Rio de Janeiro', 'Brazil'], ['Istanbul', 'Türkiye'], ['Munich', 'Germany'], ['Buenos Aires', 'Argentina']]) {
       const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
       expect(r.error).toBeLessThan(0.15);
       expect(r.error).toBeLessThan(r.unshifted * 0.95);
     }
-    // One refit per held-out hotel-month across twenty-three cities: about 6s
+    // One refit per held-out hotel-month across thirty-two cities: about 15s
     // alone, more with the other files running beside it.
-  }, 30_000);
+  }, 60_000);
   it('stays close where prices hardly move through the year', () => {
-    // Mexico City's 4-5★ hotels mostly hold one price all year (the JW
-    // Marriott Santa Fe $183 every time from March to September), so no
-    // change is out by 5% and the index, pulled by the few that move, by 6%.
-    // Singapore's and Bangkok's barely move either: 5.5% and 5.0%
-    // unchanged, 5.2% and 4.3% with the index.
-    for (const [city, country] of [['Mexico City', 'Mexico'], ['Singapore', 'Singapore'], ['Bangkok', 'Thailand']]) {
+    // Singapore's and Bangkok's 4-5★ hotels barely move: 5.5% and 5.0%
+    // unchanged, 5.2% and 4.3% with the index. Cancún's all-inclusives hold
+    // a price too (8.9% with the index, 9.0% without): it costs nothing.
+    for (const [city, country] of [['Singapore', 'Singapore'], ['Bangkok', 'Thailand']]) {
       const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
       expect(r.held).toBeGreaterThanOrEqual(100);
       expect(r.error).toBeLessThan(0.08);
     }
+    const cancun = heldOutSeasonError('Cancun', 'Mexico', PRICE_EVENTS)!;
+    expect(cancun.error).toBeLessThanOrEqual(cancun.unshifted + 0.005);
   });
+  it('still beats leaving prices as they were where a few hotels jump about', () => {
+    // Stockholm, 27 Oct 2026: 19.8% against 25.8%. Two Best Westerns came
+    // back at one fixed rate May to September ($804 and $430 a night, two
+    // to four times their winter price), and the Nobis $1,799 on 8-11
+    // September from every seller, all logged as they came back.
+    const r = heldOutSeasonError('Stockholm', 'Sweden', PRICE_EVENTS)!;
+    expect(r.held).toBeGreaterThanOrEqual(100);
+    expect(r.error).toBeLessThan(r.unshifted * 0.85);
+  });
+  it('leaves prices as they were where the index does worse', () => {
+    // SEASON_INDEX_SKIP: each city there still does worse with the index
+    // (if new searches change that, the city can come off the list), and
+    // its months all read as 1.
+    for (const [city, country] of SEASON_INDEX_SKIP) {
+      const r = heldOutSeasonError(city, country, PRICE_EVENTS)!;
+      expect(r.held, city).toBeGreaterThanOrEqual(100);
+      expect(r.error, city).toBeGreaterThan(r.unshifted);
+      expect([...seasonIndex(city, country, PRICE_EVENTS)!.months.values()].every((f) => f === 1), city).toBe(true);
+    }
+    // Accented the way the agent writes it, too.
+    expect(seasonIndex('Bogotá', 'Colombia', PRICE_EVENTS)!.months.get(1)).toBe(1);
+  }, 30_000);
 });
 

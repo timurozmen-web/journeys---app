@@ -1,7 +1,7 @@
 import DATA from '../data/hotelPrices.json';
 import { programmeOfHotel } from '../data/brandMap';
 import { UNMEASURED_EVENTS, type PriceEvent } from '../data/priceEvents';
-import { sameCountry } from './countryName';
+import { sameCity, sameCountry } from './countryName';
 
 // The hotel price database (src/data/hotelPrices.json): every search kept
 // as it came back, so it can answer more than one question. Each is a city,
@@ -86,13 +86,7 @@ export function rowTier(row: PriceRow): Tier | null {
   return stars == null ? null : stars >= 5 ? 'luxury' : stars === 4 ? 'mid' : 'budget';
 }
 
-const sameCity = (a: string, b: string) => {
-  const x = a.trim().toLowerCase();
-  const y = b.trim().toLowerCase();
-  return x.includes(y) || y.includes(x);
-};
-
-/** Searches made in a city, matched loosely ("New York City" is New York). */
+/** Searches made in a city, matched loosely ("New York City" is New York, "Bogotá" Bogota). */
 export function citySearches(city: string, country: string, db: PriceSearch[] = HOTEL_PRICES): PriceSearch[] {
   return db.filter((s) => sameCountry(s.country, country) && sameCity(s.city, city));
 }
@@ -161,6 +155,18 @@ export interface SeasonIndex {
 // A month needs this many hotels also priced in another month before it
 // gets a factor: fewer and one hotel's odd price moves the whole month.
 const MIN_MONTH_HOTELS = 3;
+
+// Cities whose index was further out than leaving a price as it was, held
+// out one hotel-month at a time (searched 20-27 Oct 2026): Lima 9.4%
+// against 8.1%, Bogotá 11.2% against 10.5%, Cartagena 12.3% against 11.3%,
+// Mexico City 6.4% against 5.0%. Most of their 4-5★ hotels hold one price
+// all year while a few step up for a season (Lima's Pullman Miraflores
+// $117-127 a night December to April, $190-206 May to September), and the
+// index, pulled by the few, moved the rest. Their months read as 1, so a
+// measured price stays as it was. A test checks each still does worse.
+export const SEASON_INDEX_SKIP: [city: string, country: string][] = [
+  ['Lima', 'Peru'], ['Bogota', 'Colombia'], ['Cartagena', 'Colombia'], ['Mexico City', 'Mexico'],
+];
 const seasonCache = new WeakMap<PriceSearch[], WeakMap<PriceEvent[], Map<string, SeasonIndex | null>>>();
 
 /**
@@ -177,7 +183,7 @@ const seasonCache = new WeakMap<PriceSearch[], WeakMap<PriceEvent[], Map<string,
  * 2026), the index predicts a hotel's price in another month to a median
  * 12% in Dubai, 8% in Tokyo and 10% in New York; the researched ranges
  * 19%, 24% and 30%; no change 24%, 15% and 33%. Null for a city priced in
- * fewer than two months.
+ * fewer than two months; every month 1 for one in SEASON_INDEX_SKIP.
  */
 type SeasonObs = { hotel: string; month: number; y: number };
 
@@ -245,7 +251,8 @@ export function seasonIndex(city: string, country: string, events: PriceEvent[],
   if (!cached) byEvents.set(events, (cached = new Map()));
   if (cached.has(key)) return cached.get(key)!;
   const fit = fitSeason(seasonObservations(city, country, events, db));
-  const index = fit && { months: new Map([...fit.factor].map(([m, f]) => [m, Math.exp(f)])), hotels: fit.level.size };
+  const flat = SEASON_INDEX_SKIP.some(([c, k]) => sameCountry(k, country) && sameCity(c, city));
+  const index = fit && { months: new Map([...fit.factor].map(([m, f]) => [m, flat ? 1 : Math.exp(f)])), hotels: fit.level.size };
   cached.set(key, index);
   return index;
 }

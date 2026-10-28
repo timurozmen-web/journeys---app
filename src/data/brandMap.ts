@@ -37,6 +37,9 @@ const ACCOR_SUBBRANDS = [
   'hotelF1', 'greet', '21c Museum Hotels', '25hours', 'Delano', 'Gleneagles', 'Hyde', 'Jo&Joe',
   'Mama Shelter', 'Mondrian', 'Morgans Originals', 'SLS', 'SO/', 'The Hoxton', 'Rixos', 'Our Habitas',
   'Rikas', 'onefinestay',
+  // Hotels Accor runs under their own name, listed on all.accor.com as
+  // "<name> managed by Accor" (Park Royal Buenos Aires, hotel C4N6).
+  'managed by Accor',
 ];
 
 const HYATT_SUBBRANDS = [
@@ -128,15 +131,36 @@ export function matchProgrammeStrict(raw: string): string | null {
 // (an Ascott hotel there came back in a search), London's Hyde Park.
 const PLACE_WORDS = /\b(raffles place|raffles city|hyde park|regent street)\b/g;
 
+// Hotels named with a brand's word that aren't that brand. The Regent Warsaw
+// Hotel was the Hyatt Regency until March 2014, when Hyatt left and the owner
+// ran it on as its own (Warsaw Business Journal, Eurobuild CEE); it isn't one
+// of IHG's Regents. Arlo NoMad is an Arlo hotel in Manhattan's NoMad
+// district, not Hilton's NoMad. The St Regis Hotel in Vancouver (602
+// Dunsmuir Street, open since 1913) is independent and Canadian-owned
+// (Forbes Travel Guide; Montecristo); Marriott's are all "The St. Regis
+// <place>", so only that bare name is left out. Casa Lola in Cartagena's
+// Getsemaní, "Casa Lola Luxury Collection" in the search, is Hotel Casa Lola
+// Deluxe Gallery, opened by its designer Ignacio García de Vinuesa (La
+// República, Nov 2025; Forbes Colombia, 18 Nov 2025), not Marriott's.
+const NOT_THE_BRAND = /\b(regent warsaw|arlo nomad|casa lola)\b|^st regis hotel$/;
+
 /**
  * The programme a hotel belongs to, read from its name the way
  * matchProgrammeStrict reads it (whole words, so "Four Elements" isn't an
- * Element), plus the two its four-letter floor misses: a W ("W
- * Edinburgh") and a plain "Hyatt" or "IHG". Null for an independent.
+ * Element), plus what its four-letter floor misses: a W ("W
+ * Edinburgh"), an SLS or SO/, and a plain "Hyatt" or "IHG". Null for an
+ * independent.
  */
 export function programmeOfHotel(name: string): string | null {
   const text = name.toLowerCase().replace(PLACE_WORDS, ' ');
+  if (NOT_THE_BRAND.test(text)) return null;
   if (/^w\s/.test(text)) return 'Marriott Bonvoy';
-  return matchProgrammeStrict(text)
-    ?? (/\bhyatt\b/.test(text) ? 'World of Hyatt' : /\bihg\b/.test(text) ? 'IHG One Rewards' : null);
+  const strict = matchProgrammeStrict(text);
+  if (strict) return strict;
+  // SLS and SO/ are Accor's (both in ACCOR_SUBBRANDS) but under the
+  // four-letter floor, so SLS Barcelona and the SO/ hotels in Paris, Vienna
+  // and Dubai were read as independents. After the strict match, as the
+  // SLS Beverly Hills is now Marriott's: "SLS Hotel, a Luxury Collection Hotel".
+  if (/(^|\s)(sls|so\/)(\s|$)/.test(text)) return 'Accor ALL';
+  return /\bhyatt\b/.test(text) ? 'World of Hyatt' : /\bihg\b/.test(text) ? 'IHG One Rewards' : null;
 }

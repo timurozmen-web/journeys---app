@@ -15,7 +15,7 @@ import type { HotelPlanOption } from './hotelPlanner';
 import { nightsForTier, type StatusProgress } from './statusProgress';
 import { formatDate } from './format';
 import { roundPointsEstimate, shortProgramme } from './planFormat';
-import { countryKey, sameCountry } from './countryName';
+import { countryKey, sameCity, sameCountry } from './countryName';
 import type { CityCashRate, PointsValueProgramme, RealClimateMonth, RealCrowdPriceMonth } from './queries';
 
 // Everything the planner knows about a trip, in one place: the weather
@@ -313,12 +313,6 @@ const quantile = (xs: number[], q: number) => {
   const s = [...xs].sort((a, b) => a - b);
   const i = (s.length - 1) * q;
   return s[Math.floor(i)] + (s[Math.ceil(i)] - s[Math.floor(i)]) * (i - Math.floor(i));
-};
-
-const sameCity = (a: string, b: string) => {
-  const x = a.trim().toLowerCase();
-  const y = b.trim().toLowerCase();
-  return x.includes(y) || y.includes(x);
 };
 
 /**
