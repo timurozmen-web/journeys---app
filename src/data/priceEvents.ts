@@ -317,6 +317,25 @@ export const PRICE_EVENTS: PriceEvent[] = [
     note: 'Measured on the 4-5★ searches (no Marriott, Hilton, Hyatt, IHG or Accor came back priced in Oslo): x1.54 across 7 hotels. The city-centre hotels were dearest: the Radisson Blu Scandinavia $482 a night against $246, the Grand Hotel $608 against $377.',
   },
   {
+    // The EAACI Congress (European Academy of Allergy and Clinical
+    // Immunology), 11-14 June 2027 in Helsinki (eaaci.org). The window is the
+    // city's June search, taking in its first night and the night before. The
+    // plain nights are a week after: a fortnight before, late May, several
+    // hotels were dear themselves (the Hilton Strand $214 a night against $142
+    // in mid-June), and a fortnight after is Midsummer, 25 June.
+    city: 'Helsinki', country: 'Finland', event: 'EAACI Congress', window: ['2027-06-09', '2027-06-12'], baseline: ['2027-06-16', '2027-06-19'],
+    note: 'Measured on the 4-5★ and the Marriott, Hilton and IHG searches (no Hyatt or Accor came back priced in Helsinki): x1.49 across 9 hotels, Hilton\'s x1.30 across 3, IHG\'s x1.90 across 2. The Crowne Plaza was $351 a night against $156, the Hilton Strand $315 against $142.',
+  },
+  {
+    // Flow Festival, 13-15 August 2027 at Suvilahti (flowfestival.com press
+    // release, 17 August 2026). The city's August search, 11-14 August, takes
+    // in its first night, so the festival's own nights were searched. The
+    // plain nights are a fortnight after: a fortnight before is the end of
+    // July, Finland's holiday month.
+    city: 'Helsinki', country: 'Finland', event: 'Flow Festival', window: ['2027-08-13', '2027-08-16'], baseline: ['2027-08-27', '2027-08-30'],
+    note: 'Measured on the 4-5★ and the Marriott, Hilton and IHG searches (no Hyatt or Accor came back priced in Helsinki): x0.84 across 9 hotels. The festival nights were no dearer than plain ones a fortnight later: the Hotel Indigo $151 a night against $216, the Waldorf Astoria $367 against $364.',
+  },
+  {
     // Cisco Live APJC, 9-12 November 2026 at the Melbourne Convention and
     // Exhibition Centre, South Wharf (ciscolive.com). The window is the city's
     // November search, 11-14 November, taking in its last nights. The plain
