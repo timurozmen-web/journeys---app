@@ -336,6 +336,24 @@ export const PRICE_EVENTS: PriceEvent[] = [
     note: 'Measured on the 4-5★ and the Marriott, Hilton and IHG searches (no Hyatt or Accor came back priced in Helsinki): x0.84 across 9 hotels. The festival nights were no dearer than plain ones a fortnight later: the Hotel Indigo $151 a night against $216, the Waldorf Astoria $367 against $364.',
   },
   {
+    // Iceland Airwaves, 5-7 November 2026 in downtown Reykjavík, with its
+    // industry conference on 5-6 November (Iceland Airwaves release, 8 April
+    // 2026). The window is the festival's three nights, searched a week
+    // before (28 October). The plain nights are a fortnight after: a
+    // fortnight before had passed.
+    city: 'Reykjavik', country: 'Iceland', event: 'Iceland Airwaves', window: ['2026-11-05', '2026-11-08'], baseline: ['2026-11-19', '2026-11-22'],
+    note: 'Measured on the 4-5★ and the Hilton and IHG searches (no Hyatt or Accor came back priced in Reykjavík, and Marriott\'s only at Keflavík airport): x1.36 across 9 hotels, Hilton\'s x1.49 across 4. The hotels in the centre went up most: the Canopy $622 a night against $312, the Hotel Reykjavík Saga $428 against $253; the Hilton Reykjavik Nordica, out of the centre, was $190 against $201.',
+  },
+  {
+    // The Winter Lights Festival, 4-7 February 2027 across the capital area's
+    // six municipalities: a light trail, Museum Night and Pool Night, all free
+    // (reykjavik.is). The city's February search, 10-13 February, is clear of
+    // it, so its nights were searched on their own, against the same weekdays
+    // a fortnight after.
+    city: 'Reykjavik', country: 'Iceland', event: 'Winter Lights Festival', window: ['2027-02-04', '2027-02-07'], baseline: ['2027-02-18', '2027-02-21'],
+    note: 'Measured on the 4-5★ and the Hilton searches: x0.94 across 9 hotels, Hilton\'s x0.94 across 4. The festival nights were no dearer than plain ones a fortnight later: the Konsulat $286 a night against $340, the Hotel Reykjavík Grand $188 against $183.',
+  },
+  {
     // Cisco Live APJC, 9-12 November 2026 at the Melbourne Convention and
     // Exhibition Centre, South Wharf (ciscolive.com). The window is the city's
     // November search, 11-14 November, taking in its last nights. The plain
